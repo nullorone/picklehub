@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, Play, Pause, RotateCcw, Users, Clock } from 'lucide-react';
+import { ArrowLeft, Play, Pause, RotateCcw, Clock } from 'lucide-react';
 import {Link} from "react-router-dom";
 import Navigation from "../../components/Navigation/Navigation.tsx";
 

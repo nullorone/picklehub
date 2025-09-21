@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, Search, MapPin, Users, Calendar, Phone, Mail, Star, Clock } from 'lucide-react';
+import { ArrowLeft, Search, MapPin, Users, Calendar, Phone, Star, Clock, Navigation as NavigationIcon } from 'lucide-react';
 import {Link} from "react-router-dom";
 import Navigation from "../../components/Navigation/Navigation.tsx";
 
@@ -190,7 +190,7 @@ export default function Clubs() {
             </div>
             
             <div className="flex items-center space-x-2">
-              <Navigation size={16} className="text-gray-500" />
+              <NavigationIcon size={16} className="text-gray-500" />
               <select
                 value={filterDistance}
                 onChange={(e) => setFilterDistance(e.target.value as any)}

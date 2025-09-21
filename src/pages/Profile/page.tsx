@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, Edit3, Trophy, TrendingUp, Calendar, Users, Star, Award, Target, Clock } from 'lucide-react';
+import { ArrowLeft, Edit3, Star } from 'lucide-react';
 import {Link} from "react-router-dom";
 import Navigation from "../../components/Navigation/Navigation.tsx";
 

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, Plus, Trophy, Calendar, MapPin, Users, Clock, Star, Filter } from 'lucide-react';
+import { ArrowLeft, Plus, Trophy, Calendar, MapPin, Users, Star, Filter } from 'lucide-react';
 import {Link} from "react-router-dom";
 import Navigation from "../../components/Navigation/Navigation.tsx";
 
