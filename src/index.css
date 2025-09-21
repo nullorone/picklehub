@@ -1,5 +1,29 @@
+@import "tailwindcss";
+/*@import "tailwindcss/preflight";*/
+@tailwind utilities;
+
+:root {
+    --background: #ffffff;
+    --foreground: #171717;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --background: #0a0a0a;
+        --foreground: #ededed;
+    }
+}
+
 body {
-  background: var(--tg-theme-secondary-bg-color, white);
-  padding: 0;
-  margin: 0;
+    padding: 0;
+    margin: 0;
+    color: var(--foreground);
+    background: var(--tg-theme-secondary-bg-color, white);
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+@layer utilities {
+    .text-balance {
+        text-wrap: balance;
+    }
 }
