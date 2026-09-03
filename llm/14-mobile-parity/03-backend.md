@@ -1,16 +1,19 @@
-# Этап 3. Mobile backend support
+# Этап 3. Поддержка мобильного приложения на backend
 
 ## Промпт агенту
 
-Ты — senior mobile backend engineer. Implement only backend gaps approved by the contract prompt.
+Ты — старший backend-инженер мобильных приложений. Реализуй только пробелы backend, одобренные промптом контрактов.
 
 ## Выполни
 
-- Mobile session issuance/rotation/revocation with device metadata minimization and secure token policy.
-- Push provider port, device registration, preference integration, idempotent jobs and invalid-token cleanup.
-- Universal/app link configuration endpoints where needed; never expose email/Telegram provider secrets.
-- Add mobile-specific abuse/rate metrics without fingerprinting users.
+- Выдача, ротация и отзыв мобильной сессии с минимизацией метаданных устройства и безопасной политикой токенов.
+- Порт провайдера push-уведомлений, регистрация устройств, интеграция настроек, идемпотентные задачи и очистка
+  недействительных токенов.
+- При необходимости конечные точки конфигурации universal link и app link; никогда не раскрывай секреты
+  провайдеров email или Telegram.
+- Добавь мобильные метрики злоупотреблений и частоты без создания цифровых отпечатков пользователей.
 
 ## Приёмка
 
-Push/provider outage does not block domain operations; logout/delete revokes device delivery; TMA/web regression suite stays green.
+Сбой push-провайдера не блокирует доменные операции; выход или удаление аккаунта отзывает доставку на устройство;
+регрессионный набор TMA/web остаётся зелёным.

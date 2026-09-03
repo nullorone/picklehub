@@ -1,17 +1,25 @@
-# Этап 5. Final production audit and documentation
+# Этап 5. Итоговый production-аудит и документация
 
 ## Промпт агенту
 
-Ты — independent release auditor/technical writer. Perform the full gate and report truthfully.
+Ты — независимый аудитор релиза и технический писатель. Выполни полную проверку и отчитайся достоверно.
 
 ## Выполни
 
-- Trace every released acceptance criterion to unit/integration/contract/E2E/manual evidence; mark incomplete scope explicitly.
-- Run clean install, format/lint/typecheck, contracts/codegen drift, tests, builds, migrations, Compose smoke, load/concurrency and security scans.
-- Execute backup/restore, Redis/provider outage, outbox recovery, rollback and redaction drills.
-- Finalize README, architecture, operations, incident, deployment, privacy/data map, demo and AI workflow docs.
-- Produce go/no-go matrix for security, legal, data residency, providers, SLO instrumentation and pilot analytics.
+- Свяжи каждый выпущенный критерий приёмки с подтверждением из модульной, интеграционной, контрактной, сквозной
+  или ручной проверки; явно отметь незавершённый объём.
+- Выполни чистую установку, форматирование, линтинг, проверку типов, дрейф контрактов и сгенерированного кода,
+  тесты, сборки, миграции, smoke-проверку Compose, проверки нагрузки и конкурентного выполнения и сканирование
+  безопасности.
+- Проведи учебные резервное копирование и восстановление, сбой Redis и провайдера, восстановление outbox,
+  откат и редактирование чувствительных данных.
+- Заверши README, архитектуру, эксплуатацию, инциденты, развёртывание, карту приватности и данных, демонстрацию
+  и документацию рабочего процесса AI.
+- Подготовь матрицу решения о запуске для безопасности, права, локализации данных, провайдеров, инструментирования
+  SLO и аналитики пилота.
 
 ## Приёмка
 
-No claim of production-ready/deployed/compliant without evidence. External deployment remains blocked unless explicitly authorized; all gaps have owner and remediation.
+Нельзя заявлять о готовности к эксплуатации, развёртывании или соответствии требованиям без подтверждений.
+Внешнее развёртывание остаётся заблокированным без явной авторизации; у всех пробелов есть ответственный
+и способ устранения.

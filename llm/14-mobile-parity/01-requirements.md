@@ -1,16 +1,21 @@
-# Этап 1. Mobile parity requirements
+# Этап 1. Требования к функциональному паритету мобильного приложения
 
 ## Промпт агенту
 
-Ты — mobile product lead. Audit current TMA/web behavior and define a parity matrix.
+Ты — руководитель мобильного продукта. Проведи аудит текущего поведения TMA/web и определи матрицу паритета.
 
 ## Выполни
 
-- Map every Match MVP user story/state/analytics event to native screen/navigation/deep link.
-- Define email magic-link and optional Telegram account linking, secure session storage, background/reconnect and push permission UX.
-- Define map/location permission, offline read cache, network-required mutations and app lifecycle behavior.
-- Add platform accessibility, minimum OS/device matrix, privacy disclosures and store compliance requirements.
+- Сопоставь каждый пользовательский сценарий, состояние и аналитическое событие Match MVP с нативным экраном,
+  навигацией и deep link.
+- Определи magic link по email и необязательную привязку аккаунта Telegram, безопасное хранение сессии, фоновую
+  работу и переподключение, а также UX разрешения на push-уведомления.
+- Определи разрешения карты и местоположения, кеш чтения без сети, требующие сети мутации и поведение жизненного
+  цикла приложения.
+- Добавь платформенную доступность, минимальную матрицу ОС и устройств, раскрытие сведений о приватности
+  и требования магазинов приложений.
 
 ## Приёмка
 
-No admin or unsupported provider feature; parity gaps are explicit; mobile does not alter API solely for local convenience without contract review.
+Нет административных функций или неподдерживаемых возможностей провайдера; пробелы паритета указаны явно;
+мобильный клиент не меняет API только ради локального удобства без проверки контракта.

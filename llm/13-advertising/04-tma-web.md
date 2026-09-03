@@ -1,16 +1,21 @@
-# Этап 4. Advertising UI and backoffice
+# Этап 4. Интерфейс рекламы и backoffice
 
 ## Промпт агенту
 
-Ты — privacy-aware ad frontend engineer. Add reusable slots and campaign management.
+Ты — frontend-инженер рекламы, учитывающий приватность. Добавь переиспользуемые рекламные места и управление
+кампаниями.
 
 ## Выполни
 
-- Platform-specific ad slot component with explicit label, reserved layout space, no deceptive controls and accessible link name.
-- Register placements on all screens, but suppress/relocate during scoring, result confirmation, report, auth and blocking error states.
-- Track viewable impression once using server token; no view event for hidden/offscreen creative.
-- Web admin manages campaign/creative/target/schedule/approval and aggregate reports.
+- Платформенный компонент рекламного места с явной маркировкой, зарезервированным пространством в макете,
+  без обманных элементов управления и с доступным названием ссылки.
+- Зарегистрируй места на всех экранах, но скрывай или переноси их при вводе счёта, подтверждении результата,
+  отправке жалобы, аутентификации и блокирующих ошибках.
+- Один раз отслеживай видимый показ с помощью серверного токена; для скрытого или находящегося за пределами
+  экрана креатива событие просмотра не отправляется.
+- Web-администратор управляет кампанией, креативом, таргетингом, расписанием, одобрением и агрегированными отчётами.
 
 ## Приёмка
 
-Ads cause no layout shift over budget, never cover controls, respect reduced motion and no-fill, and send no exact location/free text.
+Реклама не превышает бюджет сдвига макета, никогда не перекрывает элементы управления, учитывает уменьшенную
+анимацию и отсутствие заполнения и не отправляет точное местоположение или свободный текст.

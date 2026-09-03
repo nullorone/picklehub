@@ -1,17 +1,21 @@
-# Этап 2. Match contracts и данные
+# Этап 2. Контракты матчей и данные
 
 ## Промпт агенту
 
-Ты — API/database architect. Добавь match aggregate в OpenAPI/AsyncAPI и data model.
+Ты — архитектор API и баз данных. Добавь агрегат матча в OpenAPI/AsyncAPI и модель данных.
 
 ## Выполни
 
-- Endpoints: discovery/recommendations/details, CRUD draft/publish, join/approve/reject/withdraw/leave, waitlist, cancel/start, result propose/confirm/dispute.
+- Конечные точки: поиск, рекомендации и подробные сведения; CRUD, черновик и публикация; вступление, одобрение,
+  отклонение, отзыв заявки и выход; очередь ожидания; отмена и начало; предложение, подтверждение и оспаривание
+  результата.
 - Модели: `Match`, `MatchTeam`, `MatchParticipant`, `JoinRequest`, `WaitlistEntry`, `MatchResult`, `GameScore`, `ResultConfirmation`.
-- Database constraints защищают capacity, unique active participation, ordering and one effective result transition; все команды idempotent.
-- Public discovery не выдаёт unlisted matches; opaque share token не является authorization для мутаций.
-- Versioned events описывают transitions без chat/PII.
+- Ограничения базы данных защищают вместимость, уникальное активное участие, порядок и единственный эффективный
+  переход результата; все команды идемпотентны.
+- Публичный поиск не выдаёт матчи по ссылке; непрозрачный токен общего доступа не даёт права на изменения.
+- Версионируемые события описывают переходы без текста чата и персональных данных.
 
 ## Приёмка
 
-OpenAPI/codegen/migrations валидны; constraints выдерживают concurrent last-slot attempts; result score schema поддерживает 11/15/21 и win-by-two validation.
+OpenAPI, генерация кода и миграции валидны; ограничения выдерживают конкурентные попытки занять последнее место;
+схема счёта поддерживает 11, 15 и 21 очко и проверку победы с разницей в два очка.

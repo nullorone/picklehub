@@ -1,16 +1,19 @@
-# Этап 4. News and CMS UI
+# Этап 4. Интерфейс новостей и CMS
 
 ## Промпт агенту
 
-Ты — senior editorial/frontend engineer. Build reader feed and web-only editor.
+Ты — старший редакционный и frontend-инженер. Создай ленту читателя и редактор только для web.
 
 ## Выполни
 
-- TMA/web feed, article, categories/tags/search, bookmark/share and source attribution.
-- Web backoffice source/candidate queue, revision editor, preview, schedule/publish/unpublish and history.
-- Sanitize/render one approved content format; previews cannot leak drafts.
-- Loading/empty/offline/stale/takedown/error states, SEO for web and accessible typography.
+- Лента и статья в TMA/web, категории, теги, поиск, закладки, отправка ссылок и атрибуция источника.
+- Очередь источников и кандидатов в web-backoffice, редактор версий, предварительный просмотр, планирование,
+  публикация, снятие с публикации и история.
+- Очищай и отображай один утверждённый формат контента; предварительный просмотр не может раскрывать черновики.
+- Состояния загрузки, отсутствия данных, работы без сети, устаревших данных, удаления и ошибки, SEO для web
+  и доступная типографика.
 
 ## Приёмка
 
-Share uses canonical URL/deep link; offline content reflects last-known status; external links are clearly labelled and safe.
+Отправка ссылки использует канонический URL или deep link; контент без сети отражает последнее известное
+состояние; внешние ссылки безопасны и имеют понятную маркировку.

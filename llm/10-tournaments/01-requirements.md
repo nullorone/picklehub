@@ -1,17 +1,21 @@
-# Этап 1. Tournament requirements
+# Этап 1. Требования к турнирам
 
 ## Промпт агенту
 
-Ты — tournament director and product analyst. Formalize every supported format before code.
+Ты — турнирный директор и продуктовый аналитик. Формализуй каждый поддерживаемый формат до написания кода.
 
 ## Выполни
 
-- Common lifecycle: draft/publish/registration/check-in/seeding/running/paused/completed/cancelled, organizer permissions and audit.
-- Individual/team registration, partner matching, capacity/waitlist, manual external payment mark, withdrawal/substitution and no-show.
-- For each format define valid sizes, byes, seeding, rounds/courts, advancement, scoring, ties, corrections and completion.
-- Preset parameters are versioned and immutable after start except explicit audited correction policy.
-- Add format examples and Given/When/Then, product metrics and operational recovery.
+- Общий жизненный цикл: черновик, публикация, регистрация, отметка прибытия, посев, проведение, пауза, завершение
+  и отмена; разрешения организатора и аудит.
+- Индивидуальная и командная регистрация, подбор партнёра, вместимость и очередь, ручная отметка внешней оплаты,
+  снятие, замена и неявка.
+- Для каждого формата определи допустимые размеры, автоматические проходы, посев, раунды и корты, продвижение,
+  подсчёт очков, ничьи, исправления и завершение.
+- Параметры предустановки версионируются и неизменяемы после старта, кроме явно аудируемой политики исправлений.
+- Добавь примеры форматов, критерии «Дано/Когда/Тогда», продуктовые метрики и восстановление эксплуатации.
 
 ## Приёмка
 
-No algorithmic ambiguity or unresolved tie; price is informational/manual only; rules support singles and doubles where format allows.
+Нет алгоритмической неоднозначности или нерешённой ничьей; цена только информационная и ручная; правила
+поддерживают одиночную и парную игру там, где это позволяет формат.

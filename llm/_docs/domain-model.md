@@ -1,16 +1,18 @@
-# Domain model baseline
+# Базовая доменная модель
 
-Initial aggregates and supporting records:
+Исходные агрегаты и вспомогательные записи:
 
-- Identity: `User`, `Identity`, `Session`, `MagicLink`, `Consent`.
-- Profile: `PlayerProfile`, `SkillSelfAssessment`, `ExternalProfileLink`, `PlayerPreference`.
-- Venue: `Venue`, `VenueSource`, `VenueCandidate`, `VenueRevision`, `VenueModerationDecision`.
-- Match: `Match`, `MatchTeam`, `MatchParticipant`, `JoinRequest`, `WaitlistEntry`, `MatchResult`, `GameScore`, `ResultConfirmation`.
-- Communication: `Conversation`, `Message`, `Notification`, `NotificationPreference`, `OutboxEvent`.
-- Safety: `Review`, `NoShowReport`, `Report`, `Block`, `ModerationCase`, `AuditEntry`.
-- Club: `Club`, `ClubMembership`, `ClubVenue`, `RecurringMatchRule`.
-- Tournament: `Tournament`, `Entrant`, `Stage`, `Round`, `TournamentMatch`, `Standing`, `FormatDefinition`.
-- Progress: `XpLedgerEntry`, `LevelDefinition`, `Achievement`, `LeaderboardSeason`.
-- Content/ads: `Article`, `ContentSource`, `Bookmark`, `Campaign`, `Creative`, `Placement`, `AdDeliveryEvent`.
+- Идентификация: `User`, `Identity`, `Session`, `MagicLink`, `Consent`.
+- Профиль: `PlayerProfile`, `SkillSelfAssessment`, `ExternalProfileLink`, `PlayerPreference`.
+- Площадка: `Venue`, `VenueSource`, `VenueCandidate`, `VenueRevision`, `VenueModerationDecision`.
+- Матч: `Match`, `MatchTeam`, `MatchParticipant`, `JoinRequest`, `WaitlistEntry`, `MatchResult`, `GameScore`,
+  `ResultConfirmation`.
+- Коммуникация: `Conversation`, `Message`, `Notification`, `NotificationPreference`, `OutboxEvent`.
+- Безопасность: `Review`, `NoShowReport`, `Report`, `Block`, `ModerationCase`, `AuditEntry`.
+- Клуб: `Club`, `ClubMembership`, `ClubVenue`, `RecurringMatchRule`.
+- Турнир: `Tournament`, `Entrant`, `Stage`, `Round`, `TournamentMatch`, `Standing`, `FormatDefinition`.
+- Прогресс: `XpLedgerEntry`, `LevelDefinition`, `Achievement`, `LeaderboardSeason`.
+- Контент и реклама: `Article`, `ContentSource`, `Bookmark`, `Campaign`, `Creative`, `Placement`, `AdDeliveryEvent`.
 
-Exact fields, enums, indexes, retention and ownership are defined by the responsible `02-contract-data.md` prompt. Cross-aggregate writes require an explicit application transaction boundary and outbox event.
+Точные поля, перечисления, индексы, сроки хранения и владение определяются соответствующим промптом
+`02-contract-data.md`. Запись в несколько агрегатов требует явной границы прикладной транзакции и события outbox.

@@ -1,17 +1,21 @@
-# Этап 2. Tournament contracts, data and strategy interface
+# Этап 2. Контракты, данные и интерфейс стратегии турниров
 
 ## Промпт агенту
 
-Ты — tournament engine/API architect. Design one aggregate family, not eight schemas.
+Ты — архитектор турнирного движка и API. Спроектируй одно семейство агрегатов, а не восемь схем.
 
 ## Выполни
 
-- OpenAPI tournament CRUD/discovery/registration/check-in/seed/start/round operations/score/correct/standings/cancel.
-- Models: `Tournament`, `Entrant`, `EntrantMember`, `Stage`, `Round`, `TournamentMatch`, `CourtAssignment`, `Standing`, `FormatDefinition`, `PaymentMark`.
-- Define `TournamentFormatStrategy` inputs/outputs/invariants and versioned JSON schema for each preset.
-- Concurrency/version fields protect score corrections and round generation; events are replayable/idempotent.
-- Reserve `CUSTOM_DSL` type but reject activation until the final DSL prompt.
+- OpenAPI: CRUD и поиск турнира, регистрация, отметка прибытия, посев, старт, операции раунда, счёт,
+  исправление, таблица и отмена.
+- Модели: `Tournament`, `Entrant`, `EntrantMember`, `Stage`, `Round`, `TournamentMatch`, `CourtAssignment`,
+  `Standing`, `FormatDefinition`, `PaymentMark`.
+- Определи входы, выходы и инварианты `TournamentFormatStrategy` и версионируемую JSON-схему каждой предустановки.
+- Поля конкурентного выполнения и версии защищают исправление счёта и генерацию раундов; события допускают
+  повторное воспроизведение и идемпотентны.
+- Зарезервируй тип `CUSTOM_DSL`, но отклоняй активацию до итогового промпта DSL.
 
 ## Приёмка
 
-Every format serializes through common DTOs; migration/index plans scale by tournament; contract examples cover odd entrants/byes/ties.
+Каждый формат сериализуется через общие DTO; планы миграций и индексов масштабируются по турниру; примеры
+контрактов охватывают нечётное число участников, автоматические проходы и ничьи.

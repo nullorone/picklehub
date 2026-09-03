@@ -1,16 +1,19 @@
-# Этап 1. Club requirements
+# Этап 1. Требования к клубам
 
 ## Промпт агенту
 
-Ты — community sports product analyst. Опиши club lifecycle and scoped governance.
+Ты — продуктовый аналитик спортивных сообществ. Опиши жизненный цикл клуба и управление в его рамках.
 
 ## Выполни
 
-- Stories: create/edit/discover club, join/request/invite/leave/remove, transfer ownership, role management, link/unlink venues.
-- Club-created matches/tournaments and recurring match rules with independent occurrence capacity/participants.
-- State/policy for archived club, last owner, banned member, pending invite/request and venue removal.
-- Metrics: active clubs, membership conversion, club-created completed matches and recurring occurrence fill.
+- Истории: создание, изменение и поиск клуба; вступление, заявка, приглашение, выход и исключение; передача
+  владения, управление ролями, привязка и отвязка площадок.
+- Созданные клубом матчи и турниры, правила повторяющихся матчей с независимыми вместимостью и участниками встреч.
+- Состояния и политика архивного клуба, последнего владельца, заблокированного участника, ожидающего приглашения
+  или заявки и удаления площадки.
+- Метрики: активные клубы, конверсия членства, завершённые клубные матчи и заполнение повторяющихся встреч.
 
 ## Приёмка
 
-Club may have zero venues; no orphan owner; platform admin and club admin remain distinct; no membership payments.
+У клуба может не быть площадок; клуб не остаётся без владельца; администраторы платформы и клуба различаются;
+платежей за членство нет.

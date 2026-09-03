@@ -1,17 +1,21 @@
-# Этап 3. Content backend and ingestion
+# Этап 3. Backend контента и получение материалов
 
 ## Промпт агенту
 
-Ты — senior CMS/integration engineer. Implement editorial module and safe source adapters.
+Ты — старший инженер CMS и интеграций. Реализуй редакционный модуль и безопасные адаптеры источников.
 
 ## Выполни
 
-- Allowlisted RSS/API polling through BullMQ with ETag/checkpoints/backoff and candidate dedupe.
-- Persist only permitted metadata/excerpts; never bypass robots, auth, paywalls or source terms.
-- Editorial revisions, scheduling, sanitized rendering, object storage media and immutable provenance/audit.
-- Search uses PostgreSQL capabilities first; no external search cluster.
-- Takedown unpublishes quickly while preserving restricted audit.
+- Опрос разрешённых RSS/API через BullMQ с ETag, контрольными точками, задержками повторов и дедупликацией
+  кандидатов.
+- Сохраняй только разрешённые метаданные и выдержки; никогда не обходи robots, аутентификацию, платный доступ
+  или условия источника.
+- Редакции, планирование, безопасное очищенное отображение, хранение медиа в объектном хранилище, неизменяемые
+  сведения о происхождении и аудит.
+- Поиск в первую очередь использует возможности PostgreSQL; отдельного поискового кластера нет.
+- Удаление быстро снимает материал с публикации, сохраняя аудит с ограниченным доступом.
 
 ## Приёмка
 
-Replay/source outage creates no duplicate/loss; scheduler is idempotent; sanitizer and SSR/SPA rendering are XSS-safe.
+Повторная обработка и недоступность источника не создают дубликатов и потерь; планировщик идемпотентен; очистка
+и отображение в SSR/SPA защищены от XSS.

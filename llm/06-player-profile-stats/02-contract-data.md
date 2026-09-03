@@ -1,16 +1,18 @@
-# Этап 2. Profile/statistics contracts и данные
+# Этап 2. Контракты профиля и статистики, данные
 
 ## Промпт агенту
 
-Ты — API/data projection architect. Добавь profile API и read models.
+Ты — архитектор API и проекций данных. Добавь API профиля и модели чтения.
 
 ## Выполни
 
-- Endpoints: own profile/preferences/privacy, public player, cursor match history and stats breakdown, DUPR external link validate/remove.
-- Separate mutable `PlayerProfile` from rebuildable `PlayerStatistics` projection and processed-event dedupe.
-- Определи public DTO minimization, block behavior, avatar object keys and signed upload policy.
-- Events cover profile changes and stats rebuild without PII.
+- Конечные точки: собственный профиль, настройки и конфиденциальность, публичный профиль игрока, история матчей по
+  курсору и детализация статистики, проверка и удаление внешней ссылки DUPR.
+- Отдели изменяемый `PlayerProfile` от перестраиваемой проекции `PlayerStatistics` и дедупликации обработанных событий.
+- Определи минимизацию публичного DTO, поведение блокировки, ключи объектов аватара и политику подписанной загрузки.
+- События охватывают изменения профиля и перестроение статистики без персональных данных.
 
 ## Приёмка
 
-Projection update is idempotent, recalculation matches event source, private fields never appear in public schema. Contract/migration tests pass.
+Обновление проекции идемпотентно, пересчёт соответствует источнику событий, закрытые поля никогда не появляются
+в публичной схеме. Тесты контрактов и миграций проходят.

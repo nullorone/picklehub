@@ -1,16 +1,19 @@
-# Этап 3. Profile/statistics backend
+# Этап 3. Backend профиля и статистики
 
 ## Промпт агенту
 
-Ты — senior NestJS projections engineer. Реализуй profile и stats modules.
+Ты — старший инженер проекций на NestJS. Реализуй модули профиля и статистики.
 
 ## Выполни
 
-- Validate display name/bio/preferences/level and optional DUPR URL/ID; do not call/scrape DUPR.
-- Build idempotent confirmed-match consumer and administrative rebuild command with checkpoint/audit.
-- Enforce public/private DTOs, blocks, cursor history and avatar storage adapter.
-- Handle result dispute/overturn by compensating/rebuilding projection, never ad-hoc decrement races.
+- Валидируй отображаемое имя, биографию, настройки, уровень и необязательные URL или ID DUPR; не обращайся к
+  DUPR и не собирай его данные.
+- Создай идемпотентного потребителя подтверждённых матчей и административную команду перестроения с контрольной
+  точкой и аудитом.
+- Обеспечь публичные и закрытые DTO, блокировки, историю по курсору и адаптер хранилища аватаров.
+- Обрабатывай спор и отмену результата компенсацией или перестроением проекции, а не ситуативными гонками уменьшения.
 
 ## Приёмка
 
-Duplicate/out-of-order events converge to correct stats; guest slots ignored; rebuild is restartable. Run integration/concurrency tests.
+Дублирующиеся и пришедшие не по порядку события сходятся к правильной статистике; гостевые места игнорируются;
+перестроение можно перезапустить. Запусти интеграционные тесты и тесты конкурентного выполнения.

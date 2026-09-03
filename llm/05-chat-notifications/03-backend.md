@@ -1,17 +1,21 @@
-# Этап 3. Chat/notification backend
+# Этап 3. Backend чата и уведомлений
 
 ## Промпт агенту
 
-Ты — senior NestJS realtime/messaging engineer. Реализуй gateways, persistence и delivery workers.
+Ты — старший инженер NestJS по системам реального времени и обмену сообщениями. Реализуй шлюзы, хранение данных
+и обработчики доставки.
 
 ## Выполни
 
-- Authenticate WebSocket, authorize every subscription/message, persist before emit and support cursor reconnect.
-- Emit system messages from idempotent domain-event consumers, not from frontend actions.
-- Outbox dispatcher and BullMQ workers implement retries/backoff/deduplication/dead-letter visibility.
-- Telegram and email provider adapters enforce opt-in/link state, redaction, templates and provider rate limits.
-- Add unread counters, preferences, quiet hours, metrics and graceful shutdown.
+- Аутентифицируй WebSocket, авторизуй каждую подписку и сообщение, сохраняй до отправки и поддерживай
+  переподключение по курсору.
+- Отправляй системные сообщения из идемпотентных потребителей доменных событий, а не из действий frontend.
+- Диспетчер outbox и обработчики BullMQ реализуют повторы, задержку, дедупликацию и наблюдаемость очереди ошибок.
+- Адаптеры Telegram и электронной почты соблюдают согласие и состояние привязки, скрывают чувствительные данные,
+  используют шаблоны и ограничения частоты провайдера.
+- Добавь счётчики непрочитанного, настройки, часы тишины, метрики и корректное завершение работы.
 
 ## Приёмка
 
-Redis/provider outage delays delivery without losing committed events; unauthorized former participant cannot read new chat. Integration tests use real PostgreSQL/Redis.
+Сбой Redis или провайдера задерживает доставку, не теряя зафиксированных событий; бывший участник без прав не
+может читать новые сообщения. Интеграционные тесты используют настоящие PostgreSQL и Redis.

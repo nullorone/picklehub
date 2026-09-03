@@ -1,17 +1,21 @@
-# Этап 3. Tournament engine backend
+# Этап 3. Backend турнирного движка
 
 ## Промпт агенту
 
-Ты — senior algorithms/domain engineer. Implement all preset strategies and orchestration.
+Ты — старший инженер алгоритмов и предметной области. Реализуй все предустановленные стратегии и оркестрацию.
 
 ## Выполни
 
-- Pure deterministic strategy implementations with seeded randomness where required and invariant/property tests.
-- Transactional commands for registration, check-in, seed, generate next round, assign court, score, correct and complete.
-- Round advancement never partially applies; correction either rebuilds affected future state safely or is rejected after configured lock.
-- Swiss pairing prevents/reduces repeats per documented deterministic policy; double elimination tracks winners/losers brackets; rotations preserve fairness metrics.
-- Reuse match scoring primitives where compatible without coupling public match lifecycle.
+- Чистые детерминированные стратегии с инициализированной случайностью там, где она нужна, и тестами инвариантов и свойств.
+- Транзакционные команды регистрации, отметки прибытия, посева, генерации следующего раунда, назначения корта,
+  счёта, исправления и завершения.
+- Продвижение раунда никогда не применяется частично; исправление безопасно перестраивает затронутое будущее
+  состояние или отклоняется после настроенной блокировки.
+- Швейцарские пары предотвращают или сокращают повторы по документированной детерминированной политике; двойное
+  выбывание отслеживает сетки победителей и проигравших; ротации сохраняют метрики справедливости.
+- Повторно используй примитивы счёта матча, где они совместимы, без сцепления с жизненным циклом публичного матча.
 
 ## Приёмка
 
-Repeated command/event does not duplicate rounds; crash/restart converges; simulations terminate with valid standings for supported sizes.
+Повторная команда или событие не дублирует раунды; после сбоя и перезапуска состояние сходится; симуляции
+завершаются корректной таблицей для поддерживаемых размеров.

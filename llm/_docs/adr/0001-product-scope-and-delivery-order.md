@@ -1,16 +1,20 @@
-# ADR 0001. Product scope and delivery order
+# ADR 0001. Объём продукта и порядок поставки
 
-- Status: accepted
-- Date: 2026-09-03
+- Статус: принято
+- Дата: 2026-09-03
 
-## Decision
+## Решение
 
-Deliver TMA and web/PWA Match MVP before clubs, tournaments, gamification, content, ads, mobile and mini-game. Keep later domains visible in architecture but do not implement speculative code for them.
+Поставить MVP матчей для TMA и web/PWA раньше клубов, турниров, геймификации, контента, рекламы, мобильного
+приложения и мини-игры. Отразить будущие предметные области в архитектуре, но не реализовывать для них
+предположительный код.
 
-The first public slice contains identity/onboarding, venues, match discovery/lifecycle, chat/notifications, profile/statistics, trust & safety and minimum admin operations. Premium, payments and court booking are excluded.
+Первый публичный срез включает идентификацию и первичную настройку, площадки, поиск и жизненный цикл матчей, чат
+и уведомления, профиль и статистику, доверие и безопасность, а также минимальные административные операции.
+Премиум-возможности, платежи и бронирование кортов исключены.
 
-## Consequences
+## Последствия
 
-- Real-world match completion can be measured before expensive extensions.
-- Web and TMA stay contract-compatible while keeping platform-specific UI.
-- Full tournament breadth is delayed but implemented later over a single strategy engine.
+- Завершение реальных матчей можно измерить до разработки дорогих расширений.
+- Web и TMA сохраняют совместимость контрактов и отдельные интерфейсы для каждой платформы.
+- Полный набор турнирных форматов откладывается и позднее реализуется на едином движке стратегий.

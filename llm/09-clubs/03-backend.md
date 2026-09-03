@@ -1,16 +1,18 @@
-# Этап 3. Club backend
+# Этап 3. Backend клубов
 
 ## Промпт агенту
 
-Ты — senior NestJS multi-tenant domain engineer. Implement club and recurrence modules.
+Ты — старший инженер многопользовательской предметной области на NestJS. Реализуй модули клубов и повторений.
 
 ## Выполни
 
-- Enforce owner/admin/member policies in application layer for every command/query.
-- Implement open/request/invite membership state machine, transfer/last-owner protection and audit.
-- Recurrence worker materializes bounded future occurrences idempotently and uses existing match use cases, never duplicate match logic.
-- Link canonical venues; unlink does not delete venue or historical events.
+- Проверяй политики владельца, администратора и участника в прикладном слое для каждой команды и запроса.
+- Реализуй конечный автомат открытого членства, заявок и приглашений, защиту передачи и последнего владельца, аудит.
+- Обработчик повторений идемпотентно создаёт ограниченное число будущих встреч и использует существующие сценарии
+  матчей, не дублируя их логику.
+- Привязывай канонические площадки; отвязка не удаляет площадку или исторические события.
 
 ## Приёмка
 
-Concurrent join/invite/role changes converge; recurrence restart creates no duplicates; archived club cannot create new events. Run integration/timezone tests.
+Конкурентные изменения вступления, приглашения и роли сходятся; перезапуск повторений не создаёт дубликаты;
+архивный клуб не создаёт новые события. Запусти интеграционные тесты и тесты часовых поясов.

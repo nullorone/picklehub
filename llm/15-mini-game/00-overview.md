@@ -1,5 +1,8 @@
 # Мини-игра pickleball: контекст
 
-Поздний retention-модуль реализуется один раз как Canvas/WebGL web game для web/PWA/TMA и запускается в isolated mobile WebView. Игра может выдавать cosmetics и ограниченный XP, но не влияет на sports stats, DUPR or match eligibility.
+Модуль удержания позднего этапа реализуется один раз как web-игра Canvas/WebGL для web/PWA/TMA и запускается
+в изолированном мобильном WebView. Игра может выдавать косметические предметы и ограниченный XP, но не влияет
+на спортивную статистику, DUPR или допуск к матчам.
 
-Game sessions and rewards require anti-replay/server caps. Ads remain nonblocking and follow advertising policy.
+Игровые сессии и награды требуют защиты от повторного воспроизведения и серверных лимитов. Реклама остаётся
+неблокирующей и соответствует рекламной политике.

@@ -1,15 +1,18 @@
-# ADR 0002. Modular monolith and contracts
+# ADR 0002. Модульный монолит и контракты
 
-- Status: accepted
-- Date: 2026-09-03
+- Статус: принято
+- Дата: 2026-09-03
 
-## Decision
+## Решение
 
-Use one NestJS modular monolith with PostgreSQL/PostGIS, Redis/BullMQ and transactional outbox. REST is design-first OpenAPI; WebSocket and event envelopes are AsyncAPI. npm workspaces/Turborepo manage one repository and shared non-UI client packages.
+Использовать один модульный монолит NestJS с PostgreSQL/PostGIS, Redis/BullMQ и транзакционным outbox. REST
+проектируется прежде всего в OpenAPI; протокол WebSocket и конверты событий описываются в AsyncAPI. Рабочие
+пространства npm и Turborepo управляют единым репозиторием и общими клиентскими пакетами без UI.
 
-## Consequences
+## Последствия
 
-- One developer can deploy and observe the system without microservice overhead.
-- Database transactions preserve match and progression invariants.
-- Provider adapters and module boundaries allow later extraction if measured load requires it.
-- Redis failure may delay background work but must not roll back an already committed domain change.
+- Один разработчик может развёртывать систему и наблюдать за ней без издержек микросервисной архитектуры.
+- Транзакции базы данных сохраняют инварианты матчей и прогресса.
+- Адаптеры провайдеров и границы модулей позволяют позднее выделить компоненты, если этого потребует измеренная
+  нагрузка.
+- Сбой Redis может задержать фоновую работу, но не должен откатывать уже зафиксированное доменное изменение.

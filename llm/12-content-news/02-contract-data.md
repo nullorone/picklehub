@@ -1,16 +1,19 @@
-# Этап 2. Content contracts и data model
+# Этап 2. Контракты контента и модель данных
 
 ## Промпт агенту
 
-Ты — CMS/API architect. Add reader/editor contracts and provenance model.
+Ты — архитектор CMS/API. Добавь контракты читателя и редактора, а также модель происхождения материалов.
 
 ## Выполни
 
-- Public feed/article/search/bookmark endpoints and `/admin/content` source/candidate/revision/publish endpoints.
-- Models: `ContentSource`, `IngestCandidate`, `Article`, `ArticleRevision`, `Tag`, `Bookmark`, media references.
-- Status machine, scheduled publication, canonical slug/version, unique source URL/hash and safe sanitized rich-content format.
-- Events for publish/unpublish without article body; SEO metadata and attribution are explicit DTO fields.
+- Публичные конечные точки ленты, статьи, поиска и закладок, а также конечные точки `/admin/content` для
+  источников, кандидатов, редакций и публикации.
+- Модели: `ContentSource`, `IngestCandidate`, `Article`, `ArticleRevision`, `Tag`, `Bookmark`, ссылки на медиа.
+- Автомат состояний, публикация по расписанию, канонические slug и версия, уникальные URL и хеш источника,
+  безопасный очищенный формат форматированного контента.
+- События публикации и снятия с публикации без тела статьи; метаданные SEO и атрибуция — явные поля DTO.
 
 ## Приёмка
 
-Stored rich text cannot execute scripts; bookmark unique constraint is idempotent; unpublished content is inaccessible publicly.
+Сохранённый форматированный текст не может выполнять скрипты; уникальное ограничение закладки обеспечивает
+идемпотентность; неопубликованный контент недоступен публично.

@@ -1,16 +1,21 @@
-# Этап 1. Communication requirements
+# Этап 1. Требования к коммуникации
 
 ## Промпт агенту
 
-Ты — realtime product/security analyst. Опиши коммуникацию матча и notification policy.
+Ты — продуктовый аналитик и аналитик безопасности систем реального времени. Опиши коммуникацию матча и политику
+уведомлений.
 
 ## Выполни
 
-- User stories: open/reconnect chat, send/edit-own/delete-own text по принятой политике, system events, unread state, report/block, notification preferences.
-- Определи membership authorization до/после leave/cancel, retention, ordering, pagination, delivery/read semantics и reconnect gaps.
-- Создай event-to-channel matrix для join/request/approval/promotion/cancel/change/reminder/result/dispute.
-- Установи quiet hours, locale/timezone rendering, deduplication and provider fallback requirements.
+- Пользовательские истории: открытие и переподключение чата, отправка, редактирование и удаление собственного
+  текста по принятой политике, системные события, непрочитанное состояние, жалоба, блокировка и настройки уведомлений.
+- Определи авторизацию участника до и после выхода или отмены, сроки хранения, порядок, пагинацию, семантику
+  доставки и прочтения, пропуски при переподключении.
+- Создай матрицу «событие — канал» для вступления, заявки, одобрения, продвижения, отмены, изменения, напоминания,
+  результата и спора.
+- Установи часы тишины, отображение локали и часового пояса, дедупликацию и требования к резервному провайдеру.
 
 ## Приёмка
 
-Не обещать exactly-once или guaranteed email/Telegram delivery. Chat text не попадает в logs/analytics/outbox payloads вне минимальной delivery boundary.
+Не обещай обработку строго один раз или гарантированную доставку по электронной почте и Telegram. Текст чата не
+попадает в логи, аналитику и данные outbox за пределами минимально необходимой границы доставки.

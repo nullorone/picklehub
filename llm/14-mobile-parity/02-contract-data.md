@@ -1,16 +1,20 @@
-# Этап 2. Mobile contract readiness
+# Этап 2. Готовность контрактов для мобильного приложения
 
 ## Промпт агенту
 
-Ты — mobile/API architect. Validate contracts and add only required platform-neutral capabilities.
+Ты — архитектор мобильного приложения и API. Проверь контракты и добавь только необходимые
+платформенно-независимые возможности.
 
 ## Выполни
 
-- Audit OpenAPI/AsyncAPI generated client compatibility with React Native runtime.
-- Define mobile refresh token transport in secure storage, device/push token registration/revocation and deep-link state.
-- Ensure file uploads, WebSocket auth, cursor reconnect and idempotency work without browser cookies where inappropriate.
-- Add no mobile-only duplicate DTOs; provider tokens remain backend-owned.
+- Проведи аудит совместимости сгенерированного клиента OpenAPI/AsyncAPI со средой выполнения React Native.
+- Определи передачу мобильного refresh token и его безопасное хранение, регистрацию и отзыв токенов устройства
+  и push-уведомлений, а также состояние deep link.
+- Убедись, что загрузка файлов, аутентификация WebSocket, переподключение с курсором и идемпотентность работают
+  без браузерных cookie там, где они неуместны.
+- Не добавляй дублирующиеся DTO только для мобильного клиента; токены провайдера остаются на backend.
 
 ## Приёмка
 
-Codegen builds in Expo, account/session switching clears caches, lost device token is revocable, contract changes preserve TMA/web.
+Сгенерированный код собирается в Expo, смена аккаунта или сессии очищает кеши, токен потерянного устройства
+можно отозвать, изменения контрактов сохраняют работу TMA/web.

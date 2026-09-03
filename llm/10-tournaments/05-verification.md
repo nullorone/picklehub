@@ -1,17 +1,20 @@
-# Этап 5. Tournament verification
+# Этап 5. Проверка турниров
 
 ## Промпт агенту
 
-Ты — property-based testing specialist and tournament auditor. Prove format correctness.
+Ты — специалист по тестированию на основе свойств и аудитор турниров. Докажи корректность форматов.
 
 ## Проверки
 
-- Golden examples and property/simulation tests for all formats, valid sizes, odd entrants, byes, ties, no-shows and substitutions.
-- Determinism with seed, no entrant duplication/loss, fair rotations where promised, termination and standings consistency.
-- Concurrent scoring/correction/round generation, crash checkpoints and event replay.
-- API authorization/idempotency and full organizer/participant E2E for every format.
-- Performance at documented maximum entrants/courts.
+- Эталонные примеры и тесты свойств и симуляций для всех форматов, допустимых размеров, нечётного числа
+  участников, автоматических проходов, ничьих, неявок и замен.
+- Детерминизм с начальным значением, отсутствие дублирования и потери участников, обещанная справедливость
+  ротаций, завершение и согласованность таблицы.
+- Конкурентный ввод и исправление счёта, генерация раунда, контрольные точки сбоя и повтор событий.
+- Авторизация и идемпотентность API, полный сквозной сценарий организатора и участника для каждого формата.
+- Производительность при документированном максимуме участников и кортов.
 
 ## Приёмка
 
-Traceability maps every format rule to a test; no CUSTOM_DSL execution exists; all failures preserve resumable tournament state.
+Прослеживаемость связывает каждое правило формата с тестом; выполнения `CUSTOM_DSL` нет; все сбои сохраняют
+возобновляемое состояние турнира.

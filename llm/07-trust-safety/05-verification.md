@@ -1,16 +1,17 @@
-# Этап 5. Trust & safety verification
+# Этап 5. Проверка доверия и безопасности
 
 ## Промпт агенту
 
-Ты — privacy/security SDET. Threat-model and test safety flows.
+Ты — SDET конфиденциальности и безопасности. Смоделируй угрозы и протестируй сценарии безопасности.
 
 ## Проверки
 
-- Eligibility, duplicate/concurrent reports, false public disclosure, block propagation and unblock.
-- Authorization matrix for reporter, accused, unrelated player and every admin role.
-- Retention/redaction/log/analytics/error-report scan of narratives.
-- E2E report/block/no-show and accessibility; ads cannot obscure actions.
+- Допустимость, дублирующиеся и конкурентные жалобы, ложное публичное раскрытие, распространение блокировки и разблокировка.
+- Матрица авторизации для заявителя, обвиняемого, постороннего игрока и каждой административной роли.
+- Сканирование описаний в сроках хранения, сокрытии, логах, аналитике и отчётах об ошибках.
+- Сквозные сценарии жалобы, блокировки и неявки, доступность; реклама не может скрыть действия.
 
 ## Приёмка
 
-No unauthorized case data or public unverified allegation. Every moderation transition is audited and regression-tested.
+Нет несанкционированных данных обращений или публичных неподтверждённых обвинений. Каждый переход модерации
+аудируется и покрыт регрессионным тестом.

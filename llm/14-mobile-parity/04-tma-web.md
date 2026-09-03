@@ -1,17 +1,20 @@
-# Этап 4. React Native/Expo application
+# Этап 4. Приложение React Native/Expo
 
 ## Промпт агенту
 
-Ты — senior React Native/Expo engineer. Create `frontend/mobile` and implement the approved parity matrix.
+Ты — старший инженер React Native/Expo. Создай `frontend/mobile` и реализуй утверждённую матрицу паритета.
 
 ## Выполни
 
-- Native navigation, email magic-link, secure session storage, onboarding and account management.
-- Native map/list/filter/recommendations, match lifecycle, WebSocket chat, notifications, profile/stats and safety.
-- Reuse shared non-UI packages; build native accessible components rather than wrapping the web app.
-- Handle app background/foreground, reconnect, denied permissions, offline read cache and deep links.
-- Configure development builds and environment separation; do not commit signing credentials.
+- Нативная навигация, magic link по email, безопасное хранение сессии, первичная настройка и управление аккаунтом.
+- Нативные карта, список, фильтры и рекомендации, жизненный цикл матча, чат WebSocket, уведомления, профиль,
+  статистика и безопасность.
+- Повторно используй общие пакеты без UI; создавай нативные доступные компоненты вместо обёртки web-приложения.
+- Обработай переход приложения в фон и обратно, переподключение, отказ в разрешениях, кеш чтения без сети
+  и deep links.
+- Настрой сборки для разработки и разделение окружений; не коммить данные для подписывания.
 
 ## Приёмка
 
-iOS/Android builds launch on supported matrix, core E2E parity passes, and account switch leaves no previous-user cache/token.
+Сборки iOS/Android запускаются на поддерживаемой матрице, основные сквозные проверки паритета проходят,
+а после смены аккаунта не остаются кеш или токен предыдущего пользователя.

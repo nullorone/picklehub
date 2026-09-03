@@ -1,17 +1,18 @@
-# Этап 5. Club verification
+# Этап 5. Проверка клубов
 
 ## Промпт агенту
 
-Ты — multi-tenant authorization SDET. Test clubs end-to-end.
+Ты — SDET многопользовательской авторизации. Протестируй клубы сквозным образом.
 
 ## Проверки
 
-- All membership policies, invite/request races, remove/leave, last owner and ownership transfer.
-- Cross-club authorization/isolation and platform-vs-club role confusion.
-- Recurrence around DST/timezone, retries, edits, cancellation and duplicate worker execution.
-- Club without venues, linked venue merge and historical event preservation.
-- E2E club join → recurring match → confirmed completion.
+- Все политики членства, гонки приглашений и заявок, исключение и выход, последний владелец и передача владения.
+- Межклубная авторизация и изоляция, смешение ролей платформы и клуба.
+- Повторение с учётом летнего времени и часового пояса, повторы, изменения, отмена и дублированный запуск обработчика.
+- Клуб без площадок, слияние связанной площадки и сохранение исторических событий.
+- Сквозной сценарий «вступление в клуб → повторяющийся матч → подтверждённое завершение».
 
 ## Приёмка
 
-No cross-club mutation or duplicate occurrence; club metrics derive from confirmed events. Record matrix/evidence.
+Нет межклубных изменений или дубликатов встреч; клубные метрики вычисляются из подтверждённых событий. Запиши
+матрицу и подтверждения.

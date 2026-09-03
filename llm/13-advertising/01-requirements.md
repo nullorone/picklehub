@@ -1,16 +1,21 @@
-# Этап 1. Advertising requirements
+# Этап 1. Требования к рекламе
 
 ## Промпт агенту
 
-Ты — ad product/privacy analyst. Define monetization inventory with conversion guardrails.
+Ты — продуктовый аналитик рекламы и приватности. Определи рекламный инвентарь с защитой продуктовой конверсии.
 
 ## Выполни
 
-- Stories: campaign/creative/placement targeting, schedule/budget/manual pause, approval, delivery/report and external fallback.
-- Define allowed context/geo dimensions, frequency caps, impression viewability/click rules, fraud filtering and campaign priority.
-- Every screen may register a slot, but critical-action suppression and accessibility are mandatory.
-- Define labeling, consent/legal requirements, retention and product guardrails against match funnel degradation.
+- Сценарии: таргетинг кампании, креатива и рекламного места, расписание, бюджет, ручная приостановка, одобрение,
+  показ, отчёт и резервный внешний источник.
+- Определи разрешённые контекстные и географические параметры, ограничения частоты, правила видимости показа
+  и клика, фильтрацию мошенничества и приоритет кампании.
+- Каждый экран может зарегистрировать место, но при критических действиях реклама обязательно скрывается;
+  также обязательна доступность.
+- Определи маркировку, требования к согласию и законодательству, сроки хранения и продуктовые ограничения,
+  защищающие воронку матчей от ухудшения.
 
 ## Приёмка
 
-No behavioural/sensitive targeting or exact coordinates; an unavailable ad never blocks content/action; external SDK is not selected without terms review.
+Поведенческий и чувствительный таргетинг, а также точные координаты запрещены; недоступная реклама никогда
+не блокирует контент или действие; внешний SDK не выбирается без проверки его условий.

@@ -1,16 +1,19 @@
-# Этап 1. Content requirements
+# Этап 1. Требования к контенту
 
 ## Промпт агенту
 
-Ты — product editor and content rights analyst. Define editorial workflow and reader experience.
+Ты — продуктовый редактор и аналитик прав на контент. Определи редакционный процесс и опыт читателя.
 
 ## Выполни
 
-- Stories: source allowlist, ingest candidate, review/rewrite, draft/schedule/publish/unpublish/archive, preview and revision history.
-- Reader feed/article/category/tag/search/bookmark/share; no public comments.
-- Rights/provenance fields, attribution display, takedown/correction, duplicate detection and source outage behavior.
-- Editorial/admin permissions, analytics without copied personal data and SEO/i18n policy.
+- Сценарии: список разрешённых источников, получение кандидата, проверка и переработка, черновик, планирование,
+  публикация, снятие с публикации и архивирование, предварительный просмотр и история редакций.
+- Лента читателя, статья, категория, тег, поиск, закладка и отправка ссылки; публичных комментариев нет.
+- Поля прав и происхождения, отображение атрибуции, удаление и исправление, обнаружение дубликатов и поведение
+  при недоступности источника.
+- Разрешения редактора и администратора, аналитика без копирования персональных данных и политика SEO/i18n.
 
 ## Приёмка
 
-No candidate auto-publishes; no full external article is stored unless explicit documented license allows it; every derivative keeps source.
+Ни один кандидат не публикуется автоматически; полный текст внешней статьи не хранится без явной
+документированной лицензии; каждый производный материал сохраняет источник.

@@ -1,16 +1,19 @@
-# Этап 4. Profile/statistics UI
+# Этап 4. Интерфейс профиля и статистики
 
 ## Промпт агенту
 
-Ты — senior data-visualization frontend engineer. Реализуй own/public profiles in TMA/web.
+Ты — старший frontend-инженер визуализации данных. Реализуй собственные и публичные профили в TMA и web.
 
 ## Выполни
 
-- Profile edit, preferences/privacy, avatar, external DUPR link and clear self-assessed label.
-- Stats cards/charts/history use accessible text equivalents and confirmed-data timestamps.
-- Show pending/disputed results separately; hide actions/data according to block/privacy response.
-- Add loading/empty/partial/rebuild/error/offline states without fabricated zeros.
+- Изменение профиля, настройки и конфиденциальность, аватар, внешняя ссылка DUPR и ясная отметка самооценки.
+- Карточки, графики и история статистики используют доступные текстовые эквиваленты и время подтверждения данных.
+- Показывай ожидающие и оспоренные результаты отдельно; скрывай действия и данные согласно ответу о блокировке
+  и конфиденциальности.
+- Добавь состояния загрузки, отсутствия данных, частичных данных, перестроения, ошибки и отсутствия сети без
+  выдуманных нулей.
 
 ## Приёмка
 
-Public response cannot be enriched from cached private data; percentages handle zero denominators; TMA/web parity tests pass.
+Публичный ответ нельзя дополнять закрытыми данными из кеша; проценты корректно обрабатывают нулевой знаменатель;
+тесты паритета TMA и web проходят.

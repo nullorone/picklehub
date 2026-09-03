@@ -1,16 +1,19 @@
-# Этап 3. Gamification backend
+# Этап 3. Backend геймификации
 
 ## Промпт агенту
 
-Ты — senior event-processing engineer. Implement ledger, levels, achievements and leaderboards.
+Ты — старший инженер обработки событий. Реализуй реестр начислений, уровни, достижения и таблицы лидеров.
 
 ## Выполни
 
-- Idempotent consumers for eligible confirmed domain events and compensations for overturned outcomes.
-- Deterministic rules engine with versioned global rules and validated club template coefficients.
-- Projection/rebuild jobs, seasonal rollover and opt-in leaderboard snapshots.
-- Abuse caps/rate metrics and admin audit for definition changes; no direct arbitrary XP mutation without audited adjustment entry.
+- Идемпотентные потребители подходящих подтверждённых доменных событий и компенсации для отменённых результатов.
+- Детерминированный движок правил с версионируемыми глобальными правилами и валидируемыми коэффициентами клубных
+  шаблонов.
+- Задачи проецирования и перестроения, смена сезонов и снимки таблиц лидеров с явным согласием участников.
+- Лимиты злоупотреблений, метрики частоты и административный аудит изменений определений; произвольное прямое
+  изменение XP без аудируемой корректирующей записи запрещено.
 
 ## Приёмка
 
-Duplicate/out-of-order events converge; rebuild equals incremental result; club admin cannot affect global XP or another club.
+Дублирующиеся события и события не по порядку сходятся к одному состоянию; перестроение даёт тот же результат,
+что и последовательное обновление; администратор клуба не может влиять на глобальный XP или другой клуб.

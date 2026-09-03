@@ -1,16 +1,19 @@
-# Этап 4. Web admin UI
+# Этап 4. Административный интерфейс web
 
 ## Промпт агенту
 
-Ты — senior operations frontend engineer. Реализуй backoffice только в `frontend/web`.
+Ты — старший frontend-инженер эксплуатации. Реализуй административную панель только в `frontend/web`.
 
 ## Выполни
 
-- Separate protected layout/routes, explicit current role and no admin bundle/navigation in TMA.
-- Case queue/detail/decision, venue candidate compare/merge, user restriction and audit views.
-- Permission-aware UI supplements, but never replaces, backend authorization.
-- Add reason forms, destructive confirmations, stale-case conflict handling, accessible tables/filters and sensitive-data masking.
+- Отдельные защищённые макет и маршруты, явная текущая роль и отсутствие административной сборки и навигации в TMA.
+- Очередь, подробности и решение по обращению, сравнение и слияние площадок-кандидатов, ограничение пользователя
+  и представления аудита.
+- UI с учётом разрешений дополняет, но никогда не заменяет авторизацию backend.
+- Добавь формы причины, подтверждения разрушающих действий, обработку конфликта устаревшего обращения, доступные
+  таблицы и фильтры, маскирование чувствительных данных.
 
 ## Приёмка
 
-Deep links reauthenticate safely, browser history/cache do not expose case narratives after logout, role-specific E2E passes.
+Глубокие ссылки безопасно выполняют повторную аутентификацию, история и кеш браузера не раскрывают описания
+обращений после выхода, сквозные тесты по ролям проходят.

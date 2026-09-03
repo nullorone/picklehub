@@ -1,17 +1,21 @@
-# Этап 4. Shared web game and mobile WebView
+# Этап 4. Общая web-игра и мобильный WebView
 
 ## Промпт агенту
 
-Ты — senior web game engineer. Build one optimized Canvas/WebGL game bundle and safe shells.
+Ты — старший инженер web-игр. Создай единый оптимизированный игровой пакет Canvas/WebGL и безопасные оболочки.
 
 ## Выполни
 
-- Implement deterministic core loop, input abstraction for touch/mouse/keyboard, pause/resume and audio/reduced-motion controls.
-- Integrate session/challenge/result/reward APIs and honest offline/no-reward mode.
-- Host in web/PWA/TMA; mobile WebView uses strict origin/navigation/message allowlist and no auth token in URL.
-- Lazy-load game so core startup bundle is unaffected; enforce performance/memory budgets.
-- Place labelled nonblocking ads only at safe boundaries.
+- Реализуй детерминированный основной цикл, абстракцию ввода для сенсорного экрана, мыши и клавиатуры, паузу
+  и продолжение, настройки звука и уменьшенной анимации.
+- Интегрируй API сессии, задания, результата и награды, а также честный режим без сети и без наград.
+- Размещай игру в web/PWA/TMA; мобильный WebView использует строгие списки разрешённых источников, навигации
+  и сообщений, а URL не содержит токен аутентификации.
+- Загружай игру отложенно, чтобы она не влияла на основной стартовый пакет; соблюдай бюджеты производительности
+  и памяти.
+- Размещай маркированную неблокирующую рекламу только в безопасных точках.
 
 ## Приёмка
 
-One game build works across clients, WebView cannot navigate arbitrary origins, and closing/crashing game returns safely to product.
+Одна сборка игры работает во всех клиентах, WebView не может переходить к произвольным источникам, а закрытие
+или сбой игры безопасно возвращает в продукт.

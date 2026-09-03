@@ -1,16 +1,20 @@
-# Этап 5. Advertising verification
+# Этап 5. Проверка рекламы
 
 ## Промпт агенту
 
-Ты — ad quality/privacy SDET. Verify delivery, safety and funnel guardrails.
+Ты — SDET по качеству рекламы и приватности. Проверь показ, безопасность и защитные ограничения воронки.
 
 ## Проверки
 
-- Eligibility, priority, schedule/timezone, cap boundaries, concurrent impression, click replay/fraud and pause propagation.
-- Role/creative approval, redirect allowlist, XSS/media validation and provider no-fill/failure.
-- Every screen placement plus automated assertion that critical controls remain visible/actionable.
-- Payload/privacy scan, accessibility and experiment comparing match funnel guardrails.
+- Соответствие условиям, приоритет, расписание и часовой пояс, границы ограничений, параллельные показы, повтор
+  и мошенничество с кликами, распространение приостановки.
+- Одобрение роли и креатива, список разрешённых перенаправлений, XSS, валидация медиа, отсутствие заполнения
+  и сбой провайдера.
+- Рекламные места на каждом экране и автоматическая проверка того, что критические элементы управления остаются
+  видимыми и доступными для действий.
+- Проверка данных запросов и приватности, доступность и эксперимент, сопоставляющий защитные метрики воронки матчей.
 
 ## Приёмка
 
-No sensitive targeting or blocking placement; aggregate reports reconcile within documented semantics; external fallback remains disabled without evidence.
+Нет чувствительного таргетинга или блокирующих рекламных мест; агрегированные отчёты сходятся в рамках
+документированной семантики; внешний резервный источник остаётся отключённым без подтверждений.

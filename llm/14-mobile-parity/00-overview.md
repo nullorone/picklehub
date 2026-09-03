@@ -1,5 +1,8 @@
-# React Native mobile parity: контекст
+# Функциональный паритет React Native: контекст
 
-Mobile начинается после стабилизации TMA/web Match MVP API. Используется React Native/Expo и общие API/domain/validation/i18n/analytics packages, но native UI/navigation/storage/push остаются platform-specific.
+Мобильная разработка начинается после стабилизации API Match MVP для TMA/web. Используются React Native/Expo
+и общие пакеты API, предметной области, валидации, i18n и аналитики, но нативные интерфейс, навигация, хранилище
+и push-уведомления остаются платформенными.
 
-Первый mobile release обеспечивает parity для identity, onboarding, venues, matches, chat, notifications, profile and safety. Admin backoffice не переносится.
+Первый мобильный релиз обеспечивает функциональный паритет идентификации, первичной настройки, площадок,
+матчей, чата, уведомлений, профиля и безопасности. Административный backoffice не переносится.

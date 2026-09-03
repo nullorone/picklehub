@@ -1,17 +1,20 @@
-# Этап 5. Identity verification
+# Этап 5. Проверка идентификации
 
 ## Промпт агенту
 
-Ты — application security/SDET engineer. Проверь identity end-to-end.
+Ты — инженер по безопасности приложений и SDET. Проверь идентификацию сквозным образом.
 
 ## Проверки
 
-- Contract tests всех auth ошибок без email enumeration.
-- Replay, expiry, tampered Telegram hash, concurrent magic-link consume, refresh rotation/reuse и account-link race.
-- Cookie flags, CSRF/CORS, cache headers, log/analytics/outbox redaction и session revocation.
-- Playwright TMA mock flow и web magic-link/onboarding resume; accessibility и two-timezone cases.
-- Account deletion/export behavior согласно текущим требованиям.
+- Контрактные тесты всех ошибок аутентификации без возможности определить существование электронной почты.
+- Повторное воспроизведение, истечение срока, подделка хеша Telegram, конкурентное использование magic-ссылки,
+  ротация и повторное использование refresh-токена, гонка связывания аккаунтов.
+- Флаги cookie, CSRF/CORS, заголовки кеша, сокрытие чувствительных данных в логах, аналитике и outbox, отзыв сессии.
+- Сценарий TMA с макетом в Playwright и возобновление magic-ссылки и первичной настройки в web; доступность и
+  сценарии с двумя часовыми поясами.
+- Поведение удаления и экспорта аккаунта согласно текущим требованиям.
 
 ## Приёмка
 
-Все threat cases имеют regression tests, production build не содержит fake auth, evidence внесён в AI log.
+Все сценарии угроз имеют регрессионные тесты, рабочая сборка не содержит поддельной аутентификации, подтверждения
+внесены в журнал AI-разработки.

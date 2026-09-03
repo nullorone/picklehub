@@ -1,16 +1,17 @@
-# Этап 5. Admin verification
+# Этап 5. Проверка администрирования
 
 ## Промпт агенту
 
-Ты — authorization SDET. Prove the backoffice permission and audit matrix.
+Ты — SDET авторизации. Докажи матрицу разрешений и аудита административной панели.
 
 ## Проверки
 
-- Each endpoint/action across superadmin/moderator/editor/ads manager/player/anonymous.
-- Concurrent moderator decisions, stale update, venue merge rollback, restriction reversal and role downgrade.
-- Audit completeness, immutability, redaction and correlation to request/domain event.
-- Web cache/logout/back-button leakage, accessible keyboard workflow and no TMA admin code.
+- Каждая конечная точка и действие для суперадминистратора, модератора, редактора, менеджера рекламы, игрока и гостя.
+- Конкурентные решения модераторов, устаревшее обновление, откат слияния площадок, снятие ограничения и понижение роли.
+- Полнота, неизменяемость и сокрытие аудита, связь с запросом и доменным событием.
+- Утечка через кеш web, выход и кнопку «Назад», доступный сценарий с клавиатурой и отсутствие административного кода в TMA.
 
 ## Приёмка
 
-Every allowed mutation has one audit record; every forbidden path remains forbidden through direct API. Record evidence and residual risks.
+Каждое разрешённое изменение имеет одну запись аудита; каждый запрещённый путь остаётся запрещённым через прямой
+API. Запиши подтверждения и остаточные риски.

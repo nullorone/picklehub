@@ -1,16 +1,18 @@
-# Этап 3. Mini-game backend
+# Этап 3. Backend мини-игры
 
 ## Промпт агенту
 
-Ты — game services/abuse engineer. Implement bounded sessions, validation and rewards.
+Ты — инженер игровых сервисов и защиты от злоупотреблений. Реализуй ограниченные сессии, валидацию и награды.
 
 ## Выполни
 
-- Issue nonce/challenge, validate TTL/range/session ownership and consume submission atomically.
-- Apply configurable daily caps, anomaly metrics and audited disable switch; do not build invasive device fingerprinting.
-- Publish idempotent reward event to gamification ledger and support reversal/season boundaries.
-- Add rate limits and load protection isolated from match endpoints.
+- Выдавай nonce и задание, проверяй TTL, диапазон и принадлежность сессии, атомарно обрабатывай отправку.
+- Применяй настраиваемые ежедневные лимиты, метрики аномалий и аудируемый выключатель; не создавай агрессивные
+  цифровые отпечатки устройств.
+- Публикуй идемпотентное событие награды в реестр геймификации и поддерживай отмену и границы сезонов.
+- Добавь ограничения частоты и защиту от нагрузки, изолированные от конечных точек матчей.
 
 ## Приёмка
 
-Concurrent/replayed/impossible submissions never overgrant; game outage/abuse switch leaves match product healthy.
+Параллельные, повторно воспроизведённые и невозможные отправки никогда не превышают награду; сбой игры
+или включение защиты от злоупотреблений не нарушает работу матчевого продукта.

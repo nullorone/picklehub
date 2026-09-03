@@ -1,17 +1,21 @@
-# Этап 4. Gamification UI
+# Этап 4. Интерфейс геймификации
 
 ## Промпт агенту
 
-Ты — ethical progression frontend engineer. Build understandable progress surfaces.
+Ты — frontend-инженер этичной системы прогресса. Создай понятные экраны прогресса.
 
 ## Выполни
 
-- Global/club levels, XP history/reasons, achievement details and next-level progress.
-- Separate sports statistics/DUPR visually and semantically from gamification.
-- Leaderboard requires explicit opt-in, season context and privacy controls.
-- Club admins configure only allowed template values with preview/version effect.
-- Add accessible non-color indicators, reduced motion and empty/reversal/error states.
+- Глобальные и клубные уровни, история и причины начисления XP, подробности достижений и прогресс до следующего
+  уровня.
+- Визуально и семантически отдели спортивную статистику и DUPR от геймификации.
+- Для таблицы лидеров требуются явное согласие на участие, контекст сезона и настройки приватности.
+- Администраторы клуба настраивают только разрешённые значения шаблонов с предварительным просмотром влияния
+  версии.
+- Добавь доступные индикаторы, не зависящие только от цвета, уменьшенную анимацию и состояния отсутствия данных,
+  отмены начисления и ошибки.
 
 ## Приёмка
 
-No confetti/ads block critical match action; reversed XP is explained; UI never labels XP as skill rating.
+Конфетти и реклама не блокируют критические действия матча; отмена XP объясняется; интерфейс никогда не называет
+XP рейтингом мастерства.

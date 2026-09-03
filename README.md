@@ -1,29 +1,36 @@
 # PickleHub
 
-PickleHub is a prompt-first product specification for a pickleball platform. The first production slice targets Telegram Mini App and web/PWA and helps players discover, assemble, play, and confirm real matches.
+PickleHub — это создаваемая через промпты спецификация продукта для платформы pickleball. Первый production-срез
+ориентирован на Telegram Mini App и web/PWA и помогает игрокам находить, собирать, проводить и подтверждать
+реальные матчи.
 
-The repository is intentionally implemented in stages by AI agents. Start with [`llm/00-project-overview.md`](llm/00-project-overview.md), then execute one prompt at a time in the order listed in [`llm/README.md`](llm/README.md). Application directories are created only by the platform scaffold prompts.
+Репозиторий намеренно реализуется AI-агентами поэтапно. Начните с
+[`llm/00-project-overview.md`](llm/00-project-overview.md), затем выполняйте по одному промпту в порядке,
+указанном в [`llm/README.md`](llm/README.md). Каталоги приложений создаются только промптами каркаса платформы.
 
-## Target architecture
+## Целевая архитектура
 
-- `backend/`: NestJS modular monolith, PostgreSQL/PostGIS, Redis/BullMQ and transactional outbox.
-- `frontend/web/`: React web application, installable PWA and protected admin routes.
+- `backend/`: модульный монолит NestJS, PostgreSQL/PostGIS, Redis/BullMQ и транзакционный outbox.
+- `frontend/web/`: web-приложение React, устанавливаемое PWA и защищённые административные маршруты.
 - `frontend/tg/`: Telegram Mini App.
-- `frontend/mobile/`: React Native/Expo client, implemented after the core API stabilizes.
-- `frontend/packages/`: generated API client and shared domain, validation, i18n, and analytics packages.
-- `llm/`: product context, decision records, and executable feature prompts.
+- `frontend/mobile/`: клиент React Native/Expo, реализуемый после стабилизации основного API.
+- `frontend/packages/`: сгенерированный API-клиент и общие пакеты предметной области, валидации, i18n и аналитики.
+- `llm/`: продуктовый контекст, записи решений и исполняемые промпты фич.
 
-The application directories above do not exist in the prompt-only baseline. Do not create them manually or implement a later feature ahead of its prompt.
+В исходном состоянии, содержащем только промпты, перечисленных каталогов приложений нет. Не создавайте их
+вручную и не реализуйте последующую фичу раньше её промпта.
 
-## Working rules
+## Правила работы
 
-1. Read the project overview and the current feature's `00-overview.md` before executing a prompt.
-2. Complete the feature vertically: requirements, contracts/data, backend, TMA/web, verification.
-3. Treat root `openapi.yaml` and `asyncapi.yaml` as contract sources of truth after the scaffold creates them.
-4. Record meaningful decisions in `llm/_docs/adr/` and actual execution evidence in `llm/_docs/ai-development-log.md`.
-5. Do not claim checks, deployments, legal compliance, data licenses, or external integrations without evidence.
+1. Перед выполнением промпта прочитайте обзор проекта и `00-overview.md` текущей фичи.
+2. Завершайте фичу вертикально: требования, контракты и данные, backend, TMA/web, проверка.
+3. После создания каркаса считайте корневые `openapi.yaml` и `asyncapi.yaml` источниками истины для контрактов.
+4. Записывайте значимые решения в `llm/_docs/adr/`, а фактические подтверждения выполнения —
+   в `llm/_docs/ai-development-log.md`.
+5. Не заявляйте о проверках, развёртываниях, правовом соответствии, лицензиях на данные или внешних интеграциях
+   без подтверждений.
 
-## Prompt documentation checks
+## Проверки документации промптов
 
 ```bash
 npm install
@@ -31,4 +38,4 @@ npm run format:check
 npm run docs:check
 ```
 
-Application commands will be added by `llm/01-platform-foundation/`.
+Команды приложений будут добавлены на этапе `llm/01-platform-foundation/`.

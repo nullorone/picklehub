@@ -1,17 +1,18 @@
-# Этап 4. Tournament UI
+# Этап 4. Интерфейс турниров
 
 ## Промпт агенту
 
-Ты — senior tournament frontend engineer. Build participant and organizer flows in TMA/web.
+Ты — старший frontend-инженер турниров. Создай сценарии участника и организатора в TMA и web.
 
 ## Выполни
 
-- Discovery/details/register as player/pair/partner-needed, waitlist/check-in/payment mark visibility.
-- Wizard exposes only parameters valid for chosen preset and previews format/rules before publish.
-- Organizer dashboard: entrants, seed, rounds, courts, scores/corrections, pause/recovery and standings.
-- Format-specific visualization uses shared accessible tables/lists; bracket graphics have text alternative.
-- Handle stale version/conflicting scorer/offline/result correction explicitly.
+- Поиск, подробности, регистрация игроком, парой или с поиском партнёра, очередь, отметка прибытия и видимость оплаты.
+- Мастер показывает только допустимые параметры выбранной предустановки и предварительно показывает формат и правила.
+- Панель организатора: участники, посев, раунды, корты, счёт и исправления, пауза и восстановление, таблица.
+- Визуализация формата использует общие доступные таблицы и списки; у турнирной сетки есть текстовая альтернатива.
+- Явно обрабатывай устаревшую версию, конфликт вводящих счёт, отсутствие сети и исправление результата.
 
 ## Приёмка
 
-All eight formats can be created and completed through UI; no unsupported parameter combination is sent; TMA remains usable on narrow screens.
+Все восемь форматов можно создать и завершить через UI; неподдерживаемые сочетания параметров не отправляются;
+TMA остаётся удобным на узких экранах.

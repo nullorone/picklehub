@@ -1,17 +1,20 @@
-# Этап 3. Match backend
+# Этап 3. Backend матчей
 
 ## Промпт агенту
 
-Ты — senior transactional NestJS engineer. Реализуй match application/domain module.
+Ты — старший инженер транзакционных систем на NestJS. Реализуй прикладной и доменный модуль матчей.
 
 ## Выполни
 
-- Реализуй state machine и authorization организатора/участника, не помещая правила в controller.
-- Последнее место, approval и waitlist promotion защищай database transaction/constraints; auto FIFO promotion идемпотентна.
-- Discovery использует PostGIS, cursor pagination и deterministic recommendation score с reason codes.
-- Result proposal/confirmation/dispute атомарно создаёт outbox; stats update потребляет confirmed event один раз.
-- Используй injectable clock, structured audit и configurable cutoffs.
+- Реализуй конечный автомат и авторизацию организатора и участника, не помещая правила в контроллер.
+- Последнее место, одобрение и продвижение из очереди защищай транзакцией и ограничениями базы данных;
+  автоматическое продвижение в порядке FIFO идемпотентно.
+- Поиск использует PostGIS, курсорную пагинацию и детерминированную оценку рекомендации с кодами причин.
+- Предложение, подтверждение и оспаривание результата атомарно создают событие outbox; обновление статистики
+  обрабатывает подтверждённое событие один раз.
+- Используй внедряемые часы, структурированный аудит и настраиваемые предельные сроки.
 
 ## Приёмка
 
-Create/join/cancel/result races детерминированы; failed promotion не теряет очередь; disputed result не публикует completion. Запусти repeated concurrency tests.
+Гонки создания, вступления, отмены и результата детерминированы; неудачное продвижение не теряет очередь;
+оспоренный результат не публикует завершение. Запусти повторяющиеся тесты конкурентного выполнения.

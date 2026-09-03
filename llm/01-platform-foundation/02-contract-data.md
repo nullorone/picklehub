@@ -1,17 +1,22 @@
-# Этап 2. Базовые contracts и data conventions
+# Этап 2. Базовые контракты и правила представления данных
 
 ## Промпт агенту
 
-Ты — API/data architect. Прочитай принятые ADR и создай минимальные root `openapi.yaml` и `asyncapi.yaml` до scaffold.
+Ты — архитектор API и данных. Прочитай принятые ADR и создай минимальные корневые `openapi.yaml` и
+`asyncapi.yaml` до создания каркаса.
 
 ## Выполни
 
-1. Определи `/v1`, common error envelope, pagination/cursor, RFC 3339 UTC, locale, idempotency и request ID headers.
-2. В OpenAPI добавь только `GET /health/live` и `/health/ready`; product endpoints появятся в feature-prompts.
-3. В AsyncAPI определи versioned event envelope и базовую WebSocket authentication/error модель без бизнес-событий.
-4. Настрой lint, breaking-change check, mock/codegen conventions и документацию.
-5. Опиши PostgreSQL UUID/timestamp/soft-delete/audit conventions и PostGIS/Redis ownership.
+1. Определи `/v1`, общий конверт ошибки, пагинацию и курсор, UTC по RFC 3339, локаль, идемпотентность и заголовки
+   с идентификатором запроса.
+2. В OpenAPI добавь только `GET /health/live` и `/health/ready`; продуктовые конечные точки появятся в промптах
+   функций.
+3. В AsyncAPI определи версионируемый конверт событий и базовую модель аутентификации и ошибок WebSocket без
+   бизнес-событий.
+4. Настрой линтинг, проверку несовместимых изменений, правила макетов и генерации кода, а также документацию.
+5. Опиши правила UUID, временных меток, мягкого удаления и аудита в PostgreSQL, а также владение PostGIS и Redis.
 
 ## Приёмка и проверка
 
-Contracts валидны, operation/message IDs уникальны, generated types воспроизводимы, Prisma details не протекают наружу. Запусти contract lint/mock smoke и обнови AI log.
+Контракты валидны, идентификаторы операций и сообщений уникальны, сгенерированные типы воспроизводимы, детали
+Prisma не выходят наружу. Запусти линтинг контрактов и быструю проверку макетов, затем обнови журнал AI-разработки.

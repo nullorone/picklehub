@@ -1,16 +1,21 @@
-# Этап 1. Production SLO and rollout requirements
+# Этап 1. Требования к production SLO и выпуску
 
 ## Промпт агенту
 
-Ты — startup SRE/product operations lead. Define measurable readiness without invented guarantees.
+Ты — руководитель SRE и продуктовой эксплуатации стартапа. Определи измеримую готовность без выдуманных гарантий.
 
 ## Выполни
 
-- Classify critical journeys and propose evidence-based SLI/SLO/error-budget targets for auth, discovery, join, chat and completion.
-- Define capacity assumptions, RTO/RPO, retention/deletion/export, incident severity/on-call and provider outage degradation.
-- Define staged rollout: internal, invited Telegram communities, pilot gate, wider release and rollback triggers.
-- Add legal/provider gates for РФ data residency, 152-ФЗ, age risk, OSM/maps, email, content and advertising.
+- Классифицируй критические сценарии и предложи основанные на данных цели SLI, SLO и бюджета ошибок для
+  аутентификации, поиска, вступления, чата и завершения матча.
+- Определи предположения о мощности, RTO/RPO, хранение, удаление и экспорт, серьёзность инцидентов и дежурства,
+  а также деградацию при сбое провайдера.
+- Определи поэтапный выпуск: внутренний, для приглашённых Telegram-сообществ, контрольный этап пилота,
+  более широкий релиз и условия отката.
+- Добавь правовые и провайдерские контрольные условия для локализации данных в РФ, 152-ФЗ, возрастного риска,
+  OSM и карт, email, контента и рекламы.
 
 ## Приёмка
 
-Unknown baselines are marked measurement-required, not fabricated. No public launch passes with unresolved critical security/legal/provider gate.
+Неизвестные исходные показатели помечаются как требующие измерения, а не выдумываются. Публичный запуск
+невозможен при нерешённом критическом условии безопасности, права или провайдера.

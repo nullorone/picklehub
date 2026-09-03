@@ -1,16 +1,20 @@
-# Этап 1. Trust & safety requirements
+# Этап 1. Требования к доверию и безопасности
 
 ## Промпт агенту
 
-Ты — marketplace trust & safety analyst. Опиши безопасный и проверяемый moderation lifecycle.
+Ты — аналитик доверия и безопасности маркетплейса. Опиши безопасный и проверяемый жизненный цикл модерации.
 
 ## Выполни
 
-- User stories: post-match review, no-show report, safety/content/venue/result report, block/unblock, case status and appeal/contact path.
-- Определи eligibility windows, duplicate reports, evidence minimization, accused-user notice and emergency disclaimer/escalation.
-- Раздели private moderation signals и публичную aggregate reputation; автоматические sanctions только по explicit approved policy.
-- Определи retention, access, audit and metrics without exposing victim/report text.
+- Пользовательские истории: отзыв после матча, сообщение о неявке, жалоба на безопасность, контент, площадку или
+  результат, блокировка и разблокировка, статус обращения и путь апелляции или связи.
+- Определи сроки допустимости, дублирующиеся жалобы, минимизацию доказательств, уведомление обвиняемого и
+  предупреждение и эскалацию для экстренных ситуаций.
+- Раздели закрытые сигналы модерации и публичную агрегированную репутацию; автоматические санкции применяй только
+  по явно одобренной политике.
+- Определи хранение, доступ, аудит и метрики без раскрытия текста пострадавшего или жалобы.
 
 ## Приёмка
 
-Неподтверждённая жалоба не публикуется как факт; blocked users cannot directly interact; moderation never claims emergency service.
+Неподтверждённая жалоба не публикуется как факт; заблокированные пользователи не могут напрямую взаимодействовать;
+модерация никогда не выдаёт себя за экстренную службу.

@@ -1,17 +1,22 @@
-# Этап 4. Client delivery, CI/CD and release
+# Этап 4. Доставка клиентов, CI/CD и релиз
 
 ## Промпт агенту
 
-Ты — senior frontend platform/DevOps engineer. Build safe CI/CD and deploy-ready client artifacts.
+Ты — старший инженер frontend-платформы и DevOps. Создай безопасный CI/CD и готовые к развёртыванию
+клиентские артефакты.
 
 ## Выполни
 
-- CI jobs for contracts, affected workspaces, PostgreSQL/Redis integration, E2E, Docker, dependency/license/secret scans and artifact provenance.
-- Deploy web/PWA/TMA as separate versioned artifacts with exact API origins, CSP/security headers, cache strategy and source-map policy.
-- Configure Telegram production environment/deep links only from documented values; no dev mocks/TON demo.
-- Add canary/rollback, cache purge, frontend-backend compatibility and smoke scripts.
-- Prepare mobile pipeline only if feature `14` is complete; do not publish stores automatically.
+- Задачи CI для контрактов, затронутых рабочих пространств, интеграции PostgreSQL/Redis, сквозных проверок,
+  Docker, сканирования зависимостей, лицензий и секретов, а также происхождения артефактов.
+- Развёртывай web/PWA/TMA как отдельные версионируемые артефакты с точными источниками API, CSP и заголовками
+  безопасности, стратегией кеша и политикой source map.
+- Настраивай production-окружение Telegram и deep links только из документированных значений; без заглушек
+  разработки и демонстрации TON.
+- Добавь канареечный выпуск и откат, очистку кеша, совместимость frontend и backend и smoke-скрипты.
+- Готовь мобильный конвейер, только если фича `14` завершена; не публикуй приложение в магазинах автоматически.
 
 ## Приёмка
 
-PR cannot deploy, failed required check blocks release, artifact matches tested commit, rollback is rehearsed, production config has no wildcard CORS/secrets.
+PR не может выполнять развёртывание, провал обязательной проверки блокирует релиз, артефакт соответствует
+проверенному коммиту, откат отрепетирован, в production-конфигурации нет CORS с подстановочными знаками и секретов.

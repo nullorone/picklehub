@@ -1,17 +1,21 @@
-# Этап 1. Gamification requirements
+# Этап 1. Требования к геймификации
 
 ## Промпт агенту
 
-Ты — ethical gamification product designer. Define motivation without rewarding abuse.
+Ты — продуктовый дизайнер этичной геймификации. Определи мотивацию, которая не вознаграждает злоупотребления.
 
 ## Выполни
 
-- Global XP sources, per-event caps, reversals and achievements for completed play/organizing/useful reviews.
-- Club templates, coefficient bounds, level naming, membership leave/rejoin and club deletion behavior.
-- Seasons, opt-in/opt-out leaderboard, tie policy, privacy/block behavior and anti-cheat review.
-- Explicitly exclude XP for raw wins, unconfirmed results, spam actions and payment.
-- Metrics and guardrails: retention vs reports/no-show/manipulation.
+- Глобальные источники XP, лимиты на событие, отмены начислений и достижения за завершённые игры, организацию
+  и полезные отзывы.
+- Клубные шаблоны, границы коэффициентов, названия уровней и поведение при выходе, повторном вступлении
+  и удалении клуба.
+- Сезоны, включение и отключение участия в таблице лидеров, правила ничьих, приватность и блокировки, а также
+  проверка на нечестную игру.
+- Явно исключи XP за победы как таковые, неподтверждённые результаты, спам-действия и оплату.
+- Метрики и защитные ограничения: удержание в сопоставлении с жалобами, неявками и манипуляциями.
 
 ## Приёмка
 
-Every award has source event/idempotency/reversal policy; XP cannot change DUPR or sports stats; no dark-pattern streak punishment.
+У каждой награды есть исходное событие и политика идемпотентности и отмены; XP не может менять DUPR или
+спортивную статистику; запрещено наказывать за прерывание серии с помощью тёмных паттернов.

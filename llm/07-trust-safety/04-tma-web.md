@@ -1,16 +1,19 @@
-# Этап 4. Trust & safety UI
+# Этап 4. Интерфейс доверия и безопасности
 
 ## Промпт агенту
 
-Ты — safety-focused frontend engineer. Реализуй player safety flows without dark patterns.
+Ты — frontend-инженер со специализацией на безопасности. Реализуй сценарии безопасности игрока без тёмных паттернов.
 
 ## Выполни
 
-- Post-match review/no-show, contextual report, block confirmation, own case receipt and clear emergency disclaimer.
-- Minimize free text, explain who sees it, avoid promising outcome/time, and protect sensitive content from analytics/error capture.
-- Blocked state removes interaction affordances but preserves necessary match/history facts.
-- Accessible validation, focus management, offline/error/success and duplicate-submit handling.
+- Отзыв и отметка неявки после матча, контекстная жалоба, подтверждение блокировки, квитанция собственного
+  обращения и ясное предупреждение об экстренных ситуациях.
+- Минимизируй произвольный текст, объясняй, кто его видит, не обещай результат или срок и защищай чувствительный
+  контент от аналитики и отчётов об ошибках.
+- Заблокированное состояние убирает возможности взаимодействия, но сохраняет необходимые факты матча и истории.
+- Доступная валидация, управление фокусом, состояния без сети, ошибки и успеха, обработка повторной отправки.
 
 ## Приёмка
 
-Critical report action is never covered by ads; text not persisted beyond needed form/request; TMA/web behavior matches backend policy.
+Критически важное действие подачи жалобы никогда не закрывается рекламой; текст не хранится дольше, чем нужно
+форме и запросу; поведение TMA и web соответствует политике backend.

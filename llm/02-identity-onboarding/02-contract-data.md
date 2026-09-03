@@ -1,16 +1,20 @@
-# Этап 2. Identity contracts и данные
+# Этап 2. Контракты идентификации и данные
 
 ## Промпт агенту
 
-Ты — API/security architect. Добавь identity/onboarding в OpenAPI и data model.
+Ты — архитектор API и безопасности. Добавь идентификацию и первичную настройку в OpenAPI и модель данных.
 
 ## Выполни
 
-- Endpoints: Telegram exchange, magic-link request/consume, refresh/logout/logout-all, current user, identity links, onboarding read/update/complete.
-- Модели: `User`, `Identity`, `Session`, `MagicLink`, `Consent`, `PlayerProfileDraft`; unique provider subject/email normalization и token hashes.
-- Определи cookie/mobile token transport, CSRF/CORS, idempotency, expiry configuration, rate limits и stable errors.
-- Domain events не содержат raw init data, email, link или token.
+- Конечные точки: обмен данных Telegram, запрос и использование magic-ссылки, обновление сессии, выход, выход на
+  всех устройствах, текущий пользователь, связи учётных данных, чтение, обновление и завершение первичной настройки.
+- Модели: `User`, `Identity`, `Session`, `MagicLink`, `Consent`, `PlayerProfileDraft`; уникальный идентификатор
+  пользователя у провайдера, нормализация электронной почты и хеши токенов.
+- Определи передачу токенов через cookie и мобильное приложение, CSRF/CORS, идемпотентность, настройку срока
+  действия, ограничения частоты и стабильные ошибки.
+- Доменные события не содержат исходных данных инициализации, электронной почты, ссылки или токена.
 
 ## Приёмка
 
-OpenAPI lint/codegen проходят; sensitive responses имеют `no-store`; schema и constraints предотвращают duplicate identity. Обнови domain model/ADR/AI log.
+Линтинг OpenAPI и генерация кода проходят; чувствительные ответы имеют `no-store`; схема и ограничения
+предотвращают дублирование учётных данных. Обнови доменную модель, ADR и журнал AI-разработки.

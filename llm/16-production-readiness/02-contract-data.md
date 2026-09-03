@@ -1,17 +1,22 @@
-# Этап 2. Operations contracts and migrations
+# Этап 2. Эксплуатационные контракты и миграции
 
 ## Промпт агенту
 
-Ты — production database/API reliability architect. Audit contracts and migration strategy.
+Ты — архитектор надёжности production-базы данных и API. Проведи аудит контрактов и стратегии миграций.
 
 ## Выполни
 
-- Add/version health, readiness and metrics interfaces without exposing internals/secrets.
-- Define backward-compatible API/event rollout, deprecation and generated-client compatibility checks.
-- Review every migration for expand/migrate/contract, lock/runtime risk, rollback/forward-fix and backup requirement.
-- Define data retention/deletion/export jobs and object/Redis/PostgreSQL consistency repair.
-- Create provider-neutral production env matrix and secret ownership/rotation plan.
+- Добавь и версионируй интерфейсы проверки работоспособности, готовности и метрик, не раскрывая внутренние
+  сведения или секреты.
+- Определи обратно совместимый выпуск API и событий, вывод из эксплуатации и проверки совместимости
+  сгенерированного клиента.
+- Проверь каждую миграцию на этапы расширения, переноса и сжатия, риски блокировок и времени выполнения,
+  откат или исправление вперёд и требования к резервной копии.
+- Определи задачи хранения, удаления и экспорта данных, а также восстановления согласованности объектного
+  хранилища, Redis и PostgreSQL.
+- Создай независимую от провайдера матрицу production-окружений и план владения и ротации секретов.
 
 ## Приёмка
 
-One-version rolling compatibility is documented/tested where deployment topology requires it; destructive migration has explicit approved runbook.
+Совместимость соседних версий при поэтапном обновлении документирована и проверена там, где этого требует
+топология развёртывания; для разрушающей миграции есть явная утверждённая инструкция.

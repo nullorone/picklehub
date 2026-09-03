@@ -1,28 +1,32 @@
-# Architecture baseline
+# Базовая архитектура
 
-## System shape
+## Структура системы
 
 ```mermaid
 flowchart LR
-    U[Player] --> TG[Telegram Mini App]
-    U --> WEB[Web / PWA]
-    U --> MOB[React Native later]
-    A[Platform staff] --> WEB
-    TG --> API[NestJS modular monolith]
+    U[Игрок] --> TG[Telegram Mini App]
+    U --> WEB[Веб / PWA]
+    U --> MOB[React Native позднее]
+    A[Сотрудник платформы] --> WEB
+    TG --> API[Модульный монолит NestJS]
     WEB --> API
     MOB --> API
     API --> PG[(PostgreSQL + PostGIS)]
     API --> REDIS[(Redis + BullMQ)]
-    API --> S3[(S3-compatible storage)]
-    API --> EXT[Provider adapters]
+    API --> S3[(S3-совместимое хранилище)]
+    API --> EXT[Адаптеры провайдеров]
 ```
 
-## Boundaries
+## Границы
 
-- HTTP controllers and WebSocket gateways depend on application use cases, not Prisma directly.
-- Domain modules own their invariants and publish versioned domain events into the transactional outbox.
-- Outbox dispatchers enqueue jobs only after database commit; consumers are idempotent by event ID.
-- Integrations live behind ports for Telegram, email, OSM/import, geocoding/maps, DUPR, advertising, analytics and object storage.
-- `frontend/packages/api-client` is generated from OpenAPI. Shared domain helpers must not import browser, Telegram or React Native APIs.
+- HTTP-контроллеры и шлюзы WebSocket зависят от прикладных сценариев, а не напрямую от Prisma.
+- Доменные модули отвечают за свои инварианты и публикуют версионируемые доменные события в транзакционный outbox.
+- Диспетчеры outbox ставят задания в очередь только после фиксации транзакции в базе данных; потребители
+  идемпотентны по идентификатору события.
+- Интеграции скрыты за портами для Telegram, электронной почты, импорта OSM, геокодирования и карт, DUPR, рекламы,
+  аналитики и объектного хранилища.
+- `frontend/packages/api-client` генерируется из OpenAPI. Общие доменные вспомогательные функции не должны
+  импортировать API браузера, Telegram или React Native.
 
-Feature prompts must refine this document with containers, module dependencies, data flow, failure modes and deployment topology.
+Промпты функций должны дополнять этот документ контейнерами, зависимостями модулей, потоками данных, сценариями
+сбоев и топологией развёртывания.

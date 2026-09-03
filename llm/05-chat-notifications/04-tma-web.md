@@ -1,16 +1,21 @@
-# Этап 4. Chat/notification UI
+# Этап 4. Интерфейс чата и уведомлений
 
 ## Промпт агенту
 
-Ты — senior realtime frontend engineer. Реализуй match chat и notification center в TMA/web.
+Ты — старший frontend-инженер систем реального времени. Реализуй чат матча и центр уведомлений в TMA и web.
 
 ## Выполни
 
-- Cursor history, optimistic send with client ID, reconnect/catch-up, duplicate suppression and failed-message retry.
-- Distinguish user/system messages, dates/timezone, blocked/reported/deleted states; no file affordances.
-- Notification center, unread badges and per-channel/category preferences with Telegram/email link guidance.
-- Accessible live-region without announcing every reconnect; offline draft stays local and is never shown as delivered.
+- История по курсору, оптимистичная отправка с клиентским ID, переподключение и догрузка, подавление дубликатов и
+  повтор неудавшегося сообщения.
+- Различай пользовательские и системные сообщения, даты и часовые пояса, заблокированное, отмеченное жалобой и
+  удалённое состояния; не добавляй элементы для файлов.
+- Центр уведомлений, индикаторы непрочитанного и настройки по каналам и категориям с подсказкой о привязке
+  Telegram и электронной почты.
+- Доступная область живых обновлений без объявления каждого переподключения; черновик без сети остаётся локальным
+  и никогда не показывается доставленным.
 
 ## Приёмка
 
-Reconnect does not lose/reorder visible messages; stale auth prompts re-login safely; secrets/text never enter analytics or console.
+Переподключение не теряет и не меняет порядок видимых сообщений; устаревшая аутентификация безопасно предлагает
+повторный вход; секреты и текст никогда не попадают в аналитику или консоль.

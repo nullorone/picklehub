@@ -1,16 +1,19 @@
-# Этап 3. Trust & safety backend
+# Этап 3. Backend доверия и безопасности
 
 ## Промпт агенту
 
-Ты — senior marketplace safety engineer. Реализуй reports, blocks and moderation preparation.
+Ты — старший инженер безопасности маркетплейса. Реализуй жалобы, блокировки и подготовку модерации.
 
 ## Выполни
 
-- Enforce post-match eligibility and one effective review/report per policy; validate categories before free text.
-- Block takes effect immediately in discovery, invites, join requests and direct chat while preserving historical/audit records.
-- Build case creation/assignment state machine, restricted repository access, audit and safe notifications.
-- Reputation projection uses only approved signals and can be rebuilt/overturned.
+- Обеспечь допустимость после матча и один эффективный отзыв или жалобу согласно политике; валидируй категории до
+  произвольного текста.
+- Блокировка немедленно действует в поиске, приглашениях, заявках на вступление и прямом чате, сохраняя историю и аудит.
+- Создай конечный автомат создания и назначения обращений, ограниченный доступ к репозиторию, аудит и безопасные
+  уведомления.
+- Проекция репутации использует только одобренные сигналы и может быть перестроена или отменена.
 
 ## Приёмка
 
-Concurrent reports do not duplicate case effect; moderator data inaccessible to players; block rules apply across modules. Run privacy/integration tests.
+Конкурентные жалобы не дублируют эффект обращения; данные модератора недоступны игрокам; правила блокировки
+действуют во всех модулях. Запусти тесты конфиденциальности и интеграционные тесты.

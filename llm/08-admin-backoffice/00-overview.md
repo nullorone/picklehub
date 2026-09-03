@@ -1,5 +1,8 @@
-# Admin backoffice: контекст
+# Административная панель: контекст
 
-Web backoffice обслуживает users, reports, venues, content, advertising and audit. Match MVP требует минимум user lookup, moderation cases, venue candidates and audit; content/ads screens расширяются соответствующими feature prompts.
+Административная панель web обслуживает пользователей, жалобы, площадки, контент, рекламу и аудит. MVP матчей
+требует как минимум поиска пользователя, обращений модерации, площадок-кандидатов и аудита; экраны контента и
+рекламы расширяются соответствующими промптами функций.
 
-Platform roles: `SUPERADMIN`, `MODERATOR`, `EDITOR`, `ADS_MANAGER`. Permissions фиксированы кодом, а не пользовательским role builder.
+Роли платформы: `SUPERADMIN`, `MODERATOR`, `EDITOR`, `ADS_MANAGER`. Разрешения фиксированы кодом, а не
+пользовательским конструктором ролей.

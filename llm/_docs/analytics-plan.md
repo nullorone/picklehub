@@ -1,23 +1,26 @@
-# Product analytics baseline
+# Базовый план продуктовой аналитики
 
-## Funnel
+## Воронка
 
 1. `app_opened`
 2. `auth_completed`
-3. `onboarding_completed` — activation
-4. `match_created` or `join_requested`
+3. `onboarding_completed` — активация
+4. `match_created` или `join_requested`
 5. `match_roster_completed`
-6. `match_completed_confirmed` — north-star input
-7. `second_match_completed` — retention signal
+6. `match_completed_confirmed` — входные данные для основной метрики
+7. `second_match_completed` — сигнал удержания
 
-## Guardrail metrics
+## Защитные метрики
 
-- time to first match intent and time to fill;
-- join approval and waitlist conversion;
-- cancellation/no-show/dispute/report rates;
-- notification delivery and opt-out rates;
-- venue candidate approval/duplicate rates;
-- D1/D7/D30 return and second-match conversion;
-- chat/report abuse and ad impact on critical conversion.
+- время до первого намерения сыграть матч и время заполнения состава;
+- конверсия подтверждения заявки и очереди ожидания;
+- доли отмен, неявок, споров и жалоб;
+- показатели доставки уведомлений и отказа от них;
+- доли одобренных и дублирующихся площадок-кандидатов;
+- возврат на 1-й, 7-й и 30-й день и конверсия во второй матч;
+- злоупотребления в чате и жалобах, а также влияние рекламы на критически важную конверсию.
 
-Events use opaque user/match IDs, a versioned schema, consent policy and retention limits. Never include email, chat text, auth artifacts, exact coordinates or free-form report content. Feature requirements must define event trigger, properties, deduplication, owner and dashboard use.
+События используют непрозрачные идентификаторы пользователей и матчей, версионируемую схему, политику согласий
+и ограничения срока хранения. Никогда не включайте адрес электронной почты, текст чата, данные аутентификации,
+точные координаты или произвольный текст жалобы. Требования к функции должны определять условие отправки события,
+его свойства, дедупликацию, владельца и применение на панели мониторинга.

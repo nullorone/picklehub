@@ -1,17 +1,22 @@
-# Этап 5. Mobile verification
+# Этап 5. Проверка мобильного приложения
 
 ## Промпт агенту
 
-Ты — mobile SDET/release engineer. Verify parity and production packaging without publishing stores.
+Ты — мобильный SDET и инженер релизов. Проверь паритет и production-упаковку без публикации в магазинах.
 
 ## Проверки
 
-- Automated parity matrix via unit/component and Maestro/Detox E2E on representative iOS/Android.
-- Magic/deep links cold/warm start, secure storage, rotation/logout/delete and account switch.
-- Map/location denied, WebSocket background reconnect, push duplicate/tap routing and offline mutation behavior.
-- Accessibility, font scaling, reduced motion, small screen and performance/crash monitoring hooks.
-- Build artifacts contain no dev URL, mock, source secret or signing material.
+- Автоматизированная матрица паритета через модульные, компонентные и сквозные Maestro/Detox проверки
+  на репрезентативных iOS/Android.
+- Magic link и deep link при холодном и тёплом старте, безопасное хранилище, ротация, выход, удаление
+  и смена аккаунта.
+- Отказ в доступе к карте и местоположению, фоновое переподключение WebSocket, дубликат push-уведомления,
+  маршрутизация нажатия и поведение мутации без сети.
+- Доступность, масштабирование шрифта, уменьшенная анимация, малый экран и точки подключения мониторинга
+  производительности и сбоев.
+- Артефакты сборки не содержат URL среды разработки, заглушки, секреты исходного кода или материалы подписи.
 
 ## Приёмка
 
-All Match MVP stories are pass/explicitly blocked with evidence; store submission remains a separately authorized external action.
+Все сценарии Match MVP пройдены или явно заблокированы с подтверждениями; публикация в магазине остаётся отдельно
+авторизуемым внешним действием.

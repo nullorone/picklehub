@@ -1,16 +1,21 @@
-# Этап 2. Mini-game contracts и reward data
+# Этап 2. Контракты мини-игры и данные наград
 
 ## Промпт агенту
 
-Ты — game backend/API architect. Design session/reward interfaces without trusting client score blindly.
+Ты — архитектор игрового backend и API. Спроектируй интерфейсы сессий и наград, не доверяя безоговорочно
+клиентскому счёту.
 
 ## Выполни
 
-- Endpoints: issue short game session/challenge, submit bounded result, read cosmetics/goals and claim idempotent reward.
-- Models: `GameSession`, `GameResult`, `RewardGrant`, `CosmeticUnlock`, processed challenge/nonce; strict TTL and daily caps.
-- Define signed challenge/result evidence appropriate for casual risk, acknowledging it cannot eliminate a modified client.
-- Events integrate with XP ledger through capped source type; no direct balance mutation.
+- Конечные точки: выдача короткой игровой сессии и задания, отправка ограниченного результата, чтение
+  косметических предметов и целей, идемпотентное получение награды.
+- Модели: `GameSession`, `GameResult`, `RewardGrant`, `CosmeticUnlock`, обработанные задание и nonce; строгий TTL
+  и ежедневные лимиты.
+- Определи подписанное подтверждение задания и результата, соответствующее риску казуальной игры, признавая,
+  что оно не может исключить модифицированный клиент.
+- События интегрируются с реестром XP через ограниченный тип источника; прямого изменения баланса нет.
 
 ## Приёмка
 
-Replay/duplicate submit grants once, expired/impossible result rejects, client bundle contains no signing secret, contracts are platform-neutral.
+Повторное воспроизведение или дублирующая отправка выдаёт награду один раз, просроченный или невозможный результат
+отклоняется, клиентский пакет не содержит секрета подписи, контракты не зависят от платформы.

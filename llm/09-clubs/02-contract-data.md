@@ -1,16 +1,18 @@
-# Этап 2. Club contracts и данные
+# Этап 2. Контракты клубов и данные
 
 ## Промпт агенту
 
-Ты — multi-tenant API/data architect. Add clubs without creating separate tenant databases.
+Ты — архитектор многопользовательских API и данных. Добавь клубы без отдельных баз данных арендаторов.
 
 ## Выполни
 
-- OpenAPI discovery/details/CRUD, membership request/invite/role/leave, venue links and recurring series/occurrences.
-- Models: `Club`, `ClubMembership`, `ClubInvitation`, `ClubVenue`, `RecurringMatchRule`, occurrence source link.
-- Constraints protect unique active membership, last owner and idempotent recurrence generation in UTC with explicit local timezone/DST policy.
-- Scoped authorization and events include club ID, not sensitive member details.
+- OpenAPI: поиск, подробности и CRUD; заявка, приглашение, роль и выход; связи площадок, повторяющиеся серии и встречи.
+- Модели: `Club`, `ClubMembership`, `ClubInvitation`, `ClubVenue`, `RecurringMatchRule`, ссылка на источник встречи.
+- Ограничения защищают уникальное активное членство, последнего владельца и идемпотентную генерацию повторений в
+  UTC с явной политикой локального часового пояса и перехода на летнее время.
+- Авторизация и события в рамках клуба содержат ID клуба, а не чувствительные данные участника.
 
 ## Приёмка
 
-Contracts/migrations handle club without venue, ownership transfer and DST recurrence deterministically. Generated client passes.
+Контракты и миграции детерминированно обрабатывают клуб без площадки, передачу владения и повторение при переходе
+на летнее время. Сгенерированный клиент проходит проверки.

@@ -1,16 +1,21 @@
-# Этап 2. Advertising contracts и data model
+# Этап 2. Контракты рекламы и модель данных
 
 ## Промпт агенту
 
-Ты — ad serving/API architect. Design direct inventory and provider-neutral fallback.
+Ты — архитектор показа рекламы и API. Спроектируй прямой инвентарь и независимый от провайдера резервный источник.
 
 ## Выполни
 
-- Client decision endpoint receives coarse context and placement, returns labelled creative or no-fill; click uses safe redirect/receipt.
-- Admin endpoints cover campaigns, creatives, placements, targeting, approval, pause and aggregate reports.
-- Models: `Campaign`, `Creative`, `Placement`, `TargetRule`, `DeliveryCounter`, `AdDeliveryEvent`; no raw movement/event profile.
-- Idempotent impression/click tokens, TTL, fraud limits and aggregate retention; event contracts exclude auth/PII.
+- Клиентская конечная точка выбора получает обобщённый контекст и рекламное место, возвращает маркированный
+  креатив или отсутствие заполнения; клик использует безопасное перенаправление и квитанцию.
+- Административные конечные точки охватывают кампании, креативы, рекламные места, таргетинг, одобрение,
+  приостановку и агрегированные отчёты.
+- Модели: `Campaign`, `Creative`, `Placement`, `TargetRule`, `DeliveryCounter`, `AdDeliveryEvent`; без сырых
+  профилей перемещений или событий.
+- Идемпотентные токены показа и клика, TTL, ограничения мошенничества и сроки хранения агрегатов; контракты
+  событий исключают данные аутентификации и персональные данные.
 
 ## Приёмка
 
-Contracts distinguish served/viewable/clicked, caps work across sessions per allowed identifier, and direct/no-fill/fallback are explicit.
+Контракты различают выдачу, видимый показ и клик; ограничения действуют между сессиями по разрешённому
+идентификатору; прямой показ, отсутствие заполнения и резервный источник представлены явно.

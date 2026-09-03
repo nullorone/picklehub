@@ -1,16 +1,18 @@
-# Этап 4. Club UI
+# Этап 4. Интерфейс клубов
 
 ## Промпт агенту
 
-Ты — senior community frontend engineer. Implement club experiences in TMA/web.
+Ты — старший frontend-инженер сообществ. Реализуй клубные сценарии в TMA и web.
 
 ## Выполни
 
-- Discovery/list/details, membership states, roster and linked venues/events.
-- Owner/admin management for profile, policy, requests/invites, roles, venue links and recurring matches.
-- Reuse match UI/use cases; clearly label club scope and occurrence vs series changes.
-- Add accessible empty/private/archived/permission/stale/offline states.
+- Поиск, список и подробности, состояния членства, состав и связанные площадки и события.
+- Управление владельцем и администратором: профиль, политика, заявки и приглашения, роли, связи площадок и
+  повторяющиеся матчи.
+- Повторно используй UI и сценарии матчей; ясно обозначай рамки клуба и изменения встречи в сравнении с серией.
+- Добавь доступные состояния отсутствия данных, закрытости, архива, разрешений, устаревших данных и отсутствия сети.
 
 ## Приёмка
 
-No club action is inferred solely from hidden buttons; zero-venue club renders correctly; TMA/web parity and deep links pass.
+Ни одно клубное действие не определяется только скрытием кнопок; клуб без площадок отображается правильно;
+паритет TMA и web и глубокие ссылки проходят проверки.

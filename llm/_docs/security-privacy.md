@@ -1,11 +1,19 @@
-# Security, privacy and legal baseline
+# Базовые требования безопасности, конфиденциальности и права
 
-- Production personal data must be localized in Russia, subject to qualified legal review before public launch.
-- Telegram init data is verified server-side with freshness checks. Magic links and refresh tokens are hashed/rotated/revocable.
-- Platform RBAC and club/tournament scoped roles are enforced in backend use cases, never only in UI.
-- Public user-generated venues must be sports facilities; private residences are rejected and reportable.
-- The product does not verify age. Minimize profile data, expose reporting/blocking and document this unresolved risk.
-- Logs, traces, analytics and queues exclude secrets, email, chat text, exact movement history and unnecessary personal data.
-- OSM attribution and ODbL obligations are mandatory. Other maps/geocoders may be used only within current official terms.
-- DUPR is never scraped. News imports require source allowlists and rights/attribution review. Ads require labeling, frequency caps and legal review.
-- Define retention/deletion/export flows before production; destructive moderation actions require audit records.
+- Персональные данные рабочей среды должны размещаться в России с учётом квалифицированной юридической проверки
+  до публичного запуска.
+- Данные инициализации Telegram проверяются на сервере, включая срок их действия. Magic-ссылки и refresh-токены
+  хешируются, ротируются и могут быть отозваны.
+- RBAC платформы и роли в рамках клубов и турниров проверяются в прикладных сценариях backend, а не только в UI.
+- Созданные пользователями публичные площадки должны быть спортивными объектами; частные дома отклоняются, и на
+  них можно пожаловаться.
+- Продукт не проверяет возраст. Минимизируйте данные профиля, предоставьте жалобы и блокировки и документируйте
+  этот нерешённый риск.
+- Логи, трассировки, аналитика и очереди не содержат секретов, адресов электронной почты, текста чата, точной
+  истории перемещений и лишних персональных данных.
+- Указание авторства OSM и соблюдение ODbL обязательны. Другие карты и геокодеры можно использовать только в
+  рамках актуальных официальных условий.
+- Данные DUPR никогда не собираются автоматически. Импорт новостей требует списка разрешённых источников и
+  проверки прав и указания авторства. Реклама требует маркировки, ограничения частоты и юридической проверки.
+- До запуска в рабочей среде определите процессы хранения, удаления и экспорта данных; разрушающие действия
+  модераторов требуют аудиторских записей.

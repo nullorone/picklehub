@@ -1,17 +1,20 @@
-# Этап 5. Venue verification
+# Этап 5. Проверка площадок
 
 ## Промпт агенту
 
-Ты — geospatial SDET/data quality engineer. Проверь venue vertical slice.
+Ты — инженер SDET и качества геопространственных данных. Проверь вертикальный срез площадок.
 
 ## Проверки
 
-- PostGIS radius/bbox boundary, antimeridian-safe assumptions для целевого региона, index plans и pagination.
-- OSM import replay, changed/deleted source, attribution, rate limit and malformed geometry.
-- Candidate dedupe/merge, completed-match trigger, private address report и moderation handoff.
-- Map/list parity, denied geolocation, offline cache and provider outage E2E.
-- License/provider checklist фиксирует только доказанные разрешения.
+- Границы радиуса и ограничивающего прямоугольника PostGIS, безопасные для антимеридиана предположения целевого
+  региона, планы индексов и пагинация.
+- Повтор импорта OSM, изменённый или удалённый источник, указание авторства, ограничение частоты и некорректная
+  геометрия.
+- Дедупликация и слияние кандидатов, запуск после завершённого матча, жалоба на частный адрес и передача модератору.
+- Паритет карты и списка, отказ в геолокации, кеш без сети и сквозной сценарий сбоя провайдера.
+- Контрольный список лицензий и провайдеров фиксирует только доказанные разрешения.
 
 ## Приёмка
 
-Нет silent data copying, duplicate canonical venues или broken match references. Все checks и gaps внесены в AI log.
+Нет неявного копирования данных, дублирующихся канонических площадок или повреждённых ссылок матчей. Все проверки
+и пробелы внесены в журнал AI-разработки.

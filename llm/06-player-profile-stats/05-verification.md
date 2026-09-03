@@ -1,16 +1,18 @@
-# Этап 5. Profile/statistics verification
+# Этап 5. Проверка профиля и статистики
 
 ## Промпт агенту
 
-Ты — data correctness/privacy SDET. Audit profile and projections.
+Ты — SDET корректности и конфиденциальности данных. Проведи аудит профиля и проекций.
 
 ## Проверки
 
-- Confirmed vs fact-only/disputed/cancelled/no-show/guest matches and result overturn.
-- Duplicate/out-of-order events, full rebuild, checkpoint restart and concurrent profile edit.
-- Public/private schema snapshots, block behavior, avatar upload authorization and PII log scan.
-- UI zero-data, large history, percentage rounding, accessibility and cache-account-switch leakage.
+- Подтверждённые матчи в сравнении с матчами без счёта, оспоренными, отменёнными, с неявкой или гостями; отмена результата.
+- Дублирующиеся и пришедшие не по порядку события, полное перестроение, перезапуск с контрольной точки и
+  конкурентное изменение профиля.
+- Снимки публичной и закрытой схемы, блокировка, авторизация загрузки аватара и поиск персональных данных в логах.
+- UI без данных, большая история, округление процентов, доступность и утечка кеша при смене аккаунта.
 
 ## Приёмка
 
-Rebuilt projection equals incremental state and no private field leaks. Record traceability and commands in AI log.
+Перестроенная проекция равна инкрементальному состоянию, закрытые поля не утекают. Запиши прослеживаемость и
+команды в журнал AI-разработки.

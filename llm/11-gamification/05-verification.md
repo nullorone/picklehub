@@ -1,16 +1,19 @@
-# Этап 5. Gamification verification
+# Этап 5. Проверка геймификации
 
 ## Промпт агенту
 
-Ты — ledger correctness/abuse SDET. Audit progression.
+Ты — SDET по корректности реестра и злоупотреблениям. Проведи аудит системы прогресса.
 
 ## Проверки
 
-- Duplicate/out-of-order/late events, result overturn, club leave/rejoin, season rollover and rule version change.
-- Cap bypass attempts, organizer spam, fake guest, report spam and cross-club authorization.
-- Full rebuild equivalence, ledger immutability and audited adjustment.
-- Leaderboard opt-in/privacy/block and accessible UI/reduced-motion E2E.
+- Дублирующиеся, запоздалые и пришедшие не по порядку события, отмена результата, выход и повторное вступление
+  в клуб, смена сезона и версии правил.
+- Попытки обойти лимиты, спам организатора, фиктивный гость, спам жалобами и межклубная авторизация.
+- Эквивалентность полного перестроения, неизменяемость реестра и аудируемая корректировка.
+- Явное согласие на участие в таблице лидеров, приватность, блокировки, а также сквозные проверки доступного
+  интерфейса и уменьшенной анимации.
 
 ## Приёмка
 
-No action awards XP twice, no win-based hidden bonus, and all displayed totals trace to ledger entries.
+Ни одно действие не начисляет XP дважды, скрытого бонуса за победу нет, а все отображаемые суммы прослеживаются
+до записей реестра.

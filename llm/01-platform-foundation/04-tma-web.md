@@ -1,17 +1,21 @@
-# Этап 4. Web/PWA и TMA scaffold
+# Этап 4. Каркас web/PWA и TMA
 
 ## Промпт агенту
 
-Ты — senior frontend platform engineer. Создай `frontend/web`, `frontend/tg` и shared packages без business UI.
+Ты — старший инженер frontend-платформы. Создай `frontend/web`, `frontend/tg` и общие пакеты без интерфейса
+бизнес-функций.
 
 ## Выполни
 
-1. Настрой React/Vite, Router, TanStack Query, React Hook Form, schema validation и i18n с русским default.
-2. Web должен собираться как сайт и installable PWA; TMA использует официальный Telegram SDK и корректный mock только в development.
-3. Создай packages `api-client`, `domain`, `validation`, `i18n`, `analytics`; API client генерируется из OpenAPI.
-4. Реализуй neutral shell, error boundary, offline indicator, theme/accessibility foundations и typed runtime config.
-5. Не переносить legacy UI и TON Connect. Настрой tests/build/Docker для web и TMA.
+1. Настрой React/Vite, Router, TanStack Query, React Hook Form, валидацию схем и i18n с русским языком по умолчанию.
+2. Web должен собираться как сайт и устанавливаемое PWA; TMA использует официальный Telegram SDK, а корректный
+   макет — только в среде разработки.
+3. Создай пакеты `api-client`, `domain`, `validation`, `i18n`, `analytics`; клиент API генерируется из OpenAPI.
+4. Реализуй нейтральную оболочку, границу ошибок, индикатор отсутствия сети, основы темизации и доступности, а
+   также типизированную конфигурацию времени выполнения.
+5. Не переноси устаревший UI и TON Connect. Настрой тесты, сборку и Docker для web и TMA.
 
 ## Приёмка и проверка
 
-Оба shell запускаются, PWA manifest/service worker валидны, production не содержит mocks, codegen воспроизводим. Запусти lint/typecheck/tests/build.
+Обе оболочки запускаются, манифест PWA и service worker валидны, рабочая сборка не содержит макетов, генерация
+кода воспроизводима. Запусти линтинг, проверку типов, тесты и сборку.

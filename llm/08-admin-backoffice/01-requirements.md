@@ -1,16 +1,19 @@
-# Этап 1. Admin requirements
+# Этап 1. Требования к администрированию
 
 ## Промпт агенту
 
-Ты — operations/product analyst. Опиши backoffice workflows and least privilege.
+Ты — аналитик эксплуатации и продукта. Опиши процессы административной панели и принцип наименьших привилегий.
 
 ## Выполни
 
-- Permission matrix для четырёх ролей и break-glass/non-goals.
-- MVP stories: secure access, case queue/decision, venue candidate merge/approve/reject, user restriction, audit search.
-- Later extension points для CMS/ads без реализации экранов заранее.
-- Определи reason requirements, irreversible-action confirmation, pagination/filtering, export limits and operational metrics.
+- Матрица разрешений для четырёх ролей, аварийный доступ и исключения.
+- Истории MVP: безопасный доступ, очередь обращений и решения, слияние, одобрение и отклонение площадки-кандидата,
+  ограничение пользователя, поиск по аудиту.
+- Будущие точки расширения для CMS и рекламы без преждевременной реализации экранов.
+- Определи требования к причине, подтверждение необратимого действия, пагинацию и фильтрацию, ограничения экспорта
+  и эксплуатационные метрики.
 
 ## Приёмка
 
-Every mutation has actor/reason/audit; editor/ads manager cannot access safety narratives; no flexible permission builder.
+Каждое изменение имеет исполнителя, причину и аудит; редактор и менеджер рекламы не имеют доступа к описаниям
+обращений безопасности; гибкого конструктора разрешений нет.

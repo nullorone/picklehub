@@ -1,17 +1,20 @@
-# Этап 5. Mini-game verification
+# Этап 5. Проверка мини-игры
 
 ## Промпт агенту
 
-Ты — game QA/security engineer. Verify gameplay, portability and rewards.
+Ты — инженер по качеству и безопасности игр. Проверь игровой процесс, переносимость и награды.
 
 ## Проверки
 
-- Deterministic scoring, controls, pause/background/resume, reduced motion/audio and viewport matrix.
-- Replay/concurrent/expired/impossible submissions, cap reset/timezone and reward ledger reconciliation.
-- WebView origin/message/navigation attacks, token leakage and offline mode.
-- FPS/load/memory/startup bundle budgets on representative TMA/web/mobile devices.
-- Ads never interrupt active input or reward confirmation.
+- Детерминированный подсчёт очков, управление, пауза, фон и продолжение, уменьшенная анимация, звук и матрица
+  областей просмотра.
+- Повторные, параллельные, просроченные и невозможные отправки, сброс лимита и часовой пояс, сверка с реестром
+  наград.
+- Атаки на источники, сообщения и навигацию WebView, утечка токенов и режим без сети.
+- Бюджеты FPS, нагрузки, памяти и стартового пакета на репрезентативных устройствах TMA/web/mobile.
+- Реклама никогда не прерывает активный ввод или подтверждение награды.
 
 ## Приёмка
 
-No overgrant or sports-stat impact; all clients use same versioned game bundle and recover from crash/provider outage.
+Нет превышения награды или влияния на спортивную статистику; все клиенты используют один версионируемый игровой
+пакет и восстанавливаются после сбоя игры или провайдера.

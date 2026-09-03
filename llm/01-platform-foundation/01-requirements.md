@@ -2,15 +2,21 @@
 
 ## Промпт агенту
 
-Ты — principal TypeScript architect. Прочитай overview проекта, этот feature overview, `_docs` и root-конфигурацию. Уточни архитектуру до product-кода.
+Ты — ведущий архитектор TypeScript. Прочитай обзор проекта, этот обзор функции, `_docs` и корневую конфигурацию.
+Уточни архитектуру до создания продуктового кода.
 
 ## Выполни
 
-1. Дополни `_docs/architecture.md`: containers, module boundaries, dependency rules, auth/session direction, REST/WebSocket flows, outbox and failure flow.
-2. Зафиксируй ADR для workspace, modular monolith, shared packages, web-as-PWA и deferred mobile.
-3. Определи environment matrix, naming, migrations, generated-code policy и Definition of Done.
-4. Создай требования к логам, correlation ID, redaction, health, rate limit, audit и data residency.
+1. Дополни `_docs/architecture.md`: контейнеры, границы модулей, правила зависимостей, направление аутентификации
+   и сессий, потоки REST/WebSocket, outbox и обработку сбоев.
+2. Зафиксируй ADR для рабочего пространства, модульного монолита, общих пакетов, web как PWA и отложенного
+   мобильного приложения.
+3. Определи матрицу сред, правила именования, миграции, политику сгенерированного кода и определение готовности.
+4. Создай требования к логам, идентификатору корреляции, сокрытию чувствительных данных, проверке
+   работоспособности, ограничению частоты, аудиту и размещению данных.
 
 ## Ограничения и приёмка
 
-Не создавать приложения и не выбирать provider без проверки условий. Документы не содержат нерешённых placeholder-маркеров и не противоречат `00-project-overview.md`. Проверь Markdown/ссылки и запиши evidence в AI log.
+Не создавай приложения и не выбирай провайдера без проверки условий. Документы не содержат незаполненных
+маркеров и не противоречат `00-project-overview.md`. Проверь Markdown и ссылки, запиши подтверждения в журнал
+AI-разработки.

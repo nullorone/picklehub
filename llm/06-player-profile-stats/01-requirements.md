@@ -1,16 +1,20 @@
-# Этап 1. Profile/statistics requirements
+# Этап 1. Требования к профилю и статистике
 
 ## Промпт агенту
 
-Ты — player experience/product analyst. Опиши public/private profile и derived statistics.
+Ты — продуктовый аналитик пользовательского опыта игроков. Опиши публичный и закрытый профиль и производную
+статистику.
 
 ## Выполни
 
-- User stories: view/edit own profile, view player, preferences/privacy, match history, stats breakdown, DUPR link, block visibility.
-- Определи canonical statistics: played, wins/losses where result exists, win rate, games points, singles/doubles split, organizer reliability and no-show indicators.
-- Зафиксируй missing/withdrawn/disputed/overturned result behavior and rebuild strategy.
-- Определи analytics and accessible empty states without shaming new players.
+- Пользовательские истории: просмотр и изменение своего профиля, просмотр игрока, настройки и конфиденциальность,
+  история матчей, детализация статистики, ссылка DUPR и видимость при блокировке.
+- Определи каноническую статистику: сыгранные матчи, победы и поражения при наличии результата, долю побед, очки
+  в партиях, разделение одиночной и парной игры, надёжность организатора и показатели неявок.
+- Зафиксируй поведение отсутствующего, отозванного, оспоренного и отменённого результата и стратегию перестроения.
+- Определи аналитику и доступные пустые состояния, не унижающие новых игроков.
 
 ## Приёмка
 
-Самооценка явно не verified rating; DUPR link не обозначается synced; statistics derive only from eligible confirmed events.
+Самооценка явно не является подтверждённым рейтингом; ссылка DUPR не обозначается синхронизированной; статистика
+вычисляется только из подходящих подтверждённых событий.

@@ -1,17 +1,21 @@
-# Этап 5. Foundation quality gate
+# Этап 5. Проверка качества основы платформы
 
 ## Промпт агенту
 
-Ты — senior SDET/DevOps engineer. Проведи независимый аудит foundation и исправь только дефекты текущего этапа.
+Ты — старший инженер SDET/DevOps. Проведи независимый аудит основы платформы и исправь только дефекты текущего
+этапа.
 
 ## Выполни
 
-1. Проверь workspace dependency graph, lockfile, codegen drift, OpenAPI/AsyncAPI lint и root Turbo tasks.
-2. Подними clean PostgreSQL/PostGIS и Redis, примени migrations, проверь health и shutdown.
-3. Проверь web/PWA/TMA builds, offline shell, Telegram production guard и отсутствие backend imports в shared clients.
-4. Добавь CI jobs foundation и Docker Compose для текущих компонентов.
-5. Обнови architecture/operations docs и traceability evidence.
+1. Проверь граф зависимостей рабочих пространств, lock-файл, расхождение сгенерированного кода, линтинг
+   OpenAPI/AsyncAPI и корневые задачи Turbo.
+2. Подними чистые PostgreSQL/PostGIS и Redis, примени миграции, проверь работоспособность и завершение работы.
+3. Проверь сборки web/PWA/TMA, оболочку без сети, защиту рабочей среды Telegram и отсутствие импортов backend в
+   общих клиентских пакетах.
+4. Добавь задачи CI для основы платформы и Docker Compose для текущих компонентов.
+5. Обнови документацию архитектуры и эксплуатации, а также подтверждения прослеживаемости.
 
 ## Приёмка
 
-Clean clone проходит install, contracts, lint, typecheck, tests, builds и Compose smoke. Нельзя маскировать отсутствующие внешние providers. Запиши точные результаты в AI log.
+Чистая копия проходит установку, проверку контрактов, линтинг, проверку типов, тесты, сборки и быструю проверку
+Compose. Нельзя маскировать отсутствующих внешних провайдеров. Запиши точные результаты в журнал AI-разработки.

@@ -1,16 +1,18 @@
-# Этап 5. Content verification
+# Этап 5. Проверка контента
 
 ## Промпт агенту
 
-Ты — CMS security/content compliance SDET. Verify editorial and reader flows.
+Ты — SDET по безопасности CMS и соответствию контента требованиям. Проверь сценарии редактора и читателя.
 
 ## Проверки
 
-- RSS/API ETag/replay/malformed input, duplicate URL/hash, source outage and scheduler race.
-- XSS/sanitization, draft authorization, role matrix, revision/audit and takedown.
-- Attribution/source-link presence and checklist evidence for every enabled source.
-- Feed/search/bookmark/share/offline/SEO/accessibility E2E in TMA/web.
+- ETag и повторная обработка RSS/API, некорректный ввод, дубликаты URL и хеша, недоступность источника
+  и гонка планировщика.
+- XSS и очистка, авторизация доступа к черновику, матрица ролей, редакции, аудит и удаление.
+- Наличие атрибуции и ссылки на источник, подтверждения по чек-листу для каждого включённого источника.
+- Сквозные проверки ленты, поиска, закладок, отправки ссылок, работы без сети, SEO и доступности в TMA/web.
 
 ## Приёмка
 
-No enabled source lacks documented permission; no draft/body leaks through events, cache or search. Record evidence, not assumptions.
+Ни один включённый источник не остаётся без документированного разрешения; черновики и тело статьи не утекают
+через события, кеш или поиск. Записывай подтверждения, а не предположения.

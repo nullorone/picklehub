@@ -1,16 +1,21 @@
-# Этап 2. Chat/notification contracts и данные
+# Этап 2. Контракты чата и уведомлений, данные
 
 ## Промпт агенту
 
-Ты — AsyncAPI and messaging architect. Расширь contracts и data model.
+Ты — архитектор AsyncAPI и обмена сообщениями. Расширь контракты и модель данных.
 
 ## Выполни
 
-- REST history/cursor, send command fallback, notification list/read/preferences/device-link endpoints.
-- AsyncAPI channels: authenticate, subscribe match, message created/updated/deleted, system event, notification and structured error.
-- Модели: `Conversation`, `Message`, `Notification`, `NotificationDelivery`, `NotificationPreference`; sequence/order and idempotency keys.
-- Versioned safe domain events и BullMQ job payloads; chat body не копируется в общий domain outbox без необходимости.
+- Конечные точки REST: история и курсор, резервная команда отправки, список и прочтение уведомлений, настройки и
+  привязка устройства.
+- Каналы AsyncAPI: аутентификация, подписка на матч, создание, обновление и удаление сообщения, системное событие,
+  уведомление и структурированная ошибка.
+- Модели: `Conversation`, `Message`, `Notification`, `NotificationDelivery`, `NotificationPreference`; ключи
+  последовательности, порядка и идемпотентности.
+- Версионируемые безопасные доменные события и данные заданий BullMQ; тело сообщения не копируется в общий
+  доменный outbox без необходимости.
 
 ## Приёмка
 
-Reconnect cursor closes gaps, authorization is server-side, duplicate event/job does not create duplicate notification/delivery. Lint/codegen and migrations pass.
+Курсор переподключения закрывает пропуски, авторизация выполняется на сервере, дубликат события или задания не
+создаёт повторного уведомления или доставки. Линтинг, генерация кода и миграции проходят.

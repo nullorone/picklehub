@@ -1,17 +1,22 @@
-# Этап 3. Container, observability and resilience hardening
+# Этап 3. Усиление контейнеризации, наблюдаемости и устойчивости
 
 ## Промпт агенту
 
-Ты — senior platform/SRE engineer. Harden the current system without microservices/Kubernetes.
+Ты — старший платформенный и SRE-инженер. Усиль текущую систему без микросервисов и Kubernetes.
 
 ## Выполни
 
-- Multi-stage non-root images, Compose reference, migration release command, graceful shutdown and resource limits.
-- Structured logs/redaction, metrics, traces/error reporting, dashboards and alerts for critical journeys/outbox/queues/providers.
-- Timeouts, circuit breakers/backoff, bulkheads, rate/body limits, readiness semantics and kill switches.
-- Backup/restore, queue replay/DLQ, outbox reconciliation and incident runbooks.
-- Provider configuration supports verified РФ-resident managed PostgreSQL/PostGIS, Redis and object storage.
+- Многоэтапные образы без root, эталонный Compose, релизная команда миграции, корректное завершение работы
+  и ограничения ресурсов.
+- Структурированные логи и редактирование чувствительных данных, метрики, трассировка и отчёты об ошибках,
+  панели и оповещения для критических сценариев, outbox, очередей и провайдеров.
+- Тайм-ауты, автоматические выключатели и задержки повторов, изоляция ресурсов, ограничения частоты и размера
+  тела, семантика готовности и аварийные выключатели.
+- Резервное копирование и восстановление, повтор очереди и DLQ, сверка outbox и инструкции по инцидентам.
+- Конфигурация провайдера поддерживает проверенные управляемые PostgreSQL/PostGIS, Redis и объектное хранилище
+  с размещением в РФ.
 
 ## Приёмка
 
-Restart/provider failure loses no committed domain event; restore drill and migration rehearsal use disposable environments; images contain no secrets/dev deps.
+Перезапуск или сбой провайдера не теряет зафиксированные доменные события; учебное восстановление и репетиция
+миграции используют одноразовые окружения; образы не содержат секретов или зависимостей разработки.

@@ -1,17 +1,21 @@
-# Этап 3. Backend scaffold
+# Этап 3. Каркас backend
 
 ## Промпт агенту
 
-Ты — senior NestJS/platform engineer. Создай `backend/` без product use cases.
+Ты — старший инженер NestJS и платформы. Создай `backend/` без продуктовых сценариев использования.
 
 ## Выполни
 
-1. Настрой NestJS, strict TypeScript, Prisma, PostgreSQL/PostGIS migration baseline, Redis/BullMQ и typed env validation.
-2. Создай `common`, `health`, `outbox`, `integrations`, `audit` boundaries; controllers не обращаются к Prisma напрямую.
-3. Реализуй liveness/readiness, structured logs, correlation ID, redaction, graceful shutdown и global validation/error mapping по OpenAPI.
-4. Outbox должен быть транзакционным и иметь идемпотентный dispatcher skeleton без выдуманных domain events.
-5. Добавь lint/typecheck/unit/integration/build scripts, `.env.example` и multi-stage Dockerfile.
+1. Настрой NestJS, строгий TypeScript, Prisma, базовые миграции PostgreSQL/PostGIS, Redis/BullMQ и типизированную
+   валидацию переменных среды.
+2. Создай границы `common`, `health`, `outbox`, `integrations`, `audit`; контроллеры не обращаются к Prisma напрямую.
+3. Реализуй проверки доступности и готовности, структурированные логи, идентификатор корреляции, сокрытие
+   чувствительных данных, корректное завершение работы и глобальное сопоставление ошибок и валидации по OpenAPI.
+4. Outbox должен быть транзакционным и иметь каркас идемпотентного диспетчера без выдуманных доменных событий.
+5. Добавь сценарии линтинга, проверки типов, модульных и интеграционных тестов и сборки, `.env.example` и
+   многоэтапный Dockerfile.
 
 ## Приёмка и проверка
 
-Чистая БД мигрирует, health отражает PostgreSQL/Redis, приложение переживает SIGTERM, secrets не логируются. Запусти все backend checks и зафиксируй команды.
+Чистая БД мигрирует, проверка работоспособности отражает состояние PostgreSQL и Redis, приложение корректно
+обрабатывает SIGTERM, секреты не логируются. Запусти все проверки backend и зафиксируй команды.

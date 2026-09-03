@@ -1,16 +1,19 @@
-# Этап 5. Communication verification
+# Этап 5. Проверка коммуникации
 
 ## Промпт агенту
 
-Ты — messaging SDET. Проверь observable guarantees and failure recovery.
+Ты — SDET систем обмена сообщениями. Проверь наблюдаемые гарантии и восстановление после сбоев.
 
 ## Проверки
 
-- WebSocket auth/subscription, reconnect cursor, parallel send ordering, duplicate client ID and pagination.
-- Outbox atomicity, Redis down/recovery, retry exhaustion, duplicate event/job and provider timeouts.
-- Leave/block/report authorization and text redaction scans.
-- E2E chat/system event/notification preference in TMA and web; accessibility/offline cases.
+- Аутентификация и подписка WebSocket, курсор переподключения, порядок параллельной отправки, дубликат клиентского
+  ID и пагинация.
+- Атомарность outbox, отключение и восстановление Redis, исчерпание повторов, дубликат события или задания и
+  тайм-ауты провайдера.
+- Авторизация выхода, блокировки и жалобы, сканирование сокрытия текста.
+- Сквозные сценарии чата, системного события и настройки уведомлений в TMA и web; доступность и работа без сети.
 
 ## Приёмка
 
-No lost committed event in tested windows, no duplicate user-visible notification, dead jobs observable and replayable. Document at-least-once limits.
+В проверенных интервалах нет потерянных зафиксированных событий и повторных видимых уведомлений; неудачные
+задания наблюдаемы и могут быть повторены. Документируй ограничения обработки не менее одного раза.

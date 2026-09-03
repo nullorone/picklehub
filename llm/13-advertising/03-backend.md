@@ -1,16 +1,22 @@
-# Этап 3. Advertising backend
+# Этап 3. Backend рекламы
 
 ## Промпт агенту
 
-Ты — senior ad-serving/privacy engineer. Implement low-volume direct campaigns first and adapter fallback.
+Ты — старший инженер показа рекламы и приватности. Сначала реализуй прямые кампании малого объёма, затем
+резервный адаптер.
 
 ## Выполни
 
-- Deterministic eligible-campaign selection by placement, coarse geo/context, schedule, priority and cap.
-- Atomic/cached counters tolerate retries and reconcile from events; no ad request writes exact location history.
-- Creative moderation, safe redirect allowlist, click/impression fraud rate limits and aggregate reporting.
-- External network adapter disabled by default until provider/legal review; failures return no-fill.
+- Детерминированный выбор подходящей кампании по рекламному месту, обобщённой географии и контексту,
+  расписанию, приоритету и ограничению частоты.
+- Атомарные и кешированные счётчики допускают повторы и сверяются по событиям; рекламный запрос не записывает
+  историю точных местоположений.
+- Модерация креативов, список разрешённых безопасных перенаправлений, ограничения частоты мошеннических кликов
+  и показов, агрегированная отчётность.
+- Адаптер внешней сети по умолчанию отключён до проверки провайдера и правовых условий; при сбоях возвращается
+  отсутствие заполнения.
 
 ## Приёмка
 
-Concurrent requests respect caps within documented tolerance; paused/rejected campaign stops serving; provider outage cannot affect core API.
+Параллельные запросы соблюдают ограничения с документированным допуском; приостановленная или отклонённая
+кампания перестаёт показываться; сбой провайдера не влияет на основное API.

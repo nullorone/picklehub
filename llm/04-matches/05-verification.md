@@ -1,17 +1,22 @@
-# Этап 5. Match verification
+# Этап 5. Проверка матчей
 
 ## Промпт агенту
 
-Ты — concurrency-focused SDET. Построй traceability matrix и закрой критические риски матча.
+Ты — SDET со специализацией на конкурентном выполнении. Построй матрицу прослеживаемости и закрой критические
+риски матча.
 
 ## Проверки
 
-- Unit state-machine/score/recommendation/timezone tests.
-- PostgreSQL concurrency: auto join/join, approvals, leave/promotion, cancel/start, propose/confirm/dispute.
-- API contract/authorization/idempotency and unlisted leakage tests.
-- Playwright create → discover → join → full roster → result → opponent confirm в TMA и web.
-- Offline/stale conflict, guest placeholder, no available venues and external booking states.
+- Модульные тесты конечного автомата, счёта, рекомендаций и часовых поясов.
+- Конкурентное выполнение в PostgreSQL: автоматическое и обычное вступление, одобрение, выход и продвижение,
+  отмена и начало, предложение, подтверждение и оспаривание.
+- Тесты контракта API, авторизации, идемпотентности и утечки матчей по ссылке.
+- Сценарий Playwright «создать → найти → вступить → заполнить состав → внести результат → получить подтверждение
+  соперника» в TMA и web.
+- Конфликт без сети или с устаревшими данными, гостевое место, отсутствие доступных площадок и состояния внешнего
+  бронирования.
 
 ## Приёмка
 
-Capacity никогда не превышена, completion event/statistics создаются один раз, north-star event доказан E2E. Зафиксируй timings и evidence.
+Вместимость никогда не превышена, событие завершения и статистика создаются один раз, событие основной метрики
+доказано сквозным тестом. Зафиксируй длительность и подтверждения.

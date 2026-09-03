@@ -1,17 +1,19 @@
-# Этап 3. Venue backend и import
+# Этап 3. Backend площадок и импорт
 
 ## Промпт агенту
 
-Ты — senior geospatial backend engineer. Реализуй venue module и provider ports.
+Ты — старший backend-инженер геопространственных систем. Реализуй модуль площадок и порты провайдеров.
 
 ## Выполни
 
-- Реализуй PostGIS search, normalization/deduplication candidates и immutable provenance.
-- Создай idempotent OSM importer с Overpass adapter, checkpoint, attribution, rate/backoff и dry-run; не используйте production public tile server как bulk API.
-- Geocoder adapter возвращает ephemeral suggestions и сохраняет только разрешённые данные с provider metadata.
-- Candidate promotion запускается от confirmed match event, но public publication требует moderation.
-- Добавь audit, metrics и safe cache invalidation.
+- Реализуй поиск PostGIS, нормализацию и дедупликацию кандидатов, неизменяемое происхождение данных.
+- Создай идемпотентный импортёр OSM с адаптером Overpass, контрольной точкой, указанием авторства, ограничением
+  частоты, задержкой повторов и пробным запуском; не используй публичный сервер тайлов рабочей среды как массовый API.
+- Адаптер геокодера возвращает временные предложения и сохраняет только разрешённые данные с метаданными провайдера.
+- Продвижение кандидата запускается событием подтверждённого матча, но публичная публикация требует модерации.
+- Добавь аудит, метрики и безопасную инвалидацию кеша.
 
 ## Приёмка
 
-Повтор import не дублирует точки; provider outage не удаляет каталог; private-address report скрывает candidate до review. Запусти PostGIS/integration tests.
+Повторный импорт не дублирует точки; сбой провайдера не удаляет каталог; жалоба на частный адрес скрывает
+кандидата до проверки. Запусти тесты PostGIS и интеграционные тесты.

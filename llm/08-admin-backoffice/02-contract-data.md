@@ -1,16 +1,19 @@
-# Этап 2. Admin contracts и audit data
+# Этап 2. Административные контракты и данные аудита
 
 ## Промпт агенту
 
-Ты — RBAC/API architect. Добавь admin endpoints and immutable audit schema.
+Ты — архитектор RBAC и API. Добавь административные конечные точки и неизменяемую схему аудита.
 
 ## Выполни
 
-- Separate `/v1/admin` schemas for cases, venue candidates, user restrictions and audit with strict minimization.
-- Backend-enforced permission decorators/policies map to fixed role/action registry.
-- `AuditEntry` records actor, action, target opaque ID, reason, request ID, timestamp and safe diff metadata; no secret/free-text duplication.
-- Cursor/search limits and export jobs prevent unbounded synchronous dumps.
+- Отдельные схемы `/v1/admin` для обращений, площадок-кандидатов, ограничений пользователей и аудита со строгой
+  минимизацией.
+- Проверяемые backend декораторы и политики разрешений сопоставляются с фиксированным реестром ролей и действий.
+- `AuditEntry` хранит исполнителя, действие, непрозрачный ID цели, причину, ID запроса, временную метку
+  и безопасные метаданные изменений; секреты и свободный текст не дублируются.
+- Ограничения курсора и поиска и задания экспорта предотвращают неограниченные синхронные выгрузки.
 
 ## Приёмка
 
-Contract documents 403 vs 404 policy, every mutation creates audit in same transaction where possible, migrations append rather than rewrite audit.
+Контракт документирует политику 403 и 404, каждое изменение по возможности создаёт аудит в той же транзакции,
+миграции дополняют аудит, а не переписывают его.
