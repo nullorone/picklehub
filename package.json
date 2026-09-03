@@ -1,49 +1,32 @@
 {
-  "name": "picklehub",
-  "private": true,
-  "version": "0.0.1",
-  "type": "module",
-  "homepage": "https://nullorone.github.io/picklehub",
-  "scripts": {
-    "deploy": "gh-pages -d dist",
-    "start": "vite",
-    "start:https": "cross-env HTTPS=true vite",
-    "build": "tsc --noEmit && vite build",
-    "lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "lint:fix": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0 --fix",
-    "preview": "vite preview",
-    "predeploy": "npm run build"
-  },
-  "dependencies": {
-    "@telegram-apps/sdk-react": "^3.3.6",
-    "@telegram-apps/telegram-ui": "^2.1.9",
-    "@tonconnect/ui-react": "^2.2.0",
-    "eruda": "^3.4.3",
-    "lucide-react": "^0.544.0",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "react-router-dom": "^6.30.1"
-  },
-  "devDependencies": {
-    "@eslint/js": "^9.23.0",
-    "@tailwindcss/vite": "^4.1.13",
-    "@types/node": "^20.19.11",
-    "@types/react": "^18.3.24",
-    "@types/react-dom": "^18.3.7",
-    "@typescript-eslint/eslint-plugin": "^8.28.0",
-    "@typescript-eslint/parser": "^8.28.0",
-    "@vitejs/plugin-react-swc": "^3.11.0",
-    "cross-env": "^7.0.3",
-    "eslint": "^9.34.0",
-    "eslint-plugin-react": "^7.37.5",
-    "eslint-plugin-react-hooks": "^5.2.0",
-    "gh-pages": "^6.3.0",
-    "globals": "^15.15.0",
-    "tailwindcss": "^4.1.13",
-    "typescript": "^5.9.2",
-    "typescript-eslint": "^8.40.0",
-    "vite": "^6.3.5",
-    "vite-plugin-mkcert": "^1.17.8",
-    "vite-tsconfig-paths": "^5.1.4"
-  }
+    "name": "picklehub",
+    "version": "0.1.0",
+    "private": true,
+    "description": "Prompt-first monorepo for the PickleHub sports platform",
+    "packageManager": "npm@10.9.3",
+    "engines": {
+        "node": ">=22 <23"
+    },
+    "workspaces": [
+        "backend",
+        "frontend/web",
+        "frontend/tg",
+        "frontend/mobile",
+        "frontend/packages/*"
+    ],
+    "scripts": {
+        "build": "turbo run build",
+        "lint": "turbo run lint",
+        "test": "turbo run test",
+        "typecheck": "turbo run typecheck",
+        "format": "prettier --write .",
+        "format:check": "prettier --check .",
+        "docs:check": "markdownlint-cli2 README.md AGENTS.md 'llm/**/*.md'"
+    },
+    "devDependencies": {
+        "markdownlint-cli2": "0.18.1",
+        "prettier": "3.6.2",
+        "turbo": "2.5.6",
+        "typescript": "5.9.2"
+    }
 }
