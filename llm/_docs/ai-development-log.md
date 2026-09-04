@@ -125,3 +125,74 @@
   полный contract check с разрешением на listener успешен. Внешняя настройка по-прежнему отключает TLS
   verification и должна отсутствовать при чистой установке в CI; audit зависимостей в этом уточнении не запускался.
 - Следующий промпт: `llm/01-platform-foundation/03-backend.md`; к нему не переходили.
+
+## 2026-09-04 — основа платформы, этап 03-backend
+
+- Активный промпт: `llm/01-platform-foundation/03-backend.md`.
+- Каркас: создан workspace `@picklehub/backend` на NestJS со строгим TypeScript и двумя entry point: HTTP API и
+  отдельный worker. Границы `common`, `health`, `outbox`, `integrations` и `audit` не содержат продуктовых
+  сценариев; контроллер health обращается к application service, а не к Prisma.
+- Данные и фоновые задачи: добавлены Prisma schema и начальная PostgreSQL/PostGIS migration с техническими
+  `outbox_events` и append-only `audit_entries`. Outbox writer принимает `Prisma.TransactionClient`; конкурентный
+  dispatcher использует `FOR UPDATE SKIP LOCKED`, lease, BullMQ `jobId = eventId`, bounded retry с jitter и
+  quarantine. Доменные события и provider adapters не добавлялись. Prisma runtime использует PostgreSQL driver
+  adapter без платформенного native query engine.
+- HTTP и эксплуатация: реализованы `/v1/health/live` и `/v1/health/ready` по OpenAPI, короткие timeout для
+  PostgreSQL/PostGIS и Redis, request/correlation UUIDv4, `Content-Language`, общий validation/error filter,
+  структурированные Pino-логи с рекурсивным redaction, безопасные startup errors и shutdown hooks для
+  `SIGTERM`/`SIGINT`.
+- Поставка: добавлены типизированный `.env.example`, Docker Compose для локальных PostGIS/Redis, многоэтапный
+  Node.js 22 Dockerfile, backend README, root integration script и Turbo task. Единственный root lockfile
+  синхронизирован с закреплёнными версиями зависимостей.
+- Изменённые файлы: новый `backend/`, `.dockerignore`, `docker-compose.yml`, `package.json`, `package-lock.json`,
+  `turbo.json`, `README.md` и этот журнал.
+
+### Проверки этапа 03-backend
+
+- `npm install --ignore-scripts --no-audit --no-fund --fetch-retries=0 --fetch-timeout=30000 --loglevel=info` —
+  успешно через настроенный npm registry, установлено 628 пакетов; отдельная установка PostgreSQL adapter добавила
+  16 пакетов; финальный `npm install --offline --ignore-scripts --no-audit --no-fund` удалил оставшуюся extraneous
+  dependency.
+
+- `PRISMA_SCHEMA_ENGINE_BINARY=/usr/bin/true PRISMA_QUERY_ENGINE_LIBRARY=/usr/bin/true npx prisma generate --schema
+backend/prisma/schema.prisma` — Prisma Client 6.16.2 воспроизводимо сгенерирован для driver adapter.
+
+- `DATABASE_URL=... PRISMA_SCHEMA_ENGINE_BINARY=/usr/bin/true PRISMA_QUERY_ENGINE_LIBRARY=/usr/bin/true npm run
+prisma:validate --workspace @picklehub/backend` — schema валидна.
+
+- `docker compose down -v`, затем `docker compose up -d --wait postgres redis` — создана новая чистая локальная
+  среда, оба healthcheck успешны; удалены только ранее созданные synthetic volumes этого Compose-проекта.
+
+- `docker exec -i picklehub-postgres-1 psql -v ON_ERROR_STOP=1 -U picklehub -d picklehub <
+backend/prisma/migrations/20260904090000_platform_foundation/migration.sql` — исправленная миграция успешно
+  применена с нуля, созданы extension, таблицы, индексы, функция и два audit trigger.
+
+- `DATABASE_URL=... REDIS_URL=... REDIS_NAMESPACE=test npm run test:integration --workspace
+@picklehub/backend` — успешно, 5 тестов: wire health/error, PostGIS/schema, транзакционный rollback outbox,
+  идемпотентная публикация dispatcher и запрет изменения audit.
+
+- `npm run format:check`, `npm run docs:check`, `npm run lint`, `npm run typecheck`, `npm test`, `npm run build` —
+  успешно; unit tests: 6 suites, 11 tests; Turbo выполнил по одной backend-задаче lint/typecheck/test/build.
+
+- `npm run contracts:check` — успешно: TypeSpec/OpenAPI lint без warnings, policy 2 REST/5 protocol messages,
+  compatibility, generated drift/typecheck и Prism mock.
+
+- Локальный smoke собранного `backend/dist/main.js` — readiness вернул 200, лог сохранил безопасный path без query,
+  `SIGTERM` записал начало shutdown, процесс завершился с кодом 0; legacy wildcard warnings отсутствуют.
+
+- `docker compose stop postgres redis` — локальные test-контейнеры остановлены после проверок, volumes сохранены для
+  следующего запуска.
+
+- `npm ls --depth=0` и `git diff --check` — успешно, unmet/extraneous dependencies и whitespace errors отсутствуют.
+- Исправленные отклонения: unit test выявил ESM-only `uuid@13`, dependency заменена на покрытый тестом UUIDv7 на
+  `node:crypto`; integration test выявил лишнее экранирование PostgreSQL regex в check constraint, после чего
+  чистые volumes были пересозданы и весь набор прошёл; NestJS 11 wildcard middleware переведён на именованный
+  синтаксис `{*path}`.
+- Ограничения проверки: `prisma migrate deploy` и обычная загрузка native Prisma schema engine не выполнены —
+  `binaries.prisma.sh` возвращал `403`; migration SQL вместо этого применён к чистой БД через `psql` и проверен
+  integration tests. `docker build --file backend/Dockerfile --tag picklehub-backend:foundation .` остановился до
+  build steps: Docker Hub вернул некорректный TLS certificate при получении Node.js 22 base image; локально был
+  доступен только неподходящий Node.js 20 image, поэтому его не подставляли. Обе команды нужно повторить в CI с
+  нормальной TLS/network policy. Внешняя настройка `NODE_TLS_REJECT_UNAUTHORIZED=0` остаётся риском окружения;
+  security audit зависимостей не выполнялся из-за `--no-audit` и остаётся этапу verification.
+- Следующий промпт: `llm/01-platform-foundation/04-tma-web.md`; к нему не переходили.

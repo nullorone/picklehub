@@ -1,0 +1,59 @@
+generator client {
+  provider   = "prisma-client-js"
+  engineType = "client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum OutboxStatus {
+  PENDING
+  PROCESSING
+  PUBLISHED
+  QUARANTINED
+
+  @@map("outbox_status")
+}
+
+model OutboxEvent {
+  id            String       @id @db.Uuid
+  type          String       @db.VarChar(160)
+  schemaVersion Int          @map("schema_version")
+  payload       Json
+  correlationId String       @map("correlation_id") @db.Uuid
+  causationId   String?      @map("causation_id") @db.Uuid
+  occurredAt    DateTime     @map("occurred_at") @db.Timestamptz(3)
+  status        OutboxStatus @default(PENDING)
+  attempts      Int          @default(0)
+  availableAt   DateTime     @default(now()) @map("available_at") @db.Timestamptz(3)
+  claimedAt     DateTime?    @map("claimed_at") @db.Timestamptz(3)
+  claimedBy     String?      @map("claimed_by") @db.Uuid
+  publishedAt   DateTime?    @map("published_at") @db.Timestamptz(3)
+  lastErrorCode String?      @map("last_error_code") @db.VarChar(96)
+  createdAt     DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([status, availableAt, occurredAt], map: "outbox_events_dispatch_idx")
+  @@map("outbox_events")
+}
+
+model AuditEntry {
+  id            String   @id @db.Uuid
+  actorType     String   @map("actor_type") @db.VarChar(64)
+  actorId       String?  @map("actor_id") @db.Uuid
+  action        String   @db.VarChar(160)
+  targetType    String   @map("target_type") @db.VarChar(96)
+  targetId      String?  @map("target_id") @db.Uuid
+  outcome       String   @db.VarChar(48)
+  reasonCode    String?  @map("reason_code") @db.VarChar(96)
+  changedFields Json     @map("changed_fields")
+  requestId     String   @map("request_id") @db.Uuid
+  correlationId String   @map("correlation_id") @db.Uuid
+  source        String   @db.VarChar(64)
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([targetType, targetId, createdAt], map: "audit_entries_target_idx")
+  @@index([actorId, createdAt], map: "audit_entries_actor_idx")
+  @@map("audit_entries")
+}

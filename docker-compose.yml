@@ -1,0 +1,33 @@
+services:
+    postgres:
+        image: postgis/postgis:16-3.4
+        environment:
+            POSTGRES_DB: picklehub
+            POSTGRES_USER: picklehub
+            POSTGRES_PASSWORD: picklehub
+        ports:
+            - '5432:5432'
+        healthcheck:
+            test: ['CMD-SHELL', 'pg_isready -U picklehub -d picklehub']
+            interval: 2s
+            timeout: 2s
+            retries: 15
+        volumes:
+            - picklehub-postgres:/var/lib/postgresql/data
+
+    redis:
+        image: redis:7.4.1-alpine
+        command: ['redis-server', '--appendonly', 'yes']
+        ports:
+            - '6379:6379'
+        healthcheck:
+            test: ['CMD', 'redis-cli', 'ping']
+            interval: 2s
+            timeout: 2s
+            retries: 15
+        volumes:
+            - picklehub-redis:/data
+
+volumes:
+    picklehub-postgres:
+    picklehub-redis:
