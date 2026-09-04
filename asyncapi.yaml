@@ -1,0 +1,283 @@
+asyncapi: 3.1.0
+info:
+    title: PickleHub WebSocket API
+    version: 0.1.0
+    description: |
+        Versioned protocol envelopes for the PickleHub WebSocket connection. Authentication uses a short-lived,
+        single-use ticket obtained through authenticated REST. The ticket is sent only in the first protocol message,
+        never in a URL or log. Business events are intentionally absent until their owning feature prompts.
+    license:
+        name: Proprietary
+defaultContentType: application/json
+servers:
+    local:
+        host: localhost:3000
+        protocol: ws
+        description: Local development server; deployment hosts are supplied by environment configuration.
+channels:
+    control:
+        address: /v1/ws
+        title: Connection control channel
+        description: Bidirectional protocol channel used before and after an authenticated connection is established.
+        servers:
+            - $ref: '#/servers/local'
+        messages:
+            Authenticate:
+                $ref: '#/components/messages/Authenticate'
+            Authenticated:
+                $ref: '#/components/messages/Authenticated'
+            ProtocolError:
+                $ref: '#/components/messages/ProtocolError'
+            Ping:
+                $ref: '#/components/messages/Ping'
+            Pong:
+                $ref: '#/components/messages/Pong'
+operations:
+    receiveClientControl:
+        action: receive
+        title: Receive client control messages
+        summary: Accept authentication and heartbeat messages from a client.
+        description: Authenticate must be the first message; any other message before authentication closes the connection.
+        channel:
+            $ref: '#/channels/control'
+        messages:
+            - $ref: '#/channels/control/messages/Authenticate'
+            - $ref: '#/channels/control/messages/Ping'
+    sendServerControl:
+        action: send
+        title: Send server control messages
+        summary: Send authentication results, safe protocol errors and heartbeat replies.
+        description: Protocol errors never expose credentials, stack traces, provider responses or sensitive payloads.
+        channel:
+            $ref: '#/channels/control'
+        messages:
+            - $ref: '#/channels/control/messages/Authenticated'
+            - $ref: '#/channels/control/messages/ProtocolError'
+            - $ref: '#/channels/control/messages/Pong'
+components:
+    messages:
+        Authenticate:
+            name: session.authenticate.v1
+            title: Authenticate connection
+            summary: Present a single-use WebSocket ticket as the first client message.
+            contentType: application/json
+            correlationId:
+                location: $message.payload#/correlationId
+            payload:
+                $ref: '#/components/schemas/AuthenticateEnvelope'
+            examples:
+                - name: validTicket
+                  summary: Client presents a short-lived ticket.
+                  payload:
+                      messageId: 0181f32c-7b4a-4f35-8f30-c358f278cb9e
+                      type: session.authenticate.v1
+                      occurredAt: '2026-09-03T09:15:30.000Z'
+                      correlationId: 142f1089-c4e5-4594-8b8d-208d861ba762
+                      data:
+                          ticket: ws1_I3eYQ7mtJYg-7itjEjCB3GC-d8V3mQe0
+        Authenticated:
+            name: session.authenticated.v1
+            title: Connection authenticated
+            summary: Confirm the authenticated connection and its resume boundary.
+            contentType: application/json
+            correlationId:
+                location: $message.payload#/correlationId
+            payload:
+                $ref: '#/components/schemas/AuthenticatedEnvelope'
+            examples:
+                - name: authenticated
+                  summary: Server accepts the ticket.
+                  payload:
+                      messageId: 0181f32c-7b4a-4f35-8f30-c358f278cb9f
+                      type: session.authenticated.v1
+                      occurredAt: '2026-09-03T09:15:30.100Z'
+                      correlationId: 142f1089-c4e5-4594-8b8d-208d861ba762
+                      causationId: 0181f32c-7b4a-4f35-8f30-c358f278cb9e
+                      data:
+                          connectionId: f16d12e1-2325-490f-92d8-24037bcb9292
+                          resumeCursor: null
+        ProtocolError:
+            name: protocol.error.v1
+            title: Protocol error
+            summary: Report a stable, safe WebSocket protocol error.
+            contentType: application/json
+            correlationId:
+                location: $message.payload#/correlationId
+            payload:
+                $ref: '#/components/schemas/ProtocolErrorEnvelope'
+            examples:
+                - name: authenticationRequired
+                  summary: A client sent a message before authenticating.
+                  payload:
+                      messageId: 0181f32c-7b4a-4f35-8f30-c358f278cba0
+                      type: protocol.error.v1
+                      occurredAt: '2026-09-03T09:15:30.100Z'
+                      correlationId: 142f1089-c4e5-4594-8b8d-208d861ba762
+                      data:
+                          code: AUTHENTICATION_REQUIRED
+                          message: Требуется аутентификация соединения.
+                          retryable: false
+        Ping:
+            name: protocol.ping.v1
+            title: Client heartbeat
+            summary: Keep an authenticated connection active.
+            contentType: application/json
+            correlationId:
+                location: $message.payload#/correlationId
+            payload:
+                $ref: '#/components/schemas/PingEnvelope'
+        Pong:
+            name: protocol.pong.v1
+            title: Server heartbeat response
+            summary: Confirm that the server received the client heartbeat.
+            contentType: application/json
+            correlationId:
+                location: $message.payload#/correlationId
+            payload:
+                $ref: '#/components/schemas/PongEnvelope'
+    schemas:
+        Uuid:
+            type: string
+            format: uuid
+            pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
+        Timestamp:
+            type: string
+            format: date-time
+            pattern: '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$'
+        MessageEnvelope:
+            type: object
+            additionalProperties: false
+            required:
+                - messageId
+                - type
+                - occurredAt
+                - correlationId
+                - data
+            properties:
+                messageId:
+                    $ref: '#/components/schemas/Uuid'
+                type:
+                    type: string
+                    pattern: '^[a-z][a-z0-9]*(?:\.[a-z][a-z0-9]*)+\.v[1-9][0-9]*$'
+                    description: Stable dotted message type ending in a positive schema version.
+                occurredAt:
+                    $ref: '#/components/schemas/Timestamp'
+                correlationId:
+                    $ref: '#/components/schemas/Uuid'
+                causationId:
+                    oneOf:
+                        - $ref: '#/components/schemas/Uuid'
+                        - type: 'null'
+                    description: Message that directly caused this message, when one exists.
+                stream:
+                    type: string
+                    minLength: 1
+                    maxLength: 128
+                    pattern: '^[a-z][a-z0-9-]*:[A-Za-z0-9_-]+$'
+                    description: Opaque ordering scope present only when a contract guarantees stream order.
+                sequence:
+                    type: integer
+                    minimum: 0
+                    description: Monotonic value within stream; valid only when stream is also present.
+                data: {}
+        AuthenticateEnvelope:
+            allOf:
+                - $ref: '#/components/schemas/MessageEnvelope'
+                - type: object
+                  properties:
+                      type:
+                          const: session.authenticate.v1
+                      data:
+                          $ref: '#/components/schemas/AuthenticateData'
+        AuthenticateData:
+            type: object
+            additionalProperties: false
+            required:
+                - ticket
+            properties:
+                ticket:
+                    type: string
+                    minLength: 32
+                    maxLength: 256
+                    pattern: '^ws1_[A-Za-z0-9_-]+$'
+                    description: Sensitive single-use ticket. Never place it in URLs, logs, traces or analytics.
+        AuthenticatedEnvelope:
+            allOf:
+                - $ref: '#/components/schemas/MessageEnvelope'
+                - type: object
+                  properties:
+                      type:
+                          const: session.authenticated.v1
+                      data:
+                          $ref: '#/components/schemas/AuthenticatedData'
+        AuthenticatedData:
+            type: object
+            additionalProperties: false
+            required:
+                - connectionId
+                - resumeCursor
+            properties:
+                connectionId:
+                    $ref: '#/components/schemas/Uuid'
+                resumeCursor:
+                    oneOf:
+                        - type: string
+                          minLength: 1
+                          maxLength: 2048
+                          pattern: '^[A-Za-z0-9_-]+$'
+                        - type: 'null'
+        ProtocolErrorEnvelope:
+            allOf:
+                - $ref: '#/components/schemas/MessageEnvelope'
+                - type: object
+                  properties:
+                      type:
+                          const: protocol.error.v1
+                      data:
+                          $ref: '#/components/schemas/ProtocolErrorData'
+        ProtocolErrorData:
+            type: object
+            additionalProperties: false
+            required:
+                - code
+                - message
+                - retryable
+            properties:
+                code:
+                    type: string
+                    minLength: 3
+                    maxLength: 96
+                    pattern: '^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$'
+                    description: Stable machine-readable code that is not localized.
+                message:
+                    type: string
+                    minLength: 1
+                    maxLength: 500
+                    description: Safe localized message without implementation details or sensitive values.
+                retryable:
+                    type: boolean
+                retryAfterMs:
+                    type: integer
+                    minimum: 0
+                    maximum: 300000
+        PingEnvelope:
+            allOf:
+                - $ref: '#/components/schemas/MessageEnvelope'
+                - type: object
+                  properties:
+                      type:
+                          const: protocol.ping.v1
+                      data:
+                          $ref: '#/components/schemas/EmptyData'
+        PongEnvelope:
+            allOf:
+                - $ref: '#/components/schemas/MessageEnvelope'
+                - type: object
+                  properties:
+                      type:
+                          const: protocol.pong.v1
+                      data:
+                          $ref: '#/components/schemas/EmptyData'
+        EmptyData:
+            type: object
+            additionalProperties: false

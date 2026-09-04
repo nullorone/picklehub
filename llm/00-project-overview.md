@@ -104,7 +104,8 @@ PickleHub помогает русскоязычным игрокам в pickleba
 
 - Рабочие пространства npm и Turborepo, Node.js 22, строгий TypeScript.
 - Backend: модульный монолит NestJS, Prisma, PostgreSQL/PostGIS, Redis/BullMQ, транзакционный outbox.
-- Контракты: OpenAPI для REST, AsyncAPI для WebSocket и событий; сгенерированные клиенты не редактируются вручную.
+- Контракты: TypeSpec генерирует OpenAPI для REST, AsyncAPI описывает WebSocket и события; сгенерированные
+  спецификации и клиенты не редактируются вручную.
 - Frontend: React/Vite web/PWA, отдельный React TMA, позднее React Native/Expo.
 - Общие пакеты: API SDK, типы предметной области, валидация, i18n и таксономия аналитики; UI остаётся
   платформенным.

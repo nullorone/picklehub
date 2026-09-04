@@ -19,14 +19,39 @@
         "lint": "turbo run lint",
         "test": "turbo run test",
         "typecheck": "turbo run typecheck",
-        "format": "prettier --write .",
-        "format:check": "prettier --check .",
+        "codegen": "npm run contracts:generate",
+        "contracts:compile": "node contracts/scripts/generate-openapi.mjs",
+        "contracts:typespec:check": "tsp compile contracts/rest --no-emit",
+        "contracts:lint": "npm run contracts:typespec:check && redocly lint openapi.yaml && node contracts/scripts/check-contract-policy.mjs",
+        "contracts:breaking": "node contracts/scripts/check-breaking-changes.mjs",
+        "contracts:generate": "node contracts/scripts/generate-contracts.mjs",
+        "contracts:generated:check": "node contracts/scripts/check-generated-contract-types.mjs",
+        "contracts:typecheck": "tsc --noEmit --strict --skipLibCheck --target ES2022 --module NodeNext --moduleResolution NodeNext contracts/generated/openapi.ts contracts/generated/asyncapi.ts",
+        "contracts:mock": "prism mock openapi.yaml --host 127.0.0.1 --port 4010",
+        "contracts:mock:check": "node contracts/scripts/check-openapi-mock.mjs",
+        "contracts:check": "npm run contracts:lint && npm run contracts:breaking && npm run contracts:generated:check && npm run contracts:typecheck && npm run contracts:mock:check",
+        "format": "prettier --write . && tsp format 'contracts/**/*.tsp'",
+        "format:check": "prettier --check . && tsp format --check 'contracts/**/*.tsp'",
         "docs:check": "markdownlint-cli2 README.md AGENTS.md 'llm/**/*.md'"
     },
     "devDependencies": {
+        "@asyncapi/modelina": "5.10.1",
+        "@asyncapi/parser": "3.6.3",
+        "@redocly/cli": "2.51.1",
+        "@stoplight/prism-cli": "5.14.2",
+        "@typespec/compiler": "1.15.0",
+        "@typespec/http": "1.15.0",
+        "@typespec/openapi3": "1.15.0",
         "markdownlint-cli2": "0.18.1",
+        "openapi-typescript": "7.13.0",
         "prettier": "3.6.2",
         "turbo": "2.5.6",
-        "typescript": "5.9.2"
+        "typescript": "5.9.2",
+        "yaml": "2.9.0"
+    },
+    "overrides": {
+        "@stoplight/prism-core": "5.8.0",
+        "@stoplight/prism-http": "5.12.0",
+        "@stoplight/prism-http-server": "5.12.2"
     }
 }
