@@ -36,6 +36,7 @@
         "docs:check": "markdownlint-cli2 README.md AGENTS.md 'llm/**/*.md'"
     },
     "devDependencies": {
+        "@eslint/js": "9.35.0",
         "@asyncapi/modelina": "5.10.1",
         "@asyncapi/parser": "3.6.3",
         "@redocly/cli": "2.51.1",
@@ -43,11 +44,17 @@
         "@typespec/compiler": "1.15.0",
         "@typespec/http": "1.15.0",
         "@typespec/openapi3": "1.15.0",
+        "eslint": "9.35.0",
+        "eslint-config-prettier": "10.1.8",
+        "eslint-plugin-react-hooks": "7.0.1",
+        "eslint-plugin-react-refresh": "0.5.2",
         "markdownlint-cli2": "0.18.1",
         "openapi-typescript": "7.13.0",
         "prettier": "3.6.2",
         "turbo": "2.5.6",
         "typescript": "5.9.2",
+        "typescript-eslint": "8.42.0",
+        "vitest": "5.0.0",
         "yaml": "2.9.0"
     },
     "overrides": {

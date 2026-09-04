@@ -18,7 +18,8 @@ PickleHub — это создаваемая через промпты специ
 - `llm/`: продуктовый контекст, записи решений и исполняемые промпты фич.
 
 Каталоги приложений создаются только соответствующими промптами. Backend-каркас уже создан этапом
-`llm/01-platform-foundation/03-backend.md`; не создавайте последующую фичу раньше её промпта.
+`llm/01-platform-foundation/03-backend.md`; frontend-каркасы — этапом `04-tma-web.md`. Не создавайте последующую
+фичу раньше её промпта.
 
 ## Правила работы
 
@@ -62,3 +63,9 @@ npm run build
 ```bash
 npm run contracts:check
 ```
+
+## Frontend-каркасы
+
+Инструкции запуска и границы каркасов находятся в [`frontend/web/README.md`](frontend/web/README.md) и
+[`frontend/tg/README.md`](frontend/tg/README.md). Общие framework-neutral пакеты описаны в
+[`frontend/packages/README.md`](frontend/packages/README.md).

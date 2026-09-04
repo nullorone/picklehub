@@ -36,6 +36,13 @@ try {
             throw new Error(`${file} is stale. Run npm run contracts:generate.`);
         }
     }
+    const [expectedApiClient, committedApiClient] = await Promise.all([
+        readFile(resolve(generatedTypes, 'openapi.ts')),
+        readFile(resolve(repositoryRoot, 'frontend/packages/api-client/src/generated/openapi.ts')),
+    ]);
+    if (!expectedApiClient.equals(committedApiClient)) {
+        throw new Error('API client OpenAPI types are stale. Run npm run contracts:generate.');
+    }
     console.log(`Generated OpenAPI and contract types are reproducible (${expectedFiles.join(', ')}).`);
 } finally {
     await rm(temporary, { force: true, recursive: true });

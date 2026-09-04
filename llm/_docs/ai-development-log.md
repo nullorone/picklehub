@@ -196,3 +196,97 @@ backend/prisma/migrations/20260904090000_platform_foundation/migration.sql` — 
   нормальной TLS/network policy. Внешняя настройка `NODE_TLS_REJECT_UNAUTHORIZED=0` остаётся риском окружения;
   security audit зависимостей не выполнялся из-за `--no-audit` и остаётся этапу verification.
 - Следующий промпт: `llm/01-platform-foundation/04-tma-web.md`; к нему не переходили.
+
+## 2026-09-04 — основа платформы, этап 04-tma-web
+
+- Активный промпт: `llm/01-platform-foundation/04-tma-web.md`.
+- Приложения: созданы независимые workspaces `@picklehub/web` и `@picklehub/tg` на React/Vite с Router,
+  TanStack Query, React Hook Form с Zod resolver, i18next и русским языком по умолчанию. Обе оболочки содержат
+  только нейтральный foundation-экран, error boundary, offline announcement, адаптивную тему, видимый keyboard
+  focus, reduced-motion policy и строго валидируемый `/runtime-config.json`.
+- Web/PWA: настроены manifest, SVG any/maskable icons, registration и Workbox service worker. Precache содержит
+  только версионированную статическую оболочку; runtime config, API и мутации не кешируются. Build-check проверяет
+  manifest, service worker, runtime config и запрет precache конфигурации.
+- TMA: Telegram SDK изолирован в platform adapter; он монтирует theme params, Mini App и viewport, связывает CSS
+  variables, расширяет viewport и сообщает `ready`. `mockTelegramEnv` загружается только через compile-time
+  `import.meta.env.DEV`; production build-check отклоняет marker и имя mock-функции в bundle.
+- Общие пакеты: созданы `api-client`, `domain`, `validation`, `i18n` и `analytics` без React UI, DOM, Telegram или
+  backend imports. API client использует OpenAPI-типы; contract generation теперь воспроизводимо обновляет и
+  проверяет committed копию типов внутри workspace клиента. Внешний analytics provider не подключался.
+- Поставка: добавлены отдельные multi-stage Dockerfile и nginx SPA config для web и TMA, README приложений и
+  пакетов; единый root lockfile и Turbo-граф синхронизированы. Устаревший UI и TON Connect не добавлялись.
+- Изменённые файлы: новые `frontend/web`, `frontend/tg`, `frontend/packages/*`, общие frontend ESLint/TypeScript
+  config; обновлены root `package.json`, `package-lock.json`, `turbo.json`, `README.md` и contract generation/drift
+  scripts.
+
+### Проверки этапа 04-tma-web
+
+- `npm install --ignore-scripts --no-audit --no-fund --cache /tmp/picklehub-frontend-npm-cache
+--fetch-retries=2 --fetch-timeout=120000 --loglevel=info` — успешно, добавлено 312 пакетов, единый lockfile
+  синхронизирован.
+- Повторная offline-проверка обнаружила engine warning у `jsdom@30.0.1` на текущем Node 22.19.0; версия
+  закреплена на совместимой `27.4.0`, после чего `npm install` добавил 26 и удалил 1 transitive package без engine
+  warning.
+- `npm run contracts:generate` — успешно; OpenAPI/TypeScript artifacts и копия OpenAPI types в `api-client`
+  сгенерированы.
+- `npm run format:check` и `npm run docs:check` — успешно; TypeSpec format check успешен, Markdown: 113 файлов,
+  0 ошибок.
+- `npm run lint` и `npm run typecheck` — успешно для восьми workspaces.
+- `npm test` — успешно: backend 6 suites/11 tests, frontend/shared 7 files/9 tests; отдельно проверены generated
+  client route, strict runtime config, русский fallback, analytics/domain taxonomy, обе оболочки и offline status.
+- `npm run build` — успешно для восьми workspaces; web build создал валидные manifest/service worker и подтвердил
+  отсутствие runtime config в precache, TMA build подтвердил отсутствие development mock в production bundle.
+- `npm run contracts:check` — успешно после разрешения localhost listener: TypeSpec/OpenAPI lint, policy 2 REST/5
+  protocol messages, compatibility, generated drift/typecheck и Prism mock. Первый sandbox-запуск ожидаемо получил
+  `listen EPERM` на `127.0.0.1`.
+- Production preview smoke: `npm run preview --workspace @picklehub/web -- --host 127.0.0.1 --port 4173` и
+  аналогичная команда для `@picklehub/tg` на порту 4174 запущены; `curl --silent --show-error --fail` подтвердил
+  HTML и runtime config обеих оболочек, а также web manifest. Процессы после проверки остановлены.
+- `npm ls --depth=0`, проверка отсутствия backend/TON imports, `git diff --check` — успешно; unmet/extraneous
+  dependencies и whitespace errors отсутствуют.
+- `docker build --file frontend/web/Dockerfile --tag picklehub-web:foundation .` — Dockerfile прочитан до получения
+  base image, затем сборка заблокирована внешней TLS-политикой: сертификат ответа для `auth.docker.io` выпущен для
+  других доменов. TMA image не запускался повторно, поскольку использует те же недоступные base images. Обе сборки
+  необходимо повторить в CI с корректным Docker registry/TLS; верификация Docker-образов не заявляется успешной.
+- Ограничения окружения: npm продолжает предупреждать о внешнем `NODE_TLS_REJECT_UNAUTHORIZED=0`; эта настройка не
+  добавлена в репозиторий и должна отсутствовать в CI/production.
+- Следующий промпт: `llm/01-platform-foundation/05-verification.md`; к нему не переходили.
+
+## 2026-09-04 — визуальная система Web/PWA и TMA
+
+- Активный промпт остаётся `llm/01-platform-foundation/04-tma-web.md`; продуктовые функции следующих этапов не
+  добавлялись. Пять PNG из `design/` использованы как визуальный референс, но не поставляются как runtime-ассеты.
+- Обе нейтральные оболочки получили dark-first визуальную систему: почти чёрный фон, тёмно-синие поверхности,
+  сине-фиолетовые акценты, крупные радиусы, контрастную типографику и CSS-графику корта. Web адаптируется к
+  системной светлой теме; TMA использует Telegram theme variables и безопасные fallback-значения.
+- Offline banner, 404 и error boundary приведены к той же системе. Сохранены keyboard focus, reduced-motion,
+  safe-area, русская локализация и существующие аналитические события. Публичные маршруты, runtime config,
+  контракты и API не менялись; навигация и фиктивные клубы, турниры или статистика не добавлялись.
+- Изменённые файлы: разметка, стили, тесты и HTML оболочек в `frontend/web` и `frontend/tg`, Telegram development
+  theme mock и этот журнал.
+
+### Проверки визуальной системы
+
+- `npx prettier --write frontend/web/src/app.tsx frontend/web/src/app.test.tsx
+frontend/web/src/error-boundary.tsx frontend/web/src/styles.css frontend/web/index.html frontend/tg/src/app.tsx
+frontend/tg/src/app.test.tsx frontend/tg/src/error-boundary.tsx frontend/tg/src/styles.css
+frontend/tg/src/telegram.ts frontend/tg/index.html` — успешно; отформатированы изменённые файлы.
+- `npm test --workspace @picklehub/web --workspace @picklehub/tg` — успешно: 2 test files, 5 tests.
+- `npm run lint --workspace @picklehub/web --workspace @picklehub/tg` — успешно, warnings отсутствуют.
+- `npm run typecheck --workspace @picklehub/web --workspace @picklehub/tg` — успешно.
+- `npm run build --workspace @picklehub/web --workspace @picklehub/tg` — успешно; Web PWA manifest/service worker
+  валидны, production TMA bundle не содержит development mock.
+- Локальный visual smoke: Web preview проверен при 1200 px и 500 px в тёмной и светлой теме; TMA development
+  shell проверен при 500 px с Telegram mock. Горизонтального переполнения нет, accessibility tree содержит
+  `banner`, `main`, именованный `region` и заголовок первого уровня. Первые sandbox-запуски получили ожидаемый
+  `listen EPERM`; после разрешения localhost оба сервера запустились и по завершении были остановлены.
+- `npm run format:check` и `npm run docs:check` — успешно после форматирования новой записи журнала; TypeSpec и
+  113 Markdown-файлов прошли проверку.
+- `npm run lint` и `npm run typecheck` — успешно для восьми workspaces.
+- `npm test` — успешно: 13 Turbo tasks, включая 6 backend suites/11 tests и 5 обновлённых Web/TMA tests.
+- `npm run build` — успешно для восьми workspaces; проверки PWA и отсутствия Telegram development mock прошли.
+- `npm run contracts:check` — успешно: TypeSpec/OpenAPI lint, policy 2 REST/5 protocol messages, compatibility,
+  generated drift/typecheck и Prism mock. Первый sandbox-запуск дошёл до Prism и получил ожидаемый `listen EPERM`;
+  повтор с разрешением localhost прошёл полностью. Внешняя настройка `NODE_TLS_REJECT_UNAUTHORIZED=0` по-прежнему
+  присутствует только в окружении и вызывает warning.
+- `npm ls --depth=0` и `git diff --check` — успешно; unmet/extraneous dependencies и whitespace errors отсутствуют.

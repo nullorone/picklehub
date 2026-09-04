@@ -1,0 +1,41 @@
+{
+    "name": "@picklehub/tg",
+    "version": "0.1.0",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "build": "vite build && node scripts/check-build.mjs",
+        "dev": "vite",
+        "lint": "eslint src vite.config.ts --max-warnings=0",
+        "preview": "vite preview",
+        "typecheck": "tsc --noEmit -p tsconfig.json",
+        "test": "vitest run"
+    },
+    "dependencies": {
+        "@hookform/resolvers": "5.9.1",
+        "@picklehub/analytics": "0.1.0",
+        "@picklehub/api-client": "0.1.0",
+        "@picklehub/domain": "0.1.0",
+        "@picklehub/i18n": "0.1.0",
+        "@picklehub/validation": "0.1.0",
+        "@tanstack/react-query": "5.102.8",
+        "@telegram-apps/sdk-react": "3.3.9",
+        "i18next": "26.4.2",
+        "react": "19.2.8",
+        "react-dom": "19.2.8",
+        "react-hook-form": "7.87.0",
+        "react-i18next": "17.0.13",
+        "react-router-dom": "7.18.3",
+        "zod": "4.5.4"
+    },
+    "devDependencies": {
+        "@testing-library/jest-dom": "6.9.1",
+        "@testing-library/react": "16.3.3",
+        "@types/react": "19.2.18",
+        "@types/react-dom": "19.2.7",
+        "@vitejs/plugin-react": "6.1.1",
+        "jsdom": "27.4.0",
+        "vite": "8.2.2",
+        "vitest": "5.0.0"
+    }
+}
