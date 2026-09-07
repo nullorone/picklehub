@@ -50,6 +50,23 @@ flowchart LR
 - Reverse proxy, CDN, поставщики почты, Telegram, карт, геокодинга, аналитики и наблюдаемости остаются ролями, а не
   выбранными продуктами. Их выбор не входит в этот этап.
 
+### Foundation-поставка и проверки
+
+- Default-профиль `docker-compose.yml` содержит только локальные PostgreSQL/PostGIS и Redis. Профиль `foundation`
+  добавляет одноразовый migration job, API, worker, web/PWA и TMA; API и worker не запускаются до успешного
+  завершения миграций и готовности обязательных хранилищ.
+- Backend Dockerfile имеет отдельный migration target с Prisma CLI. Runtime target не содержит dev dependencies и
+  не получает право самовольно изменять схему при старте приложения.
+- API и worker используют один runtime image и разные команды. Для API определён readiness healthcheck; worker
+  проверяется по успешному запуску процесса и корректной обработке сигнала остановки до появления отдельного
+  операционного health endpoint.
+- Web и TMA собираются независимо и обслуживаются непривилегированным nginx на порту `8080`. Их контейнерные
+  healthcheck проверяют статическую оболочку; это не выдаётся за доступность backend или внешнего провайдера.
+- `scripts/check-workspaces.mjs` исполняет правила ADR 0003: единственный root lockfile, обязательные root/Turbo и
+  workspace tasks, направление внутренних зависимостей и запрет backend/platform imports из общих пакетов.
+- GitHub Actions выполняет независимые quality, backend integration и полный Compose smoke jobs на Node.js 22.
+  Точный локальный и CI runbook находится в [документе эксплуатации](operations.md).
+
 ## Границы backend
 
 ### Слои модуля

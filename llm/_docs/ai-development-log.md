@@ -290,3 +290,61 @@ frontend/tg/src/telegram.ts frontend/tg/index.html` — успешно; отфо
   повтор с разрешением localhost прошёл полностью. Внешняя настройка `NODE_TLS_REJECT_UNAUTHORIZED=0` по-прежнему
   присутствует только в окружении и вызывает warning.
 - `npm ls --depth=0` и `git diff --check` — успешно; unmet/extraneous dependencies и whitespace errors отсутствуют.
+
+## 2026-09-04 — основа платформы, этап 05-verification
+
+- Активный промпт: `llm/01-platform-foundation/05-verification.md`.
+- Аудит workspace: добавлена исполняемая проверка единственного root lockfile, восьми ожидаемых workspace,
+  обязательных root/Turbo/workspace tasks, направления внутренних зависимостей и запрета backend, NestJS, Prisma,
+  React и Telegram imports/dependencies в framework-neutral пакетах.
+- Compose: сохранён default-запуск только PostgreSQL/PostGIS и Redis; профиль `foundation` добавляет migration job,
+  API, worker, web/PWA и TMA с dependency conditions и healthcheck. Smoke создаёт отдельный Compose project,
+  проверяет миграции, health endpoints, обе оболочки и lifecycle event при SIGTERM, затем удаляет только свои
+  containers, network и volumes.
+- CI: создан GitHub Actions workflow с независимыми quality, backend integration и Compose jobs на Node.js
+  `22.19.0`. Quality выполняет чистую установку, runtime audit и все root gates; integration использует чистые
+  PostGIS/Redis и `prisma migrate deploy`; Compose собирает и проверяет текущие runtime images.
+- Исправленный дефект: backend migration target первоначально наследовал установку с `--ignore-scripts`, из-за чего
+  отсутствовал обязательный Prisma schema-engine. Backend build dependencies теперь устанавливают lifecycle
+  scripts штатно; runtime production dependencies по-прежнему устанавливаются без scripts и не содержат Prisma
+  CLI. CI integration также устанавливает engine до `prisma migrate deploy`.
+- Документация: архитектура дополнена фактической схемой foundation-поставки, создан эксплуатационный runbook с
+  матрицей прослеживаемости, root и backend README содержат единые команды проверки. Внешние провайдеры не
+  добавлялись и не подменялись успешными заглушками.
+- Изменённые файлы: `.github/workflows/foundation.yml`, `backend/Dockerfile`, `docker-compose.yml`, `package.json`,
+  `scripts/check-workspaces.mjs`, `scripts/compose-smoke.sh`, `README.md`, `backend/README.md`,
+  `llm/_docs/architecture.md`, `llm/_docs/operations.md` и этот журнал.
+
+### Проверки этапа 05-verification
+
+- `npm ci --ignore-scripts --no-audit --no-fund` — успешно из единственного root lockfile после разрешения доступа
+  к настроенному registry: добавлено 1588 packages; engine warnings отсутствуют. npm сообщил об устаревших
+  транзитивных packages и внешнем `NODE_TLS_REJECT_UNAUTHORIZED=0`; эта переменная не задана репозиторием.
+- `PRISMA_SCHEMA_ENGINE_BINARY=/usr/bin/true PRISMA_QUERY_ENGINE_LIBRARY=/usr/bin/true npm run prisma:generate
+--workspace @picklehub/backend` — Prisma Client 6.16.2 успешно воспроизводимо создан для driver adapter.
+- `npm run verify` — успешно после разрешения loopback listener для Prism: workspace check подтвердил 8 workspace
+  и один lockfile; TypeSpec, Redocly, AsyncAPI policy, compatibility, generated drift/typecheck и OpenAPI mock
+  прошли; format и 114 Markdown-файлов прошли; lint и typecheck выполнили по 8 задач, tests — 13 задач, build — 8
+  задач. Backend unit: 6 suites/11 tests; frontend/shared: 7 files/9 tests. Web build-check подтвердил offline
+  shell policy, TMA build-check — отсутствие development Telegram mock в production bundle.
+- `docker compose --profile foundation config --quiet` — успешно, итоговая Compose-модель валидна.
+- В отдельном проекте `picklehub-verification` команды `docker compose ... up --detach --wait postgres redis`
+  создали чистые healthy PostGIS/Redis. Migration SQL применён с `psql -v ON_ERROR_STOP=1`; затем
+  `npm run test:integration --workspace @picklehub/backend` — успешно, 1 suite/5 tests: wire health/readiness,
+  PostGIS/schema, rollback outbox, идемпотентная публикация и append-only audit. После проверки `docker compose
+... down --volumes --remove-orphans` удалил только временные containers, network и оба volumes.
+- `npm run compose:smoke` — не завершён из-за внешней TLS-политики до Docker build steps: `auth.docker.io` вернул
+  сертификат для других доменов при получении закреплённых Node.js/nginx images. Скрипт выполнил cleanup; images,
+  container readiness и Compose graceful shutdown локально не заявляются успешными. Проверка обязательна в CI.
+- `npm run prisma:migrate --workspace @picklehub/backend` на хосте — не завершён: официальный Prisma binary
+  endpoint сначала был недоступен через DNS proxy, затем вернул `403` для checksum schema-engine. SQL той же
+  миграции применён и проверен на чистой БД, но это не объявляется успешным запуском Prisma CLI; штатный CLI gate
+  остаётся в CI и migration image.
+- `npm audit --omit=dev --audit-level=high` — не выполнен локальным registry: настроенный Artifactory ответил 404
+  с сообщением `Repo npm does not support npm audit`. Audit не маскируется и остаётся обязательным падающим CI gate через
+  registry с audit API.
+- Первый sandbox-запуск contract mock получил ожидаемый `listen EPERM`; полный повтор вне sandbox успешен. Первый
+  Docker-запуск не имел доступа к daemon socket; повтор после разрешения дошёл до описанного TLS-блокера.
+- `git diff --check`, YAML parse, `npm ls --all` и Turbo dry graph — успешно; пользовательские PNG в `design/` не
+  изменялись.
+- Следующий промпт: `llm/02-identity-onboarding/01-requirements.md`; к нему не переходили.

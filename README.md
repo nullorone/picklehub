@@ -69,3 +69,22 @@ npm run contracts:check
 Инструкции запуска и границы каркасов находятся в [`frontend/web/README.md`](frontend/web/README.md) и
 [`frontend/tg/README.md`](frontend/tg/README.md). Общие framework-neutral пакеты описаны в
 [`frontend/packages/README.md`](frontend/packages/README.md).
+
+## Полная проверка основы
+
+Локальные правила workspace-графа и все проверки без инфраструктуры запускаются одной командой:
+
+```bash
+npm run verify
+```
+
+Полный профиль Compose собирает migration job, API, worker, web/PWA и TMA поверх чистых PostgreSQL/PostGIS и
+Redis. Smoke использует отдельное имя проекта и всегда удаляет созданные контейнеры и volumes:
+
+```bash
+npm run compose:smoke
+```
+
+Обычный `docker compose up -d postgres redis` по-прежнему запускает только локальные зависимости. Ручной запуск
+всего foundation-профиля и эксплуатационные ограничения описаны в
+[`llm/_docs/operations.md`](llm/_docs/operations.md).

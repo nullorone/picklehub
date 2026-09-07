@@ -12,6 +12,10 @@
 3. Примените миграции: `npm run prisma:migrate --workspace @picklehub/backend`.
 4. Запустите API и проверьте `GET http://localhost:3000/v1/health/live` и `/v1/health/ready`.
 
+Для проверки контейнерной поставки используйте `npm run compose:smoke` из корня. Команда создаёт отдельный
+Compose project, применяет `prisma migrate deploy` к чистой базе, проверяет API, worker и клиентские оболочки,
+посылает API и worker сигнал остановки и затем удаляет только свои контейнеры и volumes.
+
 `live` проверяет только процесс. `ready` с коротким timeout проверяет PostgreSQL/PostGIS и Redis и во время
 остановки становится отрицательным. Публичный ответ намеренно не раскрывает адреса и версии зависимостей.
 

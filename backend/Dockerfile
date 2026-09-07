@@ -3,7 +3,7 @@ ENV PRISMA_SKIP_POSTINSTALL_GENERATE=true
 WORKDIR /app
 COPY package.json package-lock.json ./
 COPY backend/package.json backend/package.json
-RUN npm ci --ignore-scripts --workspace @picklehub/backend --include-workspace-root
+RUN npm ci --workspace @picklehub/backend --include-workspace-root
 
 FROM dependencies AS build
 COPY tsconfig.base.json ./
@@ -12,6 +12,10 @@ RUN PRISMA_SCHEMA_ENGINE_BINARY=/usr/bin/true \
     PRISMA_QUERY_ENGINE_LIBRARY=/usr/bin/true \
     npm run prisma:generate --workspace @picklehub/backend \
     && npm run build --workspace @picklehub/backend
+
+FROM build AS migration
+ENV NODE_ENV=production
+CMD ["npm", "run", "prisma:migrate", "--workspace", "@picklehub/backend"]
 
 FROM node:22.19.0-bookworm-slim AS production-dependencies
 ENV PRISMA_SKIP_POSTINSTALL_GENERATE=true

@@ -28,6 +28,104 @@ services:
         volumes:
             - picklehub-redis:/data
 
+    migrate:
+        profiles: ['foundation']
+        build:
+            context: .
+            dockerfile: backend/Dockerfile
+            target: migration
+        environment: &backend-environment
+            NODE_ENV: production
+            DATABASE_URL: postgresql://picklehub:picklehub@postgres:5432/picklehub?schema=public
+            REDIS_URL: redis://redis:6379/0
+            REDIS_NAMESPACE: foundation
+            LOG_LEVEL: info
+        depends_on:
+            postgres:
+                condition: service_healthy
+        restart: 'no'
+
+    api:
+        profiles: ['foundation']
+        build:
+            context: .
+            dockerfile: backend/Dockerfile
+            target: runtime
+        environment:
+            <<: *backend-environment
+            APP_ROLE: api
+            HOST: 0.0.0.0
+            PORT: 3000
+        depends_on:
+            migrate:
+                condition: service_completed_successfully
+            redis:
+                condition: service_healthy
+        ports:
+            - '3000:3000'
+        healthcheck:
+            test:
+                [
+                    'CMD',
+                    'node',
+                    '-e',
+                    "fetch('http://127.0.0.1:3000/v1/health/ready').then((response) => { if (!response.ok) process.exit(1); }).catch(() => process.exit(1))",
+                ]
+            interval: 2s
+            timeout: 2s
+            retries: 20
+            start_period: 5s
+        stop_grace_period: 15s
+
+    worker:
+        profiles: ['foundation']
+        build:
+            context: .
+            dockerfile: backend/Dockerfile
+            target: runtime
+        command: ['node', 'backend/dist/worker.js']
+        environment:
+            <<: *backend-environment
+            APP_ROLE: worker
+        depends_on:
+            migrate:
+                condition: service_completed_successfully
+            redis:
+                condition: service_healthy
+        stop_grace_period: 15s
+
+    web:
+        profiles: ['foundation']
+        build:
+            context: .
+            dockerfile: frontend/web/Dockerfile
+        depends_on:
+            api:
+                condition: service_healthy
+        ports:
+            - '8080:8080'
+        healthcheck:
+            test: ['CMD', 'wget', '--quiet', '--output-document=-', 'http://127.0.0.1:8080/']
+            interval: 2s
+            timeout: 2s
+            retries: 15
+
+    tg:
+        profiles: ['foundation']
+        build:
+            context: .
+            dockerfile: frontend/tg/Dockerfile
+        depends_on:
+            api:
+                condition: service_healthy
+        ports:
+            - '8081:8080'
+        healthcheck:
+            test: ['CMD', 'wget', '--quiet', '--output-document=-', 'http://127.0.0.1:8080/']
+            interval: 2s
+            timeout: 2s
+            retries: 15
+
 volumes:
     picklehub-postgres:
     picklehub-redis:
