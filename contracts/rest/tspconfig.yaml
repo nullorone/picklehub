@@ -1,0 +1,23 @@
+kind: project
+entrypoint: main.tsp
+warn-as-error: true
+output-dir: '{project-root}/../..'
+
+emit:
+    - '@typespec/openapi3'
+
+options:
+    '@typespec/openapi3':
+        emitter-output-dir: '{output-dir}'
+        output-file: openapi.yaml
+        file-type: yaml
+        openapi-versions:
+            - 3.1.0
+        include-x-typespec-name: never
+        new-line: lf
+        operation-id-strategy: explicit-only
+        seal-object-schemas: true
+
+linter:
+    extends:
+        - '@typespec/http/all'

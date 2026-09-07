@@ -1,0 +1,21 @@
+extends:
+    - recommended
+
+apis:
+    picklehub@v1:
+        root: ./openapi.yaml
+
+rules:
+    no-empty-servers: error
+    no-server-example.com: error
+    no-unused-components: off
+    operation-description: error
+    operation-operationId: error
+    operation-operationId-unique: error
+    operation-operationId-url-safe: error
+    operation-summary: error
+    operation-tag-defined: error
+    operation-2xx-response: error
+    path-not-include-query: error
+    spec-components-invalid-map-name: error
+    tag-description: error

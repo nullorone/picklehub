@@ -1,0 +1,78 @@
+name: Foundation verification
+
+on:
+    pull_request:
+    push:
+        branches: [master]
+
+permissions:
+    contents: read
+
+concurrency:
+    group: foundation-${{ github.ref }}
+    cancel-in-progress: true
+
+jobs:
+    quality:
+        runs-on: ubuntu-24.04
+        timeout-minutes: 20
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 22.19.0
+                  cache: npm
+            - run: npm ci --ignore-scripts
+            - run: npm audit --omit=dev --audit-level=high
+            - run: npm run prisma:generate --workspace @picklehub/backend
+              env:
+                  PRISMA_SCHEMA_ENGINE_BINARY: /usr/bin/true
+                  PRISMA_QUERY_ENGINE_LIBRARY: /usr/bin/true
+            - run: npm run verify
+
+    integration:
+        runs-on: ubuntu-24.04
+        timeout-minutes: 15
+        services:
+            postgres:
+                image: postgis/postgis:16-3.4
+                env:
+                    POSTGRES_DB: picklehub
+                    POSTGRES_USER: picklehub
+                    POSTGRES_PASSWORD: picklehub
+                ports: ['5432:5432']
+                options: >-
+                    --health-cmd "pg_isready -U picklehub -d picklehub"
+                    --health-interval 2s
+                    --health-timeout 2s
+                    --health-retries 20
+            redis:
+                image: redis:7.4.1-alpine
+                ports: ['6379:6379']
+                options: >-
+                    --health-cmd "redis-cli ping"
+                    --health-interval 2s
+                    --health-timeout 2s
+                    --health-retries 20
+        env:
+            DATABASE_URL: postgresql://picklehub:picklehub@localhost:5432/picklehub?schema=public
+            REDIS_URL: redis://localhost:6379/0
+            REDIS_NAMESPACE: ci
+            NODE_ENV: test
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 22.19.0
+                  cache: npm
+            - run: npm ci
+            - run: npm run prisma:generate --workspace @picklehub/backend
+            - run: npm run prisma:migrate --workspace @picklehub/backend
+            - run: npm run test:integration --workspace @picklehub/backend
+
+    compose:
+        runs-on: ubuntu-24.04
+        timeout-minutes: 25
+        steps:
+            - uses: actions/checkout@v4
+            - run: npm run compose:smoke
