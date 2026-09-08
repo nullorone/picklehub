@@ -348,3 +348,48 @@ frontend/tg/src/telegram.ts frontend/tg/index.html` — успешно; отфо
 - `git diff --check`, YAML parse, `npm ls --all` и Turbo dry graph — успешно; пользовательские PNG в `design/` не
   изменялись.
 - Следующий промпт: `llm/02-identity-onboarding/01-requirements.md`; к нему не переходили.
+
+## 2026-09-08 — идентификация и первичная настройка, этап 01-requirements
+
+- Активный промпт: `llm/02-identity-onboarding/01-requirements.md`. Прочитаны общий контекст, обзор функции,
+  актуальные foundation-результаты, архитектура, data conventions и текущие контракты.
+- В `product-requirements.md` добавлены 11 пользовательских историй, состояния и переходы session/refresh,
+  magic link, onboarding и удаления, правила нормализации email, ограничения identity, свежие доказательства,
+  поля и публичность, продолжение черновика, история согласий, стабильные ошибки и 17 сценариев Дано/Когда/Тогда.
+- Решения: access 5 минут в памяти; refresh cookie с ротацией, inactivity 7 суток и absolute 30 суток;
+  magic link 10 минут; Telegram proof менее 5 минут с future skew до 30 секунд. Replay refresh отзывает семейство;
+  связывание требует двух доказательств и не сливает существующие аккаунты. Гонки защищаются транзакциями и
+  ограничениями БД; единственный способ входа нельзя отвязать. Пароли и проверка возраста не вводились.
+- Security/privacy дополнен политикой origin/CSRF, cookie, доставки magic-секрета во fragment доверенной страницы,
+  rate limits без раскрытия регистрации email, реестром данных и предлагаемыми сроками удаления. Сроки и
+  основания явно требуют юридического утверждения до production. Архитектура синхронизирована с уже заданным
+  обзором identity правилом access в памяти / refresh в HttpOnly cookie и исключением доставки magic-ссылки.
+- Analytics plan задаёт условия событий, свойства, дедупликацию, владельцев и применение на dashboard. Отказ от
+  аналитики не мешает активации; события до согласия не воспроизводятся задним числом, неполная воронка описана.
+- Изменённые файлы: `llm/_docs/product-requirements.md`, `llm/_docs/security-privacy.md`,
+  `llm/_docs/analytics-plan.md`, `llm/_docs/architecture.md` и этот журнал. Код приложений, схемы, generated clients
+  и пользовательские PNG в `design/` не изменялись.
+
+### Проверки этапа identity 01-requirements
+
+- `npx prettier --write llm/_docs/product-requirements.md llm/_docs/security-privacy.md
+llm/_docs/analytics-plan.md llm/_docs/architecture.md` — успешно.
+- Первый `npm run verify` в sandbox прошёл workspace, TypeSpec/OpenAPI lint, compatibility, generated drift и
+  contract typecheck, затем остановился на `listen EPERM 127.0.0.1` в Prism mock.
+- Повторный `npm run verify` с разрешением localhost — успешно: 8 workspace и один lockfile; policy 2 REST/5
+  protocol messages; compatibility, generated drift/typecheck и Prism; форматирование и 114 Markdown-файлов без
+  ошибок; lint и typecheck по 8 успешных задач, test 13 задач, build 8 задач. Backend заново выполнил 6 suites/11
+  tests; неизменённые frontend/shared задачи использовали Turbo cache. Это regression foundation, а не тесты
+  ещё не реализованной identity.
+- Read-only Python-проверка относительных Markdown-ссылок в пяти затронутых документах — успешно: 15 ссылок,
+  отсутствующих целей нет. Ручная сверка требований подтвердила покрытие всех пунктов активного промпта и
+  отсутствие противоречия между хранением токенов в обзоре, требованиях и архитектуре.
+- Финальные `npx prettier --write llm/_docs/product-requirements.md llm/_docs/ai-development-log.md`,
+  `npm run format:check`, `npm run docs:check` и `git diff --check` — успешно после уточнения границы срока proof
+  и записи результатов в журнал.
+- Новые integration/e2e тесты, Docker smoke, Prisma migrate и dependency audit не запускались: этот этап меняет
+  только требования. Ранее записанные foundation-блокеры Docker TLS, Prisma binary endpoint и audit registry
+  не закрыты этим результатом; предупреждение внешнего `NODE_TLS_REJECT_UNAUTHORIZED=0` сохранилось в verify.
+- Критерии документационного этапа выполнены. Production остаётся закрытым до review провайдеров, правовых
+  документов, retention и источника справочника географии; разрешённый DUPR URL уточняется контрактным этапом.
+- Следующий промпт: `llm/02-identity-onboarding/02-contract-data.md`; к нему не переходили.

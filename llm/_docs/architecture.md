@@ -126,13 +126,16 @@ sequenceDiagram
 - Направление сессий — короткоживущий access credential и ротируемый refresh credential. Refresh credential
   хранится на сервере только как криптографический хеш, имеет семейство ротации и отзыва; повторное применение
   отозванного значения отзывает семейство. Точные сроки фиксирует этап identity.
-- Web и TMA получают credentials через `Secure`, `HttpOnly`, ограниченные по области cookies. Изменяющие запросы
-  дополнительно защищаются проверкой допустимого origin и CSRF-токеном. Cookies не доступны JavaScript.
+- Web и TMA держат access credential только в памяти и передают в заголовке авторизации, а refresh — в
+  `Secure`, `HttpOnly`, ограниченной по области cookie. Изменяющие запросы дополнительно защищаются проверкой
+  допустимого origin и CSRF-токеном. Правила сроков и ротации заданы в [требованиях identity](product-requirements.md).
 - Будущий native-клиент использует тот же session use case, но передаёт credential из защищённого хранилища в
   заголовке авторизации; это не основание реализовывать mobile сейчас.
 - Выход, блокировка пользователя и чувствительное изменение identity отзывают подходящие сессии на backend.
   Авторизация ролей и ресурса выполняется в каждом application use case, а не только в guard или UI.
-- Credentials, init data и magic links не передаются в URL, логи, трассировки, аналитику или WebSocket payload.
+- Credentials и init data не передаются в URL, логи, трассировки, аналитику или WebSocket payload. Единственное
+  исключение для доставки magic-ссылки — секрет во fragment доверенной landing page с немедленным удалением
+  из адресной строки; ограничения описаны в [security/privacy](security-privacy.md).
 
 ## Потоки REST и WebSocket
 
