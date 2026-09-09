@@ -50,6 +50,24 @@ button {
     font: inherit;
 }
 
+input,
+select {
+    width: 100%;
+    min-height: 3rem;
+    margin-top: 0.45rem;
+    padding: 0.7rem 0.8rem;
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+    color: var(--text);
+    background: var(--background);
+    font: inherit;
+}
+
+label,
+legend {
+    font-weight: 700;
+}
+
 :focus-visible {
     outline: 3px solid var(--focus);
     outline-offset: 4px;
@@ -62,9 +80,17 @@ button {
 
 .app-header {
     display: flex;
+    align-items: center;
+    justify-content: space-between;
     width: min(72rem, calc(100% - 2rem));
     margin: 0 auto;
     padding: 1.25rem 0;
+}
+
+.app-header nav a,
+.text-action {
+    color: var(--focus);
+    font-weight: 700;
 }
 
 .brand {
@@ -282,6 +308,163 @@ p {
     text-align: center;
 }
 
+.auth-layout,
+.onboarding-layout {
+    width: min(72rem, calc(100% - 2rem));
+    margin: 0 auto;
+    padding: clamp(2rem, 8vh, 5rem) 0;
+}
+
+.auth-card,
+.onboarding-card {
+    width: min(100%, 42rem);
+    margin: 0 auto;
+    padding: clamp(1.5rem, 5vw, 3rem);
+    border: 1px solid var(--border);
+    border-radius: 1.5rem;
+    background: var(--surface);
+    box-shadow: 0 2rem 5rem rgb(0 0 0 / 22%);
+}
+
+.onboarding-card {
+    width: min(100%, 54rem);
+}
+
+.auth-card h1,
+.onboarding-card h1 {
+    max-width: 14ch;
+    font-size: clamp(2.4rem, 6vw, 4.5rem);
+}
+
+.lead,
+.hint {
+    color: var(--text-muted);
+}
+
+.auth-card form,
+.documents,
+fieldset {
+    margin-top: 2rem;
+}
+
+.block {
+    width: 100%;
+}
+
+.form-message {
+    padding: 0.8rem 1rem;
+    border-radius: 0.75rem;
+    background: var(--surface-strong);
+}
+
+.error {
+    border-left: 0.25rem solid #ef4444;
+}
+
+.text-action {
+    display: block;
+    margin-top: 1rem;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+    margin-top: 2rem;
+}
+
+fieldset {
+    display: grid;
+    gap: 0.8rem;
+    padding: 1rem;
+    border: 1px solid var(--border);
+    border-radius: 0.9rem;
+}
+
+.check {
+    display: flex;
+    gap: 0.65rem;
+    align-items: flex-start;
+    font-weight: 500;
+}
+
+.check input {
+    width: 1.2rem;
+    min-height: 1.2rem;
+    margin: 0.15rem 0 0;
+}
+
+.document {
+    padding: 1rem 0;
+    border-top: 1px solid var(--border);
+}
+
+.document summary {
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.document details p {
+    max-height: 14rem;
+    overflow: auto;
+    white-space: pre-wrap;
+}
+
+.action-row {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: flex-end;
+    margin-top: 1.5rem;
+}
+
+.secondary-action,
+.danger-action {
+    min-height: 3rem;
+    padding: 0.75rem 1.25rem;
+    border: 1px solid var(--border);
+    border-radius: 0.9rem;
+    color: var(--text);
+    background: transparent;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.danger-action {
+    margin-top: 1.5rem;
+    border-color: #ef4444;
+}
+
+.identity-list {
+    padding: 0;
+    list-style: none;
+}
+
+.identity-list li {
+    display: flex;
+    justify-content: space-between;
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.text-button {
+    border: 0;
+    color: var(--focus);
+    background: transparent;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.proof-card {
+    display: grid;
+    gap: 0.8rem;
+    margin-top: 1.5rem;
+    padding: 1rem;
+    border: 1px solid var(--border);
+    border-radius: 1rem;
+    background: var(--background);
+}
+
 @media (max-width: 720px) {
     .app-header,
     .shell-main {
@@ -303,6 +486,15 @@ p {
     .court-graphic {
         width: min(70vw, 16rem);
         justify-self: center;
+    }
+
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .action-row {
+        align-items: stretch;
+        flex-direction: column;
     }
 }
 

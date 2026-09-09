@@ -8,9 +8,11 @@ import {
     mountMiniAppSync,
     mountThemeParamsSync,
     mountViewport,
+    retrieveRawInitData,
 } from '@telegram-apps/sdk-react';
 
 export interface TelegramLifecycle {
+    readonly initData: string | undefined;
     readonly ready: () => void;
 }
 
@@ -45,6 +47,7 @@ export async function initializeTelegram(): Promise<TelegramLifecycle> {
     if (expandViewport.isAvailable()) expandViewport();
 
     return {
+        initData: retrieveRawInitData(),
         ready: () => {
             if (miniAppReady.isAvailable()) miniAppReady();
         },

@@ -519,3 +519,53 @@ REDIS_URL='redis://127.0.0.1:6379/0' REDIS_NAMESPACE=identity-backend npm run te
   DUPR allowlist остаются production prerequisites, как зафиксировано предыдущими требованиями и ADR 0004.
 - Критерии backend-этапа выполнены. Следующий промпт: `llm/02-identity-onboarding/04-tma-web.md`; к нему не
   переходили.
+
+## 2026-09-09 — идентификация и первичная настройка, этап 04-tma-web
+
+- Активный промпт: `llm/02-identity-onboarding/04-tma-web.md`. Реализованы отдельные адаптивные интерфейсы web/PWA
+  и TMA поверх опубликованного identity API. Web запрашивает magic email нейтральным ответом и погашает ссылку
+  только после явного подтверждения; TMA сначала восстанавливает cookie-сессию, затем автоматически обменивает
+  свежие init data через backend. Loading, offline, invalid/expired link, rate limit, конфликт, временная ошибка и
+  подтверждённый успех представлены раздельно.
+- Общий browser identity client держит access и CSRF только в памяти замыкания, отправляет refresh только через
+  `credentials: include`, ставит `cache: no-store`, сериализует параллельный refresh и один раз повторяет
+  защищённый запрос после успешной ротации. Credentials, init data, email и значения профиля не передаются в
+  аналитику, storage или console. Service worker по-прежнему не имеет runtime API cache и mutation queue.
+- Первичная настройка восстанавливает versioned server draft и действующие согласия, поддерживает явное сохранение
+  без ложного offline-успеха и валидирует имя, IANA timezone из server options, locality из локального справочника,
+  `SINGLES`/`DOUBLES`, шкалу самооценки 1.0–5.0 с шагом 0.5 и необязательный безопасный DUPR URL. DUPR input
+  выключен при server capability `false`. Тексты обязательных и необязательных документов раскрываются до
+  отдельных unchecked согласий; активационный переход выполняется только после ответа backend `COMPLETED`.
+- Экраны управления доступом показывают собственные provider kinds без subject, запускают operation-bound LINK и
+  UNLINK proofs, поддерживают Telegram proof в TMA, email proof и выход на всех устройствах. Для proof email link
+  backend теперь добавляет во fragment непрозрачные `attempt` и при отвязывании `identity`: без них новая вкладка
+  не могла вызвать contract endpoint с обязательным path ID. Token остаётся только во fragment, URL очищается до
+  рендера, неизвестный `next` заменяется на `/onboarding`, а готовая proof-операция завершается после восстановления
+  исходной cookie-сессии. Добавлен unit-тест, что secret и operation context отсутствуют в query.
+- Изменённые области: browser identity SDK и тесты в `frontend/packages/api-client`, validation/deep-link helpers,
+  allowlisted analytics event type, web/TMA routes, платформенные UI и CSS, Telegram init-data adapter, README обоих
+  клиентов, proof-link builder backend и его unit-тест. Generated client и TypeSpec не редактировались. Четыре
+  пользовательских PNG в `design/` не изменялись.
+
+### Проверки этапа identity 04-tma-web
+
+- Workspace-проверки `lint`, `typecheck`, `test` и `build` затронутых `@picklehub/api-client`,
+  `@picklehub/validation`, `@picklehub/analytics`, `@picklehub/web`, `@picklehub/tg` и backend выполнялись отдельно и
+  успешно. Финальные UI tests: web — 2 файла/4 теста, TMA — 1 файл/2 теста; shared API/validation — 2 и 4 теста;
+  backend — 11 suites/17 unit tests. Покрыты явный POST magic link, очистка fragment и safe target, offline запрет
+  мутаций, автоматический TMA exchange, memory-only Authorization и серверно подтверждённая активация.
+- Production builds web и TMA успешны. Web PWA создала manifest/service worker и precache только оболочки; TMA
+  build-check подтвердил отсутствие development Telegram mock. Backend и все общие пакеты также собраны успешно.
+- Первый `npm run verify` успешно прошёл workspace check, TypeSpec/Redocly, 28 REST/11 messages policy,
+  compatibility, generated drift/typecheck и Prism mock, затем обнаружил единственный неотформатированный новый
+  UI test. После `npx prettier --write` второй полный запуск повторно прошёл contract lint/compatibility/drift, но
+  Prism не смог открыть `127.0.0.1` из-за sandbox `listen EPERM`; это не засчитано как повторный успех mock.
+  Отдельная финальная команда `npm run format:check && npm run docs:check && npm run lint && npm run typecheck &&
+npm test && npm run build && git diff --check` прошла полностью: 115 Markdown-файлов, восемь workspace для
+  lint/typecheck/build и 13 test tasks без ошибок.
+- Не запускались live browser e2e и backend integration с PostgreSQL/Redis: prompt требует UI tests/builds, а
+  единственное backend-изменение — чистый builder fragment — покрыто unit-тестом. Реальные email/TMA smoke остаются
+  невозможны без одобренного email provider, Telegram bot и production legal/provider gates; их наличие не
+  заявляется. Внешняя `NODE_TLS_REJECT_UNAUTHORIZED=0` остаётся проблемой окружения и не добавлена в репозиторий.
+- Критерии клиентского этапа выполнены. Следующий промпт: `llm/02-identity-onboarding/05-verification.md`; к нему не
+  переходили.

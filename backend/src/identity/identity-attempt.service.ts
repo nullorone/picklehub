@@ -19,6 +19,17 @@ import type { VerifiedTelegramProof } from './telegram-verifier.service';
 
 type Transaction = Prisma.TransactionClient;
 
+export function buildIdentityProofLink(
+    baseUrl: string,
+    secret: string,
+    attemptId: string,
+    targetIdentityId: string | null
+): string {
+    const fragment = new URLSearchParams({ attempt: attemptId, token: secret });
+    if (targetIdentityId) fragment.set('identity', targetIdentityId);
+    return `${baseUrl}#${fragment.toString()}`;
+}
+
 @Injectable()
 export class IdentityAttemptService {
     constructor(
@@ -176,7 +187,12 @@ export class IdentityAttemptService {
         try {
             await this.email.sendMagicLink({
                 address,
-                link: `${this.environment.MAGIC_LINK_BASE_URL}#token=${secret}`,
+                link: buildIdentityProofLink(
+                    this.environment.MAGIC_LINK_BASE_URL,
+                    secret,
+                    attempt.id,
+                    attempt.targetIdentityId
+                ),
                 purpose: 'PROOF',
             });
         } catch {
