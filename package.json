@@ -27,7 +27,7 @@
         "codegen": "npm run contracts:generate",
         "contracts:compile": "node contracts/scripts/generate-openapi.mjs",
         "contracts:typespec:check": "tsp compile contracts/rest --no-emit",
-        "contracts:lint": "npm run contracts:typespec:check && redocly lint openapi.yaml && node contracts/scripts/check-contract-policy.mjs",
+        "contracts:lint": "npm run contracts:typespec:check && redocly lint openapi.yaml && node contracts/scripts/check-contract-policy.mjs && node --test contracts/scripts/identity-policy.test.mjs contracts/scripts/identity-data-policy.test.mjs",
         "contracts:breaking": "node contracts/scripts/check-breaking-changes.mjs",
         "contracts:generate": "node contracts/scripts/generate-contracts.mjs",
         "contracts:generated:check": "node contracts/scripts/check-generated-contract-types.mjs",
@@ -40,9 +40,9 @@
         "docs:check": "markdownlint-cli2 README.md AGENTS.md 'llm/**/*.md'"
     },
     "devDependencies": {
-        "@eslint/js": "9.35.0",
         "@asyncapi/modelina": "5.10.1",
         "@asyncapi/parser": "3.6.3",
+        "@eslint/js": "9.35.0",
         "@redocly/cli": "2.51.1",
         "@stoplight/prism-cli": "5.14.2",
         "@typespec/compiler": "1.15.0",
@@ -52,6 +52,7 @@
         "eslint-config-prettier": "10.1.8",
         "eslint-plugin-react-hooks": "7.0.1",
         "eslint-plugin-react-refresh": "0.5.2",
+        "jsdom": "27.4.0",
         "markdownlint-cli2": "0.18.1",
         "openapi-typescript": "7.13.0",
         "prettier": "3.6.2",

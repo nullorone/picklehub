@@ -393,3 +393,64 @@ llm/_docs/analytics-plan.md llm/_docs/architecture.md` — успешно.
 - Критерии документационного этапа выполнены. Production остаётся закрытым до review провайдеров, правовых
   документов, retention и источника справочника географии; разрешённый DUPR URL уточняется контрактным этапом.
 - Следующий промпт: `llm/02-identity-onboarding/02-contract-data.md`; к нему не переходили.
+
+## 2026-09-08 — идентификация и первичная настройка, этап 02-contract-data
+
+- Активный промпт: `llm/02-identity-onboarding/02-contract-data.md`. Реализация ограничена REST/AsyncAPI,
+  Prisma/SQL моделью и документацией; backend use cases и клиентские экраны этапов 03–04 не добавлялись.
+- TypeSpec добавляет 26 identity operations поверх двух foundation health operations: browser context, Telegram
+  exchange, request/consume magic link, refresh/logout/logout-all, current user, identity proofs и link/unlink,
+  onboarding draft/complete, consent history, deletion, immutable documents и локальные onboarding options.
+  Определены стабильные ошибки, rate limits, `Origin` + CSRF, bearer/cookie security, UUIDv4 idempotency и
+  `Cache-Control: no-store` на всех identity success/error responses.
+- Browser session contract выдаёт access только в JSON и refresh только в host-only HttpOnly cookie. Исправлена
+  несовместимая с HTTP/Prism попытка описать несколько `Set-Cookie` как array: OpenAPI теперь моделирует один
+  header value, а требование отдельных header lines остаётся в описании. Будущий native transport через OS secure
+  storage и authorization headers определён ADR 0004, но отдельная mobile API поверхность отложена до этапа 14.
+- AsyncAPI получил внутренний, не WebSocket, канал `identity.events.v1` и шесть минимальных событий linking,
+  unlinking, session revocation, onboarding completion, consent change и deletion request. Generated
+  `IdentityDomainEvent` отделён от `WebSocketMessage`; policy запрещает email, provider subject, init data, URL и
+  credentials в event payload.
+- Prisma и migration добавляют `User`, `Identity`, `Session`, access/refresh hashes, `MagicLink`, Telegram replay
+  marker, operation-bound identity attempt, immutable consent documents/history, `PlayerProfileDraft`, locality
+  catalogue и зашифрованные 24-hour identity idempotency records. Unique/partial indexes защищают provider subject,
+  provider-per-user, current refresh и pending magic scope; deferred triggers не позволяют активному пользователю
+  остаться без способа входа. CHECK/transition triggers ограничивают TTL и запрещают resurrection/replay обычным
+  update.
+- ADR 0004 фиксирует 5-minute access, refresh inactivity 7 days / absolute 30 days, 10-minute magic links,
+  same-origin browser transport, mobile boundary и одноразовую отправку raw magic secret только из памяти. Magic
+  secret не сохраняется в outbox/BullMQ/idempotency; неопределённая доставка остаётся нейтральным 202 и требует
+  нового запроса. DUPR links остаются выключенными до утверждения host/path allowlist.
+- Policy tests проверяют полный path inventory, no-store, CSRF, bearer/cookie transport, запрет credential
+  idempotency, sealed safe events и статические обязательные свойства migration. OpenAPI mock теперь проверяет
+  browser context, нейтральный magic request, current user и отсутствие ещё не принадлежащего контракту `/matches`.
+- Изменённые editable files: `contracts/rest/identity.tsp`, `contracts/rest/main.tsp`, `asyncapi.yaml`, contract
+  generators/policy/mock scripts и tests, `backend/prisma/schema.prisma`, migration
+  `20260908090000_identity_onboarding`, `contracts/README.md`, ADR 0004, architecture/domain model, root package
+  metadata и этот журнал. Перегенерированы root OpenAPI, contract TypeScript и API-client types. Пользовательские
+  PNG в `design/` не изменялись.
+
+### Проверки этапа identity 02-contract-data
+
+- `PRISMA_SCHEMA_ENGINE_BINARY=/usr/bin/true PRISMA_QUERY_ENGINE_LIBRARY=/usr/bin/true npm run prisma:generate
+--workspace @picklehub/backend` — успешно; Prisma Client 6.16.2 обновлён по схеме без сетевой загрузки engines.
+- `npm run contracts:check` — успешно: TypeSpec compile, Redocly, policy 28 REST/11 messages и 12 policy tests,
+  compatibility с HEAD, generated drift, strict TypeScript и Prism identity mock. Первый расширенный mock обнаружил
+  crash Prism на array `Set-Cookie`; после исправления scalar wire header проверка health/identity успешна.
+- Первый `npm run verify` в sandbox дошёл до Prism и получил ожидаемый `listen EPERM 127.0.0.1`. Повтор с
+  разрешённым loopback прошёл contracts, format/docs, lint и typecheck, затем выявил отсутствующий root-resolvable
+  optional peer `jsdom` у hoisted Vitest. `npm install --save-dev --save-exact jsdom@27.4.0 --ignore-scripts
+--no-audit --no-fund --fetch-retries=2 --fetch-timeout=120000` закрепил уже используемую версию в root и обновил
+  lockfile; это устраняет зависимость тестов от случайной раскладки `node_modules`.
+- Финальный `npm run verify` с разрешённым loopback — успешно: workspace/lockfile, contracts, format и 115 Markdown
+  files, lint/typecheck для восьми workspaces, 13 test tasks и восемь build tasks. Backend: 6 suites/11 tests;
+  shared/Web/TMA: 7 files/9 tests; Web PWA и production TMA build checks успешны.
+- `npm run format:check`, `npm run docs:check`, `npm run contracts:lint`, `npm run contracts:generated:check` и
+  `git diff --check` проходили отдельно. `npm ls --depth=0` не показал unmet/extraneous dependencies.
+- SQL migration не применена к чистому PostgreSQL: Docker daemon не запущен (`Cannot connect to the Docker daemon`),
+  а локального `psql` нет. Статические migration policy tests проходят, но не заменяют integration test реальных
+  constraints/triggers; применение обеих migrations и конкурентные проверки обязательны в backend/verification.
+- Небезопасная внешняя переменная `NODE_TLS_REJECT_UNAUTHORIZED=0` по-прежнему присутствует только в окружении и
+  вызывает warning; она не добавлена в репозиторий. Provider/legal/retention/DUPR approvals также не заявляются.
+- Критерии контрактного этапа выполнены с явно записанным ограничением SQL runtime-проверки. Следующий промпт:
+  `llm/02-identity-onboarding/03-backend.md`; к нему не переходили.

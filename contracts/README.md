@@ -19,8 +19,10 @@ npm run contracts:check
 
 - `contracts:compile` генерирует только `openapi.yaml` из TypeSpec; `contracts:generate` также обновляет TypeScript.
 - `contracts:lint` проверяет TypeSpec без записи artifacts, валидирует OpenAPI и AsyncAPI официальными
-  parser/linter и применяет PickleHub policy: `/v1`, разрешённые foundation paths, уникальные operation/message IDs,
-  версионированные envelopes и UTC timestamps.
+  parser/linter и применяет PickleHub policy: `/v1`, разрешённые owning-feature paths, уникальные
+  operation/message IDs, версионированные envelopes, UTC timestamps, `no-store`, browser CSRF/cookie и безопасный
+  payload identity events. Статические data-policy тесты дополнительно удерживают обязательные migration
+  constraints; они не заменяют применение SQL к PostgreSQL.
 - `contracts:breaking` сравнивает working tree с `CONTRACT_BASE_REF` либо `HEAD`. При первом добавлении контрактов
   baseline отсутствует и проверяется встроенный compatibility self-test. В pull request CI передаёт merge-base
   целевой ветки через `CONTRACT_BASE_REF`.
@@ -31,12 +33,13 @@ npm run contracts:check
 - `contracts:typecheck` проверяет сгенерированные TypeScript-типы в strict mode.
 - `contracts:mock` запускает локальный Prism на `127.0.0.1:4010`; он предназначен только для разработки и не
   является backend или production fallback.
-- `contracts:mock:check` запускает mock на свободном localhost port, запрашивает оба health endpoint и проверяет
-  status, JSON shape и отсутствие product paths. AsyncAPI examples проверяются parser/linter в `contracts:lint`.
+- `contracts:mock:check` запускает mock на свободном localhost port, запрашивает health и representative identity
+  endpoints, проверяет status, JSON shape, `no-store` и отсутствие ещё не принадлежащих контракту paths. AsyncAPI
+  examples проверяются parser/linter в `contracts:lint`.
 
 Prism сопоставляет OpenAPI Path Item без относительного `servers.url`, поэтому локальные mock URL —
-`/health/live` и `/health/ready`. Реальные API URL включают версию `/v1`; клиенты получают её из server/base URL
-configuration. Mock harness не переписывает source contract ради ограничения Prism.
+`/health/live`, `/auth/context` и другие paths без `/v1`. Реальные API URL включают версию `/v1`; клиенты получают
+её из server/base URL configuration. Mock harness не переписывает source contract ради ограничения Prism.
 
 AsyncAPI generator передаёт Modelina каждую message payload schema отдельно и помещает вспомогательные типы в
 namespace сообщения: так одинаковые внутренние имена разных envelopes не сталкиваются. Prism transitive packages
@@ -58,5 +61,5 @@ namespace сообщения: так одинаковые внутренние �
 
 Prism отвечает строго по OpenAPI examples/schemas. Mock не подтверждает бизнес-правило, авторизацию, сохранение,
 идемпотентность или доступность провайдера. TMA/web development явно показывают mock mode; production build не
-имеет mock URL или silent fallback. WebSocket mock строится только из AsyncAPI messages и synthetic examples после
-появления соответствующего test harness; текущий foundation не имитирует несуществующие business events.
+имеет mock URL или silent fallback. Внутренние identity events проверяются по AsyncAPI schema и не выставляются
+как WebSocket subscription; contract mock не имитирует их фактическую доставку через outbox.

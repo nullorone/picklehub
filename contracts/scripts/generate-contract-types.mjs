@@ -53,6 +53,14 @@ async function generateAsyncApiTypes() {
 
     aliases.push(
         `export type WebSocketMessage = ${Object.values(document.components.messages)
+            .filter((message) => !message.name.startsWith('identity.'))
+            .map((message) => message.payload.$ref.split('/').at(-1))
+            .sort()
+            .join(' | ')};`
+    );
+    aliases.push(
+        `export type IdentityDomainEvent = ${Object.values(document.components.messages)
+            .filter((message) => message.name.startsWith('identity.'))
             .map((message) => message.payload.$ref.split('/').at(-1))
             .sort()
             .join(' | ')};`

@@ -2,10 +2,15 @@ asyncapi: 3.1.0
 info:
     title: PickleHub WebSocket API
     version: 0.1.0
-    description: |
-        Versioned protocol envelopes for the PickleHub WebSocket connection. Authentication uses a short-lived,
-        single-use ticket obtained through authenticated REST. The ticket is sent only in the first protocol message,
-        never in a URL or log. Business events are intentionally absent until their owning feature prompts.
+    description: >
+        Versioned protocol envelopes for the PickleHub WebSocket connection.
+        Authentication uses a short-lived,
+
+        single-use ticket obtained through authenticated REST. The ticket is sent
+        only in the first protocol message,
+
+        never in a URL or log. Identity domain events use a separate internal outbox
+        channel and are never broadcast to WebSocket clients.
     license:
         name: Proprietary
 defaultContentType: application/json
@@ -13,12 +18,19 @@ servers:
     local:
         host: localhost:3000
         protocol: ws
-        description: Local development server; deployment hosts are supplied by environment configuration.
+        description: Local development server; deployment hosts are supplied by
+            environment configuration.
+    outbox:
+        host: localhost:5432
+        protocol: postgresql
+        description: Internal transactional outbox transport, accessible only to backend
+            workloads. Not a client subscription API.
 channels:
     control:
         address: /v1/ws
         title: Connection control channel
-        description: Bidirectional protocol channel used before and after an authenticated connection is established.
+        description: Bidirectional protocol channel used before and after an
+            authenticated connection is established.
         servers:
             - $ref: '#/servers/local'
         messages:
@@ -32,12 +44,34 @@ channels:
                 $ref: '#/components/messages/Ping'
             Pong:
                 $ref: '#/components/messages/Pong'
+    identityEvents:
+        address: identity.events.v1
+        title: Internal identity domain events
+        description: Transactional outbox only. No public WebSocket subscription;
+            at-least-once delivery, deduplicate by messageId. No global ordering
+            guarantee.
+        servers:
+            - $ref: '#/servers/outbox'
+        messages:
+            IdentityLinked:
+                $ref: '#/components/messages/IdentityLinked'
+            IdentityUnlinked:
+                $ref: '#/components/messages/IdentityUnlinked'
+            SessionsRevoked:
+                $ref: '#/components/messages/SessionsRevoked'
+            OnboardingCompleted:
+                $ref: '#/components/messages/OnboardingCompleted'
+            ConsentChanged:
+                $ref: '#/components/messages/ConsentChanged'
+            AccountDeletionRequested:
+                $ref: '#/components/messages/AccountDeletionRequested'
 operations:
     receiveClientControl:
         action: receive
         title: Receive client control messages
         summary: Accept authentication and heartbeat messages from a client.
-        description: Authenticate must be the first message; any other message before authentication closes the connection.
+        description: Authenticate must be the first message; any other message before
+            authentication closes the connection.
         channel:
             $ref: '#/channels/control'
         messages:
@@ -47,13 +81,30 @@ operations:
         action: send
         title: Send server control messages
         summary: Send authentication results, safe protocol errors and heartbeat replies.
-        description: Protocol errors never expose credentials, stack traces, provider responses or sensitive payloads.
+        description: Protocol errors never expose credentials, stack traces, provider
+            responses or sensitive payloads.
         channel:
             $ref: '#/channels/control'
         messages:
             - $ref: '#/channels/control/messages/Authenticated'
             - $ref: '#/channels/control/messages/ProtocolError'
             - $ref: '#/channels/control/messages/Pong'
+    publishIdentityEvents:
+        action: send
+        title: Publish committed identity changes
+        summary: Publish safe identity events through the internal transactional outbox.
+        description: Persist event atomically with the owning mutation. Stable messageId
+            survives retries; consumers deduplicate and authorize internal workload
+            access. These are mandatory domain events, not optional product analytics.
+        channel:
+            $ref: '#/channels/identityEvents'
+        messages:
+            - $ref: '#/channels/identityEvents/messages/IdentityLinked'
+            - $ref: '#/channels/identityEvents/messages/IdentityUnlinked'
+            - $ref: '#/channels/identityEvents/messages/SessionsRevoked'
+            - $ref: '#/channels/identityEvents/messages/OnboardingCompleted'
+            - $ref: '#/channels/identityEvents/messages/ConsentChanged'
+            - $ref: '#/channels/identityEvents/messages/AccountDeletionRequested'
 components:
     messages:
         Authenticate:
@@ -71,7 +122,7 @@ components:
                   payload:
                       messageId: 0181f32c-7b4a-4f35-8f30-c358f278cb9e
                       type: session.authenticate.v1
-                      occurredAt: '2026-09-03T09:15:30.000Z'
+                      occurredAt: 2026-09-03T09:15:30.000Z
                       correlationId: 142f1089-c4e5-4594-8b8d-208d861ba762
                       data:
                           ticket: ws1_I3eYQ7mtJYg-7itjEjCB3GC-d8V3mQe0
@@ -90,7 +141,7 @@ components:
                   payload:
                       messageId: 0181f32c-7b4a-4f35-8f30-c358f278cb9f
                       type: session.authenticated.v1
-                      occurredAt: '2026-09-03T09:15:30.100Z'
+                      occurredAt: 2026-09-03T09:15:30.100Z
                       correlationId: 142f1089-c4e5-4594-8b8d-208d861ba762
                       causationId: 0181f32c-7b4a-4f35-8f30-c358f278cb9e
                       data:
@@ -111,7 +162,7 @@ components:
                   payload:
                       messageId: 0181f32c-7b4a-4f35-8f30-c358f278cba0
                       type: protocol.error.v1
-                      occurredAt: '2026-09-03T09:15:30.100Z'
+                      occurredAt: 2026-09-03T09:15:30.100Z
                       correlationId: 142f1089-c4e5-4594-8b8d-208d861ba762
                       data:
                           code: AUTHENTICATION_REQUIRED
@@ -135,15 +186,69 @@ components:
                 location: $message.payload#/correlationId
             payload:
                 $ref: '#/components/schemas/PongEnvelope'
+        IdentityLinked:
+            name: identity.linked.v1
+            title: IdentityLinked
+            summary: Committed internal identity state transition.
+            contentType: application/json
+            correlationId:
+                location: $message.payload#/correlationId
+            payload:
+                $ref: '#/components/schemas/IdentityLinkedEnvelope'
+        IdentityUnlinked:
+            name: identity.unlinked.v1
+            title: IdentityUnlinked
+            summary: Committed internal identity state transition.
+            contentType: application/json
+            correlationId:
+                location: $message.payload#/correlationId
+            payload:
+                $ref: '#/components/schemas/IdentityUnlinkedEnvelope'
+        SessionsRevoked:
+            name: identity.sessions.revoked.v1
+            title: SessionsRevoked
+            summary: Committed internal identity state transition.
+            contentType: application/json
+            correlationId:
+                location: $message.payload#/correlationId
+            payload:
+                $ref: '#/components/schemas/SessionsRevokedEnvelope'
+        OnboardingCompleted:
+            name: identity.onboarding.completed.v1
+            title: OnboardingCompleted
+            summary: Committed internal identity state transition.
+            contentType: application/json
+            correlationId:
+                location: $message.payload#/correlationId
+            payload:
+                $ref: '#/components/schemas/OnboardingCompletedEnvelope'
+        ConsentChanged:
+            name: identity.consent.changed.v1
+            title: ConsentChanged
+            summary: Committed internal identity state transition.
+            contentType: application/json
+            correlationId:
+                location: $message.payload#/correlationId
+            payload:
+                $ref: '#/components/schemas/ConsentChangedEnvelope'
+        AccountDeletionRequested:
+            name: identity.account.deletion.requested.v1
+            title: AccountDeletionRequested
+            summary: Committed internal identity state transition.
+            contentType: application/json
+            correlationId:
+                location: $message.payload#/correlationId
+            payload:
+                $ref: '#/components/schemas/AccountDeletionRequestedEnvelope'
     schemas:
         Uuid:
             type: string
             format: uuid
-            pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
+            pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$
         Timestamp:
             type: string
             format: date-time
-            pattern: '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$'
+            pattern: ^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$
         MessageEnvelope:
             type: object
             additionalProperties: false
@@ -158,7 +263,7 @@ components:
                     $ref: '#/components/schemas/Uuid'
                 type:
                     type: string
-                    pattern: '^[a-z][a-z0-9]*(?:\.[a-z][a-z0-9]*)+\.v[1-9][0-9]*$'
+                    pattern: ^[a-z][a-z0-9]*(?:\.[a-z][a-z0-9]*)+\.v[1-9][0-9]*$
                     description: Stable dotted message type ending in a positive schema version.
                 occurredAt:
                     $ref: '#/components/schemas/Timestamp'
@@ -173,12 +278,14 @@ components:
                     type: string
                     minLength: 1
                     maxLength: 128
-                    pattern: '^[a-z][a-z0-9-]*:[A-Za-z0-9_-]+$'
-                    description: Opaque ordering scope present only when a contract guarantees stream order.
+                    pattern: ^[a-z][a-z0-9-]*:[A-Za-z0-9_-]+$
+                    description: Opaque ordering scope present only when a contract guarantees
+                        stream order.
                 sequence:
                     type: integer
                     minimum: 0
-                    description: Monotonic value within stream; valid only when stream is also present.
+                    description: Monotonic value within stream; valid only when stream is also
+                        present.
                 data: {}
         AuthenticateEnvelope:
             allOf:
@@ -199,8 +306,9 @@ components:
                     type: string
                     minLength: 32
                     maxLength: 256
-                    pattern: '^ws1_[A-Za-z0-9_-]+$'
-                    description: Sensitive single-use ticket. Never place it in URLs, logs, traces or analytics.
+                    pattern: ^ws1_[A-Za-z0-9_-]+$
+                    description: Sensitive single-use ticket. Never place it in URLs, logs, traces
+                        or analytics.
         AuthenticatedEnvelope:
             allOf:
                 - $ref: '#/components/schemas/MessageEnvelope'
@@ -224,7 +332,7 @@ components:
                         - type: string
                           minLength: 1
                           maxLength: 2048
-                          pattern: '^[A-Za-z0-9_-]+$'
+                          pattern: ^[A-Za-z0-9_-]+$
                         - type: 'null'
         ProtocolErrorEnvelope:
             allOf:
@@ -247,13 +355,14 @@ components:
                     type: string
                     minLength: 3
                     maxLength: 96
-                    pattern: '^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$'
+                    pattern: ^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$
                     description: Stable machine-readable code that is not localized.
                 message:
                     type: string
                     minLength: 1
                     maxLength: 500
-                    description: Safe localized message without implementation details or sensitive values.
+                    description: Safe localized message without implementation details or sensitive
+                        values.
                 retryable:
                     type: boolean
                 retryAfterMs:
@@ -281,3 +390,235 @@ components:
         EmptyData:
             type: object
             additionalProperties: false
+        IdentityLinkedEnvelope:
+            type: object
+            additionalProperties: false
+            required:
+                - messageId
+                - type
+                - occurredAt
+                - correlationId
+                - data
+            properties:
+                messageId:
+                    $ref: '#/components/schemas/Uuid'
+                type:
+                    type: string
+                    const: identity.linked.v1
+                occurredAt:
+                    $ref: '#/components/schemas/Timestamp'
+                correlationId:
+                    $ref: '#/components/schemas/Uuid'
+                causationId:
+                    oneOf:
+                        - $ref: '#/components/schemas/Uuid'
+                        - type: 'null'
+                data:
+                    type: object
+                    additionalProperties: false
+                    required:
+                        - userId
+                        - identityId
+                        - provider
+                    properties:
+                        userId:
+                            $ref: '#/components/schemas/Uuid'
+                        identityId:
+                            $ref: '#/components/schemas/Uuid'
+                        provider:
+                            type: string
+                            enum:
+                                - TELEGRAM
+                                - EMAIL
+        IdentityUnlinkedEnvelope:
+            type: object
+            additionalProperties: false
+            required:
+                - messageId
+                - type
+                - occurredAt
+                - correlationId
+                - data
+            properties:
+                messageId:
+                    $ref: '#/components/schemas/Uuid'
+                type:
+                    type: string
+                    const: identity.unlinked.v1
+                occurredAt:
+                    $ref: '#/components/schemas/Timestamp'
+                correlationId:
+                    $ref: '#/components/schemas/Uuid'
+                causationId:
+                    oneOf:
+                        - $ref: '#/components/schemas/Uuid'
+                        - type: 'null'
+                data:
+                    type: object
+                    additionalProperties: false
+                    required:
+                        - userId
+                        - identityId
+                        - provider
+                    properties:
+                        userId:
+                            $ref: '#/components/schemas/Uuid'
+                        identityId:
+                            $ref: '#/components/schemas/Uuid'
+                        provider:
+                            type: string
+                            enum:
+                                - TELEGRAM
+                                - EMAIL
+        SessionsRevokedEnvelope:
+            type: object
+            additionalProperties: false
+            required:
+                - messageId
+                - type
+                - occurredAt
+                - correlationId
+                - data
+            properties:
+                messageId:
+                    $ref: '#/components/schemas/Uuid'
+                type:
+                    type: string
+                    const: identity.sessions.revoked.v1
+                occurredAt:
+                    $ref: '#/components/schemas/Timestamp'
+                correlationId:
+                    $ref: '#/components/schemas/Uuid'
+                causationId:
+                    oneOf:
+                        - $ref: '#/components/schemas/Uuid'
+                        - type: 'null'
+                data:
+                    type: object
+                    additionalProperties: false
+                    required:
+                        - userId
+                        - scope
+                        - reason
+                    properties:
+                        userId:
+                            $ref: '#/components/schemas/Uuid'
+                        scope:
+                            type: string
+                            enum:
+                                - CURRENT
+                                - ALL
+                        reason:
+                            type: string
+                            enum:
+                                - LOGOUT
+                                - REPLAY
+                                - IDENTITY_CHANGED
+                                - DELETION
+        OnboardingCompletedEnvelope:
+            type: object
+            additionalProperties: false
+            required:
+                - messageId
+                - type
+                - occurredAt
+                - correlationId
+                - data
+            properties:
+                messageId:
+                    $ref: '#/components/schemas/Uuid'
+                type:
+                    type: string
+                    const: identity.onboarding.completed.v1
+                occurredAt:
+                    $ref: '#/components/schemas/Timestamp'
+                correlationId:
+                    $ref: '#/components/schemas/Uuid'
+                causationId:
+                    oneOf:
+                        - $ref: '#/components/schemas/Uuid'
+                        - type: 'null'
+                data:
+                    type: object
+                    additionalProperties: false
+                    required:
+                        - userId
+                    properties:
+                        userId:
+                            $ref: '#/components/schemas/Uuid'
+        ConsentChangedEnvelope:
+            type: object
+            additionalProperties: false
+            required:
+                - messageId
+                - type
+                - occurredAt
+                - correlationId
+                - data
+            properties:
+                messageId:
+                    $ref: '#/components/schemas/Uuid'
+                type:
+                    type: string
+                    const: identity.consent.changed.v1
+                occurredAt:
+                    $ref: '#/components/schemas/Timestamp'
+                correlationId:
+                    $ref: '#/components/schemas/Uuid'
+                causationId:
+                    oneOf:
+                        - $ref: '#/components/schemas/Uuid'
+                        - type: 'null'
+                data:
+                    type: object
+                    additionalProperties: false
+                    required:
+                        - userId
+                        - purpose
+                        - action
+                    properties:
+                        userId:
+                            $ref: '#/components/schemas/Uuid'
+                        purpose:
+                            type: string
+                            enum:
+                                - TERMS
+                                - PERSONAL_DATA
+                                - ANALYTICS
+                                - MARKETING
+                        action:
+                            type: string
+                            enum:
+                                - ACCEPTED
+                                - WITHDRAWN
+        AccountDeletionRequestedEnvelope:
+            type: object
+            additionalProperties: false
+            required:
+                - messageId
+                - type
+                - occurredAt
+                - correlationId
+                - data
+            properties:
+                messageId:
+                    $ref: '#/components/schemas/Uuid'
+                type:
+                    type: string
+                    const: identity.account.deletion.requested.v1
+                occurredAt:
+                    $ref: '#/components/schemas/Timestamp'
+                correlationId:
+                    $ref: '#/components/schemas/Uuid'
+                causationId:
+                    oneOf:
+                        - $ref: '#/components/schemas/Uuid'
+                        - type: 'null'
+                data:
+                    type: object
+                    additionalProperties: false
+                    required:
+                        - userId
+                    properties:
+                        userId:
+                            $ref: '#/components/schemas/Uuid'
