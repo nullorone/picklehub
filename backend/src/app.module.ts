@@ -9,6 +9,7 @@ import { RedisModule } from './common/redis/redis.module';
 import { RequestContextModule } from './common/request-context/request-context.module';
 import { HealthModule } from './health/health.module';
 import { IntegrationsModule } from './integrations/integrations.module';
+import { IdentityModule } from './identity/identity.module';
 import { OutboxModule } from './outbox/outbox.module';
 
 @Module({
@@ -23,6 +24,7 @@ import { OutboxModule } from './outbox/outbox.module';
         OutboxModule,
         IntegrationsModule,
         AuditModule,
+        IdentityModule,
     ],
 })
 export class AppModule {}

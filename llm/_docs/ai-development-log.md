@@ -454,3 +454,68 @@ llm/_docs/analytics-plan.md llm/_docs/architecture.md` — успешно.
   вызывает warning; она не добавлена в репозиторий. Provider/legal/retention/DUPR approvals также не заявляются.
 - Критерии контрактного этапа выполнены с явно записанным ограничением SQL runtime-проверки. Следующий промпт:
   `llm/02-identity-onboarding/03-backend.md`; к нему не переходили.
+
+## 2026-09-09 — идентификация и первичная настройка, этап 03-backend
+
+- Активный промпт: `llm/02-identity-onboarding/03-backend.md`. Реализован NestJS-модуль `identity`, покрывающий
+  все 26 identity/onboarding REST operations опубликованного TypeSpec-контракта; клиентские экраны этапа 04 не
+  добавлялись.
+- Telegram init data проверяется по подписи WebAppData, уникальности полей, `auth_date`, future skew и
+  пятиминутному TTL. Только проверенный Telegram user id превращается в HMAC lookup key и AES-256-GCM ciphertext;
+  keyed proof fingerprint атомарно записывается в PostgreSQL и не допускает replay.
+- Magic email secret содержит 256 случайных бит, хранится только как HMAC и передаётся HTTPS `EmailProvider`
+  один раз в памяти во fragment landing URL. Adapter имеет пятисекундный budget и флаги запрета click tracking и
+  URL rewriting; production требует явно настроенный одобренный endpoint. Запрос остаётся нейтральным при
+  неизвестном адресе, throttling и любом результате доставки.
+- Browser security использует exact origin allowlist, Redis-backed context cookie и связанный CSRF token на всех
+  мутациях. Access credential живёт пять минут и хранится только как hash, refresh выдаётся только Secure/HttpOnly
+  cookie, ротируется без grace window и отзывает всё семейство при replay. Реализованы logout, logout-all,
+  немедленная проверка revocation/auth epoch и безопасные session-revocation events.
+- Operation-bound proof attempts реализуют связывание, отвязывание и удаление аккаунта с независимыми CURRENT и
+  TARGET proofs. Транзакции блокируют пользователя, ограничения базы предотвращают merge/duplicate identity и
+  удаление последнего способа входа; linking/unlinking заменяют все сессии и пишут audit/outbox без provider
+  subject или credentials.
+- Черновик onboarding обновляется compare-and-set по версии. Изменения согласий append-only; completion в одной
+  транзакции проверяет обязательные поля, актуальные TERMS/PERSONAL_DATA и их явное принятие, выставляет completed
+  state и создаёт ровно одно `identity.onboarding.completed.v1`. Повторяемые safe mutations сохраняют HMAC
+  fingerprint и AES-256-GCM response в той же транзакции на 24 часа; повтор другого payload отклоняется.
+- Redis rate limits разделены namespace и применены к context, Telegram, magic request/consume, refresh family,
+  proof attempts, onboarding/consent mutations, deletion и documents. Identity success/error responses получают
+  `Cache-Control: no-store`; логи содержат только method, route, status и безопасные reason codes. Consent и
+  locality pagination используют подписанные 15-минутные cursors, связанные с user, snapshot, query и версией
+  каталога.
+- Добавлены поддельные `Clock` и `EmailProvider`, unit-тесты Telegram signature/TTL/tampering, credential crypto и
+  provider flags и cursor integrity/expiry, а также integration-тесты wire email login, конкуренции Telegram proof,
+  rotated refresh replay, зашифрованной idempotency и привязки locality cursor.
+
+### Проверки этапа identity 03-backend
+
+- `npx prettier --write backend/src backend/test backend/README.md` — успешно; изменённые TypeScript и Markdown
+  файлы отформатированы.
+- `npm run lint --workspace @picklehub/backend`, `npm run typecheck --workspace @picklehub/backend`,
+  `npm test --workspace @picklehub/backend` и `npm run build --workspace @picklehub/backend` — успешно. Unit:
+  10 suites, 16 tests; lint без warnings, strict TypeScript и backend build прошли.
+- `docker compose --project-name picklehub-identity-backend up --detach --wait postgres redis` — успешно; создан
+  отдельный healthy test project. Обе migration применены последовательно через
+  `docker exec -i picklehub-identity-backend-postgres-1 psql -v ON_ERROR_STOP=1 -U picklehub -d picklehub < ...` —
+  успешно, включая foundation и `20260908090000_identity_onboarding` SQL со всеми triggers/constraints.
+- `DATABASE_URL='postgresql://picklehub:picklehub@127.0.0.1:5432/picklehub?schema=public'
+REDIS_URL='redis://127.0.0.1:6379/0' REDIS_NAMESPACE=identity-backend npm run test:integration --workspace
+  @picklehub/backend` — финальный запуск успешен: 2 suites, 10 tests. Реальная база подтвердила одну identity и одну
+  session при конкурентном replay, отзыв новой access credential после кражи rotated refresh, одну версию draft
+  при idempotency replay, ciphertext вместо email/response, contract-compatible cookie/JSON/no-store wire flow и
+  cursor pagination с запретом переноса позиции между пользователями.
+- Первый integration-запуск внутри sandbox ожидаемо не имел доступа к loopback (`EPERM`) и выполнялся до запуска
+  test dependencies; результат не засчитан. После запуска изолированного Docker project тесты повторены вне
+  sandbox и прошли полностью.
+- Финальный `npm run verify` — успешно: 8 workspaces и один lockfile; 28 REST operations, 11 AsyncAPI messages и
+  12 identity policy/data tests; TypeSpec, Redocly, compatibility, generated drift/typecheck, Prism mock,
+  formatting, 115 Markdown files, lint/typecheck/test/build всех workspace прошли. Root tests включили backend
+  10 suites/16 tests и неизменённые frontend/shared suites.
+- `docker compose --project-name picklehub-identity-backend down --volumes --remove-orphans` — успешно; удалены
+  только созданные для этапа test containers, network и оба test volumes. `git diff --check` — успешно.
+- Внешняя переменная `NODE_TLS_REJECT_UNAUTHORIZED=0` по-прежнему присутствует только в окружении и вызвала warning
+  Redocly; в репозиторий она не добавлена. Реальный email endpoint, legal/provider review, retention approvals и
+  DUPR allowlist остаются production prerequisites, как зафиксировано предыдущими требованиями и ADR 0004.
+- Критерии backend-этапа выполнены. Следующий промпт: `llm/02-identity-onboarding/04-tma-web.md`; к нему не
+  переходили.

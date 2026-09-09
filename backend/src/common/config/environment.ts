@@ -23,6 +23,22 @@ const environmentSchema = z
         OUTBOX_POLL_INTERVAL_MS: z.coerce.number().int().min(100).max(60_000).default(1000),
         OUTBOX_MAX_ATTEMPTS: z.coerce.number().int().min(1).max(100).default(10),
         OUTBOX_CLAIM_TTL_MS: z.coerce.number().int().min(1000).max(300_000).default(30_000),
+        IDENTITY_HMAC_KEY: z.string().min(32).default('local-identity-hmac-key-change-me-0001'),
+        IDENTITY_ENCRYPTION_KEY: z
+            .string()
+            .regex(/^[a-f0-9]{64}$/u)
+            .default('0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'),
+        TELEGRAM_BOT_TOKEN: z.string().min(1).default('local-telegram-bot-token'),
+        IDENTITY_ALLOWED_ORIGINS: z.string().default('https://localhost'),
+        MAGIC_LINK_BASE_URL: z
+            .url()
+            .refine((value) => value.startsWith('https://'))
+            .default('https://localhost/auth/email'),
+        EMAIL_PROVIDER_ENDPOINT: z
+            .url()
+            .refine((value) => value.startsWith('https://'))
+            .optional(),
+        EMAIL_PROVIDER_TOKEN: z.string().min(32).optional(),
     })
     .superRefine((environment, context) => {
         if (environment.NODE_ENV === 'production' && environment.REDIS_NAMESPACE === 'local') {
@@ -30,6 +46,28 @@ const environmentSchema = z
                 code: 'custom',
                 path: ['REDIS_NAMESPACE'],
                 message: 'Production must use an explicit non-local Redis namespace',
+            });
+        }
+        if (
+            environment.NODE_ENV === 'production' &&
+            (environment.IDENTITY_HMAC_KEY.startsWith('local-') ||
+                environment.IDENTITY_ENCRYPTION_KEY.startsWith('0123456789abcdef') ||
+                environment.TELEGRAM_BOT_TOKEN.startsWith('local-'))
+        ) {
+            context.addIssue({
+                code: 'custom',
+                path: ['IDENTITY_HMAC_KEY'],
+                message: 'Production identity secrets must be explicitly configured',
+            });
+        }
+        if (
+            environment.NODE_ENV === 'production' &&
+            (environment.EMAIL_PROVIDER_ENDPOINT === undefined || environment.EMAIL_PROVIDER_TOKEN === undefined)
+        ) {
+            context.addIssue({
+                code: 'custom',
+                path: ['EMAIL_PROVIDER_ENDPOINT'],
+                message: 'Production requires an approved email provider adapter',
             });
         }
     });
