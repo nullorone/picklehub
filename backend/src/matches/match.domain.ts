@@ -14,6 +14,31 @@ export interface RecommendationInput {
     playerSkill: number;
 }
 
+export type MatchLifecycleState =
+    | 'DRAFT'
+    | 'PUBLISHED'
+    | 'IN_PROGRESS'
+    | 'AWAITING_CONFIRMATION'
+    | 'DISPUTED'
+    | 'CANCELLED'
+    | 'COMPLETED'
+    | 'VOIDED';
+
+export type MatchLifecycleCommand = 'CANCEL' | 'START' | 'PROPOSE_RESULT' | 'RESOLVE_RESULT';
+
+export function allowsMatchTransition(state: MatchLifecycleState, command: MatchLifecycleCommand): boolean {
+    switch (command) {
+        case 'CANCEL':
+            return state === 'DRAFT' || state === 'PUBLISHED';
+        case 'START':
+            return state === 'PUBLISHED';
+        case 'PROPOSE_RESULT':
+            return state === 'IN_PROGRESS' || state === 'AWAITING_CONFIRMATION';
+        case 'RESOLVE_RESULT':
+            return state === 'AWAITING_CONFIRMATION';
+    }
+}
+
 export function chooseTeam(
     choice: 'TEAM_A' | 'TEAM_B' | 'ANY',
     occupancy: Readonly<Record<'TEAM_A' | 'TEAM_B', number>>,

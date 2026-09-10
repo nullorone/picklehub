@@ -1092,3 +1092,42 @@ test/integration/matches-migration.integration-spec.ts` запущен, но в�
   bundle также пересёк 500 kB, поэтому дальнейшее route-level splitting остаётся performance debt.
 - Приёмочные правила идемпотентности, refetch конфликта и parity покрыты зелёными component/client tests; live
   browser smoke не заявляется. Следующий промпт — `llm/04-matches/05-verification.md`.
+
+## 2026-09-10 — матчи, этап 05-verification
+
+- Активный промпт: `llm/04-matches/05-verification.md`. Создана матрица прослеживаемости
+  `llm/_docs/matches-verification.md`, которая связывает каждый критический риск с unit, contract, PostgreSQL,
+  component и Playwright-подтверждением и явно отделяет написанный тест от фактически зелёного запуска.
+- Конечный автомат вынесен в чистую таблицу `allowsMatchTransition` и используется сервисом для cancel, start,
+  proposal и resolution. Unit coverage расширено разрешёнными/запрещёнными переходами, scored/no-score сериями,
+  лишними партиями, неизвестной дистанцией и гибким временем. Validation проверяет UTC-конвертацию Москвы,
+  Красноярска и Берлина, включая несуществующее местное время при DST-переходе.
+- Новый `matches.integration-spec.ts` выполняет реальные `Serializable`-транзакции Prisma: конкурентный AUTO join,
+  конкурентные APPROVAL decisions, FIFO promotion после leave, start/cancel, proposal и confirm/dispute. Сквозной
+  сценарий подтверждения проверяет единственные marker/outbox/receipt, повторную обработку event ID, по одному
+  статистическому вкладу зарегистрированных игроков и отсутствие статистики у guest slot. Отдельно проверяются
+  encrypted idempotency replay и отсутствие `UNLISTED` в detail/discovery без capability.
+- Stateful Playwright-сценарий добавлен для web и TMA: две сессии проходят создание черновика с внешней бронью,
+  публикацию, discovery, вступление с заполнением состава, start, предложение счёта и подтверждение соперником.
+  Существующие public/unlisted smoke сохранены. Component parity дополнено offline-disabled join, guest/external
+  booking rendering и пустым каталогом площадок; для последнего обе платформы теперь показывают честный fallback
+  создания нового публичного адреса.
+
+### Проверки этапа matches 05-verification
+
+- Целевые backend/web/TMA/validation typecheck и tests — успешно. Backend: 16 suites/42 tests за 4,478 с; web:
+  4 файла/15 tests за 1,48 с; TMA: 3/13 за 1,16 с; validation: 1/6 за 184 мс. Отдельные backend/web/TMA lint и
+  `npm run test:e2e:typecheck` успешны.
+- Финальный `npm run verify` — успешно полностью: workspace и lockfile, TypeSpec/Redocly, 59 REST operations/23
+  messages, 38 contract/data policy tests, compatibility/generated drift/typecheck, Prism mock, format/docs,
+  lint/typecheck/test/build всех восьми workspaces. В полном прогоне backend 16/42, web 4/15, TMA 3/13.
+- `npm run test:e2e:build` — успешно: production web 217 мс, TMA 171 мс. Сохранены известные неблокирующие
+  предупреждения о MapLibre chunk 924 кБ и основном TMA bundle 514 кБ.
+- PostgreSQL-команда для двух match suites завершилась за 4,191 с до assertions: sandbox запретил подключения к
+  `127.0.0.1:5432` и `127.0.0.1:6379`. `docker info` также получил `permission denied` на Docker socket. Поэтому
+  concurrency, capacity и сквозной metric/statistics test с реальной БД в этой сессии не считаются пройденными.
+- `npx playwright test test/e2e/matches.spec.ts --workers=1` обнаружил 5 тестов, но все пять остановились при
+  `browserType.launch`: локальный Chrome завершился `SIGABRT` за 1 мс. Оба новых полных browser journey ожидают CI.
+- `npm run format:check`, `npm run docs:check`, `git diff --check` успешны. Критерий этапа не объявляется полностью
+  выполненным до зелёных PostgreSQL/PostGIS/Redis и Playwright запусков, перечисленных в матрице; к следующему
+  промпту не переходили.

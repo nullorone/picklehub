@@ -85,6 +85,9 @@ describe('parseRuntimeConfig', () => {
 
     it('converts a venue-local match time to UTC and validates a complete series', () => {
         expect(localDateTimeToUtc('2026-09-12T18:00', 'Europe/Moscow')).toBe('2026-09-12T15:00:00.000Z');
+        expect(localDateTimeToUtc('2026-01-15T18:00', 'Asia/Krasnoyarsk')).toBe('2026-01-15T11:00:00.000Z');
+        expect(localDateTimeToUtc('2026-07-15T18:00', 'Europe/Berlin')).toBe('2026-07-15T16:00:00.000Z');
+        expect(() => localDateTimeToUtc('2026-03-29T02:30', 'Europe/Berlin')).toThrow(/не существует/);
         expect(
             validateMatchSeries('BEST_OF_3', [
                 { teamAPoints: 11, teamBPoints: 7 },

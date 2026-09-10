@@ -5,7 +5,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { MatchDetailsScreen, MatchesScreen } from './matches-ui';
+import { CreateMatchScreen, MatchDetailsScreen, MatchesScreen } from './matches-ui';
 
 const matchId = '11111111-1111-4111-8111-111111111111';
 const organizerId = '22222222-2222-4222-8222-222222222222';
@@ -173,5 +173,55 @@ describe('TMA matches', () => {
         expect(await screen.findByText(/это ещё не окончательная статистика/)).toBeInTheDocument();
         expect(screen.getByRole('button', { name: 'Подтвердить' })).toBeInTheDocument();
         expect(screen.getByRole('button', { name: 'Оспорить' })).toBeInTheDocument();
+    });
+
+    it('explains an empty venue catalogue and offers a public-address fallback', async () => {
+        render(
+            <MemoryRouter>
+                <CreateMatchScreen
+                    client={asClient({
+                        searchVenues: vi.fn().mockResolvedValue({
+                            items: [],
+                            pageInfo: { hasMore: false, nextCursor: null },
+                            snapshotAt: '2026-09-10T10:00:00.000Z',
+                        }),
+                    })}
+                    online
+                />
+            </MemoryRouter>
+        );
+        expect(await screen.findByText(/Доступных площадок пока нет/)).toBeInTheDocument();
+        expect(screen.getByText('Новый публичный адрес')).toBeInTheDocument();
+    });
+
+    it('disables offline joining and renders guest and external booking state', async () => {
+        const value = {
+            ...fullMatch(),
+            bookingNote: 'Бронь подтверждена клубом',
+            bookingState: 'BOOKED_EXTERNALLY' as const,
+            guests: [
+                {
+                    createdAt: '2026-09-10T10:00:00.000Z',
+                    id: '77777777-7777-4777-8777-777777777777',
+                    label: 'Партнёр организатора',
+                    team: 'TEAM_A' as const,
+                },
+            ],
+        };
+        render(
+            <MemoryRouter>
+                <MatchDetailsScreen
+                    channel="telegram"
+                    client={asClient({ getMatch: vi.fn().mockResolvedValue(value) })}
+                    matchId={matchId}
+                    online={false}
+                    userId={playerId}
+                />
+            </MemoryRouter>
+        );
+        expect(await screen.findByText('Партнёр организатора · гость')).toBeInTheDocument();
+        expect(screen.getByText('Забронировано вне PickleHub')).toBeInTheDocument();
+        expect(screen.getByText('Бронь подтверждена клубом')).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Вступить' })).toBeDisabled();
     });
 });

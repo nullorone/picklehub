@@ -17,7 +17,7 @@ import { RequestContextService } from '../common/request-context/request-context
 import { CursorService } from '../identity/cursor.service';
 import { IdentityCryptoService } from '../identity/identity-crypto.service';
 import { OutboxService } from '../outbox/outbox.service';
-import { chooseTeam, normalizeText, recommendation, validateResult } from './match.domain';
+import { allowsMatchTransition, chooseTeam, normalizeText, recommendation, validateResult } from './match.domain';
 import type {
     DraftMatchDto,
     JoinMatchDto,
@@ -664,8 +664,7 @@ export class MatchService {
         const match = await this.lock(id, tx);
         this.organizer(match, userId);
         this.version(match, expectedVersion);
-        if (match.state !== MatchState.DRAFT && match.state !== MatchState.PUBLISHED)
-            throw matchError('MATCH_TRANSITION_NOT_ALLOWED', 409);
+        if (!allowsMatchTransition(match.state, 'CANCEL')) throw matchError('MATCH_TRANSITION_NOT_ALLOWED', 409);
         const now = this.policy.now();
         const stage = match.state;
         await tx.joinRequest.updateMany({
@@ -694,7 +693,7 @@ export class MatchService {
         const match = await this.lock(id, tx);
         this.organizer(match, userId);
         this.version(match, expectedVersion);
-        if (match.state !== MatchState.PUBLISHED || match.startsAt === null)
+        if (!allowsMatchTransition(match.state, 'START') || match.startsAt === null)
             throw matchError('MATCH_TRANSITION_NOT_ALLOWED', 409);
         const now = this.policy.now();
         if (
@@ -744,7 +743,7 @@ export class MatchService {
         const match = await this.lock(id, tx);
         this.organizer(match, userId);
         this.version(match, body.expectedVersion);
-        if (match.state !== MatchState.IN_PROGRESS && match.state !== MatchState.AWAITING_CONFIRMATION)
+        if (!allowsMatchTransition(match.state, 'PROPOSE_RESULT'))
             throw matchError('MATCH_TRANSITION_NOT_ALLOWED', 409);
         const now = this.policy.now();
         if (match.startsAt === null || now.getTime() >= match.startsAt.getTime() + this.policy.current.resultMs)
@@ -802,7 +801,8 @@ export class MatchService {
     ): Promise<object> {
         const match = await this.lock(id, tx);
         this.version(match, body.expectedVersion);
-        if (match.state !== MatchState.AWAITING_CONFIRMATION) throw matchError('MATCH_TRANSITION_NOT_ALLOWED', 409);
+        if (!allowsMatchTransition(match.state, 'RESOLVE_RESULT'))
+            throw matchError('MATCH_TRANSITION_NOT_ALLOWED', 409);
         const result = await tx.matchResult.findUnique({
             where: { id: resultId },
             include: { games: true, confirmations: true },

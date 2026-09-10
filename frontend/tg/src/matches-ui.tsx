@@ -354,6 +354,7 @@ export function CreateMatchScreen({ client, online }: { readonly client: Identit
     const navigate = useNavigate();
     const keys = useMutationKeys();
     const [venues, setVenues] = useState<readonly VenueSummary[]>([]);
+    const [venuesLoaded, setVenuesLoaded] = useState(false);
     const [guests, setGuests] = useState<readonly components['schemas']['MatchGuestInput'][]>([]);
     const [matchFormat, setMatchFormat] = useState<'SINGLES' | 'DOUBLES'>('SINGLES');
     const [newVenue, setNewVenue] = useState(false);
@@ -368,8 +369,10 @@ export function CreateMatchScreen({ client, online }: { readonly client: Identit
             .searchVenues({ limit: 50, publicationState: 'PUBLISHED' })
             .then((page) => {
                 setVenues(page.items);
+                setVenuesLoaded(true);
             })
             .catch(() => {
+                setVenuesLoaded(true);
                 setMessage('Не удалось загрузить площадки.');
             });
     }, [client]);
@@ -524,6 +527,9 @@ export function CreateMatchScreen({ client, online }: { readonly client: Identit
                                 </option>
                             ))}
                         </select>
+                        {venuesLoaded && venues.length === 0 && (
+                            <span role="status">Доступных площадок пока нет. Добавьте новый публичный адрес.</span>
+                        )}
                     </label>
                 ) : (
                     <fieldset className="new-match-venue">
