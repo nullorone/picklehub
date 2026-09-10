@@ -117,3 +117,39 @@ replay. Спор не создаёт marker и не передаётся ста�
 Будущие communications/statistics/trust-safety реагируют на события, но не меняют таблицы matches. Payload содержит
 opaque match ID, версию и закрытые enum/buckets; raw invite token, booking note, адрес/координаты, имена, уровень и
 состав запрещены.
+
+## Чат и уведомления
+
+Граница `communications` владеет проекцией доступа к коммуникации, но не составом или lifecycle матча:
+
+- `match_chats` — один чат опубликованного матча, версия и последняя монотонная sequence;
+- `chat_memberships` — интервалы доступа зарегистрированного участника, `accessRevokedAt`, граница доступной
+  sequence и монотонная `lastReadSequence`; pending/очередь/гость не являются членством;
+- `chat_messages` — авторский plain text либо закрытый тип системной записи, серверное время и уникальная
+  `(chatId, sequence)`; системный source event уникален;
+- `chat_message_revisions` — append-only версии редактирования и tombstone; текущая проекция не уничтожает
+  снимок версии, приложенный к жалобе;
+- `communication_blocks` — направленное правило скрытия автора для пользователя без изменения match membership;
+- `message_reports` — opaque reporter/subject, reason enum и зашифрованный immutable evidence snapshot для
+  будущей границы trust/safety;
+- `notification_preferences` — категории/каналы, BCP 47 locale, IANA timezone, локальные quiet-hour boundaries и
+  версия настроек;
+- `notifications` — один in-app item на recipient + source event + type, read state, route и grouping metadata;
+- `notification_deliveries` — канал, idempotency key, schedule/attempts и transport outcome без утверждения о
+  прочтении пользователем.
+
+Communications получает committed match events и идемпотентно обновляет access projection, создаёт системную
+запись и fan-out. Проверка доступа перед каждым чтением/записью сверяет проекцию с authoritative application port
+matches либо свежей версией события; revoke закрывает stream grant. Сбой consumer не меняет match, а reconciliation
+устраняет lag. Сообщение и назначенная sequence создаются одной транзакцией; Redis/WebSocket не назначают порядок.
+
+WebSocket event — производная от сохранённой записи. REST snapshot/catch-up остаётся источником истины; cursor
+привязан к membership/access boundary. Read position меняется через `max`, поэтому повторы и конкурирующие вкладки
+не уменьшают её. Provider attempt не меняет read position. Блокировка применяется в персональной read projection,
+а не переписывает общий поток.
+
+Доменный outbox матча и notification fan-out содержат только opaque source/match/recipient references, закрытые
+типы, timestamps/buckets и разрешённый route. Текст сообщения, revision/evidence, email, Telegram subject,
+пригласительная ссылка, имена и причина жалобы запрещены. Для realtime текста используется авторизованная запись
+communications и bounded fan-out, а не широковещательный доменный outbox. Конкретные provider credentials и
+recipient address разрешаются identity port только внутри минимальной границы адаптера отправки.

@@ -137,6 +137,26 @@ filters. Search origin не записывается в домен. `UNLISTED` �
 Booking note — непроверенное заявление организатора, не provider integration. Встроенных бронирования, оплаты,
 повторения расписания и автоматического подтверждения результата нет.
 
+### Граница communications
+
+`communications` владеет chat stream, revisions/tombstones, read positions, пользовательскими блокировками,
+in-app inbox, preferences и delivery attempts. `matches` остаётся источником состава и lifecycle; committed match
+events строят локальную access/system-event projection, а application port используется для fail-closed проверки
+при lag или чувствительной операции. `trust-safety` позднее получает отдельный зашифрованный evidence record, не
+читает общий чат произвольно. `identity` раскрывает проверенный адрес/Telegram subject только адаптеру конкретной
+разрешённой доставки и не копирует contact в notification/outbox.
+
+PostgreSQL назначает sequence и хранит источник истины. REST отдаёт snapshot, backward pages и forward catch-up;
+WebSocket после одноразового ticket только ускоряет fan-out, сохраняет at-least-once semantics и требует
+дедупликации/resync. Revoke membership/block change инвалидирует grant. Bounded per-connection queue, размер
+payload и rate limits защищают от медленного клиента; отключение возвращает безопасную причину и REST cursor.
+
+Fan-out создаёт уникальный in-app item и отдельные channel deliveries по preferences/quiet hours. BullMQ retry и
+provider failover не входят в доменную транзакцию матча и не обещают exactly-once. Scheduler хранит UTC `notBefore`,
+но вычисляет его из locale/IANA timezone policy. Адаптеры рендерят allowlisted шаблоны; событие нового сообщения не
+несёт preview текста. Один внешний канал не подменяется другим без явного выбора пользователя. Production
+адаптер/резерв запрещён до review условий, РФ-размещения, tracking, suppression, retention и idempotency.
+
 ## Общие frontend-пакеты
 
 Разрешены framework-neutral пакеты `api-client`, `domain`, `validation`, `i18n` и `analytics`. Они не импортируют

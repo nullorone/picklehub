@@ -142,3 +142,39 @@ team capacity (цель ноль), активные/просроченные off
 latency join/promotion/confirmation, outbox lag/retry и расхождение матча с result/marker (цель ноль). Audit и эти
 счётчики не зависят от analytics consent и не содержат token, состав, текст или географию. Недоступность analytics
 не откатывает транзакцию; retry сохраняет event ID, consumer обеспечивает уникальность.
+
+## Чат и уведомления
+
+Behavioral events подчиняются общей consent policy. Текст/ревизия сообщения, message/chat/match/user/notification
+ID, имена и состав, invite token/route, причина и evidence жалобы, блокируемый пользователь, locale/timezone,
+точное время чтения, email/Telegram subject и provider payload/ID запрещены. Ни длина отдельного текста, ни граф
+«кто с кем общается» не экспортируются. Разрешены только enum/buckets ниже.
+
+| Событие                           | Условие и источник                                    | Дополнительные свойства                                                                  | Дедупликация                                  | Применение                                      |
+| --------------------------------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------------- | --------------------------------------------- | ----------------------------------------------- |
+| `chat_opened`                     | Клиент после успешного foreground snapshot            | `entry`: `MATCH`/`NOTIFICATION`; `unreadBucket`: `ZERO`/`ONE_FIVE`/`SIX_TWENTY`/`GT_20`  | Chat + screen session внутри producer         | Использование чата и вход из уведомления.       |
+| `chat_message_sent`               | Backend после commit пользовательского текста         | `matchPhase`: `BEFORE_START`/`IN_PROGRESS`/`AFTER_TERMINAL`                              | Message operation ID, наружу ID не передаётся | Доля матчей с коммуникацией, без содержания.    |
+| `chat_message_mutated`            | Backend после commit edit/delete                      | `action`: `EDITED`/`DELETED`; `ageBucket`: `LT_1M`/`1_5M`/`5_15M`                        | Message + revision внутри producer            | Проверка понятности политики исправлений.       |
+| `chat_resync_required`            | Клиент получил protocol resync и начал REST recovery  | `reason`: `CURSOR_EXPIRED`/`RETENTION`/`GAP_LIMIT`                                       | Один event на recovery attempt                | Качество reconnect без cursor/sequence.         |
+| `chat_report_submitted`           | Backend после commit структурированной жалобы         | `reason`: `SPAM`/`HARASSMENT`/`HATE`/`THREAT`/`OTHER`                                    | Report operation ID                           | Abuse workload без текста или автора.           |
+| `notification_preference_changed` | Backend после commit настроек при действующем consent | `channel`: `TELEGRAM`/`EMAIL`; `category`; `enabled`; `quietHours`: `ON`/`OFF`           | Preference version + changed tuple            | Opt-in/out и настройка канала.                  |
+| `notification_opened`             | Клиент открыл in-app item/deep link в foreground      | `channel`: `IN_APP`/`TELEGRAM`/`EMAIL`; `category`; `ageBucket`: `LT_5M`/`5M_1H`/`GT_1H` | Notification + channel внутри producer        | Полезность категорий без обещания read receipt. |
+
+`chat_message_sent` не создаётся до analytics consent и не восстанавливается задним числом; обязательная запись
+сообщения от этого не зависит. Blocking — safety preference и не является behavioral event. Жалоба создаёт
+обязательный restricted case/audit независимо от consent, а одноимённая аналитическая проекция появляется только
+с consent и содержит только reason enum. Клиентский `chat_opened` не считается прочтением:
+источником unread остаётся серверная монотонная позиция.
+
+Transport health измеряется только operational metrics без recipient/source IDs: количество logical notifications
+и attempts по закрытым category/channel/outcome, queue age, quiet-hour deferral bucket, retry count, provider
+availability/latency, acceptance/bounce/suppression, failover и duplicate estimate. `ACCEPTED`/`DELIVERED` —
+transport status, не human read; гарантированная доставка и exactly-once не выводятся из dashboard. Provider
+metrics не соединяются с профилем или чатом.
+
+Chat operational metrics без текста и пользовательских labels: send/edit/delete throughput, authorization/rate
+denials по reason class, sequence conflicts (цель ноль), duplicate event suppression, reconnect gap/resync,
+connection queue overflow, unread projection lag, report count и retention cleanup lag. Агрегаты публикуются с
+минимальным размером когорты и ограниченной размерностью, чтобы не восстановить участие в малом матче. Audit,
+abuse detection и delivery reliability не зависят от analytics consent, но не используются для скрытой продуктовой
+аналитики. Недоступность analytics/provider не блокирует сообщение, in-app item, жалобу или доменную операцию.

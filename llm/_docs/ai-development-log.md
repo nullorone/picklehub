@@ -1131,3 +1131,55 @@ test/integration/matches-migration.integration-spec.ts` запущен, но в�
 - `npm run format:check`, `npm run docs:check`, `git diff --check` успешны. Критерий этапа не объявляется полностью
   выполненным до зелёных PostgreSQL/PostGIS/Redis и Playwright запусков, перечисленных в матрице; к следующему
   промпту не переходили.
+
+## 2026-09-10 — чат и уведомления, этап 01-requirements
+
+- Активный промпт: `llm/05-chat-notifications/01-requirements.md`. Изменения ограничены требованиями, доменной
+  моделью, архитектурой, безопасностью и аналитикой; TypeSpec/AsyncAPI, Prisma, backend и UI коммуникации не
+  создавались.
+- Зафиксированы 10 пользовательских историй и 15 сценариев «Дано/Когда/Тогда»: snapshot/reconnect, send,
+  15-минутные edit/delete с append-only revision/tombstone, системные события, unread/read position, жалоба,
+  блокировка, preferences и безопасный deep link. Чат доступен только зарегистрированному активному составу;
+  pending/queue/guest/capability link его не открывают. После выхода доступ ограничен прежней sequence и 30 днями,
+  после отмены чат read-only, после завершения запись закрывается через 7 суток.
+- PostgreSQL sequence определяет полный порядок, REST snapshot/backward page/forward catch-up остаются источником
+  истины, WebSocket использует at-least-once delivery, event deduplication и явный `RESYNC_REQUIRED` при gap,
+  истёкшем cursor или retention. Read marker монотонен, provider/push receipt не означает чтения.
+- Матрица охватывает вступление, заявку/решение, promotion, выход, отмену, изменение, два напоминания, результат,
+  спор и чат для in-app/Telegram/email. In-app обязателен; все внешние категории по умолчанию выключены. Тихие часы
+  22:00–08:00 считаются в IANA timezone пользователя, обычные события откладываются, ограниченный critical allowlist
+  может обходить тишину. Locale BCP 47 и timezone применяются при каждой попытке.
+- Logical notification и channel delivery имеют отдельную дедупликацию; bounded retry/failover может дать дубль и
+  не откатывает доменную операцию. `ACCEPTED`/`DELIVERED` описывают только transport, не human read. Exactly-once и
+  гарантии Telegram/email не обещаются. Резервный провайдер выключен до отдельной terms/privacy/residency/tracking/
+  retention/idempotency review и не может автоматически подменить один пользовательский канал другим.
+- Текст сообщения/revision/evidence исключён из логов, traces, analytics, audit, generic outbox, BullMQ, provider
+  preview и dead-letter data; notification несёт только закрытый type, opaque references и безопасный route.
+  Определены минимизация provider boundary, rate limits, закрытые категории/причины жалобы, consented analytics,
+  operational metrics и предлагаемый legal-review retention: чат 180 суток после terminal матча, inbox 90 суток,
+  delivery metadata 30 суток, queued payload максимум 7 суток, evidence один год после решения.
+- Изменённые файлы: `llm/_docs/product-requirements.md`, `llm/_docs/domain-model.md`,
+  `llm/_docs/architecture.md`, `llm/_docs/security-privacy.md`, `llm/_docs/analytics-plan.md` и этот журнал.
+
+### Проверки этапа chat/notifications 01-requirements
+
+- `npx prettier --write llm/_docs/product-requirements.md llm/_docs/domain-model.md llm/_docs/architecture.md
+llm/_docs/security-privacy.md llm/_docs/analytics-plan.md` — успешно; изменённые документы отформатированы.
+- `npm run docs:check`, `npm run format:check` и `git diff --check` — успешно до записи журнала: Markdown 117
+  файлов без ошибок, Prettier и четыре TypeSpec source без drift, whitespace errors отсутствуют.
+- `npm run verify` прошёл workspace audit, TypeSpec/Redocly, policy для 59 REST operations/23 messages, 38
+  contract/data tests, compatibility с `HEAD`, generated drift и contract typecheck; затем остановился на
+  `contracts:mock:check`, потому что sandbox запретил Prism открыть `127.0.0.1` с `listen EPERM`. Полный `verify` и
+  mock поэтому не заявляются успешными; контрактный source этим этапом не менялся.
+- Оставшаяся цепочка `npm run format:check && npm run docs:check && npm run lint && npm run typecheck && npm test &&
+npm run build && npm ls --depth=0 && git diff --check` — успешно. Turbo: lint/typecheck/build для восьми
+  workspace, tests 13 задач; backend 16 suites/42 tests, web 4/15, TMA 3/13. Dependency tree без unmet/extraneous.
+  Web/TMA сохранили известное неблокирующее предупреждение о lazy MapLibre chunk 924 kB.
+- После записи журнала первый `npm run format:check` ожидаемо указал на новый неформатированный блок; выполнен
+  `npx prettier --write llm/_docs/ai-development-log.md`, затем `npm run format:check && npm run docs:check && git
+diff --check` — успешно, 117 Markdown-файлов без ошибок.
+- Проверки контракта, БД, realtime, provider delivery и privacy canary для новой функции не создавались и не
+  исполнялись: они принадлежат следующим этапам. Legal approval сроков, РФ-размещения и Telegram/email providers
+  не заявляется.
+- Содержательные критерии этапа выполнены. Следующий промпт —
+  `llm/05-chat-notifications/02-contract-data.md`; к нему не переходили.

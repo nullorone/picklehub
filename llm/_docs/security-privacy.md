@@ -233,6 +233,65 @@ confirm/dispute и moderator resolution только с opaque actor/target ID, 
 мутации не показывают optimistic success. Security tests обязаны использовать canary token/text и гонки capacity,
 FIFO, idempotency и confirmation, доказывая отсутствие утечки и единственность эффекта.
 
+## Политика чата и уведомлений
+
+Основание — [требования коммуникации](product-requirements.md). Текст, revisions, evidence жалобы, блокировки,
+позиция чтения и связь recipient–channel относятся к `restricted personal`. Системный type, transport outcome и
+агрегированные счётчики — `internal`, пока не позволяют восстановить социальный граф. Публичных чатов нет;
+capability матча не является credential чата.
+
+### Минимизация и доступ
+
+- Сообщение хранится только в PostgreSQL communications в РФ и передаётся авторизованным участникам через REST/
+  WebSocket. Оно запрещено в application/access logs, traces, error reports, audit, analytics, metrics labels,
+  generic outbox, BullMQ job data, push preview, email subject/body и Telegram notification. Уведомление содержит
+  только закрытый template type, безопасный route и факт нового сообщения.
+- Системная запись не копирует booking note, описание матча, score, dispute/report reason, адрес/координаты,
+  participant names или invite token. UI разрешает display-поля отдельным авторизованным read-port, когда это
+  действительно нужно, и экранирует их как недоверенные.
+- Авторизация проверяет session, onboarding, block/access state и membership boundary на каждом use case и resume.
+  Выход немедленно отзывает stream; 30-дневный former-member read разрешает только прежнюю sequence. Admin/service
+  role не получает массовый поиск текста; moderation читает только evidence конкретной назначенной жалобы, а
+  доступ и экспорт аудируются без самого текста.
+- Текст шифруется at rest на уровне storage/backup; evidence дополнительно шифруется отдельным ротируемым ключом.
+  Transport — только TLS. Ключи не находятся в БД/репозитории, rotation и уничтожение входят в production runbook.
+
+Внешний notification adapter получает recipient address/Telegram subject только в памяти на границе отправки,
+локализованный allowlisted шаблон без текста чата и стабильный provider idempotency key. Contact не сохраняется в
+outbox/job/delivery record. Tracking pixels, click/open tracking, link rewriting и рекламное профилирование
+отключены. Provider acceptance/delivery receipt не считается прочтением. Webhook проверяет подпись, timestamp,
+replay marker и allowlist outcome, не принимает произвольный текст; неизвестное событие quarantined.
+
+Стартовые одновременные rate limits: snapshot/history 120/минуту на user + chat и 240/минуту на IP; send 30/минуту,
+300/сутки на user + chat и 1 000/сутки на chat; edit/delete/read marker 60/минуту на user + chat; report 5/сутки на
+user и 20/сутки на chat; block/unblock и preferences 20/час на user; WebSocket connect/resume 20/5 минут на user и
+60/5 минут на IP. Размер сообщения — 2 000 символов, страницы — максимум 50, connection queue и catch-up gap
+ограничены контрактом. Недоступность distributed limiter закрывает send/edit/delete/report/preferences 503;
+read-only история может использовать bounded local fallback без текста в key/metric. Значения требуют
+нагрузочной и abuse-проверки до production.
+
+Предлагаемый для legal review retention: chat/revisions/read positions — 180 суток после terminal матча; доступ
+former participant — 30 суток; notifications — 90 суток; transport metadata/provider IDs — 30 суток; preference
+до удаления аккаунта; report evidence — один год после решения. Raw queued delivery payload живёт только до
+terminal attempt, максимум 7 суток; chat text в нём запрещён. Tombstone очищается с сообщением. Legal hold имеет
+case ID, scope, owner и review date и сохраняет только конкретное evidence; он не продлевает весь чат. После
+удаления аккаунта автор отображается обезличенно, активные deliveries подавляются, contact link удаляется, а
+обязательное evidence сохраняется только до своего срока. Backups 35 суток и при restore сначала применяют
+deletion/suppression ledger. Реальные данные и провайдеры запрещены до утверждения основания, residency,
+трансграничной передачи и проверяемых cleanup jobs.
+
+Audit хранит только opaque actor/target, действие `SEND`/`EDIT`/`DELETE`/`REPORT`/`BLOCK`/`PREFERENCE_CHANGE`,
+outcome и reason enum; текст, длина, адрес, participant list и before/after отсутствуют. Operational alerts:
+authorization denial spikes, rate-limit suppression, cursor gaps/resync, queue overflow, provider retry/quarantine,
+invalid webhook/replay, retention lag и появление canary text/contact/token в запрещённом sink. Негативные тесты
+проверяют HTTP/WS logs, traces, error SDK, audit, analytics, outbox, BullMQ, provider template и dead-letter data.
+
+Основной и резервный провайдер каждого канала проходят отдельный реестр: договор/terms, РФ-residency и subprocessors,
+purpose/fields, encryption, credential rotation, idempotency, rate/bounce/suppression feedback, incident process,
+retention/deletion и выключение tracking. Failover разрешён только при одинаковом allowlist payload и том же
+логическом delivery ID; без одобрения конфигурация fail-closed. Email и Telegram не подменяют друг друга, а их
+недоступность не откатывает match/chat/in-app транзакцию и не маскируется сообщением об успешной доставке.
+
 ## Политика identity и онбординга
 
 Основание — [обзор identity](../02-identity-onboarding/00-overview.md) и
