@@ -1,5 +1,9 @@
 import { z } from 'zod';
 
+const httpsUrl = z
+    .url()
+    .refine((value) => value.startsWith('https://'), { message: 'External provider URLs must use HTTPS' });
+
 const environmentSchema = z
     .object({
         NODE_ENV: z.enum(['local', 'test', 'staging', 'production']).default('local'),
@@ -40,18 +44,18 @@ const environmentSchema = z
             .optional(),
         EMAIL_PROVIDER_TOKEN: z.string().min(32).optional(),
         VENUE_PROVIDER_POLICY_VERSION: z.string().min(1).optional(),
-        VENUE_OVERPASS_ENDPOINT: z.url().optional(),
+        VENUE_OVERPASS_ENDPOINT: httpsUrl.optional(),
         VENUE_OVERPASS_USER_AGENT: z.string().min(8).max(200).optional(),
         VENUE_OVERPASS_LICENSE: z.string().min(1).max(160).optional(),
         VENUE_OVERPASS_ATTRIBUTION_TEXT: z.string().min(1).max(300).optional(),
-        VENUE_OVERPASS_ATTRIBUTION_LINK: z.url().optional(),
+        VENUE_OVERPASS_ATTRIBUTION_LINK: httpsUrl.optional(),
         VENUE_OVERPASS_STORAGE_ALLOWED: z.enum(['true', 'false']).default('false'),
         VENUE_OVERPASS_MIN_INTERVAL_MS: z.coerce.number().int().min(1000).max(300_000).default(10_000),
-        VENUE_GEOCODER_ENDPOINT: z.url().optional(),
+        VENUE_GEOCODER_ENDPOINT: httpsUrl.optional(),
         VENUE_GEOCODER_TOKEN: z.string().min(16).optional(),
         VENUE_GEOCODER_STORAGE_ALLOWED: z.enum(['true', 'false']).default('false'),
         VENUE_GEOCODER_ATTRIBUTION_TEXT: z.string().min(1).max(300).optional(),
-        VENUE_GEOCODER_ATTRIBUTION_LINK: z.url().optional(),
+        VENUE_GEOCODER_ATTRIBUTION_LINK: httpsUrl.optional(),
         VENUE_GEOCODER_LICENSE: z.string().min(1).max(160).optional(),
     })
     .superRefine((environment, context) => {

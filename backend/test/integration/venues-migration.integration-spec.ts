@@ -41,9 +41,19 @@ describe('venues contract-data migration', () => {
         const client = await pool.connect();
         try {
             await client.query('BEGIN');
-            await insertVenue(client, uuidV7(), 37.6173, 55.7558);
-            await insertVenue(client, uuidV7(), 37.7, 55.8);
-            await client.query('SET LOCAL enable_seqscan = off');
+            await client.query(`
+                INSERT INTO venues (
+                    id, name, normalized_address, locality, time_zone, longitude, latitude,
+                    verification_state, last_verified_at
+                )
+                SELECT md5('venue-index-' || point::text)::uuid,
+                    'Index venue ' || point::text, 'Index address ' || point::text,
+                    'Тестовый регион', 'Europe/Moscow',
+                    30 + ((point % 100)::numeric / 1000), 55 + ((point / 100)::numeric / 1000),
+                    'MODERATOR_VERIFIED', CURRENT_TIMESTAMP
+                FROM generate_series(1, 5000) AS point
+            `);
+            await client.query('ANALYZE venues');
 
             const radiusPlan = await client.query(`
                 EXPLAIN (FORMAT JSON)
@@ -52,8 +62,8 @@ describe('venues contract-data migration', () => {
                 WHERE publication_state = 'PUBLISHED'
                   AND ST_DWithin(
                       location,
-                      ST_SetSRID(ST_MakePoint(37.6173, 55.7558), 4326)::geography,
-                      50000
+                      ST_SetSRID(ST_MakePoint(30.01, 55.01), 4326)::geography,
+                      250
                   )
             `);
             expect(JSON.stringify(radiusPlan.rows)).toMatch(/venues_location_gist_idx/u);
@@ -65,12 +75,36 @@ describe('venues contract-data migration', () => {
                 WHERE publication_state = 'PUBLISHED'
                   AND ST_Intersects(
                       location,
-                      ST_MakeEnvelope(37.5, 55.6, 37.8, 55.9, 4326)::geography
+                      ST_MakeEnvelope(30.009, 55.009, 30.012, 55.012, 4326)::geography
                   )
             `);
             expect(JSON.stringify(boundsPlan.rows)).toMatch(/venues_location_gist_idx/u);
         } finally {
             await client.query('ROLLBACK');
+            client.release();
+        }
+    });
+
+    it('treats radius and bounding-box boundaries as inclusive and rejects invalid stored coordinates', async () => {
+        const boundary = await pool.query<{ radius_edge: boolean; bbox_edge: boolean }>(`
+            WITH origin AS (
+                SELECT ST_SetSRID(ST_MakePoint(37.6173, 55.7558), 4326)::geography AS point
+            ), edge AS (
+                SELECT point, ST_Project(point, 1000, radians(90)) AS projected FROM origin
+            )
+            SELECT ST_DWithin(point, projected, 1000) AS radius_edge,
+                ST_Intersects(
+                    ST_SetSRID(ST_MakePoint(37.7, 55.8), 4326)::geography,
+                    ST_MakeEnvelope(37.5, 55.6, 37.7, 55.8, 4326)::geography
+                ) AS bbox_edge
+            FROM edge
+        `);
+        expect(boundary.rows).toEqual([{ radius_edge: true, bbox_edge: true }]);
+
+        const client = await pool.connect();
+        try {
+            await expect(insertVenue(client, uuidV7(), 181, 55.75)).rejects.toMatchObject({ code: '23514' });
+        } finally {
             client.release();
         }
     });

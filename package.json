@@ -20,7 +20,7 @@
         "test": "turbo run test",
         "test:e2e": "npm run test:e2e:typecheck && npm run test:e2e:build && playwright test",
         "test:e2e:build": "npm exec --workspace @picklehub/web -- vite build --outDir=/private/tmp/picklehub-e2e-web --emptyOutDir && npm exec --workspace @picklehub/tg -- vite build --outDir=/private/tmp/picklehub-e2e-tg --emptyOutDir",
-        "test:e2e:typecheck": "tsc --noEmit --strict --target ES2022 --module NodeNext --moduleResolution NodeNext playwright.config.ts test/e2e/identity.spec.ts",
+        "test:e2e:typecheck": "tsc --noEmit --strict --target ES2022 --module NodeNext --moduleResolution NodeNext playwright.config.ts test/e2e/*.spec.ts",
         "test:integration": "turbo run test:integration",
         "typecheck": "turbo run typecheck",
         "workspace:check": "node scripts/check-workspaces.mjs",

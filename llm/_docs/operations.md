@@ -53,6 +53,7 @@ Workflow `.github/workflows/foundation.yml` разделяет проверки 
 | Форматирование, docs, lint и типы                  | соответствующие root tasks внутри `npm run verify`       |
 | Unit tests и production builds                     | `npm test`, `npm run build` внутри `npm run verify`      |
 | Чистые PostGIS/Redis, миграции и integration tests | job `integration`                                        |
+| Production browser-сценарии web/PWA и TMA          | job `browser`, `npm run test:e2e`                        |
 | Images, readiness, оболочки и graceful shutdown    | job `compose`, `npm run compose:smoke`                   |
 | Offline PWA и отсутствие Telegram mock             | build-check workspace `@picklehub/web` и `@picklehub/tg` |
 | Запрет backend imports в общих пакетах             | `npm run workspace:check`                                |

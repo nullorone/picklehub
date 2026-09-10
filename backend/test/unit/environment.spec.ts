@@ -49,4 +49,26 @@ describe('parseEnvironment', () => {
             })
         ).toThrow('Invalid environment configuration: VENUE_OVERPASS_ENDPOINT');
     });
+
+    it('rejects insecure provider and attribution links', () => {
+        expect(() =>
+            parseEnvironment({
+                ...validEnvironment,
+                VENUE_PROVIDER_POLICY_VERSION: 'test-v1',
+                VENUE_GEOCODER_ENDPOINT: 'http://geocoder.example.test/search',
+                VENUE_GEOCODER_LICENSE: 'test-license',
+                VENUE_GEOCODER_ATTRIBUTION_TEXT: 'Test provider',
+            })
+        ).toThrow('Invalid environment configuration: VENUE_GEOCODER_ENDPOINT');
+        expect(() =>
+            parseEnvironment({
+                ...validEnvironment,
+                VENUE_PROVIDER_POLICY_VERSION: 'test-v1',
+                VENUE_GEOCODER_ENDPOINT: 'https://geocoder.example.test/search',
+                VENUE_GEOCODER_LICENSE: 'test-license',
+                VENUE_GEOCODER_ATTRIBUTION_TEXT: 'Test provider',
+                VENUE_GEOCODER_ATTRIBUTION_LINK: 'javascript:alert(1)',
+            })
+        ).toThrow('Invalid environment configuration: VENUE_GEOCODER_ATTRIBUTION_LINK');
+    });
 });

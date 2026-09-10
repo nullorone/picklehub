@@ -8,8 +8,13 @@ import { Clock } from '../identity/clock';
 import { IdentityCryptoService } from '../identity/identity-crypto.service';
 import { OutboxService } from '../outbox/outbox.service';
 import { VenueMetricsService } from './venue-metrics.service';
-import { normalizeDedupeKey, normalizeVenueAddress, normalizeVenueText } from './venue-normalization';
-import { VenueCatalogImportPort, type ImportedVenue } from './venue-provider';
+import {
+    coordinateHasAllowedPrecision,
+    normalizeDedupeKey,
+    normalizeVenueAddress,
+    normalizeVenueText,
+} from './venue-normalization';
+import { STORED_VENUE_FIELDS, VenueCatalogImportPort, type ImportedVenue } from './venue-provider';
 
 export interface VenueImportResult {
     runId: string;
@@ -113,7 +118,34 @@ export class VenueImportService {
         runId: string,
         dryRun: boolean
     ): Promise<'created' | 'deduplicated' | 'quarantined'> {
-        if (item.explicitlyPrivate || !item.provenance.storageAllowed) return 'quarantined';
+        if (
+            item.explicitlyPrivate ||
+            !item.provenance.storageAllowed ||
+            item.externalSourceId !== item.provenance.externalSourceId ||
+            (item.externalSourceVersion !== undefined &&
+                item.externalSourceVersion !== item.provenance.externalSourceVersion) ||
+            item.externalSourceId.length === 0 ||
+            item.externalSourceId.length > 300 ||
+            item.provenance.providerKey.length === 0 ||
+            item.provenance.providerKey.length > 80 ||
+            item.provenance.license.trim().length === 0 ||
+            item.provenance.policyVersion.trim().length === 0 ||
+            item.provenance.attributionText.trim().length === 0 ||
+            !STORED_VENUE_FIELDS.every((field) => item.provenance.allowedFields.includes(field)) ||
+            !Number.isFinite(item.provenance.observedAt.getTime()) ||
+            item.provenance.observedAt.getTime() > this.clock.now().getTime() ||
+            !Number.isFinite(item.longitude) ||
+            !Number.isFinite(item.latitude) ||
+            !coordinateHasAllowedPrecision(item.longitude) ||
+            !coordinateHasAllowedPrecision(item.latitude) ||
+            item.longitude < -180 ||
+            item.longitude > 180 ||
+            item.latitude < -90 ||
+            item.latitude > 90
+        ) {
+            this.metrics.increment('venue_import_quarantined_total');
+            return 'quarantined';
+        }
         const name = normalizeVenueText(item.name);
         const address = normalizeVenueAddress(item.normalizedAddress);
         if (!name || !address || !item.locality) return 'quarantined';

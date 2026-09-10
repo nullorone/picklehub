@@ -6,6 +6,23 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { VenuesScreen } from './venues-ui';
 
+vi.mock('./venue-map', () => ({
+    VenueMap: ({
+        onBoundsChanged,
+    }: {
+        readonly onBoundsChanged: (bounds: { east: number; north: number; south: number; west: number }) => void;
+    }) => (
+        <button
+            type="button"
+            onClick={() => {
+                onBoundsChanged({ west: 37.5, south: 55.7, east: 37.7, north: 55.8 });
+            }}
+        >
+            Применить область карты
+        </button>
+    ),
+}));
+
 const venue: components['schemas']['VenueSummary'] = {
     accessMode: 'FREE',
     attribution: [
@@ -32,6 +49,11 @@ const venue: components['schemas']['VenueSummary'] = {
 function client(items = [venue]) {
     return {
         createVenueCandidate: vi.fn(),
+        searchVenueMap: vi.fn().mockResolvedValue({
+            items,
+            pageInfo: { hasMore: false, nextCursor: null },
+            snapshotAt: '2026-09-10T10:00:00.000Z',
+        }),
         searchVenues: vi.fn().mockResolvedValue({
             items,
             pageInfo: { hasMore: false, nextCursor: null },
@@ -73,6 +95,35 @@ describe('web venue catalogue', () => {
         fireEvent.click(screen.getByRole('button', { name: 'Карта' }));
         expect(screen.getByText(/Карта не настроена/)).toBeInTheDocument();
         expect(screen.getByRole('button', { name: /Парк Пиклбол/ })).toBeInTheDocument();
+    });
+
+    it('sends the same filters to list and map queries', async () => {
+        const api = client();
+        render(
+            <VenuesScreen
+                client={api}
+                config={{
+                    apiBaseUrl: '/v1',
+                    environment: 'test',
+                    map: {
+                        styleUrl: 'https://tiles.example.test/style.json',
+                        attributionText: 'Тестовые тайлы',
+                        attributionUrl: 'https://tiles.example.test/terms',
+                    },
+                }}
+                online
+            />
+        );
+        await screen.findByRole('button', { name: /Парк Пиклбол/ });
+        fireEvent.change(screen.getByLabelText('Размещение'), { target: { value: 'OUTDOOR' } });
+        await waitFor(() => {
+            expect(api.searchVenues).toHaveBeenLastCalledWith(expect.objectContaining({ environment: 'OUTDOOR' }));
+        });
+        fireEvent.click(screen.getByRole('button', { name: 'Карта' }));
+        fireEvent.click(await screen.findByRole('button', { name: 'Применить область карты' }));
+        await waitFor(() => {
+            expect(api.searchVenueMap).toHaveBeenCalledWith(expect.objectContaining({ environment: 'OUTDOOR' }));
+        });
     });
 
     it('reads the cached catalogue but keeps mutations disabled while offline', async () => {

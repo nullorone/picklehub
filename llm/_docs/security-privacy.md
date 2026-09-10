@@ -151,6 +151,10 @@ residency review. IP и provider request metadata не маскируются о
 
 ### Разрешение источников и атрибуция
 
+Фактический статус capabilities и checklist доказательств ведутся в
+[`venue-provider-register.md`](venue-provider-register.md). Запись в этом реестре не заменяет приложенное
+доказательство и явное approval.
+
 - Для каждого OSM/Overpass, tile и geocoding adapter ведётся versioned registry: официальные условия и дата
   проверки, лицензия, регион/endpoint, получатели и residency, допустимые purpose/fields, показ, кеширование,
   долговременное хранение, refresh/deletion, rate/usage policy и обязательная атрибуция. Production capability

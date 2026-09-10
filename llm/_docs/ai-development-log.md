@@ -832,3 +832,65 @@ format:check`, отдельные venues policy/data tests и `git diff --check`
 - Следующий промпт: `llm/03-venues/05-verification.md`; к нему не переходили. Реальные tiles/geocoder остаются
   выключенными до legal/terms/attribution/residency review; live WebGL/provider smoke требует одобренной runtime
   конфигурации и браузерного окружения.
+
+## 2026-09-10 — площадки, этап 05-verification
+
+- Активный промпт: `llm/03-venues/05-verification.md`. Расширен PostGIS integration-контур: inclusive radius/bbox
+  boundaries, отказ от antimeridian-crossing bbox для целевого региона, запрет повреждённых координат, GiST
+  `EXPLAIN` на 5000 строках, map/radius parity с одинаковыми фильтрами, cursor pagination без повторов и сохранение
+  match FK через permanent merge alias. Тесты не подменяют реальный plan статическим поиском SQL.
+- Import integration теперь проверяет повтор одного OSM snapshot, изменённый внешний элемент без перезаписи
+  immutable canonical данных, пустой snapshot без удаления каталога, provider failure, attribution и карантин
+  некорректной геометрии. Runtime import дополнительно fail-closed проверяет конечные WGS84-координаты, точность,
+  совпадение source ID/version, полный allowlist сохранённых полей, license/policy/attribution и допустимый
+  `observedAt` до PostGIS insert.
+- Новый unit suite Overpass проверяет не более трёх попыток с bounded backoff, минимальный интервал между
+  запросами, user-agent/атрибуцию и отказ antimeridian/malformed scope до внешнего вызова. Все provider endpoints и
+  attribution links теперь требуют HTTPS на границе конфигурации; отсутствие полного capability продолжает
+  запрещать включение адаптера.
+- Candidate integration проверяет конкурентный повтор события подтверждённого матча: только один переход в
+  `PENDING_REVIEW`, без автослияния по proximity и без публикации второй canonical venue. Существующий privacy
+  integration подтверждает атомарный перевод жалобы `PRIVATE_RESIDENCE` в `PRIVACY_REVIEW`; storage policy tests
+  сохраняют unique terminal decision, append-only merge history и permanent alias. Admin moderation UI/API по
+  плану остаётся функцией `08`, поэтому verification не добавляет скрытый административный endpoint.
+- Web и TMA UI tests проверяют одинаковую передачу filters в list/map endpoints в дополнение к attribution,
+  geolocation denial, map fallback, offline и private-address guard. Web production build-check теперь требует
+  bounded 15-minute `NetworkFirst` cache публичных venue GET и запрещает cache geocoder/candidate/report paths.
+  Добавлены три production-build Playwright-сценария для web/TMA parity, geolocation denial, сквозного 503
+  geocoder fallback и сохранения уже загруженного read-only каталога offline без доступных мутаций.
+- Workflow получил отдельный `browser` job с установкой Chromium и `npm run test:e2e`; e2e typecheck автоматически
+  включает все `test/e2e/*.spec.ts`. В operations traceability добавлена browser-проверка.
+- Создан `llm/_docs/venue-provider-register.md`. OSM seed, массовый Overpass endpoint, tiles и geocoder имеют только
+  `NOT_APPROVED`/`NOT_CONFIGURED`; тестовые названия лицензии и attribution явно не считаются разрешением. Реестр
+  содержит checklist официальных условий, residency, purpose/fields, refresh/deletion, usage policy, attribution,
+  approval и smoke evidence.
+
+### Проверки этапа venues 05-verification
+
+- Один полный `npm run verify` — успешно: workspace/lockfile, TypeSpec, Redocly, 36 REST operations/14 messages и
+  27 contract policy/data tests, compatibility, generated drift/typecheck, Prism mock, formatting, 116 Markdown
+  files, lint/typecheck/tests/build всех восьми workspaces. После финального HTTPS config guard повторный verify
+  снова прошёл contract lint/compatibility/drift/typecheck, но остановился на sandbox `listen EPERM 127.0.0.1` в
+  Prism; повторный полный успех не заявляется. Отдельная финальная команда без socket-зависимого mock прошла все
+  остальные проверки. Backend unit: 13 suites/27 tests; web: 3 suites/9 tests; TMA: 2 suites/7 tests. PWA build
+  подтвердил manifest/service worker и venue cache guard; TMA production guard прошёл.
+- `npm run test:e2e:typecheck` и `npm run test:e2e:build` — успешно; production web/TMA bundles и шесть Playwright
+  tests собраны. `npm run test:e2e` и отдельный `npx playwright test test/e2e/venues.spec.ts --workers=1` не смогли
+  запустить локальный Chrome: процесс завершился `SIGABRT`, sandbox запретил kill с `EPERM`. Ни один browser test
+  runtime здесь не засчитан успешным; повтор обязателен в добавленном CI `browser` job.
+- `DATABASE_URL=... REDIS_URL=... npm run test:integration --workspace @picklehub/backend -- --runInBand` —
+  заблокирован sandbox: соединения с `127.0.0.1:5432` и `:6379` отклонены `EPERM`. Поэтому новые реальные PostGIS
+  boundary/index/pagination/import/candidate tests и прежние migration/merge tests должны пройти в CI
+  `integration` после `prisma migrate deploy`; runtime-успех не заявляется.
+- Отдельные `npm run lint/typecheck/test/build --workspace @picklehub/backend` — успешно после финальных изменений;
+  `npm run typecheck/test` для web и TMA — успешно. `npm run compose:config:check`, `npm ls --depth=0` и
+  `git diff --check` — успешно; dependency tree без unmet/extraneous. Vite оставил известное неблокирующее
+  предупреждение о lazy MapLibre chunk 924 kB (247.97 kB gzip).
+- Пробелы: importer пока не хранит `REMOVED`/`UNREACHABLE` observation и не создаёт revision изменившегося OSM
+  элемента; безопасное текущее поведение не перезаписывает и не удаляет canonical каталог. До production seed
+  нужны source refresh/state и policy-driven очистка. Live provider/WebGL и HTTPS Service Worker smoke также
+  остаются закрыты до выбора и доказанного одобрения provider capabilities. Внешняя
+  `NODE_TLS_REJECT_UNAUTHORIZED=0` присутствует только в окружении, вызвала Redocly warning и не добавлена в
+  репозиторий.
+- Код matches не начинался. Следующий промпт после чтения `llm/04-matches/00-overview.md` —
+  `llm/04-matches/01-requirements.md`.

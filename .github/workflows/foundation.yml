@@ -70,6 +70,19 @@ jobs:
             - run: npm run prisma:migrate --workspace @picklehub/backend
             - run: npm run test:integration --workspace @picklehub/backend
 
+    browser:
+        runs-on: ubuntu-24.04
+        timeout-minutes: 15
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 22.19.0
+                  cache: npm
+            - run: npm ci --ignore-scripts
+            - run: npx playwright install --with-deps chromium
+            - run: npm run test:e2e
+
     compose:
         runs-on: ubuntu-24.04
         timeout-minutes: 25
