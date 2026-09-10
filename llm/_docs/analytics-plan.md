@@ -178,3 +178,38 @@ connection queue overflow, unread projection lag, report count и retention clea
 минимальным размером когорты и ограниченной размерностью, чтобы не восстановить участие в малом матче. Audit,
 abuse detection и delivery reliability не зависят от analytics consent, но не используются для скрытой продуктовой
 аналитики. Недоступность analytics/provider не блокирует сообщение, in-app item, жалобу или доменную операцию.
+
+## Профиль и статистика
+
+Источник — [требования профиля](product-requirements.md). Behavioral events используют consent/envelope `v1` и
+только закрытые enum/buckets. Subject profile ID, match/result/club ID, имя, населённый пункт, форматы профиля,
+значение самооценки, DUPR URL/домен, счёт, points, wins/losses/win rate, reliability/no-show значения, block side и
+причина недоступности запрещены. Viewer ID допустим только как общий consented opaque `userId` envelope; событие не
+строит граф просмотров игроков.
+
+| Событие                      | Условие и источник                                         | Дополнительные свойства                                                                                 | Дедупликация                        | Применение                                           |
+| ---------------------------- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- | ----------------------------------- | ---------------------------------------------------- |
+| `profile_viewed`             | Клиент после осмысленного успешного показа                 | `ownership`: `SELF`/`OTHER`; `entry`: `MATCH`/`HISTORY`/`DIRECT`; `visibility`: `PUBLIC`/`PRIVATE_SELF` | Subject + screen session у producer | Полезность профиля без графа viewer → subject.       |
+| `profile_update_completed`   | Backend после commit разрешённых полей при consent         | `changed`: непустая битовая маска `NAME`/`LOCALITY`/`FORMATS`/`SELF_ASSESSMENT`/`DUPR`                  | Profile version                     | Понятность редактирования и востребованность полей.  |
+| `profile_visibility_changed` | Backend после commit перехода видимости                    | `visibility`: `PUBLIC`/`PRIVATE`                                                                        | Profile version + transition        | Доля явного открытия/закрытия профиля.               |
+| `match_history_opened`       | Клиент показал первую успешную страницу                    | `ownership`: `SELF`/`OTHER`; `resultBucket`: `ZERO`/`ONE_FIVE`/`SIX_TWENTY`/`GT_TWENTY`                 | Subject + screen session у producer | Использование истории и качество пустого состояния.  |
+| `statistics_viewed`          | Клиент показал согласованную проекцию или пустое состояние | `ownership`; `format`: `ALL`/`SINGLES`/`DOUBLES`; `state`: `EMPTY`/`AVAILABLE`/`UPDATING`               | Subject + format + screen session   | Использование детализации и частота lag-состояния.   |
+| `dupr_link_opened`           | Клиент подтвердил переход по разрешённой внешней ссылке    | `ownership`: `SELF`/`OTHER`; `surface`: `PROFILE`                                                       | Subject + screen session у producer | Нужность интеграции без URL, ID или результата DUPR. |
+
+Ошибочный/запрещённый просмотр, block и закрытый профиль не создают `profile_viewed`: иначе событие раскрыло бы
+существование subject. Operational access-denial counters агрегируются только по безопасному reason class и без
+viewer/subject labels. Отзыв consent прекращает новые behavioral events; прошлые открытия/изменения не
+восстанавливаются при повторном согласии и не влияют на профиль или расчёт статистики.
+
+Продуктовая панель показывает self/other profile → history/statistics и долю нейтральных empty states, update
+completion по маске полей, переходы visibility и DUPR outbound intent. Она не строит leaderboard, skill/no-show
+когорты, пары viewer–subject или сегменты по точному значению статистики. Для малых когорт применяется минимальный
+порог публикации и подавление комбинаций, способных восстановить конкретного игрока.
+
+Обязательная статистическая проекция работает без analytics consent, потому что является функцией продукта, но
+её telemetry не является behavioral analytics. Разрешены только агрегированные counters: число apply/retract/no-op
+по outcome, duplicate/stale revision suppression, consumer lag bucket, generation age/state, rebuild duration,
+source/contribution/aggregate count mismatch и checksum/reconciliation result. User/match/result IDs и сами
+totals запрещены как metric labels. Цели: duplicate current contribution, отрицательный total, `wins + losses >
+played`, `ALL != SINGLES + DOUBLES` и переключение неполного generation — ноль. Analytics outage не блокирует
+сохранение профиля, privacy invalidation, чтение истории или rebuild.

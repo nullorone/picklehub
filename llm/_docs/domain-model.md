@@ -157,3 +157,45 @@ revision/evidence, email, Telegram subject,
 пригласительная ссылка, имена и причина жалобы запрещены. Для realtime текста используется авторизованная запись
 communications и bounded fan-out, а не широковещательный доменный outbox. Конкретные provider credentials и
 recipient address разрешаются identity port только внутри минимальной границы адаптера отправки.
+
+## Профиль и статистика игрока
+
+Граница `profiles` владеет завершённым представлением игрока и производными статистическими проекциями, но не
+меняет authoritative матчи, moderation outcomes или identity credentials:
+
+- `player_profiles` — один версионируемый профиль активного пользователя: отображаемое имя, locality reference,
+  набор форматов, текущая самооценка и `PUBLIC` / `PRIVATE`; timezone остаётся закрытой настройкой;
+- `external_profile_links` — нормализованная HTTPS-ссылка типа `DUPR`, состояние разрешения показа и версия
+  provider policy; это не verified identity и не источник числового рейтинга;
+- `player_statistic_contributions` — один текущий ревизуемый вклад на match + registered player с format,
+  confirmedAt, outcome и командными game/point totals либо tombstone исключения;
+- `player_statistic_aggregates` — rebuildable lifetime projection по player + `ALL` / `SINGLES` / `DOUBLES` с
+  целыми numerators: played, wins, losses, games и points for/against; процент не является источником истины;
+- `player_reliability_contributions` и aggregates — только подтверждённые организованные outcomes и окончательные
+  trust/safety no-show decisions, по одному виду ответственности на match + player;
+- `profile_projection_generations` и consumer receipts — generation/cutoff/checksum, состояние rebuild и
+  идемпотентная обработка eligibility revisions без хранения пользовательских полей в очереди.
+
+Онбординг атомарно создаёт исходный профиль из завершённого draft; после этого profiles становится владельцем
+изменений отображаемых полей, а identity хранит только необходимую ссылку/проекцию для auth gate. Версия профиля
+защищает конкурентное сохранение. Закрытие и удаление немедленно инвалидируют публичный cache; обязательная
+минимальная проекция участника матча получается через авторизованный port и не превращается в копию всего профиля.
+Будущие clubs/achievements подключаются отдельными проекциями после owning feature, а не nullable-заглушками.
+
+Statistics принимает только монотонную eligibility revision authoritative источника. Допустимый вклад требует
+`PLAYED`, согласованных `COMPLETED` / `CONFIRMED` и уникального marker; гость, proposal, superseded, disputed,
+voided и cancelled outcome дают отсутствие/tombstone. Подтверждение только факта увеличивает played, но не
+wins/losses/points. Scored doubles сохраняет командные очки каждому зарегистрированному участнику и явно не
+моделирует их как личный вклад.
+
+Применение выполняется как idempotent upsert/retract вклада и пересчёт затронутого агрегата в одной транзакции;
+receipt одного event ID недостаточен для коррекции старого результата. Полное перестроение создаёт shadow
+generation на snapshot cutoff, сверяет count/checksum, доигрывает более новые revisions и только затем атомарно
+переключает активное поколение. Failure оставляет прежнее согласованное поколение. Reconciliation сравнивает
+authoritative markers/revisions и contributions и не редактирует source aggregate.
+
+Публичная проекция применяет profile visibility и двусторонний direct-access deny при блокировке. Она не содержит
+email, Telegram subject, timezone, consent, точную географию, invite token, dispute/no-show evidence или reporter.
+Raw DUPR URL, имя, точный счёт и пользовательские показатели запрещены в generic outbox, job, logs и analytics;
+consumer получает opaque match/result/revision ID и дочитывает источник через внутренний авторизованный port.
+Точные поля, SQL constraints, события и cursor определяет `06-player-profile-stats/02-contract-data.md`.

@@ -1388,3 +1388,45 @@ EPERM`). Поэтому все существующие database suites оста
 - Кодовые, статические и локально исполнимые критерии выполнены. Полная приёмка отсутствия потерь остаётся
   environment-blocked до зелёных PostgreSQL/Redis и Playwright прогонов; к
   `llm/06-player-profile-stats/01-requirements.md` не переходили.
+
+## 2026-09-11 — профиль и статистика, этап 01-requirements
+
+- Активный промпт: `llm/06-player-profile-stats/01-requirements.md`. В продуктовых требованиях описаны просмотр и
+  optimistic-versioned изменение собственного профиля, `PUBLIC` / `PRIVATE`, минимальная проекция состава,
+  двустороннее поведение direct-доступа при блокировке, собственная и публичная история матчей, безопасная
+  несинхронизируемая ссылка DUPR и доступные неунижающие empty/loading/error/stale состояния.
+- Каноническая статистика: единственный источник — текущий допустимый вклад `(matchId, playerId)` для
+  зарегистрированного `PLAYED`-участника согласованных `COMPLETED` / `CONFIRMED` матча и результата с уникальным
+  marker. Подтверждённый факт без счёта увеличивает только played; wins/losses, win rate с denominator
+  `wins + losses`, партии и командные points появляются только у scored outcome. Все totals разделены на
+  `SINGLES` / `DOUBLES`, а `ALL` является их суммой; гость статистику не получает.
+- Исключения и исправления: отсутствующий/proposed, superseded/отозванный, disputed, voided и cancelled outcome
+  вклада не дают. Текущий lifecycle не разрешает пользователю отзывать immutable confirmation; возможный будущий
+  post-confirmation review явно оставлен за trust/safety. Для безопасных коррекций определены eligibility revision,
+  idempotent upsert/retract contribution, reconciliation и shadow-generation rebuild со snapshot/catch-up,
+  checksum и атомарным переключением.
+- Надёжность и неявки: organizer reliability учитывает подтверждённые игры и только late cancellation/окончательно
+  подтверждённую ответственность; no-show — только финальное moderation решение, с дедупликацией по матчу. Оба
+  публичных процента скрыты до пяти commitments; reports, reporter и evidence не раскрываются. До реализации
+  trust/safety UI честно сообщает, что посещаемость ещё не учитывается.
+- Аналитика и безопасность: добавлена consented таксономия profile/history/statistics/DUPR без subject graph,
+  полей профиля, score или персональных totals; operational telemetry ограничена lag/rebuild/invariant counters.
+  Зафиксированы cache invalidation, enumeration-safe ответы, запрет DUPR fetch/scraping/referrer/tracking,
+  ограничение публичной истории, proposed retention и РФ/legal gates.
+- Изменённые файлы: `llm/_docs/product-requirements.md`, `llm/_docs/domain-model.md`,
+  `llm/_docs/analytics-plan.md`, `llm/_docs/security-privacy.md`, `llm/_docs/ai-development-log.md`.
+- Проверки:
+    - Prettier `--write` для четырёх изменённых требований и журнала — успешно;
+    - `npm run format:check` — успешно, Prettier и TypeSpec format check прошли;
+    - `npm run docs:check` — успешно, 118 Markdown-файлов, 0 ошибок;
+    - read-only Node-проверка относительных Markdown-ссылок через `rg --files -g '*.md'` — успешно, проверено
+      123 файла, отсутствующих целей нет;
+    - `git diff --check` — успешно.
+- Не выполнялись `contracts:check`, `lint`, `typecheck`, `test`, integration/e2e и `build`: документационный этап
+  не меняет TypeSpec/AsyncAPI, generated artifacts или исполняемый код, поэтому эти команды не проверяют его
+  критерии. Известные environment-blocked PostgreSQL/Redis и Playwright проверки предыдущих этапов не выдаются за
+  выполненные.
+- Критерии этапа выполнены на уровне требований: самооценка в каждой проекции явно названа неподтверждённой, DUPR
+  не обозначается синхронизированным/verified, а статистический вклад возникает только из подходящего
+  подтверждённого source outcome. Следующий промпт — `llm/06-player-profile-stats/02-contract-data.md`; к нему не
+  переходили.
