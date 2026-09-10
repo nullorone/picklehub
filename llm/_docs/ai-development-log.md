@@ -1430,3 +1430,63 @@ EPERM`). Поэтому все существующие database suites оста
   не обозначается синхронизированным/verified, а статистический вклад возникает только из подходящего
   подтверждённого source outcome. Следующий промпт — `llm/06-player-profile-stats/02-contract-data.md`; к нему не
   переходили.
+
+## 2026-09-11 — профиль и статистика, этап 02-contract-data
+
+- Активный промпт: `llm/06-player-profile-stats/02-contract-data.md`. Backend controllers/use cases, projection
+  consumer/rebuild worker и клиентские экраны не создавались: они принадлежат следующим этапам.
+- TypeSpec добавляет 13 profile operations: owner profile/update, отдельную privacy setting, локальную policy-check
+  и удаление DUPR, bounded avatar upload/remove, owner/public cursor history и owner/public statistics. Owner
+  mutations требуют bearer, Origin, CSRF, UUIDv4 idempotency и `expectedVersion`; public reads допускают anonymous
+  либо bearer для симметричной block-политики. Закрытый, blocked, absent и deleting subject дают один
+  `PROFILE_NOT_AVAILABLE`. Все ответы `no-store`.
+- Self-only `PlayerProfile` отделён от минимального `PublicPlayerProfile`. Публичная схема не имеет timezone,
+  version, consent, credential, block/report данных; self-assessment явно не verified. Публичные attendance и
+  reliability до пяти commitments не раскрывают процент или sample size. DUPR помечен
+  `EXTERNAL_NOT_VERIFIED_OR_SYNCED`: PUT только проверяет синтаксис/утверждённую allowlist, не делает fetch,
+  ownership check или rating import.
+- Avatar contract выдаёт пятиминутный single-object PUT для server-generated private key
+  `profiles/{userId}/avatars/{assetId}/original`, фиксирует JPEG/PNG/WebP, максимум 5 MiB и SHA-256. Signed URL не
+  хранится; asset не публичен до decode/re-encode, metadata/malware policy check и активации.
+- Prisma и SQL migration отделяют mutable profile/external link/avatar от generation-scoped statistic и
+  reliability contributions/aggregates. `(generation, match, player)` и monotonic eligibility revision защищают
+  replay/out-of-order; `ALL = SINGLES + DOUBLES`, `wins + losses <= played`, один organizer outcome на match и
+  no-show dedup защищены constraints/indexes. Shadow generation проверяет count и SHA-256, после чего один partial
+  unique `ACTIVE` атомарно заменяет прежний; failed/неполное поколение API не видит. Завершённые onboarding drafts
+  backfill-ятся без переноса plaintext DUPR.
+- AsyncAPI добавляет четыре privacy-minimized события `profile.*.v1`: изменение профиля, новая source revision,
+  запрос и завершение rebuild. В них нет имени, locality, level, DUPR/avatar, score/points/totals,
+  block/report/evidence; consumer дочитывает authoritative source по opaque reference. Generated OpenAPI,
+  AsyncAPI TypeScript и копия API client обновлены только генератором.
+- Policy/negative tests фиксируют allowlist операций, optional-auth public reads, mutation headers, public DTO,
+  cursor history, DUPR/аватар и запрет персональных полей событий. Static migration tests проверяют 10 таблиц,
+  revision/receipt dedup, generation checksum/activation, aggregate invariants и отсутствие plaintext URL/signed
+  URL. Добавлены три PostgreSQL integration scenario для checksum activation, stale/conflicting revision и
+  deferred `ALL` invariant.
+
+### Проверки этапа profile/statistics 02-contract-data
+
+- `npm run verify` — успешно полностью: workspace/lockfile, TypeSpec/Redocly, policy для 87 REST operations и 41
+  messages, 58 contract/data/privacy tests, compatibility с `HEAD`, generated drift/typecheck, Prism mock с
+  profile statistics, format/docs, lint/typecheck/unit tests/build всех восьми workspaces. Backend: 21 suite/53
+  tests; web: 5/19; TMA: 4/14. Сохранились известные неблокирующие Vite warnings о web MapLibre chunk 924 kB и
+  основном TMA bundle 533 kB.
+- После финальной записи журнала повторный `npm run verify` один раз остановился на `contracts:mock:check` из-за
+  transient `listen EPERM 127.0.0.1`; немедленный отдельный `npm run contracts:mock:check` успешно проверил все
+  шесть групп examples, включая profile. Оставшаяся цепочка `format:check`, `docs:check`, `lint`, `typecheck`,
+  `test`, `build`, `npm ls --depth=0` и `git diff --check` после этого также успешна.
+- `PRISMA_SCHEMA_ENGINE_BINARY=/usr/bin/true PRISMA_QUERY_ENGINE_LIBRARY=/usr/bin/true npx prisma generate
+--schema backend/prisma/schema.prisma` и `prisma:validate` с synthetic `DATABASE_URL` — успешно; Prisma Client
+  6.16.2 сгенерирован и schema валидна. Первый `prisma format` без local engine override попытался получить
+  checksum из сети и получил `ENOTFOUND`; повтор с локальными engine paths успешен и не менял зависимости.
+- `npm ls --depth=0` и `git diff --check` — успешно; unmet/extraneous dependencies и whitespace errors отсутствуют.
+- Целевой `profiles-migration.integration-spec.ts` обнаружил три теста, но каждый остановился до assertion на
+  `connect EPERM 127.0.0.1:5432`; `docker ps` также запрещён доступом к Docker socket. Поэтому применение новой SQL
+  migration и runtime assertions checksum/revision/deferred constraint должны пройти в CI PostgreSQL job; их
+  успех не заявляется. Static data policy и Prisma validation успешны, но не заменяют runtime.
+- Внешняя настройка `NODE_TLS_REJECT_UNAUTHORIZED=0` остаётся свойством окружения и вызвала предупреждение Redocly;
+  она не добавлена в репозиторий. DUPR allowlist/provider approval, object storage, scanning/residency и legal
+  retention approval этим этапом не заявляются.
+- Контрактные, generated, статические data и общие кодовые критерии выполнены. Runtime-критерий миграции остаётся
+  environment-blocked до PostgreSQL-прогона. Следующий промпт `llm/06-player-profile-stats/03-backend.md` не
+  начинался.

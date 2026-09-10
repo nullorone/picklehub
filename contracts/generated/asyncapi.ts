@@ -654,6 +654,82 @@ export namespace PongMessage {
     export type MessageEnvelopeData = Record<string, never>;
 }
 
+export namespace ProfileChangedMessage {
+    export interface ProfileChangedEnvelope {
+        messageId: string;
+        type: 'profile.changed.v1';
+        occurredAt: string;
+        correlationId: string;
+        causationId?: string | null;
+        data: Data;
+    }
+
+    export interface Data {
+        profileId: string;
+        profileVersion: number;
+        change: DataChange;
+    }
+
+    export type DataChange = 'FIELDS' | 'VISIBILITY' | 'DUPR_LINK' | 'AVATAR' | 'DELETION';
+}
+
+export namespace ProfileStatisticsRebuildCompletedMessage {
+    export interface ProfileStatisticsRebuildCompletedEnvelope {
+        messageId: string;
+        type: 'profile.statistics.rebuild.completed.v1';
+        occurredAt: string;
+        correlationId: string;
+        causationId?: string | null;
+        data: Data;
+    }
+
+    export interface Data {
+        generationId: string;
+        snapshotRevision: number;
+        outcome: DataOutcome;
+    }
+
+    export type DataOutcome = 'ACTIVATED' | 'FAILED';
+}
+
+export namespace ProfileStatisticsRebuildRequestedMessage {
+    export interface ProfileStatisticsRebuildRequestedEnvelope {
+        messageId: string;
+        type: 'profile.statistics.rebuild.requested.v1';
+        occurredAt: string;
+        correlationId: string;
+        causationId?: string | null;
+        data: Data;
+    }
+
+    export interface Data {
+        generationId: string;
+        snapshotRevision: number;
+        reason: DataReason;
+    }
+
+    export type DataReason = 'MANUAL' | 'RECONCILIATION' | 'SCHEMA_CHANGE' | 'ACCOUNT_DELETION';
+}
+
+export namespace ProfileStatisticsSourceChangedMessage {
+    export interface ProfileStatisticsSourceChangedEnvelope {
+        messageId: string;
+        type: 'profile.statistics.source.changed.v1';
+        occurredAt: string;
+        correlationId: string;
+        causationId?: string | null;
+        data: Data;
+    }
+
+    export interface Data {
+        sourceId: string;
+        sourceRevision: number;
+        sourceKind: DataSourceKind;
+    }
+
+    export type DataSourceKind = 'MATCH_RESULT' | 'MATCH_CANCELLATION' | 'TRUST_DECISION';
+}
+
 export namespace ProtocolErrorMessage {
     export interface ProtocolErrorEnvelope {
         messageId: string;
@@ -779,6 +855,13 @@ export type NotificationFanoutRequestedEnvelope =
 export type OnboardingCompletedEnvelope = OnboardingCompletedMessage.OnboardingCompletedEnvelope;
 export type PingEnvelope = PingMessage.PingEnvelope;
 export type PongEnvelope = PongMessage.PongEnvelope;
+export type ProfileChangedEnvelope = ProfileChangedMessage.ProfileChangedEnvelope;
+export type ProfileStatisticsRebuildCompletedEnvelope =
+    ProfileStatisticsRebuildCompletedMessage.ProfileStatisticsRebuildCompletedEnvelope;
+export type ProfileStatisticsRebuildRequestedEnvelope =
+    ProfileStatisticsRebuildRequestedMessage.ProfileStatisticsRebuildRequestedEnvelope;
+export type ProfileStatisticsSourceChangedEnvelope =
+    ProfileStatisticsSourceChangedMessage.ProfileStatisticsSourceChangedEnvelope;
 export type ProtocolErrorEnvelope = ProtocolErrorMessage.ProtocolErrorEnvelope;
 export type SessionsRevokedEnvelope = SessionsRevokedMessage.SessionsRevokedEnvelope;
 export type VenueCandidateCreatedEnvelope = VenueCandidateCreatedMessage.VenueCandidateCreatedEnvelope;
@@ -812,6 +895,10 @@ export type WebSocketMessage =
     | NotificationFanoutRequestedEnvelope
     | PingEnvelope
     | PongEnvelope
+    | ProfileChangedEnvelope
+    | ProfileStatisticsRebuildCompletedEnvelope
+    | ProfileStatisticsRebuildRequestedEnvelope
+    | ProfileStatisticsSourceChangedEnvelope
     | ProtocolErrorEnvelope
     | VenueCandidateCreatedEnvelope
     | VenueMergedEnvelope

@@ -22,7 +22,7 @@ npm run contracts:check
 - `contracts:lint` проверяет TypeSpec без записи artifacts, валидирует OpenAPI и AsyncAPI официальными
   parser/linter и применяет PickleHub policy: `/v1`, разрешённые owning-feature paths, уникальные
   operation/message IDs, версионированные envelopes, UTC timestamps, `no-store`, browser CSRF/cookie и безопасный
-  payload внутренних identity/venue/match/communication events и notification jobs. Статические data-policy тесты
+  payload внутренних identity/venue/match/communication/profile events и notification jobs. Статические data-policy тесты
   дополнительно удерживают
   обязательные migration constraints, GiST-стратегию, provenance, постоянные merge aliases, вместимость/FIFO и
   единственный эффективный результат; они не заменяют применение SQL к PostgreSQL и конкурентные integration tests.
@@ -37,7 +37,7 @@ npm run contracts:check
 - `contracts:mock` запускает локальный Prism на `127.0.0.1:4010`; он предназначен только для разработки и не
   является backend или production fallback.
 - `contracts:mock:check` запускает mock на свободном localhost port, запрашивает representative endpoints health,
-  identity, venues, matches и communications, проверяет status, JSON shape и `no-store`. AsyncAPI examples проверяются
+  identity, venues, matches, communications и profiles, проверяет status, JSON shape и `no-store`. AsyncAPI examples проверяются
   parser/linter в `contracts:lint`.
 
 Prism сопоставляет OpenAPI Path Item без относительного `servers.url`, поэтому локальные mock URL —
@@ -67,6 +67,27 @@ Prism отвечает строго по OpenAPI examples/schemas. Mock не п�
 имеет mock URL или silent fallback. Внутренние identity, venue, match и communication events проверяются по
 AsyncAPI schema и не
 выставляются как WebSocket subscription; contract mock не имитирует их фактическую доставку через outbox.
+
+## Профиль и статистика
+
+[`rest/profiles.tsp`](rest/profiles.tsp) разделяет self-only `PlayerProfile`, минимальный
+`PublicPlayerProfile` и перестраиваемые `PlayerStatistics`. Владелец читает и optimistic-versioned изменяет профиль
+и `PUBLIC`/`PRIVATE`, листает историю opaque cursor и получает подробные integer totals. Публичные endpoints
+принимают анонимный запрос или bearer: для вошедшего viewer отсутствующий, закрытый, удаляемый и двусторонне
+заблокированный профиль всегда даёт один `PROFILE_NOT_AVAILABLE`. Публичные DTO не содержат timezone, версии,
+consent, block/report данных; attendance/reliability до пяти окончательных commitments не раскрывают даже размер
+выборки.
+
+DUPR PUT выполняет только локальную проверку HTTPS и утверждённой host/path policy, хранит ссылку зашифрованной и
+никогда не делает fetch/scraping, проверку владения или импорт рейтинга. Avatar upload — пятиминутный подписанный
+PUT ровно в `profiles/{userId}/avatars/{assetId}/original`, связанный с media type, длиной до 5 MiB и SHA-256.
+Object key генерирует сервер; объект остаётся закрытым до decode/re-encode, проверки и активации.
+
+Миграция хранит один ревизуемый contribution на `(generation, match, player)`, три integer aggregate slice и
+отдельные reliability contributions. Receipt плюс монотонная eligibility revision защищают replay и изменение
+порядка. Rebuild строит shadow generation, проверяет count/SHA-256 и только затем атомарно делает его единственным
+`ACTIVE`; `ALL` deferred constraint равен сумме `SINGLES` и `DOUBLES`. `profile.events.v1` переносит только opaque
+source/generation references и закрытые состояния, без имени, уровня, DUPR, аватара, счёта, totals и evidence.
 
 ## Площадки
 

@@ -9,8 +9,8 @@ info:
         single-use ticket obtained through authenticated REST. The ticket is sent
         only in the first protocol message,
 
-        never in a URL or log. Identity and venue domain events use separate internal
-        outbox channels and are never broadcast to WebSocket clients.
+        never in a URL or log. Domain events use separate internal outbox channels
+        and are never broadcast to WebSocket clients.
     license:
         name: Proprietary
 defaultContentType: application/json
@@ -160,6 +160,19 @@ channels:
                 $ref: '#/components/messages/MatchCompletedConfirmed'
             MatchCancelled:
                 $ref: '#/components/messages/MatchCancelled'
+    profileEvents:
+        address: profile.events.v1
+        title: Internal profile and statistics projection events
+        description: Transactional outbox only, delivered at least once and deduplicated by messageId plus source
+            revision. Payloads contain opaque references and closed states only; names, locality, level, DUPR URL,
+            avatar key, score, player totals, report evidence and block direction are forbidden.
+        servers:
+            - $ref: '#/servers/outbox'
+        messages:
+            ProfileChanged: { $ref: '#/components/messages/ProfileChanged' }
+            ProfileStatisticsSourceChanged: { $ref: '#/components/messages/ProfileStatisticsSourceChanged' }
+            ProfileStatisticsRebuildRequested: { $ref: '#/components/messages/ProfileStatisticsRebuildRequested' }
+            ProfileStatisticsRebuildCompleted: { $ref: '#/components/messages/ProfileStatisticsRebuildCompleted' }
 operations:
     receiveClientControl:
         action: receive
@@ -278,6 +291,19 @@ operations:
             - $ref: '#/channels/matchEvents/messages/MatchResultDisputed'
             - $ref: '#/channels/matchEvents/messages/MatchCompletedConfirmed'
             - $ref: '#/channels/matchEvents/messages/MatchCancelled'
+    publishProfileEvents:
+        action: send
+        title: Publish profile and projection lifecycle changes
+        summary: Publish privacy-minimized references through the transactional outbox.
+        description: Profile mutations commit their event atomically. Statistics source changes carry only an
+            opaque source and monotonic revision; the authorized consumer reloads matches or trust decisions.
+            Rebuild completion does not expose a player, score, totals or source match identifiers.
+        channel: { $ref: '#/channels/profileEvents' }
+        messages:
+            - $ref: '#/channels/profileEvents/messages/ProfileChanged'
+            - $ref: '#/channels/profileEvents/messages/ProfileStatisticsSourceChanged'
+            - $ref: '#/channels/profileEvents/messages/ProfileStatisticsRebuildRequested'
+            - $ref: '#/channels/profileEvents/messages/ProfileStatisticsRebuildCompleted'
 components:
     messages:
         Authenticate:
@@ -619,6 +645,34 @@ components:
                 location: $message.payload#/correlationId
             payload:
                 $ref: '#/components/schemas/MatchCancelledEnvelope'
+        ProfileChanged:
+            name: profile.changed.v1
+            title: ProfileChanged
+            summary: A profile mutation committed without copying its personal fields.
+            contentType: application/json
+            correlationId: { location: $message.payload#/correlationId }
+            payload: { $ref: '#/components/schemas/ProfileChangedEnvelope' }
+        ProfileStatisticsSourceChanged:
+            name: profile.statistics.source.changed.v1
+            title: ProfileStatisticsSourceChanged
+            summary: An authoritative source eligibility revision requires idempotent projection reconciliation.
+            contentType: application/json
+            correlationId: { location: $message.payload#/correlationId }
+            payload: { $ref: '#/components/schemas/ProfileStatisticsSourceChangedEnvelope' }
+        ProfileStatisticsRebuildRequested:
+            name: profile.statistics.rebuild.requested.v1
+            title: ProfileStatisticsRebuildRequested
+            summary: A shadow-generation rebuild was requested without selecting individual players.
+            contentType: application/json
+            correlationId: { location: $message.payload#/correlationId }
+            payload: { $ref: '#/components/schemas/ProfileStatisticsRebuildRequestedEnvelope' }
+        ProfileStatisticsRebuildCompleted:
+            name: profile.statistics.rebuild.completed.v1
+            title: ProfileStatisticsRebuildCompleted
+            summary: A validated generation became active without exposing personal statistics.
+            contentType: application/json
+            correlationId: { location: $message.payload#/correlationId }
+            payload: { $ref: '#/components/schemas/ProfileStatisticsRebuildCompletedEnvelope' }
     schemas:
         Uuid:
             type: string
@@ -1579,3 +1633,79 @@ components:
                         matchId: { $ref: '#/components/schemas/Uuid' }
                         aggregateVersion: { type: integer, minimum: 1 }
                         stage: { type: string, enum: [DRAFT, PUBLISHED] }
+        ProfileChangedEnvelope:
+            type: object
+            additionalProperties: false
+            required: [messageId, type, occurredAt, correlationId, data]
+            properties:
+                messageId: { $ref: '#/components/schemas/Uuid' }
+                type: { type: string, const: profile.changed.v1 }
+                occurredAt: { $ref: '#/components/schemas/Timestamp' }
+                correlationId: { $ref: '#/components/schemas/Uuid' }
+                causationId:
+                    oneOf: [{ $ref: '#/components/schemas/Uuid' }, { type: 'null' }]
+                data:
+                    type: object
+                    additionalProperties: false
+                    required: [profileId, profileVersion, change]
+                    properties:
+                        profileId: { $ref: '#/components/schemas/Uuid' }
+                        profileVersion: { type: integer, minimum: 0 }
+                        change: { type: string, enum: [FIELDS, VISIBILITY, DUPR_LINK, AVATAR, DELETION] }
+        ProfileStatisticsSourceChangedEnvelope:
+            type: object
+            additionalProperties: false
+            required: [messageId, type, occurredAt, correlationId, data]
+            properties:
+                messageId: { $ref: '#/components/schemas/Uuid' }
+                type: { type: string, const: profile.statistics.source.changed.v1 }
+                occurredAt: { $ref: '#/components/schemas/Timestamp' }
+                correlationId: { $ref: '#/components/schemas/Uuid' }
+                causationId:
+                    oneOf: [{ $ref: '#/components/schemas/Uuid' }, { type: 'null' }]
+                data:
+                    type: object
+                    additionalProperties: false
+                    required: [sourceId, sourceRevision, sourceKind]
+                    properties:
+                        sourceId: { $ref: '#/components/schemas/Uuid' }
+                        sourceRevision: { type: integer, format: int64, minimum: 0 }
+                        sourceKind: { type: string, enum: [MATCH_RESULT, MATCH_CANCELLATION, TRUST_DECISION] }
+        ProfileStatisticsRebuildRequestedEnvelope:
+            type: object
+            additionalProperties: false
+            required: [messageId, type, occurredAt, correlationId, data]
+            properties:
+                messageId: { $ref: '#/components/schemas/Uuid' }
+                type: { type: string, const: profile.statistics.rebuild.requested.v1 }
+                occurredAt: { $ref: '#/components/schemas/Timestamp' }
+                correlationId: { $ref: '#/components/schemas/Uuid' }
+                causationId:
+                    oneOf: [{ $ref: '#/components/schemas/Uuid' }, { type: 'null' }]
+                data:
+                    type: object
+                    additionalProperties: false
+                    required: [generationId, snapshotRevision, reason]
+                    properties:
+                        generationId: { $ref: '#/components/schemas/Uuid' }
+                        snapshotRevision: { type: integer, format: int64, minimum: 0 }
+                        reason: { type: string, enum: [MANUAL, RECONCILIATION, SCHEMA_CHANGE, ACCOUNT_DELETION] }
+        ProfileStatisticsRebuildCompletedEnvelope:
+            type: object
+            additionalProperties: false
+            required: [messageId, type, occurredAt, correlationId, data]
+            properties:
+                messageId: { $ref: '#/components/schemas/Uuid' }
+                type: { type: string, const: profile.statistics.rebuild.completed.v1 }
+                occurredAt: { $ref: '#/components/schemas/Timestamp' }
+                correlationId: { $ref: '#/components/schemas/Uuid' }
+                causationId:
+                    oneOf: [{ $ref: '#/components/schemas/Uuid' }, { type: 'null' }]
+                data:
+                    type: object
+                    additionalProperties: false
+                    required: [generationId, snapshotRevision, outcome]
+                    properties:
+                        generationId: { $ref: '#/components/schemas/Uuid' }
+                        snapshotRevision: { type: integer, format: int64, minimum: 0 }
+                        outcome: { type: string, enum: [ACTIVATED, FAILED] }

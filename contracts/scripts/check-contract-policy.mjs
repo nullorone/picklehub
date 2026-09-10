@@ -9,6 +9,7 @@ import {
 } from './communications-policy.mjs';
 import { checkIdentityContract, identityOperations, identityEventFields } from './identity-policy.mjs';
 import { checkMatchContract, matchOperations, matchEventFields } from './matches-policy.mjs';
+import { checkProfileContract, profileOperations, profileEventFields } from './profiles-policy.mjs';
 import { checkVenueContract, venueOperations, venueEventFields } from './venues-policy.mjs';
 
 const allowedPaths = new Set([
@@ -17,6 +18,7 @@ const allowedPaths = new Set([
     ...Object.keys(communicationOperations),
     ...Object.keys(identityOperations),
     ...Object.keys(matchOperations),
+    ...Object.keys(profileOperations),
     ...Object.keys(venueOperations),
 ]);
 const allowedProtocolMessages = new Set([
@@ -50,7 +52,7 @@ assert(
 assert(
     Object.keys(openApi.paths).every((path) => allowedPaths.has(path)) &&
         Object.keys(openApi.paths).length === allowedPaths.size,
-    'OpenAPI may expose only foundation, identity, match and venue paths.'
+    'OpenAPI may expose only approved owning-feature paths.'
 );
 
 const operationIds = Object.values(openApi.paths).flatMap((pathItem) =>
@@ -97,9 +99,10 @@ assert(
             communicationMessageNames.has(name) ||
             name in identityEventFields ||
             name in matchEventFields ||
+            name in profileEventFields ||
             name in venueEventFields
     ),
-    'AsyncAPI may define only approved protocol, identity and venue messages.'
+    'AsyncAPI may define only approved protocol and owning-feature messages.'
 );
 assert(
     messageNames.every((name) => /\.v[1-9][0-9]*$/.test(name)),
@@ -111,8 +114,9 @@ assert(
             Object.keys(identityEventFields).length +
             communicationMessageNames.size +
             Object.keys(matchEventFields).length +
+            Object.keys(profileEventFields).length +
             Object.keys(venueEventFields).length,
-    'AsyncAPI must define all approved protocol, identity, match and venue messages.'
+    'AsyncAPI must define all approved protocol and owning-feature messages.'
 );
 
 for (const message of messages) {
@@ -138,6 +142,7 @@ assert(
 checkIdentityContract(openApi, asyncApi);
 checkCommunicationContract(openApi, asyncApi);
 checkMatchContract(openApi, asyncApi);
+checkProfileContract(openApi, asyncApi);
 checkVenueContract(openApi, asyncApi);
 
 console.log(`Contract policy passed: ${operationIds.length} REST operations, ${messageNames.length} messages.`);

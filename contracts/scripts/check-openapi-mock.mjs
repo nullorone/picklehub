@@ -174,7 +174,25 @@ try {
             `Unexpected notification inbox mock: ${notifications.status} ${JSON.stringify(notificationsBody)}`
         );
     }
-    console.log('OpenAPI mock passed: health, identity, venue, match and communication examples are valid.');
+
+    const statistics = await fetch(`http://${host}:${port}/me/statistics`, {
+        headers: {
+            'accept-language': 'ru-RU',
+            authorization: `Bearer ${'A'.repeat(43)}`,
+        },
+    });
+    const statisticsBody = await statistics.json();
+    requireNoStore(statistics, 'Player statistics response');
+    if (
+        statistics.status !== 200 ||
+        !Array.isArray(statisticsBody.totals) ||
+        !statisticsBody.reliability ||
+        !statisticsBody.attendance ||
+        !statisticsBody.calculatedAt
+    ) {
+        throw new Error(`Unexpected player statistics mock: ${statistics.status} ${JSON.stringify(statisticsBody)}`);
+    }
+    console.log('OpenAPI mock passed: health, identity, venue, match, communication and profile examples are valid.');
 } finally {
     child.kill('SIGTERM');
     await new Promise((resolveExit) => {

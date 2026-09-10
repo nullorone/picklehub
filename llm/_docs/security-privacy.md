@@ -261,12 +261,21 @@ allowlist/capability/legal проверки внешний переход вык
 проверенный рейтинг. Клиент использует новый browsing context и `noopener noreferrer`; CSP и allowlist не дают
 ссылке открыть произвольную схему или домен. Raw URL/ID не попадает в log, analytics, audit, outbox или cache key.
 
+Avatar upload использует только server-generated private key
+`profiles/{userId}/avatars/{assetId}/original`. Пятиминутная подписанная политика разрешает один `PUT`, связывает
+точный media type, длину не более 5 MiB и SHA-256; wildcard prefix/list/delete и клиентский object key запрещены.
+Подписанный URL не хранится и не логируется. Исходник не выдаётся публично: asset становится активным только после
+проверки фактической длины/hash, безопасного decode/re-encode, удаления metadata и malware/content policy check;
+неполные и отклонённые объекты очищаются bounded retention job.
+
 История другого игрока минимизируется до подтверждённых `PUBLIC` матчей и разрешённых venue/result projections.
 `UNLISTED`, cancelled, voided, disputed/proposed версии, invite token, точный private venue, booking note,
 reports/no-show evidence и состав закрытых профилей не выдаются. Канонические contributions и aggregates —
 restricted данные продукта, даже если отдельные totals разрешены публичным профилем. Statistics job получает
 только opaque source/revision references и дочитывает источник с least privilege; raw score или профиль не
 копируется в generic outbox/BullMQ.
+`profile.events.v1` дополнительно запрещает locality, level, avatar key, block direction, report/evidence и totals;
+rebuild lifecycle содержит только generation, snapshot revision и закрытый outcome.
 
 Публичная attendance/reliability появляется только после не менее пяти окончательных commitments и содержит
 только aggregate. Pending/rejected/withdrawn report не влияет ни на UI, ни на projection; подтверждённая неявка

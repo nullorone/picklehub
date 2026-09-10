@@ -194,8 +194,25 @@ generation на snapshot cutoff, сверяет count/checksum, доигрыва
 переключает активное поколение. Failure оставляет прежнее согласованное поколение. Reconciliation сравнивает
 authoritative markers/revisions и contributions и не редактирует source aggregate.
 
+Физический контракт хранит профиль отдельно от `player_profile_drafts`: завершённые drafts backfill-ятся в
+`player_profiles`, а дальнейшие optimistic updates увеличивают `version` ровно на один. DUPR хранится в
+`external_profile_links` как HMAC `url_key` и authenticated ciphertext с policy version; числового рейтинга и
+verified-флага нет. Avatar object key имеет единственную форму
+`profiles/{userId}/avatars/{assetId}/original`, связан с владельцем trigger-ом, а активным может стать только его
+прошедший проверку asset. Подписанный URL не хранится.
+
+`profile_projection_generations` имеет единственный partial-unique `ACTIVE`; переход `BUILDING → READY → ACTIVE`
+проверяет число и SHA-256 канонически упорядоченных contributions. Предыдущее поколение становится
+`SUPERSEDED`, failed/неполное остаётся недоступным. На generation + match + player хранится ровно одна
+eligibility revision, а одинаковая revision не может изменить payload. Deferred constraint требует три строки
+aggregate и равенство `ALL = SINGLES + DOUBLES`; `wins + losses <= played`. Organizer success/failure взаимно
+исключаются на match, а `CONFIRMED_NO_SHOW` дедуплицируется отдельно. Event receipt не заменяет проверку source
+revision.
+
 Публичная проекция применяет profile visibility и двусторонний direct-access deny при блокировке. Она не содержит
 email, Telegram subject, timezone, consent, точную географию, invite token, dispute/no-show evidence или reporter.
 Raw DUPR URL, имя, точный счёт и пользовательские показатели запрещены в generic outbox, job, logs и analytics;
 consumer получает opaque match/result/revision ID и дочитывает источник через внутренний авторизованный port.
-Точные поля, SQL constraints, события и cursor определяет `06-player-profile-stats/02-contract-data.md`.
+REST-контракт использует snapshot-bound opaque cursor для истории. События `profile.changed.v1`,
+`profile.statistics.source.changed.v1` и lifecycle rebuild несут только opaque source/profile/generation ID,
+revision и закрытое состояние: consumer дочитывает authoritative данные после авторизации.

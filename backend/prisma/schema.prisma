@@ -1028,6 +1028,232 @@ model PlayerMatchStatistic {
   @@map("player_match_statistics")
 }
 
+// Profiles data contract. SQL owns cross-row generation activation, immutable source revisions and aggregate
+// consistency checks that Prisma cannot express completely. PlayerMatchStatistic above is a legacy match-module
+// projection and is not the canonical profile statistics source.
+enum ProfileVisibility {
+  PUBLIC
+  PRIVATE
+
+  @@map("profile_visibility")
+}
+
+enum ExternalProfileProvider {
+  DUPR
+
+  @@map("external_profile_provider")
+}
+
+enum ProfileAvatarState {
+  PENDING_UPLOAD
+  PENDING_SCAN
+  ACTIVE
+  REJECTED
+
+  @@map("profile_avatar_state")
+}
+
+enum ProfileProjectionGenerationState {
+  BUILDING
+  READY
+  ACTIVE
+  SUPERSEDED
+  FAILED
+
+  @@map("profile_projection_generation_state")
+}
+
+enum PlayerStatisticSlice {
+  ALL
+  SINGLES
+  DOUBLES
+
+  @@map("player_statistic_slice")
+}
+
+enum PlayerStatisticOutcome {
+  PLAYED_WITHOUT_SCORE
+  WON
+  LOST
+  EXCLUDED
+
+  @@map("player_statistic_outcome")
+}
+
+enum PlayerReliabilityContributionKind {
+  ORGANIZED_SUCCESS
+  ORGANIZED_FAILURE
+  CONFIRMED_NO_SHOW
+
+  @@map("player_reliability_contribution_kind")
+}
+
+model PlayerProfile {
+  userId              String            @id @map("user_id") @db.Uuid
+  version             Int               @default(0)
+  visibility          ProfileVisibility @default(PUBLIC)
+  displayName         String            @map("display_name") @db.VarChar(50)
+  localityId          String            @map("locality_id") @db.Uuid
+  gameFormats         MatchFormat[]     @default([]) @map("game_formats")
+  skillSelfAssessment Decimal           @map("skill_self_assessment") @db.Decimal(2, 1)
+  timeZone            String            @map("time_zone") @db.VarChar(64)
+  activeAvatarAssetId String?           @map("active_avatar_asset_id") @db.Uuid
+  updatedAt           DateTime          @default(now()) @map("updated_at") @db.Timestamptz(3)
+
+  @@index([visibility, updatedAt, userId], map: "player_profiles_public_idx")
+  @@map("player_profiles")
+}
+
+model ExternalProfileLink {
+  id                   String                  @id @db.Uuid
+  userId               String                  @map("user_id") @db.Uuid
+  provider             ExternalProfileProvider
+  urlKey               String                  @map("url_key") @db.Char(64)
+  urlCiphertext        Bytes                   @map("url_ciphertext")
+  encryptionKeyVersion Int                     @map("encryption_key_version")
+  policyVersion        String                  @map("policy_version") @db.VarChar(128)
+  outboundEnabled      Boolean                 @default(false) @map("outbound_enabled")
+  createdAt            DateTime                @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt            DateTime                @default(now()) @map("updated_at") @db.Timestamptz(3)
+
+  @@unique([userId, provider], map: "external_profile_links_user_provider_key")
+  @@map("external_profile_links")
+}
+
+model ProfileAvatarAsset {
+  id                 String             @id @db.Uuid
+  userId             String             @map("user_id") @db.Uuid
+  objectKey          String             @unique(map: "profile_avatar_assets_object_key") @map("object_key") @db.VarChar(512)
+  state              ProfileAvatarState @default(PENDING_UPLOAD)
+  mediaType          String             @map("media_type") @db.VarChar(32)
+  expectedBytes      Int                @map("expected_bytes")
+  expectedSha256     String             @map("expected_sha256") @db.Char(64)
+  activatedAt        DateTime?          @map("activated_at") @db.Timestamptz(3)
+  rejectedAt         DateTime?          @map("rejected_at") @db.Timestamptz(3)
+  createdAt          DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  uploadExpiresAt    DateTime           @map("upload_expires_at") @db.Timestamptz(3)
+  retentionExpiresAt DateTime?          @map("retention_expires_at") @db.Timestamptz(3)
+
+  @@index([userId, state, createdAt], map: "profile_avatar_assets_user_state_idx")
+  @@index([uploadExpiresAt], map: "profile_avatar_assets_upload_expiry_idx")
+  @@map("profile_avatar_assets")
+}
+
+model ProfileProjectionGeneration {
+  id                   String                           @id @db.Uuid
+  state                ProfileProjectionGenerationState @default(BUILDING)
+  snapshotCutoff       DateTime                         @map("snapshot_cutoff") @db.Timestamptz(3)
+  snapshotRevision     BigInt                           @map("snapshot_revision")
+  contributionCount    BigInt                           @default(0) @map("contribution_count")
+  contributionChecksum String                           @map("contribution_checksum") @db.Char(64)
+  createdAt            DateTime                         @default(now()) @map("created_at") @db.Timestamptz(3)
+  readyAt              DateTime?                        @map("ready_at") @db.Timestamptz(3)
+  activatedAt          DateTime?                        @map("activated_at") @db.Timestamptz(3)
+  failedAt             DateTime?                        @map("failed_at") @db.Timestamptz(3)
+  failureCode          String?                          @map("failure_code") @db.VarChar(96)
+
+  @@index([state, createdAt], map: "profile_projection_generations_state_idx")
+  @@map("profile_projection_generations")
+}
+
+model PlayerStatisticContribution {
+  generationId        String                 @map("generation_id") @db.Uuid
+  matchId             String                 @map("match_id") @db.Uuid
+  playerId            String                 @map("player_id") @db.Uuid
+  eligibilityRevision BigInt                 @map("eligibility_revision")
+  markerId            String?                @map("marker_id") @db.Uuid
+  format              MatchFormat
+  outcome             PlayerStatisticOutcome
+  gamesPlayed         Int                    @default(0) @map("games_played")
+  pointsFor           Int                    @default(0) @map("points_for")
+  pointsAgainst       Int                    @default(0) @map("points_against")
+  confirmedAt         DateTime?              @map("confirmed_at") @db.Timestamptz(3)
+  sourceChecksum      String                 @map("source_checksum") @db.Char(64)
+  appliedAt           DateTime               @default(now()) @map("applied_at") @db.Timestamptz(3)
+
+  @@id([generationId, matchId, playerId])
+  @@index([generationId, playerId, format], map: "player_statistic_contributions_aggregate_idx")
+  @@index([matchId, eligibilityRevision], map: "player_statistic_contributions_source_idx")
+  @@map("player_statistic_contributions")
+}
+
+model PlayerStatisticAggregate {
+  generationId    String               @map("generation_id") @db.Uuid
+  playerId        String               @map("player_id") @db.Uuid
+  slice           PlayerStatisticSlice
+  played          BigInt               @default(0)
+  wins            BigInt               @default(0)
+  losses          BigInt               @default(0)
+  gamesPlayed     BigInt               @default(0) @map("games_played")
+  pointsFor       BigInt               @default(0) @map("points_for")
+  pointsAgainst   BigInt               @default(0) @map("points_against")
+  lastConfirmedAt DateTime?            @map("last_confirmed_at") @db.Timestamptz(3)
+  calculatedAt    DateTime             @default(now()) @map("calculated_at") @db.Timestamptz(3)
+
+  @@id([generationId, playerId, slice])
+  @@index([playerId, generationId], map: "player_statistic_aggregates_player_idx")
+  @@map("player_statistic_aggregates")
+}
+
+model PlayerReliabilityContribution {
+  generationId        String                            @map("generation_id") @db.Uuid
+  matchId             String                            @map("match_id") @db.Uuid
+  playerId            String                            @map("player_id") @db.Uuid
+  kind                PlayerReliabilityContributionKind
+  eligibilityRevision BigInt                            @map("eligibility_revision")
+  sourceDecisionId    String?                           @map("source_decision_id") @db.Uuid
+  occurredAt          DateTime                          @map("occurred_at") @db.Timestamptz(3)
+  appliedAt           DateTime                          @default(now()) @map("applied_at") @db.Timestamptz(3)
+
+  @@id([generationId, matchId, playerId, kind])
+  @@index([generationId, playerId, kind], map: "player_reliability_contributions_aggregate_idx")
+  @@map("player_reliability_contributions")
+}
+
+model PlayerReliabilityAggregate {
+  generationId       String   @map("generation_id") @db.Uuid
+  playerId           String   @map("player_id") @db.Uuid
+  organizedSuccesses BigInt   @default(0) @map("organized_successes")
+  organizedFailures  BigInt   @default(0) @map("organized_failures")
+  confirmedNoShows   BigInt   @default(0) @map("confirmed_no_shows")
+  calculatedAt       DateTime @default(now()) @map("calculated_at") @db.Timestamptz(3)
+
+  @@id([generationId, playerId])
+  @@index([playerId, generationId], map: "player_reliability_aggregates_player_idx")
+  @@map("player_reliability_aggregates")
+}
+
+model ProfileProjectionEventReceipt {
+  consumerKey    String   @map("consumer_key") @db.VarChar(80)
+  eventId        String   @map("event_id") @db.Uuid
+  sourceType     String   @map("source_type") @db.VarChar(160)
+  sourceId       String   @map("source_id") @db.Uuid
+  sourceRevision BigInt   @map("source_revision")
+  processedAt    DateTime @default(now()) @map("processed_at") @db.Timestamptz(3)
+
+  @@id([consumerKey, eventId])
+  @@index([consumerKey, sourceType, sourceId, sourceRevision], map: "profile_projection_receipts_source_idx")
+  @@map("profile_projection_event_receipts")
+}
+
+model ProfileIdempotencyRecord {
+  id                   String   @id @db.Uuid
+  userId               String   @map("user_id") @db.Uuid
+  idempotencyKey       String   @map("idempotency_key") @db.Uuid
+  method               String   @db.VarChar(8)
+  canonicalPath        String   @map("canonical_path") @db.VarChar(200)
+  requestFingerprint   String   @map("request_fingerprint") @db.Char(64)
+  responseStatus       Int      @map("response_status") @db.SmallInt
+  responseCiphertext   Bytes    @map("response_ciphertext")
+  encryptionKeyVersion Int      @map("encryption_key_version")
+  createdAt            DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  expiresAt            DateTime @default(dbgenerated("CURRENT_TIMESTAMP + INTERVAL '24 hours'")) @map("expires_at") @db.Timestamptz(3)
+
+  @@unique([userId, method, canonicalPath, idempotencyKey], map: "profile_idempotency_scope_key")
+  @@index([expiresAt], map: "profile_idempotency_expiry_idx")
+  @@map("profile_idempotency_records")
+}
+
 // Communications data contract. SQL owns partial uniqueness, append-only revisions and monotonic sequence guards.
 enum ConversationState {
   WRITABLE
