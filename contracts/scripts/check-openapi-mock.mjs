@@ -160,7 +160,21 @@ try {
     ) {
         throw new Error(`Unexpected match search mock: ${matches.status} ${JSON.stringify(matchesBody)}`);
     }
-    console.log('OpenAPI mock passed: health, identity, venue and match examples are valid.');
+
+    const notifications = await fetch(`http://${host}:${port}/notifications?limit=20`, {
+        headers: {
+            'accept-language': 'ru-RU',
+            authorization: `Bearer ${'A'.repeat(43)}`,
+        },
+    });
+    const notificationsBody = await notifications.json();
+    requireNoStore(notifications, 'Notification inbox response');
+    if (notifications.status !== 200 || !Array.isArray(notificationsBody.items) || !notificationsBody.pageInfo) {
+        throw new Error(
+            `Unexpected notification inbox mock: ${notifications.status} ${JSON.stringify(notificationsBody)}`
+        );
+    }
+    console.log('OpenAPI mock passed: health, identity, venue, match and communication examples are valid.');
 } finally {
     child.kill('SIGTERM');
     await new Promise((resolveExit) => {

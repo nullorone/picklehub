@@ -25,6 +25,10 @@ servers:
         protocol: postgresql
         description: Internal transactional outbox transport, accessible only to backend
             workloads. Not a client subscription API.
+    jobs:
+        host: localhost:6379
+        protocol: redis
+        description: Internal BullMQ transport. Jobs carry opaque identifiers only and are not a client API.
 channels:
     control:
         address: /v1/ws
@@ -44,6 +48,55 @@ channels:
                 $ref: '#/components/messages/Ping'
             Pong:
                 $ref: '#/components/messages/Pong'
+    matchChat:
+        address: /v1/ws
+        title: Authorized match chat stream
+        description: Client commands and at-least-once server events. The server authorizes every subscribe,
+            resume, mutation and fan-out against current membership. Sequence gaps require REST catch-up or a
+            fresh snapshot; WebSocket delivery is never the source of truth.
+        servers:
+            - $ref: '#/servers/local'
+        messages:
+            ChatSubscribe: { $ref: '#/components/messages/ChatSubscribe' }
+            ChatMessageCreateCommand: { $ref: '#/components/messages/ChatMessageCreateCommand' }
+            ChatMessageUpdateCommand: { $ref: '#/components/messages/ChatMessageUpdateCommand' }
+            ChatMessageDeleteCommand: { $ref: '#/components/messages/ChatMessageDeleteCommand' }
+            ChatSubscribed: { $ref: '#/components/messages/ChatSubscribed' }
+            ChatMessageCreated: { $ref: '#/components/messages/ChatMessageCreated' }
+            ChatMessageUpdated: { $ref: '#/components/messages/ChatMessageUpdated' }
+            ChatMessageDeleted: { $ref: '#/components/messages/ChatMessageDeleted' }
+            ChatSystemEvent: { $ref: '#/components/messages/ChatSystemEvent' }
+            CommunicationError: { $ref: '#/components/messages/CommunicationError' }
+    notificationStream:
+        address: /v1/ws
+        title: Authorized notification stream
+        description: At-least-once foreground signal for an authenticated user's persistent inbox. The server
+            authorizes before each fan-out; clients deduplicate by messageId and fetch REST after a gap.
+        servers:
+            - $ref: '#/servers/local'
+        messages:
+            NotificationCreated: { $ref: '#/components/messages/NotificationCreated' }
+            CommunicationError: { $ref: '#/components/messages/CommunicationError' }
+    communicationEvents:
+        address: communication.events.v1
+        title: Internal privacy-minimized communication events
+        description: Transactional outbox only. Message text, revisions, evidence, routes, contacts and provider
+            payloads are forbidden; consumers load authorized content from owning storage by opaque ID.
+        servers:
+            - $ref: '#/servers/outbox'
+        messages:
+            ChatStreamChanged: { $ref: '#/components/messages/ChatStreamChanged' }
+            NotificationFanoutRequested: { $ref: '#/components/messages/NotificationFanoutRequested' }
+    notificationDeliveryJobs:
+        address: notification-delivery-v1
+        title: Internal notification delivery jobs
+        description: BullMQ at-least-once jobs. The stable delivery ID is the job id; a worker claims the delivery
+            row, reloads current preference/contact/template data and keeps the same provider idempotency key on
+            retry or approved same-channel failover.
+        servers:
+            - $ref: '#/servers/jobs'
+        messages:
+            NotificationDeliveryRequested: { $ref: '#/components/messages/NotificationDeliveryRequested' }
     identityEvents:
         address: identity.events.v1
         title: Internal identity domain events
@@ -131,6 +184,53 @@ operations:
             - $ref: '#/channels/control/messages/Authenticated'
             - $ref: '#/channels/control/messages/ProtocolError'
             - $ref: '#/channels/control/messages/Pong'
+    receiveChatCommands:
+        action: receive
+        title: Receive authorized chat commands
+        summary: Subscribe, resume, create, edit or delete within one match conversation.
+        description: Authentication precedes every command. Command idempotency keys are stable UUIDv4 values;
+            duplicate commands return/replay the same committed revision and sequence.
+        channel: { $ref: '#/channels/matchChat' }
+        messages:
+            - $ref: '#/channels/matchChat/messages/ChatSubscribe'
+            - $ref: '#/channels/matchChat/messages/ChatMessageCreateCommand'
+            - $ref: '#/channels/matchChat/messages/ChatMessageUpdateCommand'
+            - $ref: '#/channels/matchChat/messages/ChatMessageDeleteCommand'
+    sendChatEvents:
+        action: send
+        title: Send authorized chat events
+        summary: Send subscription state, message changes, system events and safe errors at least once.
+        channel: { $ref: '#/channels/matchChat' }
+        messages:
+            - $ref: '#/channels/matchChat/messages/ChatSubscribed'
+            - $ref: '#/channels/matchChat/messages/ChatMessageCreated'
+            - $ref: '#/channels/matchChat/messages/ChatMessageUpdated'
+            - $ref: '#/channels/matchChat/messages/ChatMessageDeleted'
+            - $ref: '#/channels/matchChat/messages/ChatSystemEvent'
+            - $ref: '#/channels/matchChat/messages/CommunicationError'
+    sendNotificationEvents:
+        action: send
+        title: Signal persistent in-app notifications
+        summary: Signal an authorized inbox change without claiming human read or external delivery.
+        channel: { $ref: '#/channels/notificationStream' }
+        messages:
+            - $ref: '#/channels/notificationStream/messages/NotificationCreated'
+            - $ref: '#/channels/notificationStream/messages/CommunicationError'
+    publishCommunicationEvents:
+        action: send
+        title: Publish committed communication changes
+        summary: Publish opaque references through the transactional outbox for idempotent consumers.
+        channel: { $ref: '#/channels/communicationEvents' }
+        messages:
+            - $ref: '#/channels/communicationEvents/messages/ChatStreamChanged'
+            - $ref: '#/channels/communicationEvents/messages/NotificationFanoutRequested'
+    processNotificationDeliveryJobs:
+        action: receive
+        title: Process notification delivery attempts
+        summary: Claim a logical delivery by stable job id and perform bounded at-least-once attempts.
+        channel: { $ref: '#/channels/notificationDeliveryJobs' }
+        messages:
+            - $ref: '#/channels/notificationDeliveryJobs/messages/NotificationDeliveryRequested'
     publishIdentityEvents:
         action: send
         title: Publish committed identity changes
@@ -259,6 +359,104 @@ components:
                 location: $message.payload#/correlationId
             payload:
                 $ref: '#/components/schemas/PongEnvelope'
+        ChatSubscribe:
+            name: chat.subscribe.v1
+            title: Subscribe or resume a match conversation
+            summary: Request an authorized stream from an opaque REST-issued cursor.
+            contentType: application/json
+            correlationId: { location: $message.payload#/correlationId }
+            payload: { $ref: '#/components/schemas/ChatSubscribeEnvelope' }
+        ChatMessageCreateCommand:
+            name: chat.message.create.v1
+            title: Create a user message
+            summary: Send normalized plain text with a stable command idempotency key.
+            contentType: application/json
+            correlationId: { location: $message.payload#/correlationId }
+            payload: { $ref: '#/components/schemas/ChatMessageCreateCommandEnvelope' }
+        ChatMessageUpdateCommand:
+            name: chat.message.update.v1
+            title: Update an owned user message
+            summary: Append a revision within the policy window.
+            contentType: application/json
+            correlationId: { location: $message.payload#/correlationId }
+            payload: { $ref: '#/components/schemas/ChatMessageUpdateCommandEnvelope' }
+        ChatMessageDeleteCommand:
+            name: chat.message.delete.v1
+            title: Delete an owned user message
+            summary: Append a tombstone without reusing its sequence.
+            contentType: application/json
+            correlationId: { location: $message.payload#/correlationId }
+            payload: { $ref: '#/components/schemas/ChatMessageDeleteCommandEnvelope' }
+        ChatSubscribed:
+            name: chat.subscribed.v1
+            title: Conversation subscription established
+            summary: Confirm the server-authorized access boundary and contiguous cursor.
+            contentType: application/json
+            correlationId: { location: $message.payload#/correlationId }
+            payload: { $ref: '#/components/schemas/ChatSubscribedEnvelope' }
+        ChatMessageCreated:
+            name: chat.message.created.v1
+            title: User message created
+            summary: Deliver a committed message at least once to currently authorized members.
+            contentType: application/json
+            correlationId: { location: $message.payload#/correlationId }
+            payload: { $ref: '#/components/schemas/ChatMessageEventEnvelope' }
+        ChatMessageUpdated:
+            name: chat.message.updated.v1
+            title: User message updated
+            summary: Deliver a committed revision at least once.
+            contentType: application/json
+            correlationId: { location: $message.payload#/correlationId }
+            payload: { $ref: '#/components/schemas/ChatMessageUpdatedEnvelope' }
+        ChatMessageDeleted:
+            name: chat.message.deleted.v1
+            title: User message deleted
+            summary: Deliver a committed tombstone at least once.
+            contentType: application/json
+            correlationId: { location: $message.payload#/correlationId }
+            payload: { $ref: '#/components/schemas/ChatMessageDeletedEnvelope' }
+        ChatSystemEvent:
+            name: chat.system.event.v1
+            title: Match system event recorded
+            summary: Deliver a closed system type and bounded display data, never arbitrary domain text.
+            contentType: application/json
+            correlationId: { location: $message.payload#/correlationId }
+            payload: { $ref: '#/components/schemas/ChatSystemEventEnvelope' }
+        NotificationCreated:
+            name: notification.created.v1
+            title: In-app notification created
+            summary: Signal an inbox item without provider/contact data or chat preview.
+            contentType: application/json
+            correlationId: { location: $message.payload#/correlationId }
+            payload: { $ref: '#/components/schemas/NotificationCreatedEnvelope' }
+        CommunicationError:
+            name: communication.error.v1
+            title: Safe communication protocol error
+            summary: Report authorization, cursor, sequence or command failures without sensitive values.
+            contentType: application/json
+            correlationId: { location: $message.payload#/correlationId }
+            payload: { $ref: '#/components/schemas/CommunicationErrorEnvelope' }
+        ChatStreamChanged:
+            name: communication.chat.stream.changed.v1
+            title: Chat stream changed
+            summary: Privacy-minimized internal reference; consumers load text only after authorization.
+            contentType: application/json
+            correlationId: { location: $message.payload#/correlationId }
+            payload: { $ref: '#/components/schemas/ChatStreamChangedEnvelope' }
+        NotificationFanoutRequested:
+            name: communication.notification.fanout.requested.v1
+            title: Notification fan-out requested
+            summary: Privacy-minimized logical fan-out reference for an idempotent consumer.
+            contentType: application/json
+            correlationId: { location: $message.payload#/correlationId }
+            payload: { $ref: '#/components/schemas/NotificationFanoutRequestedEnvelope' }
+        NotificationDeliveryRequested:
+            name: notification.delivery.requested.v1
+            title: Notification delivery requested
+            summary: Minimal BullMQ job; worker reloads current authorized delivery data from PostgreSQL.
+            contentType: application/json
+            correlationId: { location: $message.payload#/correlationId }
+            payload: { $ref: '#/components/schemas/NotificationDeliveryRequestedEnvelope' }
         IdentityLinked:
             name: identity.linked.v1
             title: IdentityLinked
@@ -571,6 +769,290 @@ components:
         EmptyData:
             type: object
             additionalProperties: false
+        ChatSubscribeEnvelope:
+            allOf:
+                - $ref: '#/components/schemas/MessageEnvelope'
+                - type: object
+                  properties:
+                      type: { const: chat.subscribe.v1 }
+                      data:
+                          type: object
+                          additionalProperties: false
+                          required: [matchId, cursor]
+                          properties:
+                              matchId: { $ref: '#/components/schemas/Uuid' }
+                              cursor:
+                                  oneOf:
+                                      - { type: string, minLength: 1, maxLength: 2048, pattern: '^[A-Za-z0-9_-]+$' }
+                                      - { type: 'null' }
+        ChatMessageCreateCommandEnvelope:
+            allOf:
+                - $ref: '#/components/schemas/MessageEnvelope'
+                - type: object
+                  properties:
+                      type: { const: chat.message.create.v1 }
+                      data:
+                          type: object
+                          additionalProperties: false
+                          required: [conversationId, idempotencyKey, text]
+                          properties:
+                              conversationId: { $ref: '#/components/schemas/Uuid' }
+                              idempotencyKey:
+                                  {
+                                      type: string,
+                                      format: uuid,
+                                      pattern: '^[0-9a-f-]{14}4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$',
+                                  }
+                              text: { type: string, minLength: 1, maxLength: 2000 }
+        ChatMessageUpdateCommandEnvelope:
+            allOf:
+                - $ref: '#/components/schemas/MessageEnvelope'
+                - type: object
+                  properties:
+                      type: { const: chat.message.update.v1 }
+                      data:
+                          type: object
+                          additionalProperties: false
+                          required: [conversationId, messageId, expectedRevision, idempotencyKey, text]
+                          properties:
+                              conversationId: { $ref: '#/components/schemas/Uuid' }
+                              messageId: { $ref: '#/components/schemas/Uuid' }
+                              expectedRevision: { type: integer, minimum: 1 }
+                              idempotencyKey:
+                                  {
+                                      type: string,
+                                      format: uuid,
+                                      pattern: '^[0-9a-f-]{14}4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$',
+                                  }
+                              text: { type: string, minLength: 1, maxLength: 2000 }
+        ChatMessageDeleteCommandEnvelope:
+            allOf:
+                - $ref: '#/components/schemas/MessageEnvelope'
+                - type: object
+                  properties:
+                      type: { const: chat.message.delete.v1 }
+                      data:
+                          type: object
+                          additionalProperties: false
+                          required: [conversationId, messageId, expectedRevision, idempotencyKey]
+                          properties:
+                              conversationId: { $ref: '#/components/schemas/Uuid' }
+                              messageId: { $ref: '#/components/schemas/Uuid' }
+                              expectedRevision: { type: integer, minimum: 1 }
+                              idempotencyKey:
+                                  {
+                                      type: string,
+                                      format: uuid,
+                                      pattern: '^[0-9a-f-]{14}4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$',
+                                  }
+        ChatSubscribedEnvelope:
+            allOf:
+                - $ref: '#/components/schemas/MessageEnvelope'
+                - type: object
+                  properties:
+                      type: { const: chat.subscribed.v1 }
+                      data:
+                          type: object
+                          additionalProperties: false
+                          required: [conversationId, latestSequence, accessThroughSequence, cursor]
+                          properties:
+                              conversationId: { $ref: '#/components/schemas/Uuid' }
+                              latestSequence: { type: integer, minimum: 0 }
+                              accessThroughSequence:
+                                  oneOf: [{ type: integer, minimum: 0 }, { type: 'null' }]
+                              cursor: { type: string, minLength: 1, maxLength: 2048, pattern: '^[A-Za-z0-9_-]+$' }
+        ChatMessageEventEnvelope:
+            type: object
+            additionalProperties: false
+            required: [messageId, type, occurredAt, correlationId, stream, sequence, data]
+            properties:
+                messageId: { $ref: '#/components/schemas/Uuid' }
+                type: { const: chat.message.created.v1 }
+                occurredAt: { $ref: '#/components/schemas/Timestamp' }
+                correlationId: { $ref: '#/components/schemas/Uuid' }
+                causationId:
+                    oneOf: [{ $ref: '#/components/schemas/Uuid' }, { type: 'null' }]
+                stream: { type: string, pattern: '^conversation:[A-Za-z0-9_-]+$', maxLength: 128 }
+                sequence: { type: integer, minimum: 1 }
+                data: { $ref: '#/components/schemas/ChatMessageData' }
+        ChatMessageUpdatedEnvelope:
+            type: object
+            additionalProperties: false
+            required: [messageId, type, occurredAt, correlationId, stream, sequence, data]
+            properties:
+                messageId: { $ref: '#/components/schemas/Uuid' }
+                type: { const: chat.message.updated.v1 }
+                occurredAt: { $ref: '#/components/schemas/Timestamp' }
+                correlationId: { $ref: '#/components/schemas/Uuid' }
+                causationId:
+                    oneOf: [{ $ref: '#/components/schemas/Uuid' }, { type: 'null' }]
+                stream: { type: string, pattern: '^conversation:[A-Za-z0-9_-]+$', maxLength: 128 }
+                sequence: { type: integer, minimum: 1 }
+                data: { $ref: '#/components/schemas/ChatMessageData' }
+        ChatMessageData:
+            type: object
+            additionalProperties: false
+            required: [conversationId, chatMessageId, authorId, revision, text, createdAt, editedAt]
+            properties:
+                conversationId: { $ref: '#/components/schemas/Uuid' }
+                chatMessageId: { $ref: '#/components/schemas/Uuid' }
+                authorId: { $ref: '#/components/schemas/Uuid' }
+                revision: { type: integer, minimum: 1 }
+                text: { type: string, minLength: 1, maxLength: 2000 }
+                createdAt: { $ref: '#/components/schemas/Timestamp' }
+                editedAt:
+                    oneOf: [{ $ref: '#/components/schemas/Timestamp' }, { type: 'null' }]
+        ChatMessageDeletedEnvelope:
+            type: object
+            additionalProperties: false
+            required: [messageId, type, occurredAt, correlationId, stream, sequence, data]
+            properties:
+                messageId: { $ref: '#/components/schemas/Uuid' }
+                type: { const: chat.message.deleted.v1 }
+                occurredAt: { $ref: '#/components/schemas/Timestamp' }
+                correlationId: { $ref: '#/components/schemas/Uuid' }
+                causationId:
+                    oneOf: [{ $ref: '#/components/schemas/Uuid' }, { type: 'null' }]
+                stream: { type: string, pattern: '^conversation:[A-Za-z0-9_-]+$', maxLength: 128 }
+                sequence: { type: integer, minimum: 1 }
+                data:
+                    type: object
+                    additionalProperties: false
+                    required: [conversationId, chatMessageId, revision, deletedAt]
+                    properties:
+                        conversationId: { $ref: '#/components/schemas/Uuid' }
+                        chatMessageId: { $ref: '#/components/schemas/Uuid' }
+                        revision: { type: integer, minimum: 1 }
+                        deletedAt: { $ref: '#/components/schemas/Timestamp' }
+        ChatSystemEventEnvelope:
+            type: object
+            additionalProperties: false
+            required: [messageId, type, occurredAt, correlationId, stream, sequence, data]
+            properties:
+                messageId: { $ref: '#/components/schemas/Uuid' }
+                type: { const: chat.system.event.v1 }
+                occurredAt: { $ref: '#/components/schemas/Timestamp' }
+                correlationId: { $ref: '#/components/schemas/Uuid' }
+                causationId:
+                    oneOf: [{ $ref: '#/components/schemas/Uuid' }, { type: 'null' }]
+                stream: { type: string, pattern: '^conversation:[A-Za-z0-9_-]+$', maxLength: 128 }
+                sequence: { type: integer, minimum: 1 }
+                data:
+                    type: object
+                    additionalProperties: false
+                    required: [conversationId, chatMessageId, systemType]
+                    properties:
+                        conversationId: { $ref: '#/components/schemas/Uuid' }
+                        chatMessageId: { $ref: '#/components/schemas/Uuid' }
+                        systemType:
+                            type: string
+                            enum:
+                                [
+                                    ROSTER_JOINED,
+                                    ROSTER_LEFT,
+                                    MATCH_CANCELLED,
+                                    MATCH_TIME_CHANGED,
+                                    MATCH_VENUE_CHANGED,
+                                    MATCH_STARTED,
+                                    RESULT_PROPOSED,
+                                    RESULT_CONFIRMED,
+                                    RESULT_DISPUTED,
+                                ]
+        NotificationCreatedEnvelope:
+            allOf:
+                - $ref: '#/components/schemas/MessageEnvelope'
+                - type: object
+                  properties:
+                      type: { const: notification.created.v1 }
+                      data:
+                          type: object
+                          additionalProperties: false
+                          required: [notificationId, notificationType, category, route, createdAt]
+                          properties:
+                              notificationId: { $ref: '#/components/schemas/Uuid' }
+                              notificationType: { type: string, pattern: '^[A-Z][A-Z0-9_]+$' }
+                              category:
+                                  { type: string, enum: [ROSTER, REQUESTS, MATCH_CRITICAL, REMINDERS, RESULTS, CHAT] }
+                              route:
+                                  { type: string, minLength: 1, maxLength: 64, pattern: '^[A-Za-z][A-Za-z0-9_./-]*$' }
+                              createdAt: { $ref: '#/components/schemas/Timestamp' }
+        CommunicationErrorEnvelope:
+            allOf:
+                - $ref: '#/components/schemas/MessageEnvelope'
+                - type: object
+                  properties:
+                      type: { const: communication.error.v1 }
+                      data:
+                          type: object
+                          additionalProperties: false
+                          required: [code, retryable, resyncRequired]
+                          properties:
+                              code:
+                                  type: string
+                                  enum:
+                                      [
+                                          AUTHENTICATION_REQUIRED,
+                                          CONVERSATION_ACCESS_DENIED,
+                                          VALIDATION_FAILED,
+                                          MESSAGE_REVISION_CONFLICT,
+                                          CURSOR_EXPIRED,
+                                          RETENTION_GAP,
+                                          GAP_LIMIT,
+                                          RATE_LIMITED,
+                                      ]
+                              retryable: { type: boolean }
+                              resyncRequired: { type: boolean }
+                              retryAfterMs: { type: integer, minimum: 0, maximum: 300000 }
+        ChatStreamChangedEnvelope:
+            type: object
+            additionalProperties: false
+            required: [messageId, type, occurredAt, correlationId, stream, sequence, data]
+            properties:
+                messageId: { $ref: '#/components/schemas/Uuid' }
+                type: { const: communication.chat.stream.changed.v1 }
+                occurredAt: { $ref: '#/components/schemas/Timestamp' }
+                correlationId: { $ref: '#/components/schemas/Uuid' }
+                causationId:
+                    oneOf: [{ $ref: '#/components/schemas/Uuid' }, { type: 'null' }]
+                stream: { type: string, pattern: '^conversation:[A-Za-z0-9_-]+$', maxLength: 128 }
+                sequence: { type: integer, minimum: 1 }
+                data:
+                    type: object
+                    additionalProperties: false
+                    required: [conversationId, chatMessageId, change]
+                    properties:
+                        conversationId: { $ref: '#/components/schemas/Uuid' }
+                        chatMessageId: { $ref: '#/components/schemas/Uuid' }
+                        change: { type: string, enum: [CREATED, UPDATED, DELETED, SYSTEM] }
+        NotificationFanoutRequestedEnvelope:
+            allOf:
+                - $ref: '#/components/schemas/MessageEnvelope'
+                - type: object
+                  properties:
+                      type: { const: communication.notification.fanout.requested.v1 }
+                      data:
+                          type: object
+                          additionalProperties: false
+                          required: [sourceEventId, sourceType, notificationType, category, aggregateId]
+                          properties:
+                              sourceEventId: { $ref: '#/components/schemas/Uuid' }
+                              sourceType: { type: string, pattern: '^[a-z][a-z0-9.]+\\.v[1-9][0-9]*$' }
+                              notificationType: { type: string, pattern: '^[A-Z][A-Z0-9_]+$' }
+                              category:
+                                  { type: string, enum: [ROSTER, REQUESTS, MATCH_CRITICAL, REMINDERS, RESULTS, CHAT] }
+                              aggregateId: { $ref: '#/components/schemas/Uuid' }
+        NotificationDeliveryRequestedEnvelope:
+            allOf:
+                - $ref: '#/components/schemas/MessageEnvelope'
+                - type: object
+                  properties:
+                      type: { const: notification.delivery.requested.v1 }
+                      data:
+                          type: object
+                          additionalProperties: false
+                          required: [deliveryId]
+                          properties:
+                              deliveryId: { $ref: '#/components/schemas/Uuid' }
         IdentityLinkedEnvelope:
             type: object
             additionalProperties: false

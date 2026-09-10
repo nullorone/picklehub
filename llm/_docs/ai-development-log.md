@@ -1183,3 +1183,51 @@ diff --check` — успешно, 117 Markdown-файлов без ошибок.
   не заявляется.
 - Содержательные критерии этапа выполнены. Следующий промпт —
   `llm/05-chat-notifications/02-contract-data.md`; к нему не переходили.
+
+## 2026-09-10 — чат и уведомления, этап 02-contract-data
+
+- Активный промпт: `llm/05-chat-notifications/02-contract-data.md`. Backend use cases/controllers, WebSocket
+  gateway, consumers/providers и UI коммуникации не создавались; они принадлежат следующим этапам.
+- TypeSpec добавляет 15 bearer-protected REST operations: авторизованный snapshot, history/catch-up cursor, REST
+  fallback send, edit/delete tombstone, foreground read marker, revision-bound report, block/unblock, notification
+  inbox/read, versioned preferences и bind/unbind opaque web/TMA installation. Все ответы `no-store`; мутации
+  требуют Origin, CSRF и UUIDv4 `Idempotency-Key`. Pending/queue/guest/invite capability не дают chat access.
+- OpenAPI содержит `Conversation`, `Message`, `Notification`, `NotificationDelivery`, `NotificationPreference`,
+  закрытые lifecycle/category/channel/error enum и лимит 2 000 символов. Generated OpenAPI/AsyncAPI TypeScript и
+  копия типов `@picklehub/api-client` обновлены только генератором.
+- AsyncAPI сохраняет ticket-auth control и добавляет клиентские match chat/notification streams на `/v1/ws`, 11
+  client protocol messages, два privacy-minimized internal events на `communication.events.v1` и один BullMQ job
+  `notification.delivery.requested.v1` на `notification-delivery-v1`. Client events доставляются at least once;
+  PostgreSQL sequence/cursor закрывают gap, а `RESYNC_REQUIRED` требует REST snapshot. Внутренний chat event не
+  несёт body, fan-out не несёт recipient/route, job содержит только `deliveryId`.
+- Prisma schema и миграция добавляют conversations/membership access intervals, message/revision/tombstone/report,
+  blocks, preferences/channel matrix, notifications/deliveries/devices, consumer receipts и encrypted idempotency
+  replay. Trigger атомарно назначает sequence; revisions append-only, last-read монотонен, revoked 30-day boundary
+  неизменяема. Уникальности system source event, logical notification и channel delivery защищают replay;
+  `IN_APP` нельзя отключить, delivery rows разрешены только для Telegram/email, attempts bounded.
+- Contract policy расширена allowlist, authorization/no-store/CSRF/cursor/minimal-job guards и negative tests для
+  anonymous inbox и canary chat text в delivery job. Добавлены static data-policy tests и четыре PostgreSQL
+  integration tests для конкурентной sequence allocation, read monotonicity, immutable revisions и независимой
+  дедупликации notification/delivery. Документация contracts и physical domain model синхронизирована.
+
+### Проверки этапа chat/notifications 02-contract-data
+
+- `npm run verify` — успешно полностью: workspace audit (8 workspaces/один lockfile), TypeSpec compile, Redocly,
+  AsyncAPI parser/policy для 74 REST operations и 37 messages, 47 contract/data tests, compatibility с `HEAD`,
+  generated drift/typecheck и Prism mock с communication inbox; formatting/docs, lint/typecheck/unit tests/build
+  всех восьми workspaces также успешны. Backend unit: 16 suites/42 tests; web: 4/15; TMA: 3/13. Известное
+  неблокирующее предупреждение Vite о lazy MapLibre chunk 924 kB сохранилось.
+- `PRISMA_SCHEMA_ENGINE_BINARY=/usr/bin/true PRISMA_QUERY_ENGINE_LIBRARY=/usr/bin/true npm run prisma:generate
+--workspace @picklehub/backend` и аналогичный `prisma:validate` с synthetic `DATABASE_URL` — успешно; Prisma
+  Client 6.16.2 сгенерирован, schema валидна.
+- `npm ls --depth=0` и `git diff --check` — успешно; unmet/extraneous dependencies и whitespace errors отсутствуют.
+- `DATABASE_URL=... REDIS_URL=... npm run test:integration --workspace @picklehub/backend -- --runInBand` — не
+  выполнен в runtime: sandbox запретил соединения с `127.0.0.1:5432` и `:6379` (`EPERM`) ещё в существующем venues
+  suite. `docker ps` также запрещён доступом к Docker socket. Поэтому новая migration SQL и четыре integration
+  tests должны быть применены/исполнены в CI на чистой PostgreSQL/Redis среде; успешный database runtime не
+  заявляется. Static migration policy и Prisma schema validation успешны, но не заменяют этот прогон.
+- Внешняя настройка `NODE_TLS_REJECT_UNAUTHORIZED=0` остаётся только свойством окружения и вызвала предупреждение
+  Redocly; она не добавлена в репозиторий. Production Telegram/email/failover provider, residency и legal retention
+  approval этим этапом не заявляются.
+- Контрактные и кодовые критерии выполнены; runtime-критерий применения миграции остаётся environment-blocked.
+  Следующий промпт `llm/05-chat-notifications/03-backend.md` не начинался.

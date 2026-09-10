@@ -4,6 +4,7 @@ import "@typespec/openapi3";
 import "./identity.tsp";
 import "./matches.tsp";
 import "./venues.tsp";
+import "./communications.tsp";
 
 using TypeSpec.Http;
 using TypeSpec.OpenAPI;
@@ -16,7 +17,8 @@ using TypeSpec.OpenAPI;
     #{ name: "Health", description: "Process liveness and mandatory dependency readiness." },
     #{ name: "Identity", description: "Identity, browser sessions, consent and onboarding." },
     #{ name: "Matches", description: "One-off match discovery, roster lifecycle and confirmed results." },
-    #{ name: "Venues", description: "Published venue discovery and player venue contributions." }
+    #{ name: "Venues", description: "Published venue discovery and player venue contributions." },
+    #{ name: "Communications", description: "Authorized match chat, notification inbox and delivery preferences." }
 ])
 namespace PickleHub;
 

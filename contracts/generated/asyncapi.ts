@@ -50,6 +50,251 @@ export namespace AuthenticatedMessage {
     }
 }
 
+export namespace ChatMessageCreateCommandMessage {
+    export interface ChatMessageCreateCommandEnvelope {
+        messageId: string;
+        type: 'chat.message.create.v1';
+        occurredAt: string;
+        correlationId: string;
+        causationId?: string | null;
+        stream?: string;
+        sequence?: number;
+        data: MessageEnvelopeData;
+    }
+
+    export interface MessageEnvelopeData {
+        conversationId: string;
+        idempotencyKey: string;
+        text: string;
+    }
+}
+
+export namespace ChatMessageCreatedMessage {
+    export interface ChatMessageEventEnvelope {
+        messageId: string;
+        type: 'chat.message.created.v1';
+        occurredAt: string;
+        correlationId: string;
+        causationId?: string | null;
+        stream: string;
+        sequence: number;
+        data: ChatMessageData;
+    }
+
+    export interface ChatMessageData {
+        conversationId: string;
+        chatMessageId: string;
+        authorId: string;
+        revision: number;
+        text: string;
+        createdAt: string;
+        editedAt: string | null;
+    }
+}
+
+export namespace ChatMessageDeleteCommandMessage {
+    export interface ChatMessageDeleteCommandEnvelope {
+        messageId: string;
+        type: 'chat.message.delete.v1';
+        occurredAt: string;
+        correlationId: string;
+        causationId?: string | null;
+        stream?: string;
+        sequence?: number;
+        data: MessageEnvelopeData;
+    }
+
+    export interface MessageEnvelopeData {
+        conversationId: string;
+        messageId: string;
+        expectedRevision: number;
+        idempotencyKey: string;
+    }
+}
+
+export namespace ChatMessageDeletedMessage {
+    export interface ChatMessageDeletedEnvelope {
+        messageId: string;
+        type: 'chat.message.deleted.v1';
+        occurredAt: string;
+        correlationId: string;
+        causationId?: string | null;
+        stream: string;
+        sequence: number;
+        data: Data;
+    }
+
+    export interface Data {
+        conversationId: string;
+        chatMessageId: string;
+        revision: number;
+        deletedAt: string;
+    }
+}
+
+export namespace ChatMessageUpdateCommandMessage {
+    export interface ChatMessageUpdateCommandEnvelope {
+        messageId: string;
+        type: 'chat.message.update.v1';
+        occurredAt: string;
+        correlationId: string;
+        causationId?: string | null;
+        stream?: string;
+        sequence?: number;
+        data: MessageEnvelopeData;
+    }
+
+    export interface MessageEnvelopeData {
+        conversationId: string;
+        messageId: string;
+        expectedRevision: number;
+        idempotencyKey: string;
+        text: string;
+    }
+}
+
+export namespace ChatMessageUpdatedMessage {
+    export interface ChatMessageUpdatedEnvelope {
+        messageId: string;
+        type: 'chat.message.updated.v1';
+        occurredAt: string;
+        correlationId: string;
+        causationId?: string | null;
+        stream: string;
+        sequence: number;
+        data: ChatMessageData;
+    }
+
+    export interface ChatMessageData {
+        conversationId: string;
+        chatMessageId: string;
+        authorId: string;
+        revision: number;
+        text: string;
+        createdAt: string;
+        editedAt: string | null;
+    }
+}
+
+export namespace ChatStreamChangedMessage {
+    export interface ChatStreamChangedEnvelope {
+        messageId: string;
+        type: 'communication.chat.stream.changed.v1';
+        occurredAt: string;
+        correlationId: string;
+        causationId?: string | null;
+        stream: string;
+        sequence: number;
+        data: Data;
+    }
+
+    export interface Data {
+        conversationId: string;
+        chatMessageId: string;
+        change: DataChange;
+    }
+
+    export type DataChange = 'CREATED' | 'UPDATED' | 'DELETED' | 'SYSTEM';
+}
+
+export namespace ChatSubscribeMessage {
+    export interface ChatSubscribeEnvelope {
+        messageId: string;
+        type: 'chat.subscribe.v1';
+        occurredAt: string;
+        correlationId: string;
+        causationId?: string | null;
+        stream?: string;
+        sequence?: number;
+        data: MessageEnvelopeData;
+    }
+
+    export interface MessageEnvelopeData {
+        matchId: string;
+        cursor: string | null;
+    }
+}
+
+export namespace ChatSubscribedMessage {
+    export interface ChatSubscribedEnvelope {
+        messageId: string;
+        type: 'chat.subscribed.v1';
+        occurredAt: string;
+        correlationId: string;
+        causationId?: string | null;
+        stream?: string;
+        sequence?: number;
+        data: MessageEnvelopeData;
+    }
+
+    export interface MessageEnvelopeData {
+        conversationId: string;
+        latestSequence: number;
+        accessThroughSequence: number | null;
+        cursor: string;
+    }
+}
+
+export namespace ChatSystemEventMessage {
+    export interface ChatSystemEventEnvelope {
+        messageId: string;
+        type: 'chat.system.event.v1';
+        occurredAt: string;
+        correlationId: string;
+        causationId?: string | null;
+        stream: string;
+        sequence: number;
+        data: Data;
+    }
+
+    export interface Data {
+        conversationId: string;
+        chatMessageId: string;
+        systemType: DataSystemType;
+    }
+
+    export type DataSystemType =
+        | 'ROSTER_JOINED'
+        | 'ROSTER_LEFT'
+        | 'MATCH_CANCELLED'
+        | 'MATCH_TIME_CHANGED'
+        | 'MATCH_VENUE_CHANGED'
+        | 'MATCH_STARTED'
+        | 'RESULT_PROPOSED'
+        | 'RESULT_CONFIRMED'
+        | 'RESULT_DISPUTED';
+}
+
+export namespace CommunicationErrorMessage {
+    export interface CommunicationErrorEnvelope {
+        messageId: string;
+        type: 'communication.error.v1';
+        occurredAt: string;
+        correlationId: string;
+        causationId?: string | null;
+        stream?: string;
+        sequence?: number;
+        data: MessageEnvelopeData;
+    }
+
+    export interface MessageEnvelopeData {
+        code: AllOf_1DataCode;
+        retryable: boolean;
+        resyncRequired: boolean;
+        retryAfterMs?: number;
+    }
+
+    export type AllOf_1DataCode =
+        | 'AUTHENTICATION_REQUIRED'
+        | 'CONVERSATION_ACCESS_DENIED'
+        | 'VALIDATION_FAILED'
+        | 'MESSAGE_REVISION_CONFLICT'
+        | 'CURSOR_EXPIRED'
+        | 'RETENTION_GAP'
+        | 'GAP_LIMIT'
+        | 'RATE_LIMITED';
+}
+
 export namespace ConsentChangedMessage {
     export interface ConsentChangedEnvelope {
         messageId: string;
@@ -301,6 +546,69 @@ export namespace MatchStartedMessage {
     export type DataRoster = 'MINIMUM' | 'FULL';
 }
 
+export namespace NotificationCreatedMessage {
+    export interface NotificationCreatedEnvelope {
+        messageId: string;
+        type: 'notification.created.v1';
+        occurredAt: string;
+        correlationId: string;
+        causationId?: string | null;
+        stream?: string;
+        sequence?: number;
+        data: MessageEnvelopeData;
+    }
+
+    export interface MessageEnvelopeData {
+        notificationId: string;
+        notificationType: string;
+        category: AllOf_1DataCategory;
+        route: string;
+        createdAt: string;
+    }
+
+    export type AllOf_1DataCategory = 'ROSTER' | 'REQUESTS' | 'MATCH_CRITICAL' | 'REMINDERS' | 'RESULTS' | 'CHAT';
+}
+
+export namespace NotificationDeliveryRequestedMessage {
+    export interface NotificationDeliveryRequestedEnvelope {
+        messageId: string;
+        type: 'notification.delivery.requested.v1';
+        occurredAt: string;
+        correlationId: string;
+        causationId?: string | null;
+        stream?: string;
+        sequence?: number;
+        data: MessageEnvelopeData;
+    }
+
+    export interface MessageEnvelopeData {
+        deliveryId: string;
+    }
+}
+
+export namespace NotificationFanoutRequestedMessage {
+    export interface NotificationFanoutRequestedEnvelope {
+        messageId: string;
+        type: 'communication.notification.fanout.requested.v1';
+        occurredAt: string;
+        correlationId: string;
+        causationId?: string | null;
+        stream?: string;
+        sequence?: number;
+        data: MessageEnvelopeData;
+    }
+
+    export interface MessageEnvelopeData {
+        sourceEventId: string;
+        sourceType: string;
+        notificationType: string;
+        category: AllOf_1DataCategory;
+        aggregateId: string;
+    }
+
+    export type AllOf_1DataCategory = 'ROSTER' | 'REQUESTS' | 'MATCH_CRITICAL' | 'REMINDERS' | 'RESULTS' | 'CHAT';
+}
+
 export namespace OnboardingCompletedMessage {
     export interface OnboardingCompletedEnvelope {
         messageId: string;
@@ -440,6 +748,17 @@ export namespace VenueVerifiedMessage {
 export type AccountDeletionRequestedEnvelope = AccountDeletionRequestedMessage.AccountDeletionRequestedEnvelope;
 export type AuthenticateEnvelope = AuthenticateMessage.AuthenticateEnvelope;
 export type AuthenticatedEnvelope = AuthenticatedMessage.AuthenticatedEnvelope;
+export type ChatMessageCreateCommandEnvelope = ChatMessageCreateCommandMessage.ChatMessageCreateCommandEnvelope;
+export type ChatMessageEventEnvelope = ChatMessageCreatedMessage.ChatMessageEventEnvelope;
+export type ChatMessageDeleteCommandEnvelope = ChatMessageDeleteCommandMessage.ChatMessageDeleteCommandEnvelope;
+export type ChatMessageDeletedEnvelope = ChatMessageDeletedMessage.ChatMessageDeletedEnvelope;
+export type ChatMessageUpdateCommandEnvelope = ChatMessageUpdateCommandMessage.ChatMessageUpdateCommandEnvelope;
+export type ChatMessageUpdatedEnvelope = ChatMessageUpdatedMessage.ChatMessageUpdatedEnvelope;
+export type ChatStreamChangedEnvelope = ChatStreamChangedMessage.ChatStreamChangedEnvelope;
+export type ChatSubscribeEnvelope = ChatSubscribeMessage.ChatSubscribeEnvelope;
+export type ChatSubscribedEnvelope = ChatSubscribedMessage.ChatSubscribedEnvelope;
+export type ChatSystemEventEnvelope = ChatSystemEventMessage.ChatSystemEventEnvelope;
+export type CommunicationErrorEnvelope = CommunicationErrorMessage.CommunicationErrorEnvelope;
 export type ConsentChangedEnvelope = ConsentChangedMessage.ConsentChangedEnvelope;
 export type IdentityLinkedEnvelope = IdentityLinkedMessage.IdentityLinkedEnvelope;
 export type IdentityUnlinkedEnvelope = IdentityUnlinkedMessage.IdentityUnlinkedEnvelope;
@@ -452,6 +771,11 @@ export type MatchResultDisputedEnvelope = MatchResultDisputedMessage.MatchResult
 export type MatchResultProposedEnvelope = MatchResultProposedMessage.MatchResultProposedEnvelope;
 export type MatchRosterChangedEnvelope = MatchRosterChangedMessage.MatchRosterChangedEnvelope;
 export type MatchStartedEnvelope = MatchStartedMessage.MatchStartedEnvelope;
+export type NotificationCreatedEnvelope = NotificationCreatedMessage.NotificationCreatedEnvelope;
+export type NotificationDeliveryRequestedEnvelope =
+    NotificationDeliveryRequestedMessage.NotificationDeliveryRequestedEnvelope;
+export type NotificationFanoutRequestedEnvelope =
+    NotificationFanoutRequestedMessage.NotificationFanoutRequestedEnvelope;
 export type OnboardingCompletedEnvelope = OnboardingCompletedMessage.OnboardingCompletedEnvelope;
 export type PingEnvelope = PingMessage.PingEnvelope;
 export type PongEnvelope = PongMessage.PongEnvelope;
@@ -463,6 +787,17 @@ export type VenueVerifiedEnvelope = VenueVerifiedMessage.VenueVerifiedEnvelope;
 export type WebSocketMessage =
     | AuthenticateEnvelope
     | AuthenticatedEnvelope
+    | ChatMessageCreateCommandEnvelope
+    | ChatMessageDeleteCommandEnvelope
+    | ChatMessageDeletedEnvelope
+    | ChatMessageEventEnvelope
+    | ChatMessageUpdateCommandEnvelope
+    | ChatMessageUpdatedEnvelope
+    | ChatStreamChangedEnvelope
+    | ChatSubscribeEnvelope
+    | ChatSubscribedEnvelope
+    | ChatSystemEventEnvelope
+    | CommunicationErrorEnvelope
     | MatchCancelledEnvelope
     | MatchCompletedConfirmedEnvelope
     | MatchCreatedEnvelope
@@ -472,6 +807,9 @@ export type WebSocketMessage =
     | MatchResultProposedEnvelope
     | MatchRosterChangedEnvelope
     | MatchStartedEnvelope
+    | NotificationCreatedEnvelope
+    | NotificationDeliveryRequestedEnvelope
+    | NotificationFanoutRequestedEnvelope
     | PingEnvelope
     | PongEnvelope
     | ProtocolErrorEnvelope

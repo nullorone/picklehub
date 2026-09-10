@@ -22,7 +22,8 @@ npm run contracts:check
 - `contracts:lint` проверяет TypeSpec без записи artifacts, валидирует OpenAPI и AsyncAPI официальными
   parser/linter и применяет PickleHub policy: `/v1`, разрешённые owning-feature paths, уникальные
   operation/message IDs, версионированные envelopes, UTC timestamps, `no-store`, browser CSRF/cookie и безопасный
-  payload внутренних identity/venue/match events. Статические data-policy тесты дополнительно удерживают
+  payload внутренних identity/venue/match/communication events и notification jobs. Статические data-policy тесты
+  дополнительно удерживают
   обязательные migration constraints, GiST-стратегию, provenance, постоянные merge aliases, вместимость/FIFO и
   единственный эффективный результат; они не заменяют применение SQL к PostgreSQL и конкурентные integration tests.
 - `contracts:breaking` сравнивает working tree с `CONTRACT_BASE_REF` либо `HEAD`. При первом добавлении контрактов
@@ -36,7 +37,7 @@ npm run contracts:check
 - `contracts:mock` запускает локальный Prism на `127.0.0.1:4010`; он предназначен только для разработки и не
   является backend или production fallback.
 - `contracts:mock:check` запускает mock на свободном localhost port, запрашивает representative endpoints health,
-  identity, venues и matches, проверяет status, JSON shape и `no-store`. AsyncAPI examples проверяются
+  identity, venues, matches и communications, проверяет status, JSON shape и `no-store`. AsyncAPI examples проверяются
   parser/linter в `contracts:lint`.
 
 Prism сопоставляет OpenAPI Path Item без относительного `servers.url`, поэтому локальные mock URL —
@@ -63,7 +64,8 @@ namespace сообщения: так одинаковые внутренние �
 
 Prism отвечает строго по OpenAPI examples/schemas. Mock не подтверждает бизнес-правило, авторизацию, сохранение,
 идемпотентность или доступность провайдера. TMA/web development явно показывают mock mode; production build не
-имеет mock URL или silent fallback. Внутренние identity, venue и match events проверяются по AsyncAPI schema и не
+имеет mock URL или silent fallback. Внутренние identity, venue, match и communication events проверяются по
+AsyncAPI schema и не
 выставляются как WebSocket subscription; contract mock не имитирует их фактическую доставку через outbox.
 
 ## Площадки
@@ -93,3 +95,23 @@ application precheck защищают вместимость команды, о�
 игры до 11, 15, 21 и deuce; deferred series guard проверяет `BEST_OF_1/3/5`. Уникальный immutable marker
 `CONFIRMED_MATCH` — единственный storage-факт основной метрики. События `match.*.v1` не содержат token, состава,
 счёта, текста, уровня или географии.
+
+## Чат и уведомления
+
+[`rest/communications.tsp`](rest/communications.tsp) описывает авторизованный снимок чата, backward history и
+forward catch-up через opaque cursor, REST fallback для отправки, edit/delete/tombstone, foreground read marker,
+структурированную жалобу, блокировку, in-app inbox, настройки и привязку opaque web/TMA installation. Все маршруты
+требуют bearer; мутации дополнительно требуют browser CSRF и UUIDv4 `Idempotency-Key`. Ответы всегда `no-store`.
+Invitation capability, pending request, waitlist и guest не дают доступа к чату.
+
+AsyncAPI разделяет client streams `/v1/ws`, внутренний transactional outbox `communication.events.v1` и BullMQ
+queue `notification-delivery-v1`. Client stream доставляется at least once и упорядочен PostgreSQL `sequence`;
+разрыв не продвигает cursor и требует REST catch-up либо `RESYNC_REQUIRED`. Outbox содержит только opaque message/
+conversation/source references, а delivery job — только `deliveryId`: текст, revision/evidence, route, contact,
+preview и provider payload загружаются исключительно владельцем данных после повторной авторизации/claim.
+
+Миграция атомарно назначает `(conversation_id, sequence)`, хранит append-only revisions/tombstones и неизменяемую
+30-дневную boundary бывшего участника. Уникальности `(recipient_id, source_event_id, type)` и
+`(notification_id, channel)` независимо дедуплицируют logical inbox item и channel delivery; retries/failover
+сохраняют один delivery/idempotency key. `IN_APP` нельзя отключить, внешние каналы ограничены Telegram/email и не
+дают гарантии human read или exactly-once доставки.

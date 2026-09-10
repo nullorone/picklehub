@@ -2,6 +2,11 @@ import { readFile } from 'node:fs/promises';
 
 import { Parser } from '@asyncapi/parser';
 import { parse } from 'yaml';
+import {
+    checkCommunicationContract,
+    communicationMessageNames,
+    communicationOperations,
+} from './communications-policy.mjs';
 import { checkIdentityContract, identityOperations, identityEventFields } from './identity-policy.mjs';
 import { checkMatchContract, matchOperations, matchEventFields } from './matches-policy.mjs';
 import { checkVenueContract, venueOperations, venueEventFields } from './venues-policy.mjs';
@@ -9,6 +14,7 @@ import { checkVenueContract, venueOperations, venueEventFields } from './venues-
 const allowedPaths = new Set([
     '/health/live',
     '/health/ready',
+    ...Object.keys(communicationOperations),
     ...Object.keys(identityOperations),
     ...Object.keys(matchOperations),
     ...Object.keys(venueOperations),
@@ -88,6 +94,7 @@ assert(
     messageNames.every(
         (name) =>
             allowedProtocolMessages.has(name) ||
+            communicationMessageNames.has(name) ||
             name in identityEventFields ||
             name in matchEventFields ||
             name in venueEventFields
@@ -102,6 +109,7 @@ assert(
     new Set(messageNames).size ===
         allowedProtocolMessages.size +
             Object.keys(identityEventFields).length +
+            communicationMessageNames.size +
             Object.keys(matchEventFields).length +
             Object.keys(venueEventFields).length,
     'AsyncAPI must define all approved protocol, identity, match and venue messages.'
@@ -128,6 +136,7 @@ assert(
 );
 
 checkIdentityContract(openApi, asyncApi);
+checkCommunicationContract(openApi, asyncApi);
 checkMatchContract(openApi, asyncApi);
 checkVenueContract(openApi, asyncApi);
 

@@ -122,21 +122,24 @@ opaque match ID, версию и закрытые enum/buckets; raw invite token
 
 Граница `communications` владеет проекцией доступа к коммуникации, но не составом или lifecycle матча:
 
-- `match_chats` — один чат опубликованного матча, версия и последняя монотонная sequence;
-- `chat_memberships` — интервалы доступа зарегистрированного участника, `accessRevokedAt`, граница доступной
+- `conversations` — один чат опубликованного матча, версия и последняя монотонная sequence;
+- `conversation_memberships` — интервалы доступа зарегистрированного участника, `accessRevokedAt`, граница доступной
   sequence и монотонная `lastReadSequence`; pending/очередь/гость не являются членством;
 - `chat_messages` — авторский plain text либо закрытый тип системной записи, серверное время и уникальная
   `(chatId, sequence)`; системный source event уникален;
 - `chat_message_revisions` — append-only версии редактирования и tombstone; текущая проекция не уничтожает
   снимок версии, приложенный к жалобе;
 - `communication_blocks` — направленное правило скрытия автора для пользователя без изменения match membership;
-- `message_reports` — opaque reporter/subject, reason enum и зашифрованный immutable evidence snapshot для
+- `chat_message_reports` — opaque reporter/subject, reason enum и зашифрованный immutable evidence snapshot для
   будущей границы trust/safety;
 - `notification_preferences` — категории/каналы, BCP 47 locale, IANA timezone, локальные quiet-hour boundaries и
   версия настроек;
+- `notification_preference_channels` — закрытая матрица category/channel; `IN_APP` всегда включён, а внешние
+  Telegram/email значения изначально выключены;
 - `notifications` — один in-app item на recipient + source event + type, read state, route и grouping metadata;
 - `notification_deliveries` — канал, idempotency key, schedule/attempts и transport outcome без утверждения о
   прочтении пользователем.
+- `notification_devices` — opaque UUIDv4 установки web/TMA для синхронизации inbox; push token/channel в MVP нет.
 
 Communications получает committed match events и идемпотентно обновляет access projection, создаёт системную
 запись и fan-out. Проверка доступа перед каждым чтением/записью сверяет проекцию с authoritative application port
@@ -148,8 +151,9 @@ WebSocket event — производная от сохранённой запи�
 не уменьшают её. Provider attempt не меняет read position. Блокировка применяется в персональной read projection,
 а не переписывает общий поток.
 
-Доменный outbox матча и notification fan-out содержат только opaque source/match/recipient references, закрытые
-типы, timestamps/buckets и разрешённый route. Текст сообщения, revision/evidence, email, Telegram subject,
+Доменный outbox матча и notification fan-out содержат только opaque source/match references и закрытые типы.
+Безопасный route хранится в owning notification row, но не копируется в generic outbox или job. Текст сообщения,
+revision/evidence, email, Telegram subject,
 пригласительная ссылка, имена и причина жалобы запрещены. Для realtime текста используется авторизованная запись
 communications и bounded fan-out, а не широковещательный доменный outbox. Конкретные provider credentials и
 recipient address разрешаются identity port только внутри минимальной границы адаптера отправки.
