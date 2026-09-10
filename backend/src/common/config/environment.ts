@@ -39,6 +39,20 @@ const environmentSchema = z
             .refine((value) => value.startsWith('https://'))
             .optional(),
         EMAIL_PROVIDER_TOKEN: z.string().min(32).optional(),
+        VENUE_PROVIDER_POLICY_VERSION: z.string().min(1).optional(),
+        VENUE_OVERPASS_ENDPOINT: z.url().optional(),
+        VENUE_OVERPASS_USER_AGENT: z.string().min(8).max(200).optional(),
+        VENUE_OVERPASS_LICENSE: z.string().min(1).max(160).optional(),
+        VENUE_OVERPASS_ATTRIBUTION_TEXT: z.string().min(1).max(300).optional(),
+        VENUE_OVERPASS_ATTRIBUTION_LINK: z.url().optional(),
+        VENUE_OVERPASS_STORAGE_ALLOWED: z.enum(['true', 'false']).default('false'),
+        VENUE_OVERPASS_MIN_INTERVAL_MS: z.coerce.number().int().min(1000).max(300_000).default(10_000),
+        VENUE_GEOCODER_ENDPOINT: z.url().optional(),
+        VENUE_GEOCODER_TOKEN: z.string().min(16).optional(),
+        VENUE_GEOCODER_STORAGE_ALLOWED: z.enum(['true', 'false']).default('false'),
+        VENUE_GEOCODER_ATTRIBUTION_TEXT: z.string().min(1).max(300).optional(),
+        VENUE_GEOCODER_ATTRIBUTION_LINK: z.url().optional(),
+        VENUE_GEOCODER_LICENSE: z.string().min(1).max(160).optional(),
     })
     .superRefine((environment, context) => {
         if (environment.NODE_ENV === 'production' && environment.REDIS_NAMESPACE === 'local') {
@@ -58,6 +72,34 @@ const environmentSchema = z
                 code: 'custom',
                 path: ['IDENTITY_HMAC_KEY'],
                 message: 'Production identity secrets must be explicitly configured',
+            });
+        }
+        const overpassConfigured = environment.VENUE_OVERPASS_ENDPOINT !== undefined;
+        if (
+            overpassConfigured &&
+            (environment.VENUE_OVERPASS_STORAGE_ALLOWED !== 'true' ||
+                environment.VENUE_PROVIDER_POLICY_VERSION === undefined ||
+                environment.VENUE_OVERPASS_USER_AGENT === undefined ||
+                environment.VENUE_OVERPASS_LICENSE === undefined ||
+                environment.VENUE_OVERPASS_ATTRIBUTION_TEXT === undefined)
+        ) {
+            context.addIssue({
+                code: 'custom',
+                path: ['VENUE_OVERPASS_ENDPOINT'],
+                message: 'Overpass requires an approved storage capability and complete provenance metadata',
+            });
+        }
+        const geocoderConfigured = environment.VENUE_GEOCODER_ENDPOINT !== undefined;
+        if (
+            geocoderConfigured &&
+            (environment.VENUE_PROVIDER_POLICY_VERSION === undefined ||
+                environment.VENUE_GEOCODER_ATTRIBUTION_TEXT === undefined ||
+                environment.VENUE_GEOCODER_LICENSE === undefined)
+        ) {
+            context.addIssue({
+                code: 'custom',
+                path: ['VENUE_GEOCODER_ENDPOINT'],
+                message: 'Geocoder requires complete reviewed provenance metadata',
             });
         }
         if (

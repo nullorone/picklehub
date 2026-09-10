@@ -11,6 +11,7 @@ import { HealthModule } from './health/health.module';
 import { IntegrationsModule } from './integrations/integrations.module';
 import { IdentityModule } from './identity/identity.module';
 import { OutboxModule } from './outbox/outbox.module';
+import { VenuesModule } from './venues/venues.module';
 
 @Module({
     imports: [
@@ -25,6 +26,7 @@ import { OutboxModule } from './outbox/outbox.module';
         IntegrationsModule,
         AuditModule,
         IdentityModule,
+        VenuesModule,
     ],
 })
 export class AppModule {}

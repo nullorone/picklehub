@@ -608,3 +608,42 @@ model VenueIdempotencyRecord {
   @@index([expiresAt], map: "venue_idempotency_expiry_idx")
   @@map("venue_idempotency_records")
 }
+
+enum VenueImportStatus {
+  RUNNING
+  COMPLETED
+  FAILED
+
+  @@map("venue_import_status")
+}
+
+model VenueImportRun {
+  id                String            @id @db.Uuid
+  providerKey       String            @map("provider_key") @db.VarChar(80)
+  sourceVersion     String            @map("source_version") @db.VarChar(160)
+  scopeKey          String            @map("scope_key") @db.VarChar(160)
+  dryRun            Boolean           @map("dry_run")
+  status            VenueImportStatus @default(RUNNING)
+  checkpoint        Json              @default("{\"offset\":0}")
+  scannedCount      Int               @default(0) @map("scanned_count")
+  createdCount      Int               @default(0) @map("created_count")
+  deduplicatedCount Int               @default(0) @map("deduplicated_count")
+  quarantinedCount  Int               @default(0) @map("quarantined_count")
+  failureCode       String?           @map("failure_code") @db.VarChar(96)
+  startedAt         DateTime          @default(now()) @map("started_at") @db.Timestamptz(3)
+  finishedAt        DateTime?         @map("finished_at") @db.Timestamptz(3)
+
+  @@index([providerKey, scopeKey, status, startedAt], map: "venue_import_runs_resume_idx")
+  @@map("venue_import_runs")
+}
+
+model VenueImportCheckpoint {
+  providerKey   String   @map("provider_key") @db.VarChar(80)
+  scopeKey      String   @map("scope_key") @db.VarChar(160)
+  sourceVersion String   @map("source_version") @db.VarChar(160)
+  checkpoint    Json
+  updatedAt     DateTime @default(now()) @map("updated_at") @db.Timestamptz(3)
+
+  @@id([providerKey, scopeKey])
+  @@map("venue_import_checkpoints")
+}

@@ -34,6 +34,16 @@ import { TelegramVerifierService } from './telegram-verifier.service';
         { provide: Clock, useClass: SystemClock },
         { provide: EmailProvider, useClass: ConfiguredEmailProvider },
     ],
-    exports: [IdentityService, IdentityCryptoService, TelegramVerifierService, Clock, EmailProvider],
+    exports: [
+        IdentityService,
+        IdentityCryptoService,
+        TelegramVerifierService,
+        BrowserSecurityService,
+        IdentityRateLimitService,
+        NoStoreInterceptor,
+        Clock,
+        CursorService,
+        EmailProvider,
+    ],
 })
 export class IdentityModule {}

@@ -734,3 +734,55 @@ prisma:generate --workspace @picklehub/backend` — успешно; Prisma Clien
   объявлены одобренными.
 - Код следующего промпта `llm/03-venues/03-backend.md` не начинался. Контракт и миграционный test suite готовы,
   но критерий runtime-применения migration и фактического `EXPLAIN` остаётся заблокирован окружением.
+
+## 2026-09-10 — площадки, этап 03-backend
+
+- Активный промпт: `llm/03-venues/03-backend.md`. Реализован NestJS-модуль `venues` с REST presentation для
+  восьми ранее опубликованных operations, application use cases, DTO validation, стабильными venue errors,
+  зашифрованной 24-hour idempotency и self-only projection кандидата. Каталог использует параметризованные
+  `ST_DWithin`/`ST_Intersects` запросы к indexed geography, GIN text search, snapshot/cursor pagination и единые
+  filters; cursor содержит HMAC привязки, а не raw query, bbox или search origin.
+- Нормализация выполняет Unicode NFKC, удаление control characters, схлопывание пробелов и стабильную обработку
+  адресных разделителей. Proximity 100 м только формирует возможные дубли: OSM importer объединяет совпавший
+  нормализованный name/address, а community candidate остаётся `PENDING_REVIEW` для решения модератора. Переход
+  кандидата по подтверждённому матчу идемпотентен и доступен через экспортированный application method; до этапа
+  matches HTTP-создание fail-closed через `VenueMatchPort`, не выдумывая владение ещё не существующим матчем.
+- Добавлены provider ports и fail-closed adapters. Geocoder suggestions хранятся только в process memory не более
+  10 минут и удаляются после выбора; persistence разрешается только при полном allowed-fields capability и
+  provenance. Overpass adapter не обращается к tile server, принимает только pickleball allowlist, исключает
+  явно private записи, требует явных policy/license/attribution/user-agent settings, ограничивает частоту и делает
+  не более трёх bounded retry. Конкретный production provider и юридическое разрешение не объявлялись.
+- Операторский OSM importer поддерживает `--dry-run`, idempotency по provider/source version/scope, persisted
+  checkpoint каждые 50 элементов, счётчики, failed/completed runs, external-source и proximity deduplication.
+  Ошибка fetch/item не удаляет и не переписывает каталог. Новая migration `20260910120000_venues_backend`
+  добавляет runs/checkpoints, terminal-state constraints и защиту завершённых запусков от изменения.
+- Candidate/source, qualification, import и privacy report пишут минимальный audit; создание кандидата и
+  импортированного venue создают contract-defined outbox events без координат/адресов/actor IDs. Метрики покрывают
+  search, provider failure, import/dedup/quarantine, candidate lifecycle, reports и cache invalidation. Жалоба
+  `PRIVATE_RESIDENCE` атомарно меняет PostgreSQL publication state на `PRIVACY_REVIEW`; generation invalidation
+  выполняется только после commit и её сбой не возвращает скрытую запись в выдачу.
+- Добавлены unit tests нормализации/provider defaults и integration suite с fake import port для повторного
+  импорта, PostGIS radius search с attribution, сохранения каталога при provider failure и privacy quarantine.
+  Обновлены `backend/.env.example`, backend runbook, scripts, Prisma schema, API/worker module composition и
+  необходимые exports identity infrastructure. Пользовательские PNG в `design/` не изменялись.
+
+### Проверки этапа venues 03-backend
+
+- `DATABASE_URL=... PRISMA_SCHEMA_ENGINE_BINARY=/usr/bin/true PRISMA_QUERY_ENGINE_LIBRARY=/usr/bin/true npm run
+prisma:generate --workspace @picklehub/backend` — успешно, Prisma Client 6.16.2 сгенерирован из обновлённой
+  schema без сетевой загрузки native engine. Обычная первая попытка generate получила network `ENOTFOUND` при
+  обращении за schema engine; секреты или обход TLS в репозиторий не добавлялись.
+- `npm run typecheck --workspace @picklehub/backend`, `npm run lint --workspace @picklehub/backend`, `npm test
+--workspace @picklehub/backend -- --runInBand` и `npm run build --workspace @picklehub/backend` — успешно после
+  финальных изменений: 12 unit suites/23 tests, strict TypeScript/ESLint без warnings, production compile успешен.
+- `npm run contracts:check` — успешно: TypeSpec/Redocly, 36 REST/14 messages policy, 27 contract/data tests,
+  compatibility, generated drift/typecheck и Prism mock. `npm run workspace:check`, `npm run docs:check`, `npm run
+format:check`, отдельные venues policy/data tests и `git diff --check` — успешно; 115 Markdown-файлов без ошибок.
+- Runtime PostGIS/Redis acceptance не засчитана. `docker compose up -d postgres redis` получил `permission denied`
+  к `/Users/ruasvyn/.docker/run/docker.sock`; прямые соединения integration runner к `127.0.0.1:6379` запрещены с
+  `EPERM`, а локальная БД не содержит новую migration. Финальная попытка venue integration подтвердила успешную
+  сборку Nest dependency graph, затем остановилась на недоступной/немигрированной инфраструктуре. Тесты
+  `venues-migration.integration-spec.ts` и `venues.integration-spec.ts` должны быть повторены после применения
+  всех migrations в разрешённом CI/PostGIS окружении; их runtime-успех не заявляется.
+- Следующий промпт: `llm/03-venues/04-tma-web.md`; к нему не переходили. Production enablement OSM/geocoder остаётся
+  отдельным legal, terms, attribution, endpoint-usage и data-residency gate.

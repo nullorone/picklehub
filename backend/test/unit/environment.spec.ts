@@ -32,4 +32,21 @@ describe('parseEnvironment', () => {
             parseEnvironment({ ...validEnvironment, NODE_ENV: 'production', REDIS_NAMESPACE: 'local' })
         ).toThrow('Invalid environment configuration: REDIS_NAMESPACE');
     });
+
+    it('keeps venue providers disabled by default', () => {
+        const environment = parseEnvironment(validEnvironment);
+
+        expect(environment.VENUE_OVERPASS_ENDPOINT).toBeUndefined();
+        expect(environment.VENUE_OVERPASS_STORAGE_ALLOWED).toBe('false');
+        expect(environment.VENUE_GEOCODER_STORAGE_ALLOWED).toBe('false');
+    });
+
+    it('rejects an Overpass endpoint without reviewed provenance and storage capability', () => {
+        expect(() =>
+            parseEnvironment({
+                ...validEnvironment,
+                VENUE_OVERPASS_ENDPOINT: 'https://overpass.example.test/api/interpreter',
+            })
+        ).toThrow('Invalid environment configuration: VENUE_OVERPASS_ENDPOINT');
+    });
 });

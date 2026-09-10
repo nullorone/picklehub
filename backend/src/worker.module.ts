@@ -10,6 +10,7 @@ import { RequestContextModule } from './common/request-context/request-context.m
 import { IntegrationsModule } from './integrations/integrations.module';
 import { OutboxModule } from './outbox/outbox.module';
 import { OutboxWorkerService } from './outbox/outbox-worker.service';
+import { VenuesModule } from './venues/venues.module';
 
 @Module({
     imports: [
@@ -22,6 +23,7 @@ import { OutboxWorkerService } from './outbox/outbox-worker.service';
         OutboxModule,
         IntegrationsModule,
         AuditModule,
+        VenuesModule,
     ],
     providers: [OutboxWorkerService],
 })
