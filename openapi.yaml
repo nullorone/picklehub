@@ -11,6 +11,8 @@ tags:
     description: Process liveness and mandatory dependency readiness.
   - name: Identity
     description: Identity, browser sessions, consent and onboarding.
+  - name: Venues
+    description: Published venue discovery and player venue contributions.
 paths:
   /auth/context:
     get:
@@ -11538,6 +11540,2810 @@ paths:
               $ref: '#/components/schemas/CompleteOnboarding'
       security:
         - BearerAuth: []
+  /venue-candidates/{candidateId}:
+    get:
+      operationId: getMyVenueCandidate
+      summary: Read the safe state of an own candidate
+      description: Self-only status projection; unknown or foreign candidate returns VENUE_NOT_FOUND. Exact address/location and moderation identity/evidence are absent.
+      parameters:
+        - name: candidateId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: X-Request-ID
+          in: header
+          required: false
+          description: Optional caller request identifier. Invalid values are ignored and replaced by the server.
+          schema:
+            $ref: '#/components/schemas/RequestId'
+        - name: X-Correlation-ID
+          in: header
+          required: false
+          description: Optional identifier joining work across requests. Invalid values are ignored and replaced.
+          schema:
+            $ref: '#/components/schemas/CorrelationId'
+        - name: Accept-Language
+          in: header
+          required: false
+          description: Preferred BCP 47 response locale. Russian is used when no supported locale matches.
+          schema:
+            type: string
+            minLength: 2
+            maxLength: 128
+      responses:
+        '200':
+          description: The request has succeeded.
+          headers:
+            X-Request-ID:
+              required: true
+              description: Server-validated request identifier, also present in response bodies where defined.
+              schema:
+                $ref: '#/components/schemas/RequestId'
+            X-Correlation-ID:
+              required: true
+              description: Server-validated identifier joining related requests and background work.
+              schema:
+                $ref: '#/components/schemas/CorrelationId'
+            Content-Language:
+              required: true
+              description: BCP 47 locale used for human-readable text in the response.
+              schema:
+                $ref: '#/components/schemas/Locale'
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+            Idempotency-Replayed:
+              required: false
+              schema:
+                type: boolean
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VenueCandidate'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          headers:
+            X-Request-ID:
+              required: true
+              description: Server-validated request identifier, also present in response bodies where defined.
+              schema:
+                $ref: '#/components/schemas/RequestId'
+            X-Correlation-ID:
+              required: true
+              description: Server-validated identifier joining related requests and background work.
+              schema:
+                $ref: '#/components/schemas/CorrelationId'
+            Content-Language:
+              required: true
+              description: BCP 47 locale used for human-readable text in the response.
+              schema:
+                $ref: '#/components/schemas/Locale'
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - error
+                  - requestId
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                        enum:
+                          - VALIDATION_FAILED
+                      message:
+                        type: string
+                      details:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ErrorDetail'
+                    required:
+                      - code
+                      - message
+                    unevaluatedProperties:
+                      not: {}
+                  requestId:
+                    $ref: '#/components/schemas/RequestId'
+                unevaluatedProperties:
+                  not: {}
+        '401':
+          description: Access is unauthorized.
+          headers:
+            X-Request-ID:
+              required: true
+              description: Server-validated request identifier, also present in response bodies where defined.
+              schema:
+                $ref: '#/components/schemas/RequestId'
+            X-Correlation-ID:
+              required: true
+              description: Server-validated identifier joining related requests and background work.
+              schema:
+                $ref: '#/components/schemas/CorrelationId'
+            Content-Language:
+              required: true
+              description: BCP 47 locale used for human-readable text in the response.
+              schema:
+                $ref: '#/components/schemas/Locale'
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - error
+                  - requestId
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                        enum:
+                          - SESSION_INVALID
+                      message:
+                        type: string
+                      details:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ErrorDetail'
+                    required:
+                      - code
+                      - message
+                    unevaluatedProperties:
+                      not: {}
+                  requestId:
+                    $ref: '#/components/schemas/RequestId'
+                unevaluatedProperties:
+                  not: {}
+        '403':
+          description: Access is forbidden.
+          headers:
+            X-Request-ID:
+              required: true
+              description: Server-validated request identifier, also present in response bodies where defined.
+              schema:
+                $ref: '#/components/schemas/RequestId'
+            X-Correlation-ID:
+              required: true
+              description: Server-validated identifier joining related requests and background work.
+              schema:
+                $ref: '#/components/schemas/CorrelationId'
+            Content-Language:
+              required: true
+              description: BCP 47 locale used for human-readable text in the response.
+              schema:
+                $ref: '#/components/schemas/Locale'
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - error
+                  - requestId
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                        enum:
+                          - ONBOARDING_REQUIRED
+                          - REQUEST_NOT_ALLOWED
+                      message:
+                        type: string
+                      details:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ErrorDetail'
+                    required:
+                      - code
+                      - message
+                    unevaluatedProperties:
+                      not: {}
+                  requestId:
+                    $ref: '#/components/schemas/RequestId'
+                unevaluatedProperties:
+                  not: {}
+        '404':
+          description: The server cannot find the requested resource.
+          headers:
+            X-Request-ID:
+              required: true
+              description: Server-validated request identifier, also present in response bodies where defined.
+              schema:
+                $ref: '#/components/schemas/RequestId'
+            X-Correlation-ID:
+              required: true
+              description: Server-validated identifier joining related requests and background work.
+              schema:
+                $ref: '#/components/schemas/CorrelationId'
+            Content-Language:
+              required: true
+              description: BCP 47 locale used for human-readable text in the response.
+              schema:
+                $ref: '#/components/schemas/Locale'
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - error
+                  - requestId
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                        enum:
+                          - VENUE_NOT_FOUND
+                          - MATCH_NOT_FOUND
+                      message:
+                        type: string
+                      details:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ErrorDetail'
+                    required:
+                      - code
+                      - message
+                    unevaluatedProperties:
+                      not: {}
+                  requestId:
+                    $ref: '#/components/schemas/RequestId'
+                unevaluatedProperties:
+                  not: {}
+        '409':
+          description: The request conflicts with the current state of the server.
+          headers:
+            X-Request-ID:
+              required: true
+              description: Server-validated request identifier, also present in response bodies where defined.
+              schema:
+                $ref: '#/components/schemas/RequestId'
+            X-Correlation-ID:
+              required: true
+              description: Server-validated identifier joining related requests and background work.
+              schema:
+                $ref: '#/components/schemas/CorrelationId'
+            Content-Language:
+              required: true
+              description: BCP 47 locale used for human-readable text in the response.
+              schema:
+                $ref: '#/components/schemas/Locale'
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - error
+                  - requestId
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                        enum:
+                          - VENUE_VERSION_CONFLICT
+                          - IDEMPOTENCY_KEY_REUSED
+                          - VENUE_ALREADY_REPORTED
+                      message:
+                        type: string
+                      details:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ErrorDetail'
+                    required:
+                      - code
+                      - message
+                    unevaluatedProperties:
+                      not: {}
+                  requestId:
+                    $ref: '#/components/schemas/RequestId'
+                unevaluatedProperties:
+                  not: {}
+        '429':
+          description: Client error
+          headers:
+            X-Request-ID:
+              required: true
+              description: Server-validated request identifier, also present in response bodies where defined.
+              schema:
+                $ref: '#/components/schemas/RequestId'
+            X-Correlation-ID:
+              required: true
+              description: Server-validated identifier joining related requests and background work.
+              schema:
+                $ref: '#/components/schemas/CorrelationId'
+            Content-Language:
+              required: true
+              description: BCP 47 locale used for human-readable text in the response.
+              schema:
+                $ref: '#/components/schemas/Locale'
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+            Retry-After:
+              required: true
+              description: Non-negative whole seconds before the client should retry.
+              schema:
+                type: integer
+                format: int32
+                minimum: 0
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - error
+                  - requestId
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                        enum:
+                          - RATE_LIMITED
+                      message:
+                        type: string
+                      details:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ErrorDetail'
+                    required:
+                      - code
+                      - message
+                    unevaluatedProperties:
+                      not: {}
+                  requestId:
+                    $ref: '#/components/schemas/RequestId'
+                unevaluatedProperties:
+                  not: {}
+      tags:
+        - Venues
+      security:
+        - BearerAuth: []
+  /venues:
+    get:
+      operationId: searchVenues
+      summary: Search published venues by radius or catalogue text
+      description: 'Choose exactly one mode: radius requires longitude, latitude and radiusMeters together; text requires query and forbids origin/radius. Radius is at most 50,000 m and uses ST_DWithin against the GiST-indexed geography, ordered distance ASC, id ASC. Text searches the stored catalogue only, ordered relevance DESC, normalized name ASC, id ASC; it never calls a geocoder. Cursor is filter/mode/snapshot-bound for 15 minutes. Limit defaults to 20 and cannot exceed 100. Origin and raw query are never logged, persisted or used in analytics/Redis keys.'
+      parameters:
+        - name: X-Request-ID
+          in: header
+          required: false
+          description: Optional caller request identifier. Invalid values are ignored and replaced by the server.
+          schema:
+            $ref: '#/components/schemas/RequestId'
+        - name: X-Correlation-ID
+          in: header
+          required: false
+          description: Optional identifier joining work across requests. Invalid values are ignored and replaced.
+          schema:
+            $ref: '#/components/schemas/CorrelationId'
+        - name: Accept-Language
+          in: header
+          required: false
+          description: Preferred BCP 47 response locale. Russian is used when no supported locale matches.
+          schema:
+            type: string
+            minLength: 2
+            maxLength: 128
+        - $ref: '#/components/parameters/VenueFilters.accessMode'
+        - $ref: '#/components/parameters/VenueFilters.environment'
+        - $ref: '#/components/parameters/VenueFilters.permanentNet'
+        - $ref: '#/components/parameters/VenueFilters.lighting'
+        - $ref: '#/components/parameters/VenueFilters.publicationState'
+        - name: cursor
+          in: query
+          required: false
+          description: Opaque base64url cursor returned by the preceding page; clients must not parse or create it.
+          schema:
+            $ref: '#/components/schemas/Cursor'
+          explode: false
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of items requested. Endpoints may document a lower maximum.
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            maximum: 100
+            default: 20
+          explode: false
+        - name: longitude
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/Longitude'
+          explode: false
+        - name: latitude
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/Latitude'
+          explode: false
+        - name: radiusMeters
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            maximum: 50000
+          explode: false
+        - name: query
+          in: query
+          required: false
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 160
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          headers:
+            X-Request-ID:
+              required: true
+              description: Server-validated request identifier, also present in response bodies where defined.
+              schema:
+                $ref: '#/components/schemas/RequestId'
+            X-Correlation-ID:
+              required: true
+              description: Server-validated identifier joining related requests and background work.
+              schema:
+                $ref: '#/components/schemas/CorrelationId'
+            Content-Language:
+              required: true
+              description: BCP 47 locale used for human-readable text in the response.
+              schema:
+                $ref: '#/components/schemas/Locale'
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+            Idempotency-Replayed:
+              required: false
+              schema:
+                type: boolean
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VenuePage'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          headers:
+            X-Request-ID:
+              required: true
+              description: Server-validated request identifier, also present in response bodies where defined.
+              schema:
+                $ref: '#/components/schemas/RequestId'
+            X-Correlation-ID:
+              required: true
+              description: Server-validated identifier joining related requests and background work.
+              schema:
+                $ref: '#/components/schemas/CorrelationId'
+            Content-Language:
+              required: true
+              description: BCP 47 locale used for human-readable text in the response.
+              schema:
+                $ref: '#/components/schemas/Locale'
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - error
+                  - requestId
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                        enum:
+                          - VALIDATION_FAILED
+                          - INVALID_CURSOR
+                          - SEARCH_AREA_TOO_LARGE
+                      message:
+                        type: string
+                      details:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ErrorDetail'
+                    required:
+                      - code
+                      - message
+                    unevaluatedProperties:
+                      not: {}
+                  requestId:
+                    $ref: '#/components/schemas/RequestId'
+                unevaluatedProperties:
+                  not: {}
+        '404':
+          description: The server cannot find the requested resource.
+          headers:
+            X-Request-ID:
+              required: true
+              description: Server-validated request identifier, also present in response bodies where defined.
+              schema:
+                $ref: '#/components/schemas/RequestId'
+            X-Correlation-ID:
+              required: true
+              description: Server-validated identifier joining related requests and background work.
+              schema:
+                $ref: '#/components/schemas/CorrelationId'
+            Content-Language:
+              required: true
+              description: BCP 47 locale used for human-readable text in the response.
+              schema:
+                $ref: '#/components/schemas/Locale'
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - error
+                  - requestId
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                        enum:
+                          - VENUE_NOT_FOUND
+                      message:
+                        type: string
+                      details:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ErrorDetail'
+                    required:
+                      - code
+                      - message
+                    unevaluatedProperties:
+                      not: {}
+                  requestId:
+                    $ref: '#/components/schemas/RequestId'
+                unevaluatedProperties:
+                  not: {}
+        '429':
+          description: Client error
+          headers:
+            X-Request-ID:
+              required: true
+              description: Server-validated request identifier, also present in response bodies where defined.
+              schema:
+                $ref: '#/components/schemas/RequestId'
+            X-Correlation-ID:
+              required: true
+              description: Server-validated identifier joining related requests and background work.
+              schema:
+                $ref: '#/components/schemas/CorrelationId'
+            Content-Language:
+              required: true
+              description: BCP 47 locale used for human-readable text in the response.
+              schema:
+                $ref: '#/components/schemas/Locale'
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+            Retry-After:
+              required: true
+              description: Non-negative whole seconds before the client should retry.
+              schema:
+                type: integer
+                format: int32
+                minimum: 0
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - error
+                  - requestId
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                        enum:
+                          - RATE_LIMITED
+                      message:
+                        type: string
+                      details:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ErrorDetail'
+                    required:
+                      - code
+                      - message
+                    unevaluatedProperties:
+                      not: {}
+                  requestId:
+                    $ref: '#/components/schemas/RequestId'
+                unevaluatedProperties:
+                  not: {}
+      tags:
+        - Venues
+      security:
+        - {}
+  /venues/candidates:
+    post:
+      operationId: createVenueCandidate
+      summary: Create a match-only venue candidate
+      description: Requires completed onboarding and an owned match creation flow. The point must be a public sports object, never a home. Candidate address/location remain restricted. One candidate per source match; confirmed completion later moves it once to PENDING_REVIEW but never auto-publishes or auto-merges. A selected geocoder value is stored only when adapter capability permits every field. Idempotency response is encrypted and retained 24 hours.
+      parameters:
+        - name: X-Request-ID
+          in: header
+          required: false
+          description: Optional caller request identifier. Invalid values are ignored and replaced by the server.
+          schema:
+            $ref: '#/components/schemas/RequestId'
+        - name: X-Correlation-ID
+          in: header
+          required: false
+          description: Optional identifier joining work across requests. Invalid values are ignored and replaced.
+          schema:
+            $ref: '#/components/schemas/CorrelationId'
+        - name: Accept-Language
+          in: header
+          required: false
+          description: Preferred BCP 47 response locale. Russian is used when no supported locale matches.
+          schema:
+            type: string
+            minLength: 2
+            maxLength: 128
+        - $ref: '#/components/parameters/BrowserMutationHeaders.origin'
+        - $ref: '#/components/parameters/BrowserMutationHeaders.csrfToken'
+        - $ref: '#/components/parameters/MutationKey'
+      responses:
+        '201':
+          description: The request has succeeded and a new resource has been created as a result.
+          headers:
+            X-Request-ID:
+              required: true
+              description: Server-validated request identifier, also present in response bodies where defined.
+              schema:
+                $ref: '#/components/schemas/RequestId'
+            X-Correlation-ID:
+              required: true
+              description: Server-validated identifier joining related requests and background work.
+              schema:
+                $ref: '#/components/schemas/CorrelationId'
+            Content-Language:
+              required: true
+              description: BCP 47 locale used for human-readable text in the response.
+              schema:
+                $ref: '#/components/schemas/Locale'
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+            Idempotency-Replayed:
+              required: false
+              schema:
+                type: boolean
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VenueCandidate'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          headers:
+            X-Request-ID:
+              required: true
+              description: Server-validated request identifier, also present in response bodies where defined.
+              schema:
+                $ref: '#/components/schemas/RequestId'
+            X-Correlation-ID:
+              required: true
+              description: Server-validated identifier joining related requests and background work.
+              schema:
+                $ref: '#/components/schemas/CorrelationId'
+            Content-Language:
+              required: true
+              description: BCP 47 locale used for human-readable text in the response.
+              schema:
+                $ref: '#/components/schemas/Locale'
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - error
+                  - requestId
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                        enum:
+                          - VALIDATION_FAILED
+                      message:
+                        type: string
+                      details:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ErrorDetail'
+                    required:
+                      - code
+                      - message
+                    unevaluatedProperties:
+                      not: {}
+                  requestId:
+                    $ref: '#/components/schemas/RequestId'
+                unevaluatedProperties:
+                  not: {}
+        '401':
+          description: Access is unauthorized.
+          headers:
+            X-Request-ID:
+              required: true
+              description: Server-validated request identifier, also present in response bodies where defined.
+              schema:
+                $ref: '#/components/schemas/RequestId'
+            X-Correlation-ID:
+              required: true
+              description: Server-validated identifier joining related requests and background work.
+              schema:
+                $ref: '#/components/schemas/CorrelationId'
+            Content-Language:
+              required: true
+              description: BCP 47 locale used for human-readable text in the response.
+              schema:
+                $ref: '#/components/schemas/Locale'
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - error
+                  - requestId
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                        enum:
+                          - SESSION_INVALID
+                      message:
+                        type: string
+                      details:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ErrorDetail'
+                    required:
+                      - code
+                      - message
+                    unevaluatedProperties:
+                      not: {}
+                  requestId:
+                    $ref: '#/components/schemas/RequestId'
+                unevaluatedProperties:
+                  not: {}
+        '403':
+          description: Access is forbidden.
+          headers:
+            X-Request-ID:
+              required: true
+              description: Server-validated request identifier, also present in response bodies where defined.
+              schema:
+                $ref: '#/components/schemas/RequestId'
+            X-Correlation-ID:
+              required: true
+              description: Server-validated identifier joining related requests and background work.
+              schema:
+                $ref: '#/components/schemas/CorrelationId'
+            Content-Language:
+              required: true
+              description: BCP 47 locale used for human-readable text in the response.
+              schema:
+                $ref: '#/components/schemas/Locale'
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - error
+                  - requestId
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                        enum:
+                          - ONBOARDING_REQUIRED
+                          - REQUEST_NOT_ALLOWED
+                      message:
+                        type: string
+                      details:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ErrorDetail'
+                    required:
+                      - code
+                      - message
+                    unevaluatedProperties:
+                      not: {}
+                  requestId:
+                    $ref: '#/components/schemas/RequestId'
+                unevaluatedProperties:
+                  not: {}
+        '404':
+          description: The server cannot find the requested resource.
+          headers:
+            X-Request-ID:
+              required: true
+              description: Server-validated request identifier, also present in response bodies where defined.
+              schema:
+                $ref: '#/components/schemas/RequestId'
+            X-Correlation-ID:
+              required: true
+              description: Server-validated identifier joining related requests and background work.
+              schema:
+                $ref: '#/components/schemas/CorrelationId'
+            Content-Language:
+              required: true
+              description: BCP 47 locale used for human-readable text in the response.
+              schema:
+                $ref: '#/components/schemas/Locale'
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - error
+                  - requestId
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                        enum:
+                          - VENUE_NOT_FOUND
+                          - MATCH_NOT_FOUND
+                      message:
+                        type: string
+                      details:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ErrorDetail'
+                    required:
+                      - code
+                      - message
+                    unevaluatedProperties:
+                      not: {}
+                  requestId:
+                    $ref: '#/components/schemas/RequestId'
+                unevaluatedProperties:
+                  not: {}
+        '409':
+          description: The request conflicts with the current state of the server.
+          headers:
+            X-Request-ID:
+              required: true
+              description: Server-validated request identifier, also present in response bodies where defined.
+              schema:
+                $ref: '#/components/schemas/RequestId'
+            X-Correlation-ID:
+              required: true
+              description: Server-validated identifier joining related requests and background work.
+              schema:
+                $ref: '#/components/schemas/CorrelationId'
+            Content-Language:
+              required: true
+              description: BCP 47 locale used for human-readable text in the response.
+              schema:
+                $ref: '#/components/schemas/Locale'
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - error
+                  - requestId
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                        enum:
+                          - VENUE_VERSION_CONFLICT
+                          - IDEMPOTENCY_KEY_REUSED
+                          - VENUE_ALREADY_REPORTED
+                      message:
+                        type: string
+                      details:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ErrorDetail'
+                    required:
+                      - code
+                      - message
+                    unevaluatedProperties:
+                      not: {}
+                  requestId:
+                    $ref: '#/components/schemas/RequestId'
+                unevaluatedProperties:
+                  not: {}
+        '429':
+          description: Client error
+          headers:
+            X-Request-ID:
+              required: true
+              description: Server-validated request identifier, also present in response bodies where defined.
+              schema:
+                $ref: '#/components/schemas/RequestId'
+            X-Correlation-ID:
+              required: true
+              description: Server-validated identifier joining related requests and background work.
+              schema:
+                $ref: '#/components/schemas/CorrelationId'
+            Content-Language:
+              required: true
+              description: BCP 47 locale used for human-readable text in the response.
+              schema:
+                $ref: '#/components/schemas/Locale'
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+            Retry-After:
+              required: true
+              description: Non-negative whole seconds before the client should retry.
+              schema:
+                type: integer
+                format: int32
+                minimum: 0
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - error
+                  - requestId
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                        enum:
+                          - RATE_LIMITED
+                      message:
+                        type: string
+                      details:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ErrorDetail'
+                    required:
+                      - code
+                      - message
+                    unevaluatedProperties:
+                      not: {}
+                  requestId:
+                    $ref: '#/components/schemas/RequestId'
+                unevaluatedProperties:
+                  not: {}
+      tags:
+        - Venues
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateVenueCandidate'
+      security:
+        - BearerAuth: []
+  /venues/geocoding/suggestions:
+    get:
+      operationId: suggestVenueAddresses
+      summary: Request transient address suggestions
+      description: 'Explicit user action only. Suggestions and provider payload stay in memory for no longer than 10 minutes and are not Venue records. The active adapter must pass its production legal/residency capability gate. Query is never logged. Limit: 30/min/user and 120/min/IP.'
+      parameters:
+        - name: X-Request-ID
+          in: header
+          required: false
+          description: Optional caller request identifier. Invalid values are ignored and replaced by the server.
+          schema:
+            $ref: '#/components/schemas/RequestId'
+        - name: X-Correlation-ID
+          in: header
+          required: false
+          description: Optional identifier joining work across requests. Invalid values are ignored and replaced.
+          schema:
+            $ref: '#/components/schemas/CorrelationId'
+        - name: Accept-Language
+          in: header
+          required: false
+          description: Preferred BCP 47 response locale. Russian is used when no supported locale matches.
+          schema:
+            type: string
+            minLength: 2
+            maxLength: 128
+        - name: query
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 2
+            maxLength: 160
+          explode: false
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            maximum: 10
+            default: 5
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          headers:
+            X-Request-ID:
+              required: true
+              description: Server-validated request identifier, also present in response bodies where defined.
+              schema:
+                $ref: '#/components/schemas/RequestId'
+            X-Correlation-ID:
+              required: true
+              description: Server-validated identifier joining related requests and background work.
+              schema:
+                $ref: '#/components/schemas/CorrelationId'
+            Content-Language:
+              required: true
+              description: BCP 47 locale used for human-readable text in the response.
+              schema:
+                $ref: '#/components/schemas/Locale'
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+            Idempotency-Replayed:
+              required: false
+              schema:
+                type: boolean
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeocodingSuggestions'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          headers:
+            X-Request-ID:
+              required: true
+              description: Server-validated request identifier, also present in response bodies where defined.
+              schema:
+                $ref: '#/components/schemas/RequestId'
+            X-Correlation-ID:
+              required: true
+              description: Server-validated identifier joining related requests and background work.
+              schema:
+                $ref: '#/components/schemas/CorrelationId'
+            Content-Language:
+              required: true
+              description: BCP 47 locale used for human-readable text in the response.
+              schema:
+                $ref: '#/components/schemas/Locale'
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - error
+                  - requestId
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                        enum:
+                          - VALIDATION_FAILED
+                      message:
+                        type: string
+                      details:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ErrorDetail'
+                    required:
+                      - code
+                      - message
+                    unevaluatedProperties:
+                      not: {}
+                  requestId:
+                    $ref: '#/components/schemas/RequestId'
+                unevaluatedProperties:
+                  not: {}
+        '401':
+          description: Access is unauthorized.
+          headers:
+            X-Request-ID:
+              required: true
+              description: Server-validated request identifier, also present in response bodies where defined.
+              schema:
+                $ref: '#/components/schemas/RequestId'
+            X-Correlation-ID:
+              required: true
+              description: Server-validated identifier joining related requests and background work.
+              schema:
+                $ref: '#/components/schemas/CorrelationId'
+            Content-Language:
+              required: true
+              description: BCP 47 locale used for human-readable text in the response.
+              schema:
+                $ref: '#/components/schemas/Locale'
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - error
+                  - requestId
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                        enum:
+                          - SESSION_INVALID
+                      message:
+                        type: string
+                      details:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ErrorDetail'
+                    required:
+                      - code
+                      - message
+                    unevaluatedProperties:
+                      not: {}
+                  requestId:
+                    $ref: '#/components/schemas/RequestId'
+                unevaluatedProperties:
+                  not: {}
+        '403':
+          description: Access is forbidden.
+          headers:
+            X-Request-ID:
+              required: true
+              description: Server-validated request identifier, also present in response bodies where defined.
+              schema:
+                $ref: '#/components/schemas/RequestId'
+            X-Correlation-ID:
+              required: true
+              description: Server-validated identifier joining related requests and background work.
+              schema:
+                $ref: '#/components/schemas/CorrelationId'
+            Content-Language:
+              required: true
+              description: BCP 47 locale used for human-readable text in the response.
+              schema:
+                $ref: '#/components/schemas/Locale'
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - error
+                  - requestId
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                        enum:
+                          - ONBOARDING_REQUIRED
+                          - REQUEST_NOT_ALLOWED
+                      message:
+                        type: string
+                      details:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ErrorDetail'
+                    required:
+                      - code
+                      - message
+                    unevaluatedProperties:
+                      not: {}
+                  requestId:
+                    $ref: '#/components/schemas/RequestId'
+                unevaluatedProperties:
+                  not: {}
+        '429':
+          description: Client error
+          headers:
+            X-Request-ID:
+              required: true
+              description: Server-validated request identifier, also present in response bodies where defined.
+              schema:
+                $ref: '#/components/schemas/RequestId'
+            X-Correlation-ID:
+              required: true
+              description: Server-validated identifier joining related requests and background work.
+              schema:
+                $ref: '#/components/schemas/CorrelationId'
+            Content-Language:
+              required: true
+              description: BCP 47 locale used for human-readable text in the response.
+              schema:
+                $ref: '#/components/schemas/Locale'
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+            Retry-After:
+              required: true
+              description: Non-negative whole seconds before the client should retry.
+              schema:
+                type: integer
+                format: int32
+                minimum: 0
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - error
+                  - requestId
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                        enum:
+                          - RATE_LIMITED
+                      message:
+                        type: string
+                      details:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ErrorDetail'
+                    required:
+                      - code
+                      - message
+                    unevaluatedProperties:
+                      not: {}
+                  requestId:
+                    $ref: '#/components/schemas/RequestId'
+                unevaluatedProperties:
+                  not: {}
+        '503':
+          description: Service unavailable.
+          headers:
+            X-Request-ID:
+              required: true
+              description: Server-validated request identifier, also present in response bodies where defined.
+              schema:
+                $ref: '#/components/schemas/RequestId'
+            X-Correlation-ID:
+              required: true
+              description: Server-validated identifier joining related requests and background work.
+              schema:
+                $ref: '#/components/schemas/CorrelationId'
+            Content-Language:
+              required: true
+              description: BCP 47 locale used for human-readable text in the response.
+              schema:
+                $ref: '#/components/schemas/Locale'
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+            Retry-After:
+              required: true
+              description: Non-negative whole seconds before the client should retry.
+              schema:
+                type: integer
+                format: int32
+                minimum: 0
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - error
+                  - requestId
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                        enum:
+                          - GEOCODER_TEMPORARILY_UNAVAILABLE
+                      message:
+                        type: string
+                      details:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ErrorDetail'
+                    required:
+                      - code
+                      - message
+                    unevaluatedProperties:
+                      not: {}
+                  requestId:
+                    $ref: '#/components/schemas/RequestId'
+                unevaluatedProperties:
+                  not: {}
+      tags:
+        - Venues
+      security:
+        - BearerAuth: []
+  /venues/map:
+    get:
+      operationId: searchVenueMap
+      summary: Search published venues in a map rectangle
+      description: All four WGS84 bounds are required. Antimeridian-crossing boxes are rejected. PostGIS applies ST_Intersects to the GiST-indexed venue geography. Width and height must each be at most 100 km. Cursor is bound to bounds, filters and snapshot for 15 minutes; sort is name ASC, id ASC. Limit defaults to 100 and cannot exceed 200. Exact search bounds are request-only and never logged, persisted or placed in analytics/Redis keys.
+      parameters:
+        - name: X-Request-ID
+          in: header
+          required: false
+          description: Optional caller request identifier. Invalid values are ignored and replaced by the server.
+          schema:
+            $ref: '#/components/schemas/RequestId'
+        - name: X-Correlation-ID
+          in: header
+          required: false
+          description: Optional identifier joining work across requests. Invalid values are ignored and replaced.
+          schema:
+            $ref: '#/components/schemas/CorrelationId'
+        - name: Accept-Language
+          in: header
+          required: false
+          description: Preferred BCP 47 response locale. Russian is used when no supported locale matches.
+          schema:
+            type: string
+            minLength: 2
+            maxLength: 128
+        - $ref: '#/components/parameters/VenueFilters.accessMode'
+        - $ref: '#/components/parameters/VenueFilters.environment'
+        - $ref: '#/components/parameters/VenueFilters.permanentNet'
+        - $ref: '#/components/parameters/VenueFilters.lighting'
+        - $ref: '#/components/parameters/VenueFilters.publicationState'
+        - name: west
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/Longitude'
+          explode: false
+        - name: south
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/Latitude'
+          explode: false
+        - name: east
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/Longitude'
+          explode: false
+        - name: north
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/Latitude'
+          explode: false
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/Cursor'
+          explode: false
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            maximum: 200
+            default: 100
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          headers:
+            X-Request-ID:
+              required: true
+              description: Server-validated request identifier, also present in response bodies where defined.
+              schema:
+                $ref: '#/components/schemas/RequestId'
+            X-Correlation-ID:
+              required: true
+              description: Server-validated identifier joining related requests and background work.
+              schema:
+                $ref: '#/components/schemas/CorrelationId'
+            Content-Language:
+              required: true
+              description: BCP 47 locale used for human-readable text in the response.
+              schema:
+                $ref: '#/components/schemas/Locale'
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+            Idempotency-Replayed:
+              required: false
+              schema:
+                type: boolean
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VenuePage'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          headers:
+            X-Request-ID:
+              required: true
+              description: Server-validated request identifier, also present in response bodies where defined.
+              schema:
+                $ref: '#/components/schemas/RequestId'
+            X-Correlation-ID:
+              required: true
+              description: Server-validated identifier joining related requests and background work.
+              schema:
+                $ref: '#/components/schemas/CorrelationId'
+            Content-Language:
+              required: true
+              description: BCP 47 locale used for human-readable text in the response.
+              schema:
+                $ref: '#/components/schemas/Locale'
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - error
+                  - requestId
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                        enum:
+                          - VALIDATION_FAILED
+                          - INVALID_CURSOR
+                          - SEARCH_AREA_TOO_LARGE
+                      message:
+                        type: string
+                      details:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ErrorDetail'
+                    required:
+                      - code
+                      - message
+                    unevaluatedProperties:
+                      not: {}
+                  requestId:
+                    $ref: '#/components/schemas/RequestId'
+                unevaluatedProperties:
+                  not: {}
+        '404':
+          description: The server cannot find the requested resource.
+          headers:
+            X-Request-ID:
+              required: true
+              description: Server-validated request identifier, also present in response bodies where defined.
+              schema:
+                $ref: '#/components/schemas/RequestId'
+            X-Correlation-ID:
+              required: true
+              description: Server-validated identifier joining related requests and background work.
+              schema:
+                $ref: '#/components/schemas/CorrelationId'
+            Content-Language:
+              required: true
+              description: BCP 47 locale used for human-readable text in the response.
+              schema:
+                $ref: '#/components/schemas/Locale'
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - error
+                  - requestId
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                        enum:
+                          - VENUE_NOT_FOUND
+                      message:
+                        type: string
+                      details:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ErrorDetail'
+                    required:
+                      - code
+                      - message
+                    unevaluatedProperties:
+                      not: {}
+                  requestId:
+                    $ref: '#/components/schemas/RequestId'
+                unevaluatedProperties:
+                  not: {}
+        '429':
+          description: Client error
+          headers:
+            X-Request-ID:
+              required: true
+              description: Server-validated request identifier, also present in response bodies where defined.
+              schema:
+                $ref: '#/components/schemas/RequestId'
+            X-Correlation-ID:
+              required: true
+              description: Server-validated identifier joining related requests and background work.
+              schema:
+                $ref: '#/components/schemas/CorrelationId'
+            Content-Language:
+              required: true
+              description: BCP 47 locale used for human-readable text in the response.
+              schema:
+                $ref: '#/components/schemas/Locale'
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+            Retry-After:
+              required: true
+              description: Non-negative whole seconds before the client should retry.
+              schema:
+                type: integer
+                format: int32
+                minimum: 0
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - error
+                  - requestId
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                        enum:
+                          - RATE_LIMITED
+                      message:
+                        type: string
+                      details:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ErrorDetail'
+                    required:
+                      - code
+                      - message
+                    unevaluatedProperties:
+                      not: {}
+                  requestId:
+                    $ref: '#/components/schemas/RequestId'
+                unevaluatedProperties:
+                  not: {}
+      tags:
+        - Venues
+      security:
+        - {}
+  /venues/{venueId}:
+    get:
+      operationId: getVenue
+      summary: Read a published venue
+      description: Returns only PUBLISHED venues. A permanent merged alias resolves to the canonical survivor and returns that survivor body; private, review and closed records are not disclosed through this public operation.
+      parameters:
+        - name: venueId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: X-Request-ID
+          in: header
+          required: false
+          description: Optional caller request identifier. Invalid values are ignored and replaced by the server.
+          schema:
+            $ref: '#/components/schemas/RequestId'
+        - name: X-Correlation-ID
+          in: header
+          required: false
+          description: Optional identifier joining work across requests. Invalid values are ignored and replaced.
+          schema:
+            $ref: '#/components/schemas/CorrelationId'
+        - name: Accept-Language
+          in: header
+          required: false
+          description: Preferred BCP 47 response locale. Russian is used when no supported locale matches.
+          schema:
+            type: string
+            minLength: 2
+            maxLength: 128
+      responses:
+        '200':
+          description: The request has succeeded.
+          headers:
+            X-Request-ID:
+              required: true
+              description: Server-validated request identifier, also present in response bodies where defined.
+              schema:
+                $ref: '#/components/schemas/RequestId'
+            X-Correlation-ID:
+              required: true
+              description: Server-validated identifier joining related requests and background work.
+              schema:
+                $ref: '#/components/schemas/CorrelationId'
+            Content-Language:
+              required: true
+              description: BCP 47 locale used for human-readable text in the response.
+              schema:
+                $ref: '#/components/schemas/Locale'
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+            Idempotency-Replayed:
+              required: false
+              schema:
+                type: boolean
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Venue'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          headers:
+            X-Request-ID:
+              required: true
+              description: Server-validated request identifier, also present in response bodies where defined.
+              schema:
+                $ref: '#/components/schemas/RequestId'
+            X-Correlation-ID:
+              required: true
+              description: Server-validated identifier joining related requests and background work.
+              schema:
+                $ref: '#/components/schemas/CorrelationId'
+            Content-Language:
+              required: true
+              description: BCP 47 locale used for human-readable text in the response.
+              schema:
+                $ref: '#/components/schemas/Locale'
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - error
+                  - requestId
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                        enum:
+                          - VALIDATION_FAILED
+                          - INVALID_CURSOR
+                          - SEARCH_AREA_TOO_LARGE
+                      message:
+                        type: string
+                      details:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ErrorDetail'
+                    required:
+                      - code
+                      - message
+                    unevaluatedProperties:
+                      not: {}
+                  requestId:
+                    $ref: '#/components/schemas/RequestId'
+                unevaluatedProperties:
+                  not: {}
+        '404':
+          description: The server cannot find the requested resource.
+          headers:
+            X-Request-ID:
+              required: true
+              description: Server-validated request identifier, also present in response bodies where defined.
+              schema:
+                $ref: '#/components/schemas/RequestId'
+            X-Correlation-ID:
+              required: true
+              description: Server-validated identifier joining related requests and background work.
+              schema:
+                $ref: '#/components/schemas/CorrelationId'
+            Content-Language:
+              required: true
+              description: BCP 47 locale used for human-readable text in the response.
+              schema:
+                $ref: '#/components/schemas/Locale'
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - error
+                  - requestId
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                        enum:
+                          - VENUE_NOT_FOUND
+                      message:
+                        type: string
+                      details:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ErrorDetail'
+                    required:
+                      - code
+                      - message
+                    unevaluatedProperties:
+                      not: {}
+                  requestId:
+                    $ref: '#/components/schemas/RequestId'
+                unevaluatedProperties:
+                  not: {}
+        '429':
+          description: Client error
+          headers:
+            X-Request-ID:
+              required: true
+              description: Server-validated request identifier, also present in response bodies where defined.
+              schema:
+                $ref: '#/components/schemas/RequestId'
+            X-Correlation-ID:
+              required: true
+              description: Server-validated identifier joining related requests and background work.
+              schema:
+                $ref: '#/components/schemas/CorrelationId'
+            Content-Language:
+              required: true
+              description: BCP 47 locale used for human-readable text in the response.
+              schema:
+                $ref: '#/components/schemas/Locale'
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+            Retry-After:
+              required: true
+              description: Non-negative whole seconds before the client should retry.
+              schema:
+                type: integer
+                format: int32
+                minimum: 0
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - error
+                  - requestId
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                        enum:
+                          - RATE_LIMITED
+                      message:
+                        type: string
+                      details:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ErrorDetail'
+                    required:
+                      - code
+                      - message
+                    unevaluatedProperties:
+                      not: {}
+                  requestId:
+                    $ref: '#/components/schemas/RequestId'
+                unevaluatedProperties:
+                  not: {}
+      tags:
+        - Venues
+      security:
+        - {}
+  /venues/{venueId}/reports:
+    post:
+      operationId: reportVenue
+      summary: Report a private, duplicate or closed venue
+      description: Structured reason only. PRIVATE_RESIDENCE atomically changes the venue to PRIVACY_REVIEW before success; other reasons mark review without hiding it. No free text or moderator identity is exposed. One open report per reporter, venue and reason. Idempotency response is encrypted and retained 24 hours.
+      parameters:
+        - name: venueId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: X-Request-ID
+          in: header
+          required: false
+          description: Optional caller request identifier. Invalid values are ignored and replaced by the server.
+          schema:
+            $ref: '#/components/schemas/RequestId'
+        - name: X-Correlation-ID
+          in: header
+          required: false
+          description: Optional identifier joining work across requests. Invalid values are ignored and replaced.
+          schema:
+            $ref: '#/components/schemas/CorrelationId'
+        - name: Accept-Language
+          in: header
+          required: false
+          description: Preferred BCP 47 response locale. Russian is used when no supported locale matches.
+          schema:
+            type: string
+            minLength: 2
+            maxLength: 128
+        - $ref: '#/components/parameters/BrowserMutationHeaders.origin'
+        - $ref: '#/components/parameters/BrowserMutationHeaders.csrfToken'
+        - $ref: '#/components/parameters/MutationKey'
+      responses:
+        '201':
+          description: The request has succeeded and a new resource has been created as a result.
+          headers:
+            X-Request-ID:
+              required: true
+              description: Server-validated request identifier, also present in response bodies where defined.
+              schema:
+                $ref: '#/components/schemas/RequestId'
+            X-Correlation-ID:
+              required: true
+              description: Server-validated identifier joining related requests and background work.
+              schema:
+                $ref: '#/components/schemas/CorrelationId'
+            Content-Language:
+              required: true
+              description: BCP 47 locale used for human-readable text in the response.
+              schema:
+                $ref: '#/components/schemas/Locale'
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+            Idempotency-Replayed:
+              required: false
+              schema:
+                type: boolean
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VenueReport'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          headers:
+            X-Request-ID:
+              required: true
+              description: Server-validated request identifier, also present in response bodies where defined.
+              schema:
+                $ref: '#/components/schemas/RequestId'
+            X-Correlation-ID:
+              required: true
+              description: Server-validated identifier joining related requests and background work.
+              schema:
+                $ref: '#/components/schemas/CorrelationId'
+            Content-Language:
+              required: true
+              description: BCP 47 locale used for human-readable text in the response.
+              schema:
+                $ref: '#/components/schemas/Locale'
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - error
+                  - requestId
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                        enum:
+                          - VALIDATION_FAILED
+                      message:
+                        type: string
+                      details:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ErrorDetail'
+                    required:
+                      - code
+                      - message
+                    unevaluatedProperties:
+                      not: {}
+                  requestId:
+                    $ref: '#/components/schemas/RequestId'
+                unevaluatedProperties:
+                  not: {}
+        '401':
+          description: Access is unauthorized.
+          headers:
+            X-Request-ID:
+              required: true
+              description: Server-validated request identifier, also present in response bodies where defined.
+              schema:
+                $ref: '#/components/schemas/RequestId'
+            X-Correlation-ID:
+              required: true
+              description: Server-validated identifier joining related requests and background work.
+              schema:
+                $ref: '#/components/schemas/CorrelationId'
+            Content-Language:
+              required: true
+              description: BCP 47 locale used for human-readable text in the response.
+              schema:
+                $ref: '#/components/schemas/Locale'
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - error
+                  - requestId
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                        enum:
+                          - SESSION_INVALID
+                      message:
+                        type: string
+                      details:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ErrorDetail'
+                    required:
+                      - code
+                      - message
+                    unevaluatedProperties:
+                      not: {}
+                  requestId:
+                    $ref: '#/components/schemas/RequestId'
+                unevaluatedProperties:
+                  not: {}
+        '403':
+          description: Access is forbidden.
+          headers:
+            X-Request-ID:
+              required: true
+              description: Server-validated request identifier, also present in response bodies where defined.
+              schema:
+                $ref: '#/components/schemas/RequestId'
+            X-Correlation-ID:
+              required: true
+              description: Server-validated identifier joining related requests and background work.
+              schema:
+                $ref: '#/components/schemas/CorrelationId'
+            Content-Language:
+              required: true
+              description: BCP 47 locale used for human-readable text in the response.
+              schema:
+                $ref: '#/components/schemas/Locale'
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - error
+                  - requestId
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                        enum:
+                          - ONBOARDING_REQUIRED
+                          - REQUEST_NOT_ALLOWED
+                      message:
+                        type: string
+                      details:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ErrorDetail'
+                    required:
+                      - code
+                      - message
+                    unevaluatedProperties:
+                      not: {}
+                  requestId:
+                    $ref: '#/components/schemas/RequestId'
+                unevaluatedProperties:
+                  not: {}
+        '404':
+          description: The server cannot find the requested resource.
+          headers:
+            X-Request-ID:
+              required: true
+              description: Server-validated request identifier, also present in response bodies where defined.
+              schema:
+                $ref: '#/components/schemas/RequestId'
+            X-Correlation-ID:
+              required: true
+              description: Server-validated identifier joining related requests and background work.
+              schema:
+                $ref: '#/components/schemas/CorrelationId'
+            Content-Language:
+              required: true
+              description: BCP 47 locale used for human-readable text in the response.
+              schema:
+                $ref: '#/components/schemas/Locale'
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - error
+                  - requestId
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                        enum:
+                          - VENUE_NOT_FOUND
+                          - MATCH_NOT_FOUND
+                      message:
+                        type: string
+                      details:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ErrorDetail'
+                    required:
+                      - code
+                      - message
+                    unevaluatedProperties:
+                      not: {}
+                  requestId:
+                    $ref: '#/components/schemas/RequestId'
+                unevaluatedProperties:
+                  not: {}
+        '409':
+          description: The request conflicts with the current state of the server.
+          headers:
+            X-Request-ID:
+              required: true
+              description: Server-validated request identifier, also present in response bodies where defined.
+              schema:
+                $ref: '#/components/schemas/RequestId'
+            X-Correlation-ID:
+              required: true
+              description: Server-validated identifier joining related requests and background work.
+              schema:
+                $ref: '#/components/schemas/CorrelationId'
+            Content-Language:
+              required: true
+              description: BCP 47 locale used for human-readable text in the response.
+              schema:
+                $ref: '#/components/schemas/Locale'
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - error
+                  - requestId
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                        enum:
+                          - VENUE_VERSION_CONFLICT
+                          - IDEMPOTENCY_KEY_REUSED
+                          - VENUE_ALREADY_REPORTED
+                      message:
+                        type: string
+                      details:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ErrorDetail'
+                    required:
+                      - code
+                      - message
+                    unevaluatedProperties:
+                      not: {}
+                  requestId:
+                    $ref: '#/components/schemas/RequestId'
+                unevaluatedProperties:
+                  not: {}
+        '429':
+          description: Client error
+          headers:
+            X-Request-ID:
+              required: true
+              description: Server-validated request identifier, also present in response bodies where defined.
+              schema:
+                $ref: '#/components/schemas/RequestId'
+            X-Correlation-ID:
+              required: true
+              description: Server-validated identifier joining related requests and background work.
+              schema:
+                $ref: '#/components/schemas/CorrelationId'
+            Content-Language:
+              required: true
+              description: BCP 47 locale used for human-readable text in the response.
+              schema:
+                $ref: '#/components/schemas/Locale'
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+            Retry-After:
+              required: true
+              description: Non-negative whole seconds before the client should retry.
+              schema:
+                type: integer
+                format: int32
+                minimum: 0
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - error
+                  - requestId
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                        enum:
+                          - RATE_LIMITED
+                      message:
+                        type: string
+                      details:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ErrorDetail'
+                    required:
+                      - code
+                      - message
+                    unevaluatedProperties:
+                      not: {}
+                  requestId:
+                    $ref: '#/components/schemas/RequestId'
+                unevaluatedProperties:
+                  not: {}
+      tags:
+        - Venues
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateVenueReport'
+      security:
+        - BearerAuth: []
+  /venues/{venueId}/revisions:
+    post:
+      operationId: proposeVenueRevision
+      summary: Propose a versioned correction
+      description: Requires at least one changed field and the current base version. Public venue is unchanged until moderation. Exact proposed location is restricted; provenance is immutable. Idempotency response is encrypted and retained 24 hours.
+      parameters:
+        - name: venueId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: X-Request-ID
+          in: header
+          required: false
+          description: Optional caller request identifier. Invalid values are ignored and replaced by the server.
+          schema:
+            $ref: '#/components/schemas/RequestId'
+        - name: X-Correlation-ID
+          in: header
+          required: false
+          description: Optional identifier joining work across requests. Invalid values are ignored and replaced.
+          schema:
+            $ref: '#/components/schemas/CorrelationId'
+        - name: Accept-Language
+          in: header
+          required: false
+          description: Preferred BCP 47 response locale. Russian is used when no supported locale matches.
+          schema:
+            type: string
+            minLength: 2
+            maxLength: 128
+        - $ref: '#/components/parameters/BrowserMutationHeaders.origin'
+        - $ref: '#/components/parameters/BrowserMutationHeaders.csrfToken'
+        - $ref: '#/components/parameters/MutationKey'
+      responses:
+        '201':
+          description: The request has succeeded and a new resource has been created as a result.
+          headers:
+            X-Request-ID:
+              required: true
+              description: Server-validated request identifier, also present in response bodies where defined.
+              schema:
+                $ref: '#/components/schemas/RequestId'
+            X-Correlation-ID:
+              required: true
+              description: Server-validated identifier joining related requests and background work.
+              schema:
+                $ref: '#/components/schemas/CorrelationId'
+            Content-Language:
+              required: true
+              description: BCP 47 locale used for human-readable text in the response.
+              schema:
+                $ref: '#/components/schemas/Locale'
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+            Idempotency-Replayed:
+              required: false
+              schema:
+                type: boolean
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VenueRevision'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          headers:
+            X-Request-ID:
+              required: true
+              description: Server-validated request identifier, also present in response bodies where defined.
+              schema:
+                $ref: '#/components/schemas/RequestId'
+            X-Correlation-ID:
+              required: true
+              description: Server-validated identifier joining related requests and background work.
+              schema:
+                $ref: '#/components/schemas/CorrelationId'
+            Content-Language:
+              required: true
+              description: BCP 47 locale used for human-readable text in the response.
+              schema:
+                $ref: '#/components/schemas/Locale'
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - error
+                  - requestId
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                        enum:
+                          - VALIDATION_FAILED
+                      message:
+                        type: string
+                      details:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ErrorDetail'
+                    required:
+                      - code
+                      - message
+                    unevaluatedProperties:
+                      not: {}
+                  requestId:
+                    $ref: '#/components/schemas/RequestId'
+                unevaluatedProperties:
+                  not: {}
+        '401':
+          description: Access is unauthorized.
+          headers:
+            X-Request-ID:
+              required: true
+              description: Server-validated request identifier, also present in response bodies where defined.
+              schema:
+                $ref: '#/components/schemas/RequestId'
+            X-Correlation-ID:
+              required: true
+              description: Server-validated identifier joining related requests and background work.
+              schema:
+                $ref: '#/components/schemas/CorrelationId'
+            Content-Language:
+              required: true
+              description: BCP 47 locale used for human-readable text in the response.
+              schema:
+                $ref: '#/components/schemas/Locale'
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - error
+                  - requestId
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                        enum:
+                          - SESSION_INVALID
+                      message:
+                        type: string
+                      details:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ErrorDetail'
+                    required:
+                      - code
+                      - message
+                    unevaluatedProperties:
+                      not: {}
+                  requestId:
+                    $ref: '#/components/schemas/RequestId'
+                unevaluatedProperties:
+                  not: {}
+        '403':
+          description: Access is forbidden.
+          headers:
+            X-Request-ID:
+              required: true
+              description: Server-validated request identifier, also present in response bodies where defined.
+              schema:
+                $ref: '#/components/schemas/RequestId'
+            X-Correlation-ID:
+              required: true
+              description: Server-validated identifier joining related requests and background work.
+              schema:
+                $ref: '#/components/schemas/CorrelationId'
+            Content-Language:
+              required: true
+              description: BCP 47 locale used for human-readable text in the response.
+              schema:
+                $ref: '#/components/schemas/Locale'
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - error
+                  - requestId
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                        enum:
+                          - ONBOARDING_REQUIRED
+                          - REQUEST_NOT_ALLOWED
+                      message:
+                        type: string
+                      details:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ErrorDetail'
+                    required:
+                      - code
+                      - message
+                    unevaluatedProperties:
+                      not: {}
+                  requestId:
+                    $ref: '#/components/schemas/RequestId'
+                unevaluatedProperties:
+                  not: {}
+        '404':
+          description: The server cannot find the requested resource.
+          headers:
+            X-Request-ID:
+              required: true
+              description: Server-validated request identifier, also present in response bodies where defined.
+              schema:
+                $ref: '#/components/schemas/RequestId'
+            X-Correlation-ID:
+              required: true
+              description: Server-validated identifier joining related requests and background work.
+              schema:
+                $ref: '#/components/schemas/CorrelationId'
+            Content-Language:
+              required: true
+              description: BCP 47 locale used for human-readable text in the response.
+              schema:
+                $ref: '#/components/schemas/Locale'
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - error
+                  - requestId
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                        enum:
+                          - VENUE_NOT_FOUND
+                          - MATCH_NOT_FOUND
+                      message:
+                        type: string
+                      details:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ErrorDetail'
+                    required:
+                      - code
+                      - message
+                    unevaluatedProperties:
+                      not: {}
+                  requestId:
+                    $ref: '#/components/schemas/RequestId'
+                unevaluatedProperties:
+                  not: {}
+        '409':
+          description: The request conflicts with the current state of the server.
+          headers:
+            X-Request-ID:
+              required: true
+              description: Server-validated request identifier, also present in response bodies where defined.
+              schema:
+                $ref: '#/components/schemas/RequestId'
+            X-Correlation-ID:
+              required: true
+              description: Server-validated identifier joining related requests and background work.
+              schema:
+                $ref: '#/components/schemas/CorrelationId'
+            Content-Language:
+              required: true
+              description: BCP 47 locale used for human-readable text in the response.
+              schema:
+                $ref: '#/components/schemas/Locale'
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - error
+                  - requestId
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                        enum:
+                          - VENUE_VERSION_CONFLICT
+                          - IDEMPOTENCY_KEY_REUSED
+                          - VENUE_ALREADY_REPORTED
+                      message:
+                        type: string
+                      details:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ErrorDetail'
+                    required:
+                      - code
+                      - message
+                    unevaluatedProperties:
+                      not: {}
+                  requestId:
+                    $ref: '#/components/schemas/RequestId'
+                unevaluatedProperties:
+                  not: {}
+        '429':
+          description: Client error
+          headers:
+            X-Request-ID:
+              required: true
+              description: Server-validated request identifier, also present in response bodies where defined.
+              schema:
+                $ref: '#/components/schemas/RequestId'
+            X-Correlation-ID:
+              required: true
+              description: Server-validated identifier joining related requests and background work.
+              schema:
+                $ref: '#/components/schemas/CorrelationId'
+            Content-Language:
+              required: true
+              description: BCP 47 locale used for human-readable text in the response.
+              schema:
+                $ref: '#/components/schemas/Locale'
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+            Retry-After:
+              required: true
+              description: Non-negative whole seconds before the client should retry.
+              schema:
+                type: integer
+                format: int32
+                minimum: 0
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - error
+                  - requestId
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                        enum:
+                          - RATE_LIMITED
+                      message:
+                        type: string
+                      details:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ErrorDetail'
+                    required:
+                      - code
+                      - message
+                    unevaluatedProperties:
+                      not: {}
+                  requestId:
+                    $ref: '#/components/schemas/RequestId'
+                unevaluatedProperties:
+                  not: {}
+      tags:
+        - Venues
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProposeVenueRevision'
+      security:
+        - BearerAuth: []
 components:
   parameters:
     BrowserMutationHeaders.csrfToken:
@@ -11560,6 +14366,43 @@ components:
       required: true
       schema:
         $ref: '#/components/schemas/UuidV4'
+    VenueFilters.accessMode:
+      name: accessMode
+      in: query
+      required: false
+      schema:
+        $ref: '#/components/schemas/VenueAccessMode'
+      explode: false
+    VenueFilters.environment:
+      name: environment
+      in: query
+      required: false
+      schema:
+        $ref: '#/components/schemas/VenueEnvironment'
+      explode: false
+    VenueFilters.lighting:
+      name: lighting
+      in: query
+      required: false
+      schema:
+        $ref: '#/components/schemas/VenueAmenityState'
+      explode: false
+    VenueFilters.permanentNet:
+      name: permanentNet
+      in: query
+      required: false
+      schema:
+        $ref: '#/components/schemas/VenueAmenityState'
+      explode: false
+    VenueFilters.publicationState:
+      name: publicationState
+      in: query
+      required: false
+      schema:
+        type: string
+        enum:
+          - PUBLISHED
+      explode: false
   schemas:
     AuthenticatedSession:
       type: object
@@ -11762,6 +14605,47 @@ components:
       examples:
         - 0181f32c-7b4a-4f35-8f30-c358f278cb9e
       description: UUID propagated through related requests, outbox events and jobs.
+    CreateVenueCandidate:
+      type: object
+      required:
+        - sourceMatchId
+        - name
+        - normalizedAddress
+        - locality
+        - timeZone
+        - location
+        - source
+      properties:
+        sourceMatchId:
+          $ref: '#/components/schemas/Uuid'
+          description: Opaque ID of the match that may qualify this candidate. The candidate remains non-public until that match is confirmed as played and moderation approves publication.
+        name:
+          $ref: '#/components/schemas/VenueName'
+        normalizedAddress:
+          $ref: '#/components/schemas/VenueAddress'
+        locality:
+          type: string
+          minLength: 1
+          maxLength: 160
+        timeZone:
+          type: string
+          minLength: 1
+          maxLength: 64
+        location:
+          $ref: '#/components/schemas/GeoPoint'
+        source:
+          $ref: '#/components/schemas/VenueCandidateSource'
+      unevaluatedProperties:
+        not: {}
+    CreateVenueReport:
+      type: object
+      required:
+        - reason
+      properties:
+        reason:
+          $ref: '#/components/schemas/VenueReportReason'
+      unevaluatedProperties:
+        not: {}
     Cursor:
       type: string
       minLength: 1
@@ -11920,6 +14804,55 @@ components:
       enum:
         - SINGLES
         - DOUBLES
+    GeoPoint:
+      type: object
+      required:
+        - longitude
+        - latitude
+      properties:
+        longitude:
+          $ref: '#/components/schemas/Longitude'
+        latitude:
+          $ref: '#/components/schemas/Latitude'
+      unevaluatedProperties:
+        not: {}
+    GeocoderSelectionToken:
+      type: string
+      minLength: 16
+      maxLength: 512
+      pattern: ^[A-Za-z0-9_-]+$
+      description: Opaque short-lived geocoder selection token. It must not be logged or persisted as venue data.
+    GeocodingSuggestion:
+      type: object
+      required:
+        - selectionToken
+        - label
+        - attribution
+      properties:
+        selectionToken:
+          $ref: '#/components/schemas/GeocoderSelectionToken'
+        label:
+          type: string
+          minLength: 1
+          maxLength: 500
+        location:
+          $ref: '#/components/schemas/GeoPoint'
+        attribution:
+          $ref: '#/components/schemas/VenueAttribution'
+      unevaluatedProperties:
+        not: {}
+    GeocodingSuggestions:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/GeocodingSuggestion'
+          maxItems: 10
+      unevaluatedProperties:
+        not: {}
     HealthResponse:
       type: object
       required:
@@ -12020,6 +14953,12 @@ components:
       maxLength: 43
       pattern: ^[A-Za-z0-9_-]{43}$
       description: 'Opaque 256-bit credential encoded as 43 unpadded base64url characters. Secret: never log or persist raw.'
+    Latitude:
+      type: number
+      format: double
+      minimum: -90
+      maximum: 90
+      description: WGS84 latitude rounded to no more than six decimal places. Values with greater precision are rejected, not silently rounded.
     Locale:
       type: string
       pattern: ^[a-z]{2,3}(?:-[A-Z][a-z]{3})?(?:-[A-Z]{2}|-[0-9]{3})?$
@@ -12110,6 +15049,12 @@ components:
             - SIGNED_OUT
       unevaluatedProperties:
         not: {}
+    Longitude:
+      type: number
+      format: double
+      minimum: -180
+      maximum: 180
+      description: WGS84 longitude rounded to no more than six decimal places. Values with greater precision are rejected, not silently rounded.
     MagicLinkRequested:
       type: object
       required:
@@ -12272,6 +15217,36 @@ components:
       enum:
         - CURRENT
         - TARGET
+    ProposeVenueRevision:
+      type: object
+      required:
+        - baseVersion
+      properties:
+        baseVersion:
+          type: integer
+          format: int32
+          minimum: 1
+        name:
+          $ref: '#/components/schemas/VenueName'
+        normalizedAddress:
+          $ref: '#/components/schemas/VenueAddress'
+        location:
+          $ref: '#/components/schemas/GeoPoint'
+        accessMode:
+          $ref: '#/components/schemas/VenueAccessMode'
+        environment:
+          $ref: '#/components/schemas/VenueEnvironment'
+        amenities:
+          $ref: '#/components/schemas/VenueAmenities'
+        seasonality:
+          anyOf:
+            - type: string
+            - type: 'null'
+          minLength: 1
+          maxLength: 500
+          description: At least one proposed field besides baseVersion is required. Unknown fields are rejected.
+      unevaluatedProperties:
+        not: {}
     RequestId:
       type: string
       pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$
@@ -12465,6 +15440,451 @@ components:
       examples:
         - 0181f32c-7b4a-4f35-8f30-c358f278cb9e
       description: Random UUID version 4.
+    Venue:
+      type: object
+      required:
+        - id
+        - name
+        - normalizedAddress
+        - locality
+        - location
+        - publicationState
+        - verificationState
+        - accessMode
+        - environment
+        - version
+        - lastVerifiedAt
+        - attribution
+        - timeZone
+        - pickleballCourtCount
+        - surfaceType
+        - amenities
+        - openingHours
+        - seasonality
+        - closedUntil
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        name:
+          $ref: '#/components/schemas/VenueName'
+        normalizedAddress:
+          $ref: '#/components/schemas/VenueAddress'
+        locality:
+          type: string
+          minLength: 1
+          maxLength: 160
+        location:
+          $ref: '#/components/schemas/GeoPoint'
+        publicationState:
+          type: string
+          enum:
+            - PUBLISHED
+        verificationState:
+          $ref: '#/components/schemas/VenueVerificationState'
+        accessMode:
+          $ref: '#/components/schemas/VenueAccessMode'
+        environment:
+          $ref: '#/components/schemas/VenueEnvironment'
+        distanceMeters:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 100000
+        version:
+          type: integer
+          format: int32
+          minimum: 1
+        lastVerifiedAt:
+          $ref: '#/components/schemas/Timestamp'
+        attribution:
+          type: array
+          items:
+            $ref: '#/components/schemas/VenueAttribution'
+        timeZone:
+          type: string
+          minLength: 1
+          maxLength: 64
+        pickleballCourtCount:
+          anyOf:
+            - type: integer
+              format: int32
+            - type: 'null'
+          minimum: 1
+          maximum: 100
+        surfaceType:
+          anyOf:
+            - type: string
+            - type: 'null'
+          minLength: 1
+          maxLength: 120
+        amenities:
+          $ref: '#/components/schemas/VenueAmenities'
+        openingHours:
+          anyOf:
+            - type: array
+              items:
+                $ref: '#/components/schemas/VenueOpeningPeriod'
+            - type: 'null'
+          maxItems: 28
+          description: Provider-neutral weekly local-time periods, or null when unknown. Clients must not infer 24/7 availability from null.
+        seasonality:
+          anyOf:
+            - type: string
+            - type: 'null'
+          minLength: 1
+          maxLength: 500
+        closedUntil:
+          anyOf:
+            - $ref: '#/components/schemas/Timestamp'
+            - type: 'null'
+        createdAt:
+          $ref: '#/components/schemas/Timestamp'
+        updatedAt:
+          $ref: '#/components/schemas/Timestamp'
+      unevaluatedProperties:
+        not: {}
+    VenueAccessMode:
+      type: string
+      enum:
+        - FREE
+        - PAID
+        - REGISTRATION_REQUIRED
+        - MEMBERS_ONLY
+        - UNKNOWN
+    VenueAddress:
+      type: string
+      minLength: 1
+      maxLength: 500
+    VenueAmenities:
+      type: object
+      required:
+        - permanentNet
+        - lighting
+        - changingRoom
+        - toilet
+        - drinkingWater
+        - parking
+        - wheelchairAccess
+      properties:
+        permanentNet:
+          $ref: '#/components/schemas/VenueAmenityState'
+        lighting:
+          $ref: '#/components/schemas/VenueAmenityState'
+        changingRoom:
+          $ref: '#/components/schemas/VenueAmenityState'
+        toilet:
+          $ref: '#/components/schemas/VenueAmenityState'
+        drinkingWater:
+          $ref: '#/components/schemas/VenueAmenityState'
+        parking:
+          $ref: '#/components/schemas/VenueAmenityState'
+        wheelchairAccess:
+          $ref: '#/components/schemas/VenueAmenityState'
+      unevaluatedProperties:
+        not: {}
+    VenueAmenityState:
+      type: string
+      enum:
+        - 'YES'
+        - 'NO'
+        - UNKNOWN
+    VenueAttribution:
+      type: object
+      required:
+        - sourceKind
+        - text
+        - observedAt
+      properties:
+        sourceKind:
+          $ref: '#/components/schemas/VenueSourceKind'
+        text:
+          type: string
+          minLength: 1
+          maxLength: 300
+        link:
+          type: string
+          maxLength: 2048
+          format: uri
+        observedAt:
+          $ref: '#/components/schemas/Timestamp'
+      unevaluatedProperties:
+        not: {}
+    VenueCandidate:
+      type: object
+      required:
+        - id
+        - sourceMatchId
+        - state
+        - canonicalVenueId
+        - createdAt
+        - decidedAt
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        sourceMatchId:
+          $ref: '#/components/schemas/Uuid'
+        state:
+          $ref: '#/components/schemas/VenueCandidateState'
+        canonicalVenueId:
+          anyOf:
+            - $ref: '#/components/schemas/Uuid'
+            - type: 'null'
+        createdAt:
+          $ref: '#/components/schemas/Timestamp'
+        decidedAt:
+          anyOf:
+            - $ref: '#/components/schemas/Timestamp'
+            - type: 'null'
+      unevaluatedProperties:
+        not: {}
+      description: Private self projection. Address, point and contributor identity are deliberately absent after submission.
+    VenueCandidateSource:
+      oneOf:
+        - type: object
+          properties:
+            kind:
+              type: string
+              enum:
+                - MANUAL_PIN
+          required:
+            - kind
+          unevaluatedProperties:
+            not: {}
+        - type: object
+          properties:
+            kind:
+              type: string
+              enum:
+                - ALLOWED_GEOCODER
+            selectionToken:
+              $ref: '#/components/schemas/GeocoderSelectionToken'
+              description: The server resolves this token and stores only fields allowed by the adapter capability.
+          required:
+            - kind
+            - selectionToken
+          unevaluatedProperties:
+            not: {}
+    VenueCandidateState:
+      type: string
+      enum:
+        - MATCH_ONLY
+        - AWAITING_MATCH_COMPLETION
+        - PENDING_REVIEW
+        - APPROVED
+        - REJECTED
+        - MERGED
+        - WITHDRAWN
+    VenueContributionState:
+      type: string
+      enum:
+        - PENDING_REVIEW
+        - APPROVED
+        - REJECTED
+        - WITHDRAWN
+    VenueEnvironment:
+      type: string
+      enum:
+        - INDOOR
+        - OUTDOOR
+        - MIXED
+        - UNKNOWN
+    VenueName:
+      type: string
+      minLength: 1
+      maxLength: 160
+    VenueOpeningPeriod:
+      type: object
+      required:
+        - day
+        - opensAt
+        - closesAt
+      properties:
+        day:
+          $ref: '#/components/schemas/Weekday'
+        opensAt:
+          type: string
+          pattern: ^(?:[01][0-9]|2[0-3]):[0-5][0-9]$
+        closesAt:
+          type: string
+          pattern: ^(?:[01][0-9]|2[0-3]):[0-5][0-9]$
+      unevaluatedProperties:
+        not: {}
+    VenuePage:
+      type: object
+      required:
+        - items
+        - pageInfo
+        - snapshotAt
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/VenueSummary'
+        pageInfo:
+          $ref: '#/components/schemas/PageInfo'
+        snapshotAt:
+          $ref: '#/components/schemas/Timestamp'
+          description: UTC time of the catalogue snapshot represented by this page and its cursor.
+      unevaluatedProperties:
+        not: {}
+    VenuePublicationState:
+      type: string
+      enum:
+        - PUBLISHED
+        - PRIVACY_REVIEW
+        - CLOSED
+        - MERGED
+    VenueReport:
+      type: object
+      required:
+        - id
+        - venueId
+        - reason
+        - state
+        - createdAt
+        - resolvedAt
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        venueId:
+          $ref: '#/components/schemas/Uuid'
+        reason:
+          $ref: '#/components/schemas/VenueReportReason'
+        state:
+          $ref: '#/components/schemas/VenueReportState'
+        createdAt:
+          $ref: '#/components/schemas/Timestamp'
+        resolvedAt:
+          anyOf:
+            - $ref: '#/components/schemas/Timestamp'
+            - type: 'null'
+      unevaluatedProperties:
+        not: {}
+    VenueReportReason:
+      type: string
+      enum:
+        - PRIVATE_RESIDENCE
+        - DUPLICATE
+        - CLOSED
+    VenueReportState:
+      type: string
+      enum:
+        - PENDING_REVIEW
+        - RESOLVED
+        - REJECTED
+    VenueResponseHeaders:
+      type: object
+      unevaluatedProperties:
+        not: {}
+    VenueRevision:
+      type: object
+      required:
+        - id
+        - venueId
+        - baseVersion
+        - state
+        - createdAt
+        - decidedAt
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        venueId:
+          $ref: '#/components/schemas/Uuid'
+        baseVersion:
+          type: integer
+          format: int32
+          minimum: 1
+        state:
+          $ref: '#/components/schemas/VenueContributionState'
+        createdAt:
+          $ref: '#/components/schemas/Timestamp'
+        decidedAt:
+          anyOf:
+            - $ref: '#/components/schemas/Timestamp'
+            - type: 'null'
+      unevaluatedProperties:
+        not: {}
+    VenueSourceKind:
+      type: string
+      enum:
+        - OPENSTREETMAP
+        - GEOCODER
+        - COMMUNITY
+        - MODERATOR
+    VenueSummary:
+      type: object
+      required:
+        - id
+        - name
+        - normalizedAddress
+        - locality
+        - location
+        - publicationState
+        - verificationState
+        - accessMode
+        - environment
+        - version
+        - lastVerifiedAt
+        - attribution
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        name:
+          $ref: '#/components/schemas/VenueName'
+        normalizedAddress:
+          $ref: '#/components/schemas/VenueAddress'
+        locality:
+          type: string
+          minLength: 1
+          maxLength: 160
+        location:
+          $ref: '#/components/schemas/GeoPoint'
+        publicationState:
+          type: string
+          enum:
+            - PUBLISHED
+        verificationState:
+          $ref: '#/components/schemas/VenueVerificationState'
+        accessMode:
+          $ref: '#/components/schemas/VenueAccessMode'
+        environment:
+          $ref: '#/components/schemas/VenueEnvironment'
+        distanceMeters:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 100000
+        version:
+          type: integer
+          format: int32
+          minimum: 1
+        lastVerifiedAt:
+          $ref: '#/components/schemas/Timestamp'
+        attribution:
+          type: array
+          items:
+            $ref: '#/components/schemas/VenueAttribution'
+      unevaluatedProperties:
+        not: {}
+    VenueVerificationState:
+      type: string
+      enum:
+        - IMPORTED_UNREVIEWED
+        - COMMUNITY_CONFIRMED
+        - MODERATOR_VERIFIED
+        - STALE
+    Weekday:
+      type: string
+      enum:
+        - MONDAY
+        - TUESDAY
+        - WEDNESDAY
+        - THURSDAY
+        - FRIDAY
+        - SATURDAY
+        - SUNDAY
   securitySchemes:
     ApiKeyAuth:
       type: apiKey

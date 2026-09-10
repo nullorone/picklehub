@@ -106,6 +106,11 @@ model User {
   attempts            IdentityAttempt[]
   magicLinks          MagicLink[]
   idempotencyRecords  IdentityIdempotencyRecord[]
+  venueCandidates     VenueCandidate[]
+  venueRevisions      VenueRevision[]
+  venueReports        VenueReport[]
+  venueSources        VenueSource[]
+  venueDecisions      VenueModerationDecision[]
 
   @@map("identity_users")
 }
@@ -299,4 +304,307 @@ model IdentityIdempotencyRecord {
   @@unique([userId, method, canonicalPath, idempotencyKey], map: "identity_idempotency_scope_key")
   @@index([expiresAt], map: "identity_idempotency_expiry_idx")
   @@map("identity_idempotency_records")
+}
+
+// Venues data contract. Geography, GiST indexes, partial uniqueness, transition guards and immutable history
+// are maintained by the SQL migration because Prisma 6 cannot express them completely.
+enum VenuePublicationState {
+  PUBLISHED
+  PRIVACY_REVIEW
+  CLOSED
+  MERGED
+
+  @@map("venue_publication_state")
+}
+
+enum VenueVerificationState {
+  IMPORTED_UNREVIEWED
+  COMMUNITY_CONFIRMED
+  MODERATOR_VERIFIED
+  STALE
+
+  @@map("venue_verification_state")
+}
+
+enum VenueAccessMode {
+  FREE
+  PAID
+  REGISTRATION_REQUIRED
+  MEMBERS_ONLY
+  UNKNOWN
+
+  @@map("venue_access_mode")
+}
+
+enum VenueEnvironment {
+  INDOOR
+  OUTDOOR
+  MIXED
+  UNKNOWN
+
+  @@map("venue_environment")
+}
+
+enum VenueAmenityState {
+  YES
+  NO
+  UNKNOWN
+
+  @@map("venue_amenity_state")
+}
+
+enum VenueCandidateState {
+  MATCH_ONLY
+  AWAITING_MATCH_COMPLETION
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+  MERGED
+  WITHDRAWN
+
+  @@map("venue_candidate_state")
+}
+
+enum VenueContributionState {
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+  WITHDRAWN
+
+  @@map("venue_contribution_state")
+}
+
+enum VenueReportReason {
+  PRIVATE_RESIDENCE
+  DUPLICATE
+  CLOSED
+
+  @@map("venue_report_reason")
+}
+
+enum VenueReportState {
+  PENDING_REVIEW
+  RESOLVED
+  REJECTED
+
+  @@map("venue_report_state")
+}
+
+enum VenueSourceKind {
+  OPENSTREETMAP
+  GEOCODER
+  COMMUNITY
+  MODERATOR
+
+  @@map("venue_source_kind")
+}
+
+enum VenueModerationSubject {
+  CANDIDATE
+  REVISION
+  REPORT
+  VENUE
+
+  @@map("venue_moderation_subject")
+}
+
+enum VenueModerationOutcome {
+  APPROVED
+  REJECTED
+  MERGED
+  WITHDRAWN
+
+  @@map("venue_moderation_outcome")
+}
+
+model Venue {
+  id                       String                   @id @db.Uuid
+  name                     String                   @db.VarChar(160)
+  normalizedAddress        String                   @map("normalized_address") @db.VarChar(500)
+  searchDocument           Unsupported("tsvector")  @default(dbgenerated()) @map("search_document")
+  locality                 String                   @db.VarChar(160)
+  timeZone                 String                   @map("time_zone") @db.VarChar(64)
+  longitude                Decimal                  @db.Decimal(9, 6)
+  latitude                 Decimal                  @db.Decimal(8, 6)
+  location                 Unsupported("geography(Point, 4326)") @default(dbgenerated())
+  publicationState         VenuePublicationState    @default(PUBLISHED) @map("publication_state")
+  verificationState        VenueVerificationState   @map("verification_state")
+  accessMode               VenueAccessMode          @default(UNKNOWN) @map("access_mode")
+  environment              VenueEnvironment         @default(UNKNOWN)
+  pickleballCourtCount     Int?                     @map("pickleball_court_count") @db.SmallInt
+  surfaceType              String?                  @map("surface_type") @db.VarChar(120)
+  permanentNet             VenueAmenityState        @default(UNKNOWN) @map("permanent_net")
+  lighting                 VenueAmenityState        @default(UNKNOWN)
+  changingRoom             VenueAmenityState        @default(UNKNOWN) @map("changing_room")
+  toilet                   VenueAmenityState        @default(UNKNOWN)
+  drinkingWater            VenueAmenityState        @default(UNKNOWN) @map("drinking_water")
+  parking                  VenueAmenityState        @default(UNKNOWN)
+  wheelchairAccess         VenueAmenityState        @default(UNKNOWN) @map("wheelchair_access")
+  openingHours             Json?                    @map("opening_hours")
+  seasonality              String?                  @db.VarChar(500)
+  closedUntil              DateTime?                @map("closed_until") @db.Timestamptz(3)
+  version                  Int                      @default(1)
+  lastVerifiedAt           DateTime                 @map("last_verified_at") @db.Timestamptz(3)
+  createdAt                DateTime                 @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt                DateTime                 @default(now()) @map("updated_at") @db.Timestamptz(3)
+  canonicalVenueId         String?                  @map("canonical_venue_id") @db.Uuid
+  canonicalVenue           Venue?                   @relation("VenueCanonical", fields: [canonicalVenueId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  mergedAliases            Venue[]                  @relation("VenueCanonical")
+  sources                  VenueSource[]
+  candidates               VenueCandidate[]
+  revisions                VenueRevision[]
+  reports                  VenueReport[]
+  decisions                VenueModerationDecision[]
+  previousMerges           VenueMerge[]             @relation("VenueMergePrevious")
+  canonicalMerges          VenueMerge[]             @relation("VenueMergeCanonical")
+
+  @@index([publicationState, name, id], map: "venues_catalogue_sort_idx")
+  @@index([publicationState, lastVerifiedAt], map: "venues_staleness_idx")
+  @@map("venues")
+}
+
+model VenueCandidate {
+  id                       String                 @id @db.Uuid
+  sourceMatchId            String                 @unique(map: "venue_candidates_source_match_key") @map("source_match_id") @db.Uuid
+  contributorId            String                 @map("contributor_id") @db.Uuid
+  name                     String                 @db.VarChar(160)
+  normalizedAddress        String                 @map("normalized_address") @db.VarChar(500)
+  locality                 String                 @db.VarChar(160)
+  timeZone                 String                 @map("time_zone") @db.VarChar(64)
+  longitude                Decimal                @db.Decimal(9, 6)
+  latitude                 Decimal                @db.Decimal(8, 6)
+  location                 Unsupported("geography(Point, 4326)") @default(dbgenerated())
+  state                    VenueCandidateState    @default(AWAITING_MATCH_COMPLETION)
+  qualifiedAt              DateTime?              @map("qualified_at") @db.Timestamptz(3)
+  canonicalVenueId         String?                @map("canonical_venue_id") @db.Uuid
+  createdAt                DateTime               @default(now()) @map("created_at") @db.Timestamptz(3)
+  decidedAt                DateTime?              @map("decided_at") @db.Timestamptz(3)
+  contributor              User                   @relation(fields: [contributorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  canonicalVenue           Venue?                 @relation(fields: [canonicalVenueId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  sources                  VenueSource[]
+  decisions                VenueModerationDecision[]
+
+  @@index([state, qualifiedAt, id], map: "venue_candidates_review_idx")
+  @@map("venue_candidates")
+}
+
+model VenueRevision {
+  id              String                 @id @db.Uuid
+  venueId         String                 @map("venue_id") @db.Uuid
+  contributorId   String                 @map("contributor_id") @db.Uuid
+  baseVersion     Int                    @map("base_version")
+  proposedData    Json                   @map("proposed_data")
+  changedFields   String[]               @map("changed_fields")
+  state           VenueContributionState @default(PENDING_REVIEW)
+  createdAt       DateTime               @default(now()) @map("created_at") @db.Timestamptz(3)
+  decidedAt       DateTime?              @map("decided_at") @db.Timestamptz(3)
+  venue           Venue                  @relation(fields: [venueId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  contributor     User                   @relation(fields: [contributorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  sources         VenueSource[]
+  decisions       VenueModerationDecision[]
+
+  @@index([venueId, state, createdAt, id], map: "venue_revisions_review_idx")
+  @@map("venue_revisions")
+}
+
+model VenueReport {
+  id          String            @id @db.Uuid
+  venueId     String            @map("venue_id") @db.Uuid
+  reporterId  String            @map("reporter_id") @db.Uuid
+  reason      VenueReportReason
+  state       VenueReportState  @default(PENDING_REVIEW)
+  createdAt   DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  resolvedAt  DateTime?         @map("resolved_at") @db.Timestamptz(3)
+  venue       Venue             @relation(fields: [venueId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  reporter    User              @relation(fields: [reporterId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  decisions   VenueModerationDecision[]
+
+  @@index([venueId, state, createdAt, id], map: "venue_reports_review_idx")
+  @@map("venue_reports")
+}
+
+model VenueSource {
+  id                       String          @id @db.Uuid
+  venueId                  String?         @map("venue_id") @db.Uuid
+  candidateId              String?         @map("candidate_id") @db.Uuid
+  revisionId               String?         @map("revision_id") @db.Uuid
+  kind                     VenueSourceKind
+  providerKey              String?         @map("provider_key") @db.VarChar(80)
+  externalSourceId         String?         @map("external_source_id") @db.VarChar(300)
+  externalSourceVersion    String?         @map("external_source_version") @db.VarChar(160)
+  importBatchId            String?         @map("import_batch_id") @db.Uuid
+  contributorId            String?         @map("contributor_id") @db.Uuid
+  contributorAgreement     String?         @map("contributor_agreement") @db.VarChar(128)
+  observedAt               DateTime        @map("observed_at") @db.Timestamptz(3)
+  license                  String          @db.VarChar(160)
+  policyVersion            String          @map("policy_version") @db.VarChar(128)
+  storageAllowed           Boolean         @map("storage_allowed")
+  allowedFields            String[]        @map("allowed_fields")
+  attributionText          String          @map("attribution_text") @db.VarChar(300)
+  attributionLink          String?         @map("attribution_link") @db.VarChar(2048)
+  createdAt                DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  venue                    Venue?          @relation(fields: [venueId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  candidate                VenueCandidate? @relation(fields: [candidateId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  revision                 VenueRevision?  @relation(fields: [revisionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  contributor              User?           @relation(fields: [contributorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([venueId, observedAt], map: "venue_sources_venue_idx")
+  @@index([candidateId, observedAt], map: "venue_sources_candidate_idx")
+  @@index([revisionId, observedAt], map: "venue_sources_revision_idx")
+  @@map("venue_sources")
+}
+
+model VenueModerationDecision {
+  id            String                   @id @db.Uuid
+  subject       VenueModerationSubject
+  candidateId   String?                  @map("candidate_id") @db.Uuid
+  revisionId    String?                  @map("revision_id") @db.Uuid
+  reportId      String?                  @map("report_id") @db.Uuid
+  venueId       String?                  @map("venue_id") @db.Uuid
+  moderatorId   String                   @map("moderator_id") @db.Uuid
+  outcome       VenueModerationOutcome
+  reasonCode    String                   @map("reason_code") @db.VarChar(96)
+  decidedAt     DateTime                 @default(now()) @map("decided_at") @db.Timestamptz(3)
+  candidate     VenueCandidate?          @relation(fields: [candidateId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  revision      VenueRevision?           @relation(fields: [revisionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  report        VenueReport?             @relation(fields: [reportId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  venue         Venue?                   @relation(fields: [venueId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  moderator     User                     @relation(fields: [moderatorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  merges        VenueMerge[]
+
+  @@map("venue_moderation_decisions")
+}
+
+model VenueMerge {
+  id               String                    @id @db.Uuid
+  previousVenueId  String                    @map("previous_venue_id") @db.Uuid
+  canonicalVenueId String                    @map("canonical_venue_id") @db.Uuid
+  decisionId       String                    @unique(map: "venue_merges_decision_key") @map("decision_id") @db.Uuid
+  reasonCode       String                    @map("reason_code") @db.VarChar(96)
+  mergedAt         DateTime                  @default(now()) @map("merged_at") @db.Timestamptz(3)
+  previousVenue    Venue                     @relation("VenueMergePrevious", fields: [previousVenueId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  canonicalVenue   Venue                     @relation("VenueMergeCanonical", fields: [canonicalVenueId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  decision         VenueModerationDecision   @relation(fields: [decisionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([previousVenueId, canonicalVenueId], map: "venue_merges_pair_key")
+  @@index([canonicalVenueId, mergedAt], map: "venue_merges_canonical_idx")
+  @@map("venue_merges")
+}
+
+model VenueIdempotencyRecord {
+  id                   String   @id @db.Uuid
+  userId               String   @map("user_id") @db.Uuid
+  idempotencyKey       String   @map("idempotency_key") @db.Uuid
+  method               String   @db.VarChar(8)
+  canonicalPath        String   @map("canonical_path") @db.VarChar(160)
+  requestFingerprint   String   @map("request_fingerprint") @db.Char(64)
+  responseStatus       Int      @map("response_status") @db.SmallInt
+  responseCiphertext   Bytes    @map("response_ciphertext")
+  encryptionKeyVersion Int      @map("encryption_key_version")
+  createdAt            DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  expiresAt            DateTime @default(dbgenerated("CURRENT_TIMESTAMP + INTERVAL '24 hours'")) @map("expires_at") @db.Timestamptz(3)
+
+  @@unique([userId, method, canonicalPath, idempotencyKey], map: "venue_idempotency_scope_key")
+  @@index([expiresAt], map: "venue_idempotency_expiry_idx")
+  @@map("venue_idempotency_records")
 }

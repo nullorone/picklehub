@@ -1,6 +1,7 @@
 # Контракты PickleHub
 
-[`rest/main.tsp`](rest/main.tsp) — редактируемый источник REST-контракта, из которого генерируется корневой
+[`rest/main.tsp`](rest/main.tsp) и импортируемые им feature-файлы — редактируемый источник REST-контракта, из
+которого генерируется корневой
 [`openapi.yaml`](../openapi.yaml). [`asyncapi.yaml`](../asyncapi.yaml) остаётся источником истины для WebSocket и
 событий. Product endpoints и business events добавляются только prompt’ом owning feature.
 
@@ -21,8 +22,9 @@ npm run contracts:check
 - `contracts:lint` проверяет TypeSpec без записи artifacts, валидирует OpenAPI и AsyncAPI официальными
   parser/linter и применяет PickleHub policy: `/v1`, разрешённые owning-feature paths, уникальные
   operation/message IDs, версионированные envelopes, UTC timestamps, `no-store`, browser CSRF/cookie и безопасный
-  payload identity events. Статические data-policy тесты дополнительно удерживают обязательные migration
-  constraints; они не заменяют применение SQL к PostgreSQL.
+  payload внутренних identity/venue events. Статические data-policy тесты дополнительно удерживают обязательные
+  migration constraints, GiST-стратегию, provenance и постоянные merge aliases; они не заменяют применение SQL к
+  PostgreSQL и проверку плана через `EXPLAIN`.
 - `contracts:breaking` сравнивает working tree с `CONTRACT_BASE_REF` либо `HEAD`. При первом добавлении контрактов
   baseline отсутствует и проверяется встроенный compatibility self-test. В pull request CI передаёт merge-base
   целевой ветки через `CONTRACT_BASE_REF`.
@@ -34,11 +36,11 @@ npm run contracts:check
 - `contracts:mock` запускает локальный Prism на `127.0.0.1:4010`; он предназначен только для разработки и не
   является backend или production fallback.
 - `contracts:mock:check` запускает mock на свободном localhost port, запрашивает health и representative identity
-  endpoints, проверяет status, JSON shape, `no-store` и отсутствие ещё не принадлежащих контракту paths. AsyncAPI
-  examples проверяются parser/linter в `contracts:lint`.
+  endpoints identity и venues, проверяет status, JSON shape, `no-store` и отсутствие ещё не принадлежащих
+  контракту paths. AsyncAPI examples проверяются parser/linter в `contracts:lint`.
 
 Prism сопоставляет OpenAPI Path Item без относительного `servers.url`, поэтому локальные mock URL —
-`/health/live`, `/auth/context` и другие paths без `/v1`. Реальные API URL включают версию `/v1`; клиенты получают
+`/health/live`, `/auth/context`, `/venues` и другие paths без `/v1`. Реальные API URL включают версию `/v1`; клиенты получают
 её из server/base URL configuration. Mock harness не переписывает source contract ради ограничения Prism.
 
 AsyncAPI generator передаёт Modelina каждую message payload schema отдельно и помещает вспомогательные типы в
@@ -61,5 +63,18 @@ namespace сообщения: так одинаковые внутренние �
 
 Prism отвечает строго по OpenAPI examples/schemas. Mock не подтверждает бизнес-правило, авторизацию, сохранение,
 идемпотентность или доступность провайдера. TMA/web development явно показывают mock mode; production build не
-имеет mock URL или silent fallback. Внутренние identity events проверяются по AsyncAPI schema и не выставляются
-как WebSocket subscription; contract mock не имитирует их фактическую доставку через outbox.
+имеет mock URL или silent fallback. Внутренние identity и venue events проверяются по AsyncAPI schema и не
+выставляются как WebSocket subscription; contract mock не имитирует их фактическую доставку через outbox.
+
+## Площадки
+
+[`rest/venues.tsp`](rest/venues.tsp) разделяет публичные запросы карты, радиуса и текста. Radius ограничен 50 км,
+bbox — 100×100 км, координаты принимаются как WGS84 longitude/latitude с точностью не более шести десятичных
+знаков. Курсоры живут 15 минут и связаны с режимом, фильтрами и снимком каталога. Геокодерные подсказки transient;
+его стабильная ошибка — `GEOCODER_TEMPORARILY_UNAVAILABLE` с `Retry-After`.
+
+Создание match-only кандидата, исправления и структурированной жалобы требует bearer, browser CSRF и UUIDv4
+`Idempotency-Key`; закрытый safe-response шифруется в БД на 24 часа. Административных маршрутов здесь нет — они
+принадлежат функции `08`. Внутренние события публикуются как совместимые с общей версионностью
+`venue.candidate.created.v1`, `venue.verified.v1` и `venue.merged.v1`; адреса, координаты и личности авторов в них
+не входят.

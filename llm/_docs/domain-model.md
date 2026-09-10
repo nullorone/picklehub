@@ -78,3 +78,8 @@ canonical venue автоматически: доступность оставш�
 для review, но не является достаточным доказательством дубля. `matches` хранит `venue_id` либо ограниченную ссылку
 на match-only candidate, а после merge разрешает alias; он не копирует координаты. Будущая `club_venues` является
 необязательной связью many-to-many и не определяет существование ни клуба, ни площадки.
+
+Создание кандидата, изменение verification state и слияние атомарно пишут версионированные события
+`venue.candidate.created.v1`, `venue.verified.v1` и `venue.merged.v1` в отдельный внутренний канал
+`venue.events.v1`. Payload содержит только opaque IDs и ограниченный verification enum; координаты, адреса,
+источник, search origin и contributor/moderator ID запрещены.

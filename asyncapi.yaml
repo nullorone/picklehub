@@ -9,8 +9,8 @@ info:
         single-use ticket obtained through authenticated REST. The ticket is sent
         only in the first protocol message,
 
-        never in a URL or log. Identity domain events use a separate internal outbox
-        channel and are never broadcast to WebSocket clients.
+        never in a URL or log. Identity and venue domain events use separate internal
+        outbox channels and are never broadcast to WebSocket clients.
     license:
         name: Proprietary
 defaultContentType: application/json
@@ -65,6 +65,21 @@ channels:
                 $ref: '#/components/messages/ConsentChanged'
             AccountDeletionRequested:
                 $ref: '#/components/messages/AccountDeletionRequested'
+    venueEvents:
+        address: venue.events.v1
+        title: Internal venue domain events
+        description: Transactional outbox only. At-least-once delivery; consumers
+            deduplicate by messageId. Payloads contain opaque IDs and bounded states,
+            never addresses, coordinates, search origins or contributor identities.
+        servers:
+            - $ref: '#/servers/outbox'
+        messages:
+            VenueCandidateCreated:
+                $ref: '#/components/messages/VenueCandidateCreated'
+            VenueVerified:
+                $ref: '#/components/messages/VenueVerified'
+            VenueMerged:
+                $ref: '#/components/messages/VenueMerged'
 operations:
     receiveClientControl:
         action: receive
@@ -105,6 +120,19 @@ operations:
             - $ref: '#/channels/identityEvents/messages/OnboardingCompleted'
             - $ref: '#/channels/identityEvents/messages/ConsentChanged'
             - $ref: '#/channels/identityEvents/messages/AccountDeletionRequested'
+    publishVenueEvents:
+        action: send
+        title: Publish committed venue changes
+        summary: Publish safe venue events through the internal transactional outbox.
+        description: Persist the event atomically with the owning venue mutation.
+            Stable messageId survives retries. No address, coordinate, source payload,
+            search origin or contributor identity is copied into these events.
+        channel:
+            $ref: '#/channels/venueEvents'
+        messages:
+            - $ref: '#/channels/venueEvents/messages/VenueCandidateCreated'
+            - $ref: '#/channels/venueEvents/messages/VenueVerified'
+            - $ref: '#/channels/venueEvents/messages/VenueMerged'
 components:
     messages:
         Authenticate:
@@ -240,6 +268,33 @@ components:
                 location: $message.payload#/correlationId
             payload:
                 $ref: '#/components/schemas/AccountDeletionRequestedEnvelope'
+        VenueCandidateCreated:
+            name: venue.candidate.created.v1
+            title: VenueCandidateCreated
+            summary: A restricted match-only venue candidate was committed.
+            contentType: application/json
+            correlationId:
+                location: $message.payload#/correlationId
+            payload:
+                $ref: '#/components/schemas/VenueCandidateCreatedEnvelope'
+        VenueVerified:
+            name: venue.verified.v1
+            title: VenueVerified
+            summary: A venue verification state was committed.
+            contentType: application/json
+            correlationId:
+                location: $message.payload#/correlationId
+            payload:
+                $ref: '#/components/schemas/VenueVerifiedEnvelope'
+        VenueMerged:
+            name: venue.merged.v1
+            title: VenueMerged
+            summary: A permanent venue alias was committed.
+            contentType: application/json
+            correlationId:
+                location: $message.payload#/correlationId
+            payload:
+                $ref: '#/components/schemas/VenueMergedEnvelope'
     schemas:
         Uuid:
             type: string
@@ -621,4 +676,111 @@ components:
                         - userId
                     properties:
                         userId:
+                            $ref: '#/components/schemas/Uuid'
+        VenueCandidateCreatedEnvelope:
+            type: object
+            additionalProperties: false
+            required:
+                - messageId
+                - type
+                - occurredAt
+                - correlationId
+                - data
+            properties:
+                messageId:
+                    $ref: '#/components/schemas/Uuid'
+                type:
+                    type: string
+                    const: venue.candidate.created.v1
+                occurredAt:
+                    $ref: '#/components/schemas/Timestamp'
+                correlationId:
+                    $ref: '#/components/schemas/Uuid'
+                causationId:
+                    oneOf:
+                        - $ref: '#/components/schemas/Uuid'
+                        - type: 'null'
+                data:
+                    type: object
+                    additionalProperties: false
+                    required:
+                        - candidateId
+                        - sourceMatchId
+                    properties:
+                        candidateId:
+                            $ref: '#/components/schemas/Uuid'
+                        sourceMatchId:
+                            $ref: '#/components/schemas/Uuid'
+        VenueVerifiedEnvelope:
+            type: object
+            additionalProperties: false
+            required:
+                - messageId
+                - type
+                - occurredAt
+                - correlationId
+                - data
+            properties:
+                messageId:
+                    $ref: '#/components/schemas/Uuid'
+                type:
+                    type: string
+                    const: venue.verified.v1
+                occurredAt:
+                    $ref: '#/components/schemas/Timestamp'
+                correlationId:
+                    $ref: '#/components/schemas/Uuid'
+                causationId:
+                    oneOf:
+                        - $ref: '#/components/schemas/Uuid'
+                        - type: 'null'
+                data:
+                    type: object
+                    additionalProperties: false
+                    required:
+                        - venueId
+                        - verificationState
+                    properties:
+                        venueId:
+                            $ref: '#/components/schemas/Uuid'
+                        verificationState:
+                            type: string
+                            enum:
+                                - IMPORTED_UNREVIEWED
+                                - COMMUNITY_CONFIRMED
+                                - MODERATOR_VERIFIED
+                                - STALE
+        VenueMergedEnvelope:
+            type: object
+            additionalProperties: false
+            required:
+                - messageId
+                - type
+                - occurredAt
+                - correlationId
+                - data
+            properties:
+                messageId:
+                    $ref: '#/components/schemas/Uuid'
+                type:
+                    type: string
+                    const: venue.merged.v1
+                occurredAt:
+                    $ref: '#/components/schemas/Timestamp'
+                correlationId:
+                    $ref: '#/components/schemas/Uuid'
+                causationId:
+                    oneOf:
+                        - $ref: '#/components/schemas/Uuid'
+                        - type: 'null'
+                data:
+                    type: object
+                    additionalProperties: false
+                    required:
+                        - previousVenueId
+                        - canonicalVenueId
+                    properties:
+                        previousVenueId:
+                            $ref: '#/components/schemas/Uuid'
+                        canonicalVenueId:
                             $ref: '#/components/schemas/Uuid'

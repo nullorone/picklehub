@@ -672,3 +672,65 @@ typecheck && npm test && npm run build && npm ls --depth=0 && git diff --check` 
   `NODE_TLS_REJECT_UNAUTHORIZED=0` не закрыты этим этапом.
 - Содержательные критерии документационного этапа выполнены. Следующий промпт:
   `llm/03-venues/02-contract-data.md`; к нему не переходили.
+
+## 2026-09-10 — площадки, этап 02-contract-data
+
+- Активный промпт: `llm/03-venues/02-contract-data.md`; backend use cases, UI и административные endpoint функции
+  `08` не реализовывались. Пользовательские PNG в `design/` не изменялись.
+- REST: добавлен TypeSpec source `contracts/rest/venues.tsp` с восемью operations для bbox-карты, radius/text
+  каталога, transient geocoder suggestions, публичной карточки, создания и self-status match-only кандидата,
+  предложения исправления и структурированной жалобы. Карта и каталог имеют единые typed filters; radius
+  ограничен 50 000 м, bbox — 100×100 км без antimeridian, координаты WGS84 — шестью десятичными знаками, cursor
+  живёт 15 минут и связан с mode/filter/snapshot. Стабильная provider error —
+  `GEOCODER_TEMPORARILY_UNAVAILABLE` + `Retry-After`.
+- Безопасность контракта: suggestions/status/mutations требуют bearer, мутации также browser CSRF и UUIDv4
+  `Idempotency-Key`. Geocoder token — short-lived opaque oneOf source; выбранные внешние поля сохраняются только
+  при capability `storageAllowed`. Ответ кандидата не содержит адрес, координату, contributor или moderator.
+  Admin moderation routes не опубликованы.
+- Данные: Prisma и migration `20260910090000_venues_contract_data` добавляют `Venue`, `VenueSource`,
+  `VenueCandidate`, `VenueRevision`, structured report, moderation decision, immutable merge history и
+  зашифрованную 24-hour venue idempotency. Точки генерируются как `geography(Point, 4326)` из bounded decimal
+  longitude/latitude; GiST indexes обслуживают `ST_DWithin` и `ST_Intersects`, GIN — catalogue text. Provenance
+  append-only, требует license/policy/allowed fields/attribution и не допускает запись с `storageAllowed=false`;
+  provider/source ID canonical-уникален.
+- Инварианты: source match уникален; state/terminal decision защищены CHECK, partial unique indexes и transition
+  triggers. Merge оставляет старую `venues` row, запрещает delete/reuse ID, указывает прямо на published survivor
+  и разрешается `resolve_canonical_venue_id`, поэтому существующий FK матча остаётся валиден. Добавлен реальный
+  integration test миграции для geography metadata, обоих GiST `EXPLAIN` plan и временного match FK через merge.
+- События: отдельный internal outbox channel `venue.events.v1` содержит `venue.candidate.created.v1`,
+  `venue.verified.v1`, `venue.merged.v1`. Dotted versioned имя создания сохраняет смысл требуемого
+  `venue.candidate_created` и совместимо с действующим platform outbox type constraint. Payload sealed и содержит
+  только opaque IDs/ограниченный verification state, без адресов, координат, search origin и actor IDs.
+- Tooling: contract path/message allowlist, policy/data mutation tests, mock smoke и документация обновлены;
+  OpenAPI, contract TypeScript и API-client types воспроизводимо перегенерированы.
+
+### Проверки этапа venues 02-contract-data
+
+- `DATABASE_URL=... PRISMA_SCHEMA_ENGINE_BINARY=/usr/bin/true PRISMA_QUERY_ENGINE_LIBRARY=/usr/bin/true npm run
+prisma:generate --workspace @picklehub/backend` — успешно; Prisma Client 6.16.2 сгенерирован, DMMF/schema
+  relations валидны без загрузки native engines.
+- `npm run contracts:check` — один полный запуск успешно прошёл TypeSpec, Redocly без warnings, policy 36 REST/14
+  messages, 27 policy/data tests, compatibility against HEAD, generated drift/typecheck и расширенный Prism smoke
+  для health, identity, venue text search/candidate и отсутствующего `/matches`. После финального ужесточения
+  geocoder source до OpenAPI `oneOf` отдельно успешно повторены `contracts:lint`, `contracts:breaking`,
+  `contracts:generated:check` и `contracts:typecheck`; повтор Prism заблокирован sandbox `listen EPERM`.
+- `npm run format:check`, `npm run docs:check` и `git diff --check` — успешно; три TypeSpec source отформатированы,
+  115 Markdown files без ошибок, whitespace errors отсутствуют.
+- `npm run lint && npm run typecheck && npm test && npm run build && npm ls --depth=0` — успешно для восьми
+  workspaces: lint/typecheck 8 задач, tests 13 задач (backend 11 suites/19 tests), build 8 задач; dependency tree
+  без unmet/extraneous. После финальной генерации API-client отдельно повторно прошёл lint, typecheck, 2 tests и
+  build; после добавления migration integration test backend отдельно прошёл lint/typecheck и 11 unit suites/19
+  tests.
+- `npm run verify` дошёл до повторного `contracts:mock:check` и остановился на запрете sandbox открывать
+  `127.0.0.1` (`listen EPERM`); предшествующие workspace/contract checks прошли. Полный финальный verify поэтому не
+  заявляется успешным, хотя отдельный полный contract mock до этого прошёл.
+- Runtime migration/plan verification не выполнена: sandbox не разрешает доступ к Docker socket, локальные
+  `psql`/`postgres` отсутствуют. `venues-migration.integration-spec.ts` готов применяться после трёх migrations и
+  проверяет реальные GiST планы и сохранение match FK, но его успех не заявляется. `npx prisma format` также
+  попытался скачать schema engine и получил network `ENOTFOUND`; репозиторный `format:check` и Prisma generate
+  успешны. Эти runtime проверки обязательны в доступном CI/PostGIS окружении до закрытия критерия миграции.
+- Внешняя `NODE_TLS_REJECT_UNAUTHORIZED=0` всё ещё присутствует только в окружении и вызвала warning; она не
+  добавлена в репозиторий. Ни один map/geocoder/OSM provider, лицензия, legal/residency/retention capability не
+  объявлены одобренными.
+- Код следующего промпта `llm/03-venues/03-backend.md` не начинался. Контракт и миграционный test suite готовы,
+  но критерий runtime-применения migration и фактического `EXPLAIN` остаётся заблокирован окружением.

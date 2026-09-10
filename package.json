@@ -30,7 +30,7 @@
         "codegen": "npm run contracts:generate",
         "contracts:compile": "node contracts/scripts/generate-openapi.mjs",
         "contracts:typespec:check": "tsp compile contracts/rest --no-emit",
-        "contracts:lint": "npm run contracts:typespec:check && redocly lint openapi.yaml && node contracts/scripts/check-contract-policy.mjs && node --test contracts/scripts/identity-policy.test.mjs contracts/scripts/identity-data-policy.test.mjs",
+        "contracts:lint": "npm run contracts:typespec:check && redocly lint openapi.yaml && node contracts/scripts/check-contract-policy.mjs && node --test contracts/scripts/identity-policy.test.mjs contracts/scripts/identity-data-policy.test.mjs contracts/scripts/venues-policy.test.mjs contracts/scripts/venues-data-policy.test.mjs",
         "contracts:breaking": "node contracts/scripts/check-breaking-changes.mjs",
         "contracts:generate": "node contracts/scripts/generate-contracts.mjs",
         "contracts:generated:check": "node contracts/scripts/check-generated-contract-types.mjs",

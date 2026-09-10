@@ -106,11 +106,52 @@ try {
         throw new Error(`Unexpected current-user mock: ${me.status} ${JSON.stringify(meBody)}`);
     }
 
+    const venues = await fetch(`http://${host}:${port}/venues?query=%D0%BA%D0%BE%D1%80%D1%82`, {
+        headers: { 'accept-language': 'ru-RU' },
+    });
+    const venuesBody = await venues.json();
+    requireNoStore(venues, 'Venue catalogue response');
+    if (venues.status !== 200 || !Array.isArray(venuesBody.items) || !venuesBody.pageInfo || !venuesBody.snapshotAt) {
+        throw new Error(`Unexpected venue catalogue mock: ${venues.status} ${JSON.stringify(venuesBody)}`);
+    }
+
+    const candidate = await fetch(`http://${host}:${port}/venues/candidates`, {
+        method: 'POST',
+        headers: {
+            'accept-language': 'ru-RU',
+            authorization: `Bearer ${'A'.repeat(43)}`,
+            'content-type': 'application/json',
+            'idempotency-key': '45b02ea4-b8e7-46c9-bb0e-c6f2336b18bd',
+            origin: 'https://app.example.test',
+            'x-csrf-token': contextBody.csrfToken,
+        },
+        body: JSON.stringify({
+            sourceMatchId: '77cab327-63d3-4cac-b660-a94959c05bd2',
+            name: 'Тестовый спортивный объект',
+            normalizedAddress: 'Москва, Тестовая улица, 1',
+            locality: 'Москва',
+            timeZone: 'Europe/Moscow',
+            location: { longitude: 37.6173, latitude: 55.7558 },
+            source: { kind: 'MANUAL_PIN' },
+        }),
+    });
+    const candidateBody = await candidate.json();
+    requireNoStore(candidate, 'Venue candidate response');
+    if (
+        candidate.status !== 201 ||
+        !candidateBody.id ||
+        !candidateBody.sourceMatchId ||
+        'location' in candidateBody ||
+        'normalizedAddress' in candidateBody
+    ) {
+        throw new Error(`Unexpected venue candidate mock: ${candidate.status} ${JSON.stringify(candidateBody)}`);
+    }
+
     const productPath = await fetch(`http://${host}:${port}/matches`);
     if (productPath.status !== 404) {
         throw new Error(`Identity mock unexpectedly exposes unowned /matches with status ${productPath.status}.`);
     }
-    console.log('OpenAPI mock passed: health and identity examples are valid; unowned paths are absent.');
+    console.log('OpenAPI mock passed: health, identity and venue examples are valid; unowned paths are absent.');
 } finally {
     child.kill('SIGTERM');
     await new Promise((resolveExit) => {

@@ -2,6 +2,7 @@ import "@typespec/http";
 import "@typespec/openapi";
 import "@typespec/openapi3";
 import "./identity.tsp";
+import "./venues.tsp";
 
 using TypeSpec.Http;
 using TypeSpec.OpenAPI;
@@ -12,7 +13,8 @@ using TypeSpec.OpenAPI;
 @doc("Contract-first API for PickleHub clients. All timestamps are UTC RFC 3339 instants and all identifiers are opaque. Product endpoints are added only by their owning feature prompts.")
 @tagMetadata(#[
     #{ name: "Health", description: "Process liveness and mandatory dependency readiness." },
-    #{ name: "Identity", description: "Identity, browser sessions, consent and onboarding." }
+    #{ name: "Identity", description: "Identity, browser sessions, consent and onboarding." },
+    #{ name: "Venues", description: "Published venue discovery and player venue contributions." }
 ])
 namespace PickleHub;
 

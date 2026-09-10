@@ -195,6 +195,56 @@ export namespace SessionsRevokedMessage {
     export type DataReason = 'LOGOUT' | 'REPLAY' | 'IDENTITY_CHANGED' | 'DELETION';
 }
 
+export namespace VenueCandidateCreatedMessage {
+    export interface VenueCandidateCreatedEnvelope {
+        messageId: string;
+        type: 'venue.candidate.created.v1';
+        occurredAt: string;
+        correlationId: string;
+        causationId?: string | null;
+        data: Data;
+    }
+
+    export interface Data {
+        candidateId: string;
+        sourceMatchId: string;
+    }
+}
+
+export namespace VenueMergedMessage {
+    export interface VenueMergedEnvelope {
+        messageId: string;
+        type: 'venue.merged.v1';
+        occurredAt: string;
+        correlationId: string;
+        causationId?: string | null;
+        data: Data;
+    }
+
+    export interface Data {
+        previousVenueId: string;
+        canonicalVenueId: string;
+    }
+}
+
+export namespace VenueVerifiedMessage {
+    export interface VenueVerifiedEnvelope {
+        messageId: string;
+        type: 'venue.verified.v1';
+        occurredAt: string;
+        correlationId: string;
+        causationId?: string | null;
+        data: Data;
+    }
+
+    export interface Data {
+        venueId: string;
+        verificationState: DataVerificationState;
+    }
+
+    export type DataVerificationState = 'IMPORTED_UNREVIEWED' | 'COMMUNITY_CONFIRMED' | 'MODERATOR_VERIFIED' | 'STALE';
+}
+
 export type AccountDeletionRequestedEnvelope = AccountDeletionRequestedMessage.AccountDeletionRequestedEnvelope;
 export type AuthenticateEnvelope = AuthenticateMessage.AuthenticateEnvelope;
 export type AuthenticatedEnvelope = AuthenticatedMessage.AuthenticatedEnvelope;
@@ -206,12 +256,18 @@ export type PingEnvelope = PingMessage.PingEnvelope;
 export type PongEnvelope = PongMessage.PongEnvelope;
 export type ProtocolErrorEnvelope = ProtocolErrorMessage.ProtocolErrorEnvelope;
 export type SessionsRevokedEnvelope = SessionsRevokedMessage.SessionsRevokedEnvelope;
+export type VenueCandidateCreatedEnvelope = VenueCandidateCreatedMessage.VenueCandidateCreatedEnvelope;
+export type VenueMergedEnvelope = VenueMergedMessage.VenueMergedEnvelope;
+export type VenueVerifiedEnvelope = VenueVerifiedMessage.VenueVerifiedEnvelope;
 export type WebSocketMessage =
     | AuthenticateEnvelope
     | AuthenticatedEnvelope
     | PingEnvelope
     | PongEnvelope
-    | ProtocolErrorEnvelope;
+    | ProtocolErrorEnvelope
+    | VenueCandidateCreatedEnvelope
+    | VenueMergedEnvelope
+    | VenueVerifiedEnvelope;
 export type IdentityDomainEvent =
     | AccountDeletionRequestedEnvelope
     | ConsentChangedEnvelope

@@ -3,8 +3,14 @@ import { readFile } from 'node:fs/promises';
 import { Parser } from '@asyncapi/parser';
 import { parse } from 'yaml';
 import { checkIdentityContract, identityOperations, identityEventFields } from './identity-policy.mjs';
+import { checkVenueContract, venueOperations, venueEventFields } from './venues-policy.mjs';
 
-const allowedPaths = new Set(['/health/live', '/health/ready', ...Object.keys(identityOperations)]);
+const allowedPaths = new Set([
+    '/health/live',
+    '/health/ready',
+    ...Object.keys(identityOperations),
+    ...Object.keys(venueOperations),
+]);
 const allowedProtocolMessages = new Set([
     'session.authenticate.v1',
     'session.authenticated.v1',
@@ -36,7 +42,7 @@ assert(
 assert(
     Object.keys(openApi.paths).every((path) => allowedPaths.has(path)) &&
         Object.keys(openApi.paths).length === allowedPaths.size,
-    'OpenAPI may expose only foundation and identity paths.'
+    'OpenAPI may expose only foundation, identity and venue paths.'
 );
 
 const operationIds = Object.values(openApi.paths).flatMap((pathItem) =>
@@ -77,16 +83,19 @@ const messages = Object.values(asyncApi.components.messages);
 const messageNames = messages.map((message) => message.name);
 unique(messageNames, 'AsyncAPI message names');
 assert(
-    messageNames.every((name) => allowedProtocolMessages.has(name) || name in identityEventFields),
-    'AsyncAPI may define only approved protocol and identity messages.'
+    messageNames.every(
+        (name) => allowedProtocolMessages.has(name) || name in identityEventFields || name in venueEventFields
+    ),
+    'AsyncAPI may define only approved protocol, identity and venue messages.'
 );
 assert(
     messageNames.every((name) => /\.v[1-9][0-9]*$/.test(name)),
     'Every AsyncAPI message name must end with a schema version.'
 );
 assert(
-    new Set(messageNames).size === allowedProtocolMessages.size + Object.keys(identityEventFields).length,
-    'AsyncAPI must define all approved protocol and identity messages.'
+    new Set(messageNames).size ===
+        allowedProtocolMessages.size + Object.keys(identityEventFields).length + Object.keys(venueEventFields).length,
+    'AsyncAPI must define all approved protocol, identity and venue messages.'
 );
 
 for (const message of messages) {
@@ -110,5 +119,6 @@ assert(
 );
 
 checkIdentityContract(openApi, asyncApi);
+checkVenueContract(openApi, asyncApi);
 
 console.log(`Contract policy passed: ${operationIds.length} REST operations, ${messageNames.length} messages.`);
