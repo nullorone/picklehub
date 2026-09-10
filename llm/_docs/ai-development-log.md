@@ -1342,3 +1342,49 @@ EPERM`). Поэтому все существующие database suites оста
   кандидатом на route-level splitting. Реальные Telegram/email/failover provider guarantees и legal/residency
   approval не заявляются. Содержательные критерии клиентского этапа выполнены; следующий промпт —
   `llm/05-chat-notifications/05-verification.md`, к нему не переходили.
+
+## 2026-09-10 — чат и уведомления, этап 05-verification
+
+- Активный промпт: `llm/05-chat-notifications/05-verification.md`. Создана матрица прослеживаемости
+  `llm/_docs/communications-verification.md`, которая отделяет автоматизированный тест от фактического runtime
+  подтверждения и явно фиксирует at-least-once, отсутствие exactly-once и негарантированную Telegram/email
+  доставку.
+- Gateway unit suite проверяет Origin, обязательную аутентификацию, одноразовый ticket, серверную авторизацию
+  подписки, cursor catch-up в sequence order и `GAP_LIMIT`/REST resync. Новый PostgreSQL integration suite проверяет
+  атомарность message/outbox, rollback, replay одного client idempotency key, 54 последовательности с параллельной
+  отправкой, backward/forward pagination без повторов, блокировку, revision-bound encrypted report и запрет записи
+  после выхода.
+- Recovery tests покрывают сохранение `PENDING` при сбое Redis, восстановление публикации, provider timeout,
+  bounded attempts до наблюдаемого `FAILED`, повтор BullMQ job после terminal state и безопасный ручной retry.
+  Добавлены `retryFailed` и операторская команда `notifications:retry-delivery`, которая сохраняет исходный provider
+  idempotency key, не меняет истёкшие/принятые записи и не печатает идентификатор или recipient.
+- Privacy runtime policy проверяет минимальный chat outbox и delivery job, отсутствие chat text/credential полей в
+  provider boundary, console и analytics и canary в production source. Integration canary подтверждает, что raw
+  text не копируется в generic outbox, а evidence хранится зашифрованно.
+- Два production-build Playwright-сценария добавлены для web и TMA: чат и системное событие, REST fallback send,
+  live-region, inbox, включение email-категории, сохранение preferences и локальный offline draft без ложной
+  доставки. Обнаруженный инфраструктурным отказом shutdown-дефект Redis исправлен: `QUIT` отправляется только
+  готовому соединению, незавершённый stream закрывается без новой команды.
+
+### Проверки этапа chat/notifications 05-verification
+
+- Финальный `npm run verify` — успешно полностью: workspace/lockfile, TypeSpec/Redocly, policy для 74 REST
+  operations/37 messages, 50 contract/data/runtime tests, compatibility/generated drift/typecheck, Prism mock,
+  format/docs, lint/typecheck/test/build всех восьми workspaces. Backend: 21 suite/53 tests за 6,15 с; web: 5/19;
+  TMA: 4/14. Production PWA/TMA guards успешны.
+- Отдельные backend lint/typecheck, 21/53 unit tests и build успешны. Web 5/19 и TMA 4/14 component tests успешны.
+  `npm run test:e2e:typecheck` и `npm run test:e2e:build` успешны; production web/TMA собраны. Сохранены известные
+  предупреждения о MapLibre chunk 924 кБ и основном TMA bundle 533 кБ.
+- Три целевых communication integration suites завершились за 3,62 с до assertions: sandbox запретил подключения
+  к локальным PostgreSQL и Redis. Исходный прогон дополнительно показал ошибку `QUIT` во время незавершённого Redis
+  подключения; shutdown исправлен и unit/build regression зелёный, но PostgreSQL/Redis recovery assertions должны
+  быть выполнены в CI job `integration` после `prisma migrate deploy`.
+- `npx playwright test test/e2e/communications.spec.ts --workers=1` обнаружил два теста, но оба Chrome process
+  завершились `SIGABRT` при launch за 1 мс; sandbox запретил kill с `EPERM`. Browser assertions ожидают CI job
+  `browser`; их успех не заявляется.
+- `npm run format:check`, `npm run docs:check` и `git diff --check` успешны до финальной записи журнала; после неё
+  обязательны повторное форматирование и итоговая проверка. Реальные Telegram/email/failover providers, их terms,
+  residency и legal retention approval не проверялись и не заявляются.
+- Кодовые, статические и локально исполнимые критерии выполнены. Полная приёмка отсутствия потерь остаётся
+  environment-blocked до зелёных PostgreSQL/Redis и Playwright прогонов; к
+  `llm/06-player-profile-stats/01-requirements.md` не переходили.

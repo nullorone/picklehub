@@ -52,4 +52,25 @@ export class NotificationDeliveryDispatcherService {
         if (result.count > 0) this.metrics.increment('notification_delivery_quarantined_total');
         return result.count;
     }
+
+    async retryFailed(deliveryId: string): Promise<boolean> {
+        const now = new Date();
+        const result = await this.prisma.notificationDelivery.updateMany({
+            where: {
+                id: deliveryId,
+                status: NotificationDeliveryStatus.FAILED,
+                expiresAt: { gt: now },
+            },
+            data: {
+                status: NotificationDeliveryStatus.PENDING,
+                attempts: 0,
+                notBefore: now,
+                claimedAt: null,
+                terminalAt: null,
+                lastErrorCode: null,
+            },
+        });
+        if (result.count === 1) this.metrics.increment('notification_delivery_retried_total');
+        return result.count === 1;
+    }
 }
