@@ -9,7 +9,7 @@ import { VenueCacheService } from './venue-cache.service';
 import { VenueController } from './venue.controller';
 import { VenueIdempotencyService } from './venue-idempotency.service';
 import { VenueImportService } from './venue-import.service';
-import { MatchModuleUnavailableAdapter, VenueMatchPort } from './venue-match.port';
+import { PersistedVenueMatchAdapter, VenueMatchPort } from './venue-match.port';
 import { VenueMetricsService } from './venue-metrics.service';
 import { GeocoderPort, VenueCatalogImportPort } from './venue-provider';
 import { VenueService } from './venue.service';
@@ -25,7 +25,7 @@ import { VenueService } from './venue.service';
         VenueMetricsService,
         { provide: GeocoderPort, useClass: ConfiguredGeocoderAdapter },
         { provide: VenueCatalogImportPort, useClass: OverpassAdapter },
-        { provide: VenueMatchPort, useClass: MatchModuleUnavailableAdapter },
+        { provide: VenueMatchPort, useClass: PersistedVenueMatchAdapter },
     ],
     exports: [VenueService, VenueImportService, VenueMatchPort, VenueMetricsService],
 })

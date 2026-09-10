@@ -997,3 +997,48 @@ test/integration/matches-migration.integration-spec.ts` — не выполне�
 - Приёмка не объявляется полностью выполненной до успешных `prisma migrate deploy` с нуля и указанного integration
   test в среде с PostgreSQL/PostGIS. Следующий промпт остаётся `llm/04-matches/02-contract-data.md`; переход к
   `03-backend` допустим только после закрытия этой проверки.
+
+## 2026-09-10 — матчи, этап 03-backend
+
+- Активный промпт: `llm/04-matches/03-backend.md`. Добавлен NestJS-модуль `matches` с тонкими REST-контроллерами
+  для всех 23 опубликованных match operations, application service, DTO validation, стабильными match errors,
+  внедряемыми часами и версионируемой конфигурацией сроков. Авторизация organizer/self/opposite-team и автоматы
+  match/participant/request/waitlist/result находятся вне контроллера.
+- Все мутации используют browser CSRF, session/onboarding guard, scoped rate limits, UUIDv4 idempotency key с
+  зашифрованным 24-часовым ответом, expected aggregate version и `Serializable` transaction. Изменяющие состав
+  сценарии блокируют `matches` через `FOR UPDATE`; существующие immediate/deferred constraints остаются последней
+  защитой capacity, active involvement, FIFO и result alignment.
+- Реализованы AUTO join и waitlist, APPROVAL request/decision и offer, self withdrawal/leave, organizer cancel и
+  start. Promotion повторно проверяет уровень и команду, пропускает утратившего право кандидата и фиксирует
+  promotion/offer вместе с освобождением места. Worker обрабатывает истёкшие offers через `FOR UPDATE SKIP LOCKED`;
+  rollback сохраняет очередь целиком.
+- Публичный поиск выполняет hard filters и `ST_DWithin` над canonical/candidate geography, исключает `UNLISTED` на
+  SQL boundary и использует filter/snapshot-bound cursor. Рекомендации детерминированно считают policy-versioned
+  score 0–100, две enum-причины и сортируют по score/start/match ID. Capability token хранится только как keyed
+  hash, ротируется, возвращает одинаковый `INVITE_INVALID` и теперь редактируется из structured HTTP route logs.
+- Proposal/supersede, confirm и dispute атомарно меняют match/result, пишут минимальный audit и contract-defined
+  outbox event. Только confirmation создаёт immutable marker и переводит registered participants в `PLAYED`;
+  dispute не создаёт completion event или статистический эффект. Новая migration добавляет inbox receipt и
+  минимальную player match projection; отдельный BullMQ consumer обновляет её один раз по event ID и имеет bounded
+  retry. Guest slots не входят в projection.
+- Venue candidate port теперь разрешает создание только organizer существующего пустого `DRAFT`; публикация
+  повторно проверяет published canonical venue либо candidate, принадлежащий этому матчу. Добавлены настраиваемые
+  `MATCH_*` сроки, backend runbook, migration/schema, unit tests доменных правил, redaction и повторной доставки
+  статистического события. Конкурентный integration test последнего места расширен до десяти повторов.
+
+### Проверки этапа matches 03-backend
+
+- `prisma validate` и `prisma generate` с локальными Prisma engine paths — успешно; schema valid, client 6.16.2
+  сгенерирован. Локальные paths нужны из-за ранее зафиксированного ограничения сети и в репозиторий не добавлены.
+- `npm run lint/typecheck/test/build --workspace @picklehub/backend` — успешно после финальных изменений: 16 unit
+  suites/32 tests, strict TypeScript/ESLint без warnings, production compile успешен.
+- Финальный `npm run verify` — успешно: workspace/lockfile, TypeSpec, Redocly, 59 REST/23 messages policy, 38
+  contract/data tests, compatibility, generated drift/typecheck, Prism, formatting/docs и lint/typecheck/test/build
+  всех восьми workspaces. Backend: 16 unit suites/32 tests. Web/TMA сохранили известное неблокирующее предупреждение
+  о lazy MapLibre chunk 924 kB.
+- `DATABASE_URL=... jest --config jest.integration.config.cjs --runInBand
+test/integration/matches-migration.integration-spec.ts` запущен, но все 12 сценариев остановились до setup на
+  `connect EPERM 127.0.0.1:5432`. Поэтому десять повторов конкурентного захвата последнего места и runtime
+  проверки score migration в этой sandbox-сессии не считаются пройденными.
+- До полной приёмки требуется применить migrations с нуля в PostgreSQL/PostGIS, запустить весь backend integration
+  suite с Redis и повторяемый matches concurrency suite. `llm/04-matches/04-tma-web.md` не начинался.

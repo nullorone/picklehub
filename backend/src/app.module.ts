@@ -10,6 +10,7 @@ import { RequestContextModule } from './common/request-context/request-context.m
 import { HealthModule } from './health/health.module';
 import { IntegrationsModule } from './integrations/integrations.module';
 import { IdentityModule } from './identity/identity.module';
+import { MatchesModule } from './matches/matches.module';
 import { OutboxModule } from './outbox/outbox.module';
 import { VenuesModule } from './venues/venues.module';
 
@@ -27,6 +28,7 @@ import { VenuesModule } from './venues/venues.module';
         AuditModule,
         IdentityModule,
         VenuesModule,
+        MatchesModule,
     ],
 })
 export class AppModule {}

@@ -997,3 +997,22 @@ model MatchIdempotencyRecord {
   @@index([expiresAt], map: "match_idempotency_expiry_idx")
   @@map("match_idempotency_records")
 }
+
+model MatchStatisticsReceipt {
+  consumerKey String   @map("consumer_key") @db.VarChar(80)
+  eventId     String   @map("event_id") @db.Uuid
+  processedAt DateTime @default(now()) @map("processed_at") @db.Timestamptz(3)
+
+  @@id([consumerKey, eventId])
+  @@map("match_statistics_receipts")
+}
+
+model PlayerMatchStatistic {
+  userId          String   @id @map("user_id") @db.Uuid
+  playedCount     Int      @default(0) @map("played_count")
+  winsCount       Int      @default(0) @map("wins_count")
+  lossesCount     Int      @default(0) @map("losses_count")
+  lastConfirmedAt DateTime @map("last_confirmed_at") @db.Timestamptz(3)
+
+  @@map("player_match_statistics")
+}

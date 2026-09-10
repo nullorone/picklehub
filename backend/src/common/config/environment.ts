@@ -57,6 +57,14 @@ const environmentSchema = z
         VENUE_GEOCODER_ATTRIBUTION_TEXT: z.string().min(1).max(300).optional(),
         VENUE_GEOCODER_ATTRIBUTION_LINK: httpsUrl.optional(),
         VENUE_GEOCODER_LICENSE: z.string().min(1).max(160).optional(),
+        MATCH_POLICY_VERSION: z.string().min(1).max(64).default('matches-v1'),
+        MATCH_PUBLISH_MINIMUM_LEAD_MINUTES: z.coerce.number().int().min(5).max(1440).default(30),
+        MATCH_PUBLISH_HORIZON_DAYS: z.coerce.number().int().min(1).max(365).default(90),
+        MATCH_WAITLIST_OFFER_MINUTES: z.coerce.number().int().min(5).max(1440).default(30),
+        MATCH_START_EARLY_MINUTES: z.coerce.number().int().min(0).max(1440).default(30),
+        MATCH_START_LATE_HOURS: z.coerce.number().int().min(1).max(72).default(6),
+        MATCH_RESULT_DEADLINE_HOURS: z.coerce.number().int().min(1).max(720).default(72),
+        MATCH_CONFIRMATION_DEADLINE_HOURS: z.coerce.number().int().min(1).max(720).default(48),
     })
     .superRefine((environment, context) => {
         if (environment.NODE_ENV === 'production' && environment.REDIS_NAMESPACE === 'local') {

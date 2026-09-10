@@ -82,43 +82,46 @@ describe('matches contract-data migration', () => {
         await pool.end();
     });
 
-    it('serializes concurrent claims for the final team place', async () => {
-        const setup = await pool.connect();
-        const first = await pool.connect();
-        const second = await pool.connect();
-        try {
-            const organizerId = await insertUser(setup);
-            const firstPlayerId = await insertUser(setup);
-            const secondPlayerId = await insertUser(setup);
-            const matchId = await insertMatch(setup, organizerId);
+    it.each(Array.from({ length: 10 }, (_, index) => index + 1))(
+        'serializes repeated concurrent claims for the final team place (run %s)',
+        async () => {
+            const setup = await pool.connect();
+            const first = await pool.connect();
+            const second = await pool.connect();
+            try {
+                const organizerId = await insertUser(setup);
+                const firstPlayerId = await insertUser(setup);
+                const secondPlayerId = await insertUser(setup);
+                const matchId = await insertMatch(setup, organizerId);
 
-            await Promise.all([first.query('BEGIN'), second.query('BEGIN')]);
-            await first.query(
-                `INSERT INTO match_participants (id, match_id, user_id, team)
+                await Promise.all([first.query('BEGIN'), second.query('BEGIN')]);
+                await first.query(
+                    `INSERT INTO match_participants (id, match_id, user_id, team)
                  VALUES ($1::uuid, $2::uuid, $3::uuid, 'TEAM_B')`,
-                [uuidV7(), matchId, firstPlayerId]
-            );
-            const secondClaim = second.query(
-                `INSERT INTO match_participants (id, match_id, user_id, team)
+                    [uuidV7(), matchId, firstPlayerId]
+                );
+                const secondClaim = second.query(
+                    `INSERT INTO match_participants (id, match_id, user_id, team)
                  VALUES ($1::uuid, $2::uuid, $3::uuid, 'TEAM_B')`,
-                [uuidV7(), matchId, secondPlayerId]
-            );
-            await first.query('COMMIT');
-            await expect(secondClaim).rejects.toMatchObject({ code: '23514' });
+                    [uuidV7(), matchId, secondPlayerId]
+                );
+                await first.query('COMMIT');
+                await expect(secondClaim).rejects.toMatchObject({ code: '23514' });
 
-            const roster = await setup.query<{ count: string }>(
-                `SELECT count(*)::text FROM match_participants
+                const roster = await setup.query<{ count: string }>(
+                    `SELECT count(*)::text FROM match_participants
                  WHERE match_id = $1::uuid AND team = 'TEAM_B' AND state = 'ACTIVE'`,
-                [matchId]
-            );
-            expect(roster.rows[0]?.count).toBe('1');
-        } finally {
-            await Promise.allSettled([first.query('ROLLBACK'), second.query('ROLLBACK')]);
-            setup.release();
-            first.release();
-            second.release();
+                    [matchId]
+                );
+                expect(roster.rows[0]?.count).toBe('1');
+            } finally {
+                await Promise.allSettled([first.query('ROLLBACK'), second.query('ROLLBACK')]);
+                setup.release();
+                first.release();
+                second.release();
+            }
         }
-    });
+    );
 
     it('accepts 11, 15 and 21-point games with two-point margins in a completed series', async () => {
         const client = await pool.connect();

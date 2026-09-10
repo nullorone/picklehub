@@ -8,6 +8,7 @@ import { LoggingModule } from './common/logging/logging.module';
 import { RedisModule } from './common/redis/redis.module';
 import { RequestContextModule } from './common/request-context/request-context.module';
 import { IntegrationsModule } from './integrations/integrations.module';
+import { MatchesModule } from './matches/matches.module';
 import { OutboxModule } from './outbox/outbox.module';
 import { OutboxWorkerService } from './outbox/outbox-worker.service';
 import { VenuesModule } from './venues/venues.module';
@@ -24,6 +25,7 @@ import { VenuesModule } from './venues/venues.module';
         IntegrationsModule,
         AuditModule,
         VenuesModule,
+        MatchesModule,
     ],
     providers: [OutboxWorkerService],
 })

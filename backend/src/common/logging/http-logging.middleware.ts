@@ -9,7 +9,10 @@ export class HttpLoggingMiddleware implements NestMiddleware {
 
     use(request: Request, response: Response, next: NextFunction): void {
         const startedAt = performance.now();
-        const route = new URL(request.originalUrl, 'http://localhost').pathname;
+        const route = new URL(request.originalUrl, 'http://localhost').pathname.replace(
+            /^(\/v1\/match-invites\/)[^/]+$/u,
+            '$1:inviteToken'
+        );
 
         response.once('finish', () => {
             this.logger.log(
