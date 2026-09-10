@@ -56,6 +56,13 @@ for (const [name, mutate] of [
             events.channels.control.messages.IdentityLinked = { $ref: '#/components/messages/IdentityLinked' };
         },
     ],
+    [
+        'email enumeration response',
+        (api) => {
+            api.paths['/auth/magic-links/request'].post.responses['404'] =
+                api.paths['/auth/magic-links/consume'].post.responses['401'];
+        },
+    ],
 ]) {
     test(`identity policy rejects ${name}`, () => {
         const api = structuredClone(openApi);

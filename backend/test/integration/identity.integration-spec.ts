@@ -11,6 +11,7 @@ import { Clock } from '../../src/identity/clock';
 import { ClientPlatform } from '../../src/identity/identity.dto';
 import { EmailProvider } from '../../src/identity/email-provider';
 import { IdentityCryptoService } from '../../src/identity/identity-crypto.service';
+import { IdentityAttemptService } from '../../src/identity/identity-attempt.service';
 import { IdempotencyService } from '../../src/identity/idempotency.service';
 import { IdentityService } from '../../src/identity/identity.service';
 import { FakeClock } from '../fakes/fake-clock';
@@ -23,12 +24,14 @@ describe('identity transaction invariants', () => {
     let identity: IdentityService;
     let crypto: IdentityCryptoService;
     let idempotency: IdempotencyService;
+    let attempts: IdentityAttemptService;
+    const clock = new FakeClock(now);
     const email = new FakeEmailProvider();
 
     beforeAll(async () => {
         const module = await Test.createTestingModule({ imports: [AppModule] })
             .overrideProvider(Clock)
-            .useValue(new FakeClock(now))
+            .useValue(clock)
             .overrideProvider(EmailProvider)
             .useValue(email)
             .compile();
@@ -39,6 +42,7 @@ describe('identity transaction invariants', () => {
         identity = application.get(IdentityService);
         crypto = application.get(IdentityCryptoService);
         idempotency = application.get(IdempotencyService);
+        attempts = application.get(IdentityAttemptService);
     });
 
     afterAll(async () => {
@@ -76,6 +80,28 @@ describe('identity transaction invariants', () => {
         const contextCookies = context.headers['set-cookie'] as unknown as string[];
         const contextCookie = contextCookies[0]?.split(';')[0];
         if (contextCookie === undefined) throw new Error('Context cookie was not issued');
+        expect(contextCookies[0]).toContain('__Host-ph-context=');
+        expect(contextCookies[0]).toContain('Path=/');
+        expect(contextCookies[0]).toContain('HttpOnly');
+        expect(contextCookies[0]).toContain('Secure');
+        expect(contextCookies[0]).toContain('SameSite=Lax');
+        expect(contextCookies[0]).not.toContain('Domain=');
+
+        await request(server)
+            .post('/v1/auth/magic-links/request')
+            .set('Origin', 'https://evil.example')
+            .set('X-CSRF-Token', contextBody.csrfToken)
+            .set('Cookie', contextCookie)
+            .send({ email: 'nobody@example.test', platform: 'WEB' })
+            .expect(403)
+            .expect('Cache-Control', 'no-store');
+        await request(server)
+            .post('/v1/auth/magic-links/request')
+            .set('Origin', 'https://localhost')
+            .set('X-CSRF-Token', 'wrong-csrf-value')
+            .set('Cookie', contextCookie)
+            .send({ email: 'nobody@example.test', platform: 'WEB' })
+            .expect(403);
 
         const address = `Player-${crypto.secret().slice(0, 8)}@example.test`;
         const requested = await request(server)
@@ -105,6 +131,13 @@ describe('identity transaction invariants', () => {
         expect(consumedBody.accessToken).toMatch(/^[A-Za-z0-9_-]{43}$/u);
         expect(consumedBody.refreshToken).toBeUndefined();
         expect(JSON.stringify(consumed.body)).not.toContain(token);
+        const authCookies = consumed.headers['set-cookie'] as unknown as string[];
+        const refreshCookie = authCookies.find((cookie) => cookie.startsWith('__Secure-ph-refresh='));
+        expect(refreshCookie).toContain('Path=/v1/auth');
+        expect(refreshCookie).toContain('HttpOnly');
+        expect(refreshCookie).toContain('Secure');
+        expect(refreshCookie).toContain('SameSite=Lax');
+        expect(refreshCookie).not.toContain('Domain=');
 
         const stored = await prisma.magicLink.findUniqueOrThrow({ where: { tokenHash: crypto.hash(token) } });
         expect(Buffer.from(stored.subjectCiphertext).toString('utf8')).not.toContain(address.toLowerCase());
@@ -113,6 +146,16 @@ describe('identity transaction invariants', () => {
             .set('Authorization', `Bearer ${consumedBody.accessToken}`)
             .expect(200)
             .expect('Cache-Control', 'no-store');
+
+        const repeated = await request(server)
+            .post('/v1/auth/magic-links/request')
+            .set('Origin', 'https://localhost')
+            .set('X-CSRF-Token', contextBody.csrfToken)
+            .set('Cookie', contextCookie)
+            .send({ email: address, platform: 'WEB' })
+            .expect(202);
+        expect(repeated.body).toEqual(requested.body);
+        expect(repeated.headers['cache-control']).toBe(requested.headers['cache-control']);
     });
 
     it('revokes the family when a rotated refresh credential is replayed', async () => {
@@ -200,5 +243,187 @@ describe('identity transaction invariants', () => {
             code: 'INVALID_CURSOR',
         });
         await prisma.onboardingLocality.deleteMany({ where: { id: { in: ids } } });
+    });
+
+    it('allows only one concurrent consumer of a magic link', async () => {
+        const address = `race-${crypto.secret().slice(0, 8)}@example.test`;
+        await identity.requestLoginEmail(address, ClientPlatform.WEB);
+        const delivered = email.messages.at(-1);
+        if (delivered === undefined) throw new Error('Fake email provider did not receive a link');
+        const token = new URL(delivered.link).hash.replace('#token=', '');
+
+        const results = await Promise.allSettled([
+            identity.consumeLoginEmail(token, ClientPlatform.WEB),
+            identity.consumeLoginEmail(token, ClientPlatform.TMA),
+        ]);
+
+        expect(results.filter((result) => result.status === 'fulfilled')).toHaveLength(1);
+        expect(results.filter((result) => result.status === 'rejected')).toHaveLength(1);
+        await expect(
+            prisma.magicLink.findUniqueOrThrow({ where: { tokenHash: crypto.hash(token) } })
+        ).resolves.toMatchObject({
+            consumedAt: now,
+        });
+        await expect(
+            prisma.session.count({
+                where: { user: { identities: { some: { subjectKey: crypto.hash(`EMAIL:${address}`) } } } },
+            })
+        ).resolves.toBe(1);
+    });
+
+    it('lets only one account link a concurrently claimed identity and emits safe events', async () => {
+        const targetAddress = `claimed-${crypto.secret().slice(0, 8)}@example.test`;
+        const targetSubjectKey = crypto.hash(`EMAIL:${targetAddress}`);
+        const logins = await Promise.all(
+            ['first', 'second'].map((marker) => {
+                const subject = `${marker}-${crypto.secret()}`;
+                return identity.loginTelegram(
+                    {
+                        subject,
+                        subjectKey: crypto.hash(`TELEGRAM:${subject}`),
+                        subjectCiphertext: crypto.encrypt(subject),
+                        fingerprint: crypto.hash(`proof:${subject}`),
+                        expiresAt: new Date(now.getTime() + 300_000),
+                    },
+                    ClientPlatform.WEB
+                );
+            })
+        );
+        const attemptIds: string[] = [];
+        for (const login of logins) {
+            const started = (await attempts.start(login, { action: 'LINK', targetProvider: 'EMAIL' })) as {
+                id: string;
+            };
+            const currentIdentity = login.session.user.identities[0];
+            if (currentIdentity === undefined) throw new Error('Test login has no current identity');
+            attemptIds.push(started.id);
+            await prisma.identityAttempt.update({
+                where: { id: started.id },
+                data: {
+                    currentProofExpiresAt: new Date(now.getTime() + 300_000),
+                    currentProvider: 'TELEGRAM',
+                    currentSubjectKey: currentIdentity.subjectKey,
+                    targetEncryptionKeyVersion: 1,
+                    targetProofExpiresAt: new Date(now.getTime() + 300_000),
+                    targetSubjectCiphertext: crypto.encrypt(targetAddress),
+                    targetSubjectKey,
+                },
+            });
+        }
+
+        const linkOperations = logins.map((login, index) => {
+            const attemptId = attemptIds[index];
+            if (attemptId === undefined) throw new Error('Test attempt was not created');
+            return attempts.link(login, attemptId);
+        });
+        const results = await Promise.allSettled(linkOperations);
+        expect(results.filter((result) => result.status === 'fulfilled')).toHaveLength(1);
+        expect(results.filter((result) => result.status === 'rejected')).toHaveLength(1);
+        await expect(
+            prisma.identity.count({ where: { provider: 'EMAIL', subjectKey: targetSubjectKey } })
+        ).resolves.toBe(1);
+        const winner = results.find((result) => result.status === 'fulfilled');
+        if (winner?.status !== 'fulfilled') throw new Error('Expected one successful link');
+        const events = await prisma.outboxEvent.findMany({
+            where: {
+                type: 'identity.linked.v1',
+                payload: { path: ['userId'], equals: winner.value.session.userId },
+            },
+        });
+        expect(events).toHaveLength(1);
+        expect(JSON.stringify(events)).not.toContain(targetAddress);
+        expect(JSON.stringify(events)).not.toContain(targetSubjectKey);
+    });
+
+    it('accepts deletion once, revokes access and creates one minimal cleanup event', async () => {
+        const subject = `delete-${crypto.secret()}`;
+        const login = await identity.loginTelegram(
+            {
+                subject,
+                subjectKey: crypto.hash(`TELEGRAM:${subject}`),
+                subjectCiphertext: crypto.encrypt(subject),
+                fingerprint: crypto.hash(`proof:${subject}`),
+                expiresAt: new Date(now.getTime() + 300_000),
+            },
+            ClientPlatform.WEB
+        );
+        const started = (await attempts.start(login, { action: 'DELETE_ACCOUNT' })) as { id: string };
+        const currentIdentity = login.session.user.identities[0];
+        if (currentIdentity === undefined) throw new Error('Test login has no current identity');
+        await prisma.identityAttempt.update({
+            where: { id: started.id },
+            data: {
+                currentProofExpiresAt: new Date(now.getTime() + 300_000),
+                currentProvider: 'TELEGRAM',
+                currentSubjectKey: currentIdentity.subjectKey,
+            },
+        });
+
+        const server = application.getHttpServer() as unknown as Server;
+        const context = await request(server).get('/v1/auth/context').set('Origin', 'https://localhost').expect(200);
+        const contextBody = context.body as { csrfToken: string };
+        const contextCookie = (context.headers['set-cookie'] as unknown as string[])[0]?.split(';')[0];
+        if (contextCookie === undefined || login.refreshToken === undefined) {
+            throw new Error('Deletion test credentials were not issued');
+        }
+        const deleted = await request(server)
+            .post('/v1/me/deletion')
+            .set('Origin', 'https://localhost')
+            .set('X-CSRF-Token', contextBody.csrfToken)
+            .set('Authorization', `Bearer ${login.accessToken ?? ''}`)
+            .set('Cookie', `${contextCookie}; __Secure-ph-refresh=${login.refreshToken}`)
+            .send({ attemptId: started.id, confirmed: true })
+            .expect(202)
+            .expect('Cache-Control', 'no-store');
+        expect(deleted.body).toEqual({ status: 'DELETION_PENDING', requestedAt: now.toISOString() });
+        expect(deleted.headers['set-cookie']?.[0]).toContain('__Secure-ph-refresh=;');
+        expect(deleted.headers['set-cookie']?.[0]).toContain('Max-Age=0');
+        await expect(identity.authenticate(`Bearer ${login.accessToken ?? ''}`)).rejects.toMatchObject({
+            code: 'SESSION_INVALID',
+        });
+        await expect(prisma.user.findUniqueOrThrow({ where: { id: login.session.userId } })).resolves.toMatchObject({
+            status: 'DELETION_PENDING',
+            deletionRequestedAt: now,
+        });
+        await expect(
+            prisma.outboxEvent.count({
+                where: {
+                    type: 'identity.account.deletion.requested.v1',
+                    payload: { path: ['userId'], equals: login.session.userId },
+                },
+            })
+        ).resolves.toBe(1);
+        await request(server)
+            .post('/v1/me/deletion')
+            .set('Origin', 'https://localhost')
+            .set('X-CSRF-Token', contextBody.csrfToken)
+            .set('Authorization', `Bearer ${login.accessToken ?? ''}`)
+            .set('Cookie', contextCookie)
+            .send({ attemptId: started.id, confirmed: true })
+            .expect(401);
+        await expect(
+            prisma.outboxEvent.count({
+                where: {
+                    type: 'identity.account.deletion.requested.v1',
+                    payload: { path: ['userId'], equals: login.session.userId },
+                },
+            })
+        ).resolves.toBe(1);
+    });
+
+    it('rejects an expired magic link with the same public error as replay', async () => {
+        const address = `expired-${crypto.secret().slice(0, 8)}@example.test`;
+        await identity.requestLoginEmail(address, ClientPlatform.WEB);
+        const delivered = email.messages.at(-1);
+        if (delivered === undefined) throw new Error('Fake email provider did not receive a link');
+        const token = new URL(delivered.link).hash.replace('#token=', '');
+        clock.advance(600_000);
+
+        await expect(identity.consumeLoginEmail(token, ClientPlatform.WEB)).rejects.toMatchObject({
+            code: 'MAGIC_LINK_INVALID',
+        });
+        await expect(identity.consumeLoginEmail('x'.repeat(43), ClientPlatform.WEB)).rejects.toMatchObject({
+            code: 'MAGIC_LINK_INVALID',
+        });
     });
 });

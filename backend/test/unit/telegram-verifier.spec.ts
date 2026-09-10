@@ -54,4 +54,12 @@ describe('TelegramVerifierService', () => {
             'Не удалось подтвердить данные Telegram.'
         );
     });
+
+    it('applies the documented expiry and future-skew boundaries', () => {
+        expect(() => verifier.verify(initData(Math.floor(NOW.getTime() / 1000) - 299, 100_001))).not.toThrow();
+        expect(() => verifier.verify(initData(Math.floor(NOW.getTime() / 1000) + 30, 100_002))).not.toThrow();
+        expect(() => verifier.verify(initData(Math.floor(NOW.getTime() / 1000) + 31, 100_003))).toThrow(
+            'Не удалось подтвердить данные Telegram.'
+        );
+    });
 });

@@ -569,3 +569,53 @@ npm test && npm run build && git diff --check` прошла полностью: 
   заявляется. Внешняя `NODE_TLS_REJECT_UNAUTHORIZED=0` остаётся проблемой окружения и не добавлена в репозиторий.
 - Критерии клиентского этапа выполнены. Следующий промпт: `llm/02-identity-onboarding/05-verification.md`; к нему не
   переходили.
+
+## 2026-09-09 — идентификация и первичная настройка, этап 05-verification
+
+- Активный промпт: `llm/02-identity-onboarding/05-verification.md`. Добавлен самостоятельный Playwright-контур с
+  `@playwright/test` 1.55.0 и проверкой production-сборок без HTTP test server: статические файлы отдаются через
+  browser route interception из `/private/tmp`, а API заменён contract-shaped mock. Это позволяет не встраивать
+  тестовую аутентификацию в приложение и не зависит от разрешения на открытие loopback-порта.
+- Web-сценарий проверяет, что fragment magic-ссылки очищен до явного подтверждения, token погашается только после
+  клика, серверный onboarding draft загружается и сохраняется, а после новой загрузки восстанавливаются имя и
+  выбранный timezone. Один сценарий параметризован для `Europe/Moscow` и `Asia/Yekaterinburg`; дополнительно
+  проверяются один `main`/`h1`, доступные имена полей и действий и отсутствие горизонтального переполнения.
+- TMA-сценарий запускает production bundle с Telegram launch parameters, проверяет автоматический refresh fallback,
+  передачу raw init data только в `/auth/telegram` и открытие сохранённого черновика. Development adapter теперь
+  может взять `tgWebAppData` из стандартного launch fragment; ветка остаётся под `import.meta.env.DEV`, а штатный
+  build-check подтвердил её отсутствие в production bundle.
+- Contract regression запрещает lookup-dependent status для запроса magic email и поля, раскрывающие email,
+  регистрацию или доставку. Backend regression расширен проверками точных cookie flags, запрещённого Origin/CSRF,
+  одинакового нейтрального ответа, конкурентного погашения magic link, гонки присоединения одной identity к двум
+  аккаунтам, безопасного outbox, удаления с отзывом access и очисткой refresh cookie, единственности deletion event
+  и одинаковой ошибки для истёкшего/неизвестного token. Telegram unit test фиксирует границы TTL и future skew.
+- Требование продукта упоминает доступность экспорта собственных данных, но опубликованный TypeSpec и закреплённый
+  exact operation inventory не содержат export operation, а backend и клиенты её не реализуют. На verification
+  этапе новый wire contract молча не добавлялся. Это обнаруженный release gap: сначала нужен отдельный
+  contract/data design с форматом, повторной аутентификацией, аудитом, retention/legal hold и правилами доставки.
+
+### Проверки этапа identity 05-verification
+
+- `npm install --save-dev @playwright/test@1.55.0 --offline` — успешно из локального npm cache; обновлены только
+  корневые manifest и lockfile, аудит сообщил 0 vulnerabilities.
+- `npm run contracts:lint` — успешно: TypeSpec compile, Redocly, 28 REST/11 messages policy и 13 identity
+  policy/data tests, включая новый отрицательный fixture email enumeration.
+- `npm run lint --workspace @picklehub/backend`, `npm run lint --workspace @picklehub/web`,
+  `npm run lint --workspace @picklehub/tg`, их typecheck/test/build и `npm run test:e2e:typecheck` — успешно.
+  Backend unit: 11 suites/19 tests; web: 2 files/4 tests; TMA: 1 file/2 tests. Production web/TMA builds успешны;
+  TMA check подтвердил отсутствие development Telegram mock.
+- Финальный `npm run verify` — успешно: workspace/lockfile, TypeSpec/Redocly, compatibility, generated drift и
+  typecheck, Prism mock, форматирование, 115 Markdown-файлов, lint/typecheck/test/build всех восьми workspace.
+  Root tests выполнили 13 Turbo tasks без ошибок; `git diff --check` также успешен.
+- `npm run test:e2e` успешно собрал обе production-версии и начал три Playwright-сценария, но sandbox завершил
+  каждый системный headless Chrome сразу после запуска с `SIGABRT`; попытка kill также получила `EPERM`. Результат
+  e2e не засчитан. Вне этого sandbox команда не требует test server; при отсутствии системного Chrome нужен
+  `npx playwright install chromium` либо `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH`.
+- Docker daemon недоступен из sandbox (`permission denied` к `/Users/ruasvyn/.docker/run/docker.sock`). Прямой
+  integration-запуск также не засчитан: соединения к PostgreSQL `127.0.0.1:5432`, Redis `127.0.0.1:6379` и
+  временный listener Supertest запрещены с `EPERM`. Новые database concurrency/deletion tests прошли lint и strict
+  TypeScript, но требуют повторного runtime-прогона в разрешённой среде.
+- Внешняя `NODE_TLS_REJECT_UNAUTHORIZED=0` по-прежнему присутствует только в окружении и вызвала warning Redocly;
+  в репозиторий она не добавлена. Пользовательские PNG в `design/` не изменялись.
+- Этап не объявлен полностью принятым: нужны успешные runtime-прогоны `npm run test:e2e` и backend integration, а
+  также контрактное решение для экспорта. К следующим feature-промптам не переходили.

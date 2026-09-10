@@ -130,6 +130,18 @@ export function checkIdentityContract(openApi, asyncApi) {
         }
     }
     const refresh = openApi.paths['/auth/refresh'].post;
+    const magicRequest = openApi.paths['/auth/magic-links/request'].post;
+    assert.deepEqual(
+        Object.keys(magicRequest.responses).sort(),
+        ['202', '400', '403', '429', '503'],
+        'Magic-link requests must not expose lookup-dependent responses'
+    );
+    const magicAccepted = dereference(openApi, magicRequest.responses['202']);
+    const magicAcceptedBody = dereference(openApi, magicAccepted.content['application/json'].schema);
+    assert(
+        !Object.keys(magicAcceptedBody.properties ?? {}).some((key) => /email|exists|registered|delivered/i.test(key)),
+        'Magic-link acceptance must not reveal account or delivery state'
+    );
     assert(refresh.security?.length === 1, 'Refresh must use a single cookie scheme');
     const [schemeName] = Object.keys(refresh.security[0]);
     const scheme = openApi.components.securitySchemes[schemeName];
