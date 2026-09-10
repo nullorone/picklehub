@@ -619,3 +619,56 @@ npm test && npm run build && git diff --check` прошла полностью: 
   в репозиторий она не добавлена. Пользовательские PNG в `design/` не изменялись.
 - Этап не объявлен полностью принятым: нужны успешные runtime-прогоны `npm run test:e2e` и backend integration, а
   также контрактное решение для экспорта. К следующим feature-промптам не переходили.
+
+## 2026-09-10 — площадки, этап 01-requirements
+
+- Активный промпт: `llm/03-venues/01-requirements.md`. По прямому указанию начат следующий документационный этап;
+  незакрытые runtime/export gaps `02-identity-onboarding/05-verification` не объявлялись устранёнными. Контракты,
+  Prisma, backend и интерфейсы площадок не создавались.
+- Product requirements получили девять пользовательских историй для карты/списка, текстового геокодирования,
+  выбора, match-only кандидата, исправления, жалобы и модерации и 14 сценариев «Дано/Когда/Тогда». Зафиксированы
+  отдельные publication/verification состояния, обязательная координата, одинаковые фильтры карты/списка,
+  unknown-семантика удобств, часы/доступ, offline/provider ошибки и доступность интерфейса.
+- Кандидат остаётся непубличным до подтверждённо состоявшегося матча, proximity review и единственного решения
+  модератора. Расстояние 100 м формирует набор проверки, но не выполняет автослияние. Merge сохраняет canonical
+  survivor, постоянный alias и append-only историю; privacy report немедленно скрывает потенциальный домашний
+  адрес до review. Площадка не зависит от клуба, а будущая связь клуба с площадкой необязательна.
+- Происхождение описано неизменяемыми source records с provider/source version, import batch, observed time,
+  license/policy version, разрешёнными полями и атрибуцией. Внешняя подсказка transient по умолчанию; сохранение
+  допускается только после явного выбора и при `storageAllowed`. OSM seed требует отдельного актуального ODbL,
+  attribution, endpoint/tile и residency review; Yandex/2GIS или иной provider не выбирался и не заявлялся
+  разрешённым.
+- Политика устаревания помечает карточку после 180 суток, ставит refresh за 30 суток до порога и отдельно
+  обрабатывает удалённый/недоступный upstream. Единственный источник без доказанного права хранения снимает
+  карточку до review; независимое разрешённое происхождение предотвращает автоматическое удаление.
+- Domain model и architecture синхронизированы по владению `venues`, candidates/revisions/reports/decisions,
+  source/merge history, PostGIS и provider ports/capabilities. Security/privacy описывает классификацию публичной
+  venue и restricted candidate/search origin, provider registry, fail-closed production gate, минимизацию,
+  предлагаемый retention и запрет координат/сырого ввода в logs, analytics и rate-limit keys.
+- Analytics plan получил allowlisted server/client events, условия, дедупликацию, владельцев и применение.
+  Product metrics покрывают search/select и candidate moderation funnel; quality metrics — provider availability,
+  provenance/attribution, stale/removed sources, privacy quarantine и дубли. Сохранение при запрещённом capability,
+  публикация без координаты/provenance и отсутствие обязательной атрибуции имеют целевое значение ноль.
+- Изменённые файлы: `llm/_docs/product-requirements.md`, `llm/_docs/domain-model.md`,
+  `llm/_docs/analytics-plan.md`, `llm/_docs/security-privacy.md`, `llm/_docs/architecture.md` и этот журнал.
+  Пользовательские PNG в `design/` не изменялись.
+
+### Проверки этапа venues 01-requirements
+
+- `npx prettier --write llm/_docs/product-requirements.md llm/_docs/domain-model.md
+llm/_docs/analytics-plan.md llm/_docs/security-privacy.md llm/_docs/architecture.md` — успешно.
+- `npm run format:check`, `npm run docs:check` и read-only Node.js-проверка относительных Markdown-ссылок в пяти
+  затронутых документах — успешно: TypeSpec format без изменений, 115 Markdown-файлов без ошибок, 23 ссылки с
+  существующими целями. `git diff --check` — успешно.
+- `npm run verify` успешно прошёл workspace audit (8 workspace, один lockfile), TypeSpec/OpenAPI lint, 28 REST/11
+  messages policy и 13 policy tests, compatibility с HEAD, generated drift и contract typecheck. Затем Prism mock
+  не смог открыть `127.0.0.1` из-за ограничения sandbox `listen EPERM`; полный `verify` не заявляется успешным.
+- Оставшаяся цепочка выполнена отдельно: `npm run format:check && npm run docs:check && npm run lint && npm run
+typecheck && npm test && npm run build && npm ls --depth=0 && git diff --check` — успешно. Turbo: lint/typecheck
+  по 8 задач, tests 13 задач (backend 11 suites/19 tests), build 8 задач; unmet/extraneous dependencies и whitespace
+  errors отсутствуют. Это regression существующей реализации, а не тест ещё не созданной venue-функции.
+- Внешние условия OSM/Overpass, tiles и геокодеров, юридические основания/retention и data residency не
+  проверялись и остаются production gates. Известные identity runtime/export gaps и внешняя переменная
+  `NODE_TLS_REJECT_UNAUTHORIZED=0` не закрыты этим этапом.
+- Содержательные критерии документационного этапа выполнены. Следующий промпт:
+  `llm/03-venues/02-contract-data.md`; к нему не переходили.

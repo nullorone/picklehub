@@ -96,6 +96,27 @@ Prisma, BullMQ, HTTP-клиенты или соседний модуль. Кон
 `administration`; будущие `clubs`, `tournaments`, `gamification`, `content`, `advertising`. Будущая граница — не
 разрешение создавать её код заранее.
 
+### Граница площадок и provider adapters
+
+`venues` владеет canonical данными площадок, PostGIS queries, кандидатами, ревизиями, provenance, moderation
+state и merge aliases. `matches` может ссылаться на опубликованный venue или ограниченный match-only candidate и
+идемпотентно сообщает о подтверждённом завершении; он не меняет публикацию и не копирует координаты. Будущий
+`clubs` связывается с venues отдельной необязательной таблицей, не владеет их жизненным циклом и не вводит
+обязательность связи ни с одной стороны.
+
+Внешняя география разделена на ports с разными правами: catalog seed/import, text geocoding, tiles и source
+refresh/removal. Адаптер возвращает не только normalized result, но и provenance envelope и проверенные
+capabilities показа, cache и хранения конкретных полей. Application layer отказывается сохранять результат без
+`storageAllowed` и policy version; provider DTO/raw response не проходит в доменную модель, outbox или логи.
+Конкретный поставщик не выбирается до review условий и residency. Production-конфигурация fail-closed, а mock
+adapter доступен только local/test и не может сообщать ложный внешний успех.
+
+Каталог PostgreSQL остаётся доступен при сбое геокодера или tiles. Синхронный provider вызов имеет ограниченный
+budget/circuit breaker и не повторяет небезопасную мутацию; import/refresh используют bounded jobs с checkpoint,
+идемпотентностью source version и quarantine. Удалённый upstream source создаёт состояние review, а не каскадное
+удаление venue. Публикация, merge/alias, audit и outbox выполняются одной транзакцией. Privacy quarantine после
+жалобы инвалидирует публичные caches только после commit и закрывает выдачу при cache miss из PostgreSQL.
+
 ## Общие frontend-пакеты
 
 Разрешены framework-neutral пакеты `api-client`, `domain`, `validation`, `i18n` и `analytics`. Они не импортируют

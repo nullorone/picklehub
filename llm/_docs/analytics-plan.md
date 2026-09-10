@@ -66,3 +66,37 @@ refresh replay и identity conflicts. Ими владеет backend/security; о
 а не скрытого измерения поведения отказавшихся пользователей. Audit связывания, отзыва, изменения согласий и
 удаления создаётся независимо от analytics consent, без секретов и значений профиля. Сроки хранения и правовые
 основания этих потоков отдельно описаны в [security/privacy](security-privacy.md).
+
+## Площадки
+
+События каталога используют общую consent policy и envelope `v1`, заданные выше. Raw query, bounding box, радиус,
+адрес, координаты, provider payload/ID, venue/candidate/source ID, название, текст исправления/жалобы и точное
+расстояние запрещены. Разрешены только закрытые enum и buckets из таблицы; произвольные properties не принимаются.
+
+| Событие                     | Условие и источник                                                       | Дополнительные свойства                                                                                  | Дедупликация                                          | Применение                                                         |
+| --------------------------- | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- | ------------------------------------------------------------------ |
+| `venue_search_completed`    | Backend после успешного ответа каталога; не при provider/transport error | `surface`: `MAP`/`LIST`/`TEXT`; `resultBucket`: `ZERO`/`ONE_FIVE`/`SIX_TWENTY`/`GT_TWENTY`; `staleShown` | Один event ID на принятый request ID                  | Доля пустой выдачи и доступность полезного каталога.               |
+| `venue_selected`            | Клиент после явного выбора результата при действующем согласии           | `surface`: `MAP`/`LIST`/`TEXT`; `distanceBucket`: `LT_1KM`/`1_5KM`/`5_20KM`/`GE_20KM`/`UNKNOWN`          | Один event ID на действие выбора                      | Конверсия поиска в выбор без сохранения места.                     |
+| `venue_candidate_submitted` | Backend после commit создания match-only кандидата                       | `entry`: `MANUAL_PIN`/`ALLOWED_GEOCODER`; `amenitiesCompleteness`: `NONE`/`PARTIAL`/`FULL`               | Candidate operation ID; idempotency replay без дубля  | Использование пути добавления и качество заполнения.               |
+| `venue_candidate_qualified` | Backend при единственном переходе после подтверждённого матча            | Нет                                                                                                      | Candidate ID внутри producer; наружу ID не передаётся | Конверсия кандидатов в moderation queue.                           |
+| `venue_revision_submitted`  | Backend после commit предложения исправления                             | `fieldGroup`: `LOCATION`/`ACCESS`/`AMENITIES`/`HOURS`/`STATUS`                                           | Revision operation ID                                 | Типы пробелов качества каталога.                                   |
+| `venue_report_submitted`    | Backend после commit структурированной жалобы                            | `reason`: `PRIVATE_RESIDENCE`/`DUPLICATE`/`CLOSED`                                                       | Report operation ID                                   | Safety/quality workload без содержания жалобы.                     |
+| `venue_moderation_decided`  | Backend после commit одного решения                                      | `subject`: `CANDIDATE`/`REVISION`/`REPORT`; `decision`: `APPROVED`/`REJECTED`/`MERGED`/`WITHDRAWN`       | Decision ID; outbox retry сохраняет event ID          | Approval, duplicate rate и время очереди в агрегированной витрине. |
+
+Dashboard каталога показывает размер consented sample отдельно от operational totals. Основные продуктовые
+показатели: переход search → select, доля zero-result по surface, candidate → qualified → approved, медиана и p90
+времени модерации, доли `APPROVED`/`REJECTED`/`MERGED` и распределение структурированных причин. Они не измеряют
+перемещение пользователя и не позволяют восстановить посещённые места.
+
+Operational quality metrics не являются продуктовой аналитикой и работают без пользовательских идентификаторов:
+доступность/latency и error class отдельно для catalog, geocoder и tiles; доля опубликованных карточек с валидной
+координатой и полным разрешённым provenance; покрытие обязательной атрибуцией; доля stale >180 суток; размер и
+возраст moderation/refresh очередей; число upstream `REMOVED`/`UNREACHABLE`; число privacy quarantine; доля
+подтверждённых дубликатов и исправлений после публикации. Любое сохранение external result при capability
+`storageAllowed = false`, публичная карточка без координаты/provenance или пропущенная обязательная атрибуция —
+инцидент качества с целевым значением ноль, а не допустимый процент.
+
+Backend/venues владеет server events и operational metrics; клиенты владеют только `venue_selected` и показом
+UI-состояний. Повтор outbox сохраняет event ID, consumer применяет уникальность. Недоступность analytics не
+блокирует поиск, публикацию, privacy quarantine или audit; события до согласия не буферизуются и не
+воспроизводятся после него.
