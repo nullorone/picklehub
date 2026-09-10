@@ -35,6 +35,12 @@ async function waitForMock(url, child, logs) {
     throw new Error(`Prism did not become ready.\n${logs.join('')}`);
 }
 
+function requireNoStore(response, label) {
+    if (response.headers.get('cache-control') !== 'no-store') {
+        throw new Error(`${label} must be no-store.`);
+    }
+}
+
 const port = await reservePort();
 const prism = resolve(repositoryRoot, 'node_modules/.bin/prism');
 const child = spawn(
@@ -63,11 +69,48 @@ try {
         throw new Error(`Unexpected readiness mock: ${ready.status} ${JSON.stringify(readyBody)}`);
     }
 
+    const context = await fetch(`http://${host}:${port}/auth/context`, {
+        headers: { 'accept-language': 'ru-RU' },
+    });
+    const contextBody = await context.json();
+    requireNoStore(context, 'Browser auth context');
+    if (context.status !== 200 || !/^[A-Za-z0-9_-]{43}$/.test(contextBody.csrfToken)) {
+        throw new Error(`Unexpected browser context mock: ${context.status} ${JSON.stringify(contextBody)}`);
+    }
+
+    const magicRequest = await fetch(`http://${host}:${port}/auth/magic-links/request`, {
+        method: 'POST',
+        headers: {
+            'accept-language': 'ru-RU',
+            'content-type': 'application/json',
+            origin: 'https://app.example.test',
+            'x-csrf-token': contextBody.csrfToken,
+        },
+        body: JSON.stringify({ email: 'player@example.test', platform: 'WEB' }),
+    });
+    const magicBody = await magicRequest.json();
+    requireNoStore(magicRequest, 'Magic-link request');
+    if (magicRequest.status !== 202 || magicBody.status !== 'ACCEPTED' || !magicBody.message) {
+        throw new Error(`Unexpected magic-link mock: ${magicRequest.status} ${JSON.stringify(magicBody)}`);
+    }
+
+    const me = await fetch(`http://${host}:${port}/me`, {
+        headers: {
+            'accept-language': 'ru-RU',
+            authorization: `Bearer ${'A'.repeat(43)}`,
+        },
+    });
+    const meBody = await me.json();
+    requireNoStore(me, 'Current-user response');
+    if (me.status !== 200 || !meBody.user?.id || !meBody.session?.id || !Array.isArray(meBody.identities)) {
+        throw new Error(`Unexpected current-user mock: ${me.status} ${JSON.stringify(meBody)}`);
+    }
+
     const productPath = await fetch(`http://${host}:${port}/matches`);
     if (productPath.status !== 404) {
-        throw new Error(`Foundation mock unexpectedly exposes /matches with status ${productPath.status}.`);
+        throw new Error(`Identity mock unexpectedly exposes unowned /matches with status ${productPath.status}.`);
     }
-    console.log('OpenAPI mock passed: liveness/readiness examples are valid and product paths are absent.');
+    console.log('OpenAPI mock passed: health and identity examples are valid; unowned paths are absent.');
 } finally {
     child.kill('SIGTERM');
     await new Promise((resolveExit) => {

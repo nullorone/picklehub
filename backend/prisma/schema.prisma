@@ -57,3 +57,246 @@ model AuditEntry {
   @@index([actorId, createdAt], map: "audit_entries_actor_idx")
   @@map("audit_entries")
 }
+
+// Identity data contract. SQL migration also owns CHECKs, partial indexes and deferred triggers.
+enum IdentityProvider {
+  TELEGRAM
+  EMAIL
+
+  @@map("identity_provider")
+}
+
+enum UserStatus {
+  ACTIVE
+  DELETION_PENDING
+  DELETED
+
+  @@map("identity_user_status")
+}
+
+enum ConsentPurpose {
+  TERMS
+  PERSONAL_DATA
+  ANALYTICS
+  MARKETING
+
+  @@map("consent_purpose")
+}
+
+enum ConsentAction {
+  ACCEPTED
+  WITHDRAWN
+
+  @@map("consent_action")
+}
+
+model User {
+  id                  String                      @id @db.Uuid
+  status              UserStatus                  @default(ACTIVE)
+  authEpoch           Int                         @default(0) @map("auth_epoch")
+  createdAt           DateTime                    @default(now()) @map("created_at") @db.Timestamptz(3)
+  lastLoginAt         DateTime                    @default(now()) @map("last_login_at") @db.Timestamptz(3)
+  completedAt         DateTime?                   @map("completed_at") @db.Timestamptz(3)
+  deletionRequestedAt DateTime?                   @map("deletion_requested_at") @db.Timestamptz(3)
+  deletedAt           DateTime?                   @map("deleted_at") @db.Timestamptz(3)
+  identities          Identity[]
+  sessions            Session[]
+  draft               PlayerProfileDraft?
+  consents            Consent[]
+  attempts            IdentityAttempt[]
+  magicLinks          MagicLink[]
+  idempotencyRecords  IdentityIdempotencyRecord[]
+
+  @@map("identity_users")
+}
+
+model Identity {
+  id                   String           @id @db.Uuid
+  userId               String           @map("user_id") @db.Uuid
+  provider             IdentityProvider
+  // HMAC-SHA256 of the canonical provider subject; ciphertext uses randomized authenticated encryption.
+  subjectKey           String           @map("subject_key") @db.Char(64)
+  subjectCiphertext    Bytes            @map("subject_ciphertext")
+  encryptionKeyVersion Int              @map("encryption_key_version")
+  linkedAt             DateTime         @default(now()) @map("linked_at") @db.Timestamptz(3)
+  user                 User             @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([provider, subjectKey], map: "identities_provider_subject_key")
+  @@unique([userId, provider], map: "identities_user_provider_key")
+  @@map("identities")
+}
+
+model Session {
+  id                 String              @id @db.Uuid
+  userId             String              @map("user_id") @db.Uuid
+  authEpoch          Int                 @map("auth_epoch")
+  platform           String              @db.VarChar(8)
+  createdAt          DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
+  idleExpiresAt      DateTime            @map("idle_expires_at") @db.Timestamptz(3)
+  absoluteExpiresAt  DateTime            @map("absolute_expires_at") @db.Timestamptz(3)
+  revokedAt          DateTime?           @map("revoked_at") @db.Timestamptz(3)
+  user               User                @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  refreshCredentials RefreshCredential[]
+  accessCredentials  AccessCredential[]
+  attempts           IdentityAttempt[]
+
+  @@index([userId, revokedAt], map: "identity_sessions_user_idx")
+  @@map("identity_sessions")
+}
+
+model RefreshCredential {
+  id        String    @id @db.Uuid
+  sessionId String    @map("session_id") @db.Uuid
+  tokenHash String    @unique(map: "refresh_credentials_token_hash_key") @map("token_hash") @db.Char(64)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  rotatedAt DateTime? @map("rotated_at") @db.Timestamptz(3)
+  session   Session   @relation(fields: [sessionId], references: [id], onDelete: Cascade, onUpdate: Restrict)
+
+  @@map("refresh_credentials")
+}
+
+model AccessCredential {
+  tokenHash String   @id @map("token_hash") @db.Char(64)
+  sessionId String   @map("session_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  expiresAt DateTime @map("expires_at") @db.Timestamptz(3)
+  session   Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade, onUpdate: Restrict)
+
+  @@index([expiresAt], map: "access_credentials_expiry_idx")
+  @@map("access_credentials")
+}
+
+model IdentityAttempt {
+  id                         String            @id @db.Uuid
+  userId                     String            @map("user_id") @db.Uuid
+  sessionId                  String            @map("session_id") @db.Uuid
+  action                     String            @db.VarChar(16)
+  targetProvider             IdentityProvider? @map("target_provider")
+  targetIdentityId           String?           @map("target_identity_id") @db.Uuid
+  currentSubjectKey          String?           @map("current_subject_key") @db.Char(64)
+  currentProvider            IdentityProvider? @map("current_provider")
+  currentProofExpiresAt      DateTime?         @map("current_proof_expires_at") @db.Timestamptz(3)
+  targetSubjectKey           String?           @map("target_subject_key") @db.Char(64)
+  targetSubjectCiphertext    Bytes?            @map("target_subject_ciphertext")
+  targetEncryptionKeyVersion Int?              @map("target_encryption_key_version")
+  targetProofExpiresAt       DateTime?         @map("target_proof_expires_at") @db.Timestamptz(3)
+  createdAt                  DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  expiresAt                  DateTime          @map("expires_at") @db.Timestamptz(3)
+  consumedAt                 DateTime?         @map("consumed_at") @db.Timestamptz(3)
+  revokedAt                  DateTime?         @map("revoked_at") @db.Timestamptz(3)
+  user                       User              @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  session                    Session           @relation(fields: [sessionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  magicLinks                 MagicLink[]
+
+  @@index([userId, expiresAt], map: "identity_attempts_user_expiry_idx")
+  @@map("identity_attempts")
+}
+
+model MagicLink {
+  id                   String           @id @db.Uuid
+  userId               String?          @map("user_id") @db.Uuid
+  attemptId            String?          @map("attempt_id") @db.Uuid
+  purpose              String           @db.VarChar(16)
+  side                 String?          @db.VarChar(8)
+  // Scope = HMAC(address + purpose + attempt + side), not exposed outside identity storage.
+  scopeKey             String           @map("scope_key") @db.Char(64)
+  subjectKey           String           @map("subject_key") @db.Char(64)
+  subjectCiphertext    Bytes            @map("subject_ciphertext")
+  encryptionKeyVersion Int              @map("encryption_key_version")
+  tokenHash            String           @unique(map: "magic_links_token_hash_key") @map("token_hash") @db.Char(64)
+  createdAt            DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  expiresAt            DateTime         @map("expires_at") @db.Timestamptz(3)
+  consumedAt           DateTime?        @map("consumed_at") @db.Timestamptz(3)
+  revokedAt            DateTime?        @map("revoked_at") @db.Timestamptz(3)
+  user                 User?            @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  attempt              IdentityAttempt? @relation(fields: [attemptId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([expiresAt], map: "magic_links_expiry_idx")
+  @@map("magic_links")
+}
+
+model TelegramProofReplay {
+  fingerprint String   @id @db.Char(64)
+  expiresAt   DateTime @map("expires_at") @db.Timestamptz(3)
+
+  @@index([expiresAt], map: "telegram_proof_replays_expiry_idx")
+  @@map("telegram_proof_replays")
+}
+
+model ConsentDocument {
+  purpose     ConsentPurpose
+  version     String         @db.VarChar(128)
+  checksum    String         @db.Char(64)
+  title       String         @db.VarChar(200)
+  text        String
+  effectiveAt DateTime       @map("effective_at") @db.Timestamptz(3)
+  isCurrent   Boolean        @default(false) @map("is_current")
+  consents    Consent[]
+
+  @@id([purpose, version])
+  @@map("consent_documents")
+}
+
+model Consent {
+  id          String          @id @db.Uuid
+  userId      String          @map("user_id") @db.Uuid
+  purpose     ConsentPurpose
+  version     String          @db.VarChar(128)
+  action      ConsentAction
+  platform    String          @db.VarChar(8)
+  operationId String          @map("operation_id") @db.Uuid
+  occurredAt  DateTime        @default(now()) @map("occurred_at") @db.Timestamptz(3)
+  user        User            @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  document    ConsentDocument @relation(fields: [purpose, version], references: [purpose, version], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([userId, operationId], map: "consents_user_operation_key")
+  @@index([userId, occurredAt, id], map: "consents_user_history_idx")
+  @@map("consents")
+}
+
+model OnboardingLocality {
+  id               String               @id @db.Uuid
+  name             String               @db.VarChar(120)
+  countryCode      String               @map("country_code") @db.Char(2)
+  region           String               @db.VarChar(120)
+  catalogueVersion Int                  @map("catalogue_version")
+  drafts           PlayerProfileDraft[]
+
+  @@map("onboarding_localities")
+}
+
+model PlayerProfileDraft {
+  userId              String              @id @map("user_id") @db.Uuid
+  version             Int                 @default(0)
+  displayName         String?             @map("display_name") @db.VarChar(50)
+  timeZone            String?             @map("time_zone") @db.VarChar(64)
+  localityId          String?             @map("locality_id") @db.Uuid
+  gameFormats         String[]            @default([]) @map("game_formats")
+  skillSelfAssessment Decimal?            @map("skill_self_assessment") @db.Decimal(2, 1)
+  duprProfileUrl      String?             @map("dupr_profile_url") @db.VarChar(2048)
+  completedAt         DateTime?           @map("completed_at") @db.Timestamptz(3)
+  updatedAt           DateTime            @default(now()) @map("updated_at") @db.Timestamptz(3)
+  user                User                @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  locality            OnboardingLocality? @relation(fields: [localityId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@map("player_profile_drafts")
+}
+
+model IdentityIdempotencyRecord {
+  id                   String   @id @db.Uuid
+  userId               String   @map("user_id") @db.Uuid
+  idempotencyKey       String   @map("idempotency_key") @db.Uuid
+  method               String   @db.VarChar(8)
+  canonicalPath        String   @map("canonical_path") @db.VarChar(160)
+  requestFingerprint   String   @map("request_fingerprint") @db.Char(64)
+  responseStatus       Int      @map("response_status") @db.SmallInt
+  responseCiphertext   Bytes    @map("response_ciphertext")
+  encryptionKeyVersion Int      @map("encryption_key_version")
+  createdAt            DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  expiresAt            DateTime @default(dbgenerated("CURRENT_TIMESTAMP + INTERVAL '24 hours'")) @map("expires_at") @db.Timestamptz(3)
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([userId, method, canonicalPath, idempotencyKey], map: "identity_idempotency_scope_key")
+  @@index([expiresAt], map: "identity_idempotency_expiry_idx")
+  @@map("identity_idempotency_records")
+}

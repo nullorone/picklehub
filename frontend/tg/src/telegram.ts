@@ -8,17 +8,21 @@ import {
     mountMiniAppSync,
     mountThemeParamsSync,
     mountViewport,
+    retrieveRawInitData,
 } from '@telegram-apps/sdk-react';
 
 export interface TelegramLifecycle {
+    readonly initData: string | undefined;
     readonly ready: () => void;
 }
 
 export async function initializeTelegram(): Promise<TelegramLifecycle> {
     if (import.meta.env.DEV) {
         const { mockTelegramEnv } = await import('@telegram-apps/sdk-react');
+        const launchInitData = new URLSearchParams(window.location.hash.replace(/^#/u, '')).get('tgWebAppData');
         mockTelegramEnv({
             launchParams: {
+                ...(launchInitData === null ? {} : { tgWebAppData: launchInitData }),
                 tgWebAppPlatform: 'tdesktop',
                 tgWebAppThemeParams: {
                     bg_color: '#070b14',
@@ -45,6 +49,7 @@ export async function initializeTelegram(): Promise<TelegramLifecycle> {
     if (expandViewport.isAvailable()) expandViewport();
 
     return {
+        initData: retrieveRawInitData(),
         ready: () => {
             if (miniAppReady.isAvailable()) miniAppReady();
         },

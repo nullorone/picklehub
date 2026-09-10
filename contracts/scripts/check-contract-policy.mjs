@@ -2,8 +2,9 @@ import { readFile } from 'node:fs/promises';
 
 import { Parser } from '@asyncapi/parser';
 import { parse } from 'yaml';
+import { checkIdentityContract, identityOperations, identityEventFields } from './identity-policy.mjs';
 
-const allowedFoundationPaths = new Set(['/health/live', '/health/ready']);
+const allowedPaths = new Set(['/health/live', '/health/ready', ...Object.keys(identityOperations)]);
 const allowedProtocolMessages = new Set([
     'session.authenticate.v1',
     'session.authenticated.v1',
@@ -33,9 +34,9 @@ assert(
     'OpenAPI must expose one relative /v1 server.'
 );
 assert(
-    Object.keys(openApi.paths).every((path) => allowedFoundationPaths.has(path)) &&
-        Object.keys(openApi.paths).length === allowedFoundationPaths.size,
-    'Foundation OpenAPI may expose only the live and ready health paths.'
+    Object.keys(openApi.paths).every((path) => allowedPaths.has(path)) &&
+        Object.keys(openApi.paths).length === allowedPaths.size,
+    'OpenAPI may expose only foundation and identity paths.'
 );
 
 const operationIds = Object.values(openApi.paths).flatMap((pathItem) =>
@@ -76,16 +77,16 @@ const messages = Object.values(asyncApi.components.messages);
 const messageNames = messages.map((message) => message.name);
 unique(messageNames, 'AsyncAPI message names');
 assert(
-    messageNames.every((name) => allowedProtocolMessages.has(name)),
-    'Foundation AsyncAPI must not define business messages.'
+    messageNames.every((name) => allowedProtocolMessages.has(name) || name in identityEventFields),
+    'AsyncAPI may define only approved protocol and identity messages.'
 );
 assert(
     messageNames.every((name) => /\.v[1-9][0-9]*$/.test(name)),
     'Every AsyncAPI message name must end with a schema version.'
 );
 assert(
-    new Set(messageNames).size === allowedProtocolMessages.size,
-    'Foundation AsyncAPI must define authentication, error and heartbeat messages.'
+    new Set(messageNames).size === allowedProtocolMessages.size + Object.keys(identityEventFields).length,
+    'AsyncAPI must define all approved protocol and identity messages.'
 );
 
 for (const message of messages) {
@@ -108,6 +109,6 @@ assert(
     'AsyncAPI Timestamp must require an uppercase UTC Z suffix.'
 );
 
-console.log(
-    `Contract policy passed: ${operationIds.length} REST operations, ${messageNames.length} protocol messages.`
-);
+checkIdentityContract(openApi, asyncApi);
+
+console.log(`Contract policy passed: ${operationIds.length} REST operations, ${messageNames.length} messages.`);

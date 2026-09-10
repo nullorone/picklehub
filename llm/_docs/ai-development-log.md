@@ -348,3 +348,274 @@ frontend/tg/src/telegram.ts frontend/tg/index.html` — успешно; отфо
 - `git diff --check`, YAML parse, `npm ls --all` и Turbo dry graph — успешно; пользовательские PNG в `design/` не
   изменялись.
 - Следующий промпт: `llm/02-identity-onboarding/01-requirements.md`; к нему не переходили.
+
+## 2026-09-08 — идентификация и первичная настройка, этап 01-requirements
+
+- Активный промпт: `llm/02-identity-onboarding/01-requirements.md`. Прочитаны общий контекст, обзор функции,
+  актуальные foundation-результаты, архитектура, data conventions и текущие контракты.
+- В `product-requirements.md` добавлены 11 пользовательских историй, состояния и переходы session/refresh,
+  magic link, onboarding и удаления, правила нормализации email, ограничения identity, свежие доказательства,
+  поля и публичность, продолжение черновика, история согласий, стабильные ошибки и 17 сценариев Дано/Когда/Тогда.
+- Решения: access 5 минут в памяти; refresh cookie с ротацией, inactivity 7 суток и absolute 30 суток;
+  magic link 10 минут; Telegram proof менее 5 минут с future skew до 30 секунд. Replay refresh отзывает семейство;
+  связывание требует двух доказательств и не сливает существующие аккаунты. Гонки защищаются транзакциями и
+  ограничениями БД; единственный способ входа нельзя отвязать. Пароли и проверка возраста не вводились.
+- Security/privacy дополнен политикой origin/CSRF, cookie, доставки magic-секрета во fragment доверенной страницы,
+  rate limits без раскрытия регистрации email, реестром данных и предлагаемыми сроками удаления. Сроки и
+  основания явно требуют юридического утверждения до production. Архитектура синхронизирована с уже заданным
+  обзором identity правилом access в памяти / refresh в HttpOnly cookie и исключением доставки magic-ссылки.
+- Analytics plan задаёт условия событий, свойства, дедупликацию, владельцев и применение на dashboard. Отказ от
+  аналитики не мешает активации; события до согласия не воспроизводятся задним числом, неполная воронка описана.
+- Изменённые файлы: `llm/_docs/product-requirements.md`, `llm/_docs/security-privacy.md`,
+  `llm/_docs/analytics-plan.md`, `llm/_docs/architecture.md` и этот журнал. Код приложений, схемы, generated clients
+  и пользовательские PNG в `design/` не изменялись.
+
+### Проверки этапа identity 01-requirements
+
+- `npx prettier --write llm/_docs/product-requirements.md llm/_docs/security-privacy.md
+llm/_docs/analytics-plan.md llm/_docs/architecture.md` — успешно.
+- Первый `npm run verify` в sandbox прошёл workspace, TypeSpec/OpenAPI lint, compatibility, generated drift и
+  contract typecheck, затем остановился на `listen EPERM 127.0.0.1` в Prism mock.
+- Повторный `npm run verify` с разрешением localhost — успешно: 8 workspace и один lockfile; policy 2 REST/5
+  protocol messages; compatibility, generated drift/typecheck и Prism; форматирование и 114 Markdown-файлов без
+  ошибок; lint и typecheck по 8 успешных задач, test 13 задач, build 8 задач. Backend заново выполнил 6 suites/11
+  tests; неизменённые frontend/shared задачи использовали Turbo cache. Это regression foundation, а не тесты
+  ещё не реализованной identity.
+- Read-only Python-проверка относительных Markdown-ссылок в пяти затронутых документах — успешно: 15 ссылок,
+  отсутствующих целей нет. Ручная сверка требований подтвердила покрытие всех пунктов активного промпта и
+  отсутствие противоречия между хранением токенов в обзоре, требованиях и архитектуре.
+- Финальные `npx prettier --write llm/_docs/product-requirements.md llm/_docs/ai-development-log.md`,
+  `npm run format:check`, `npm run docs:check` и `git diff --check` — успешно после уточнения границы срока proof
+  и записи результатов в журнал.
+- Новые integration/e2e тесты, Docker smoke, Prisma migrate и dependency audit не запускались: этот этап меняет
+  только требования. Ранее записанные foundation-блокеры Docker TLS, Prisma binary endpoint и audit registry
+  не закрыты этим результатом; предупреждение внешнего `NODE_TLS_REJECT_UNAUTHORIZED=0` сохранилось в verify.
+- Критерии документационного этапа выполнены. Production остаётся закрытым до review провайдеров, правовых
+  документов, retention и источника справочника географии; разрешённый DUPR URL уточняется контрактным этапом.
+- Следующий промпт: `llm/02-identity-onboarding/02-contract-data.md`; к нему не переходили.
+
+## 2026-09-08 — идентификация и первичная настройка, этап 02-contract-data
+
+- Активный промпт: `llm/02-identity-onboarding/02-contract-data.md`. Реализация ограничена REST/AsyncAPI,
+  Prisma/SQL моделью и документацией; backend use cases и клиентские экраны этапов 03–04 не добавлялись.
+- TypeSpec добавляет 26 identity operations поверх двух foundation health operations: browser context, Telegram
+  exchange, request/consume magic link, refresh/logout/logout-all, current user, identity proofs и link/unlink,
+  onboarding draft/complete, consent history, deletion, immutable documents и локальные onboarding options.
+  Определены стабильные ошибки, rate limits, `Origin` + CSRF, bearer/cookie security, UUIDv4 idempotency и
+  `Cache-Control: no-store` на всех identity success/error responses.
+- Browser session contract выдаёт access только в JSON и refresh только в host-only HttpOnly cookie. Исправлена
+  несовместимая с HTTP/Prism попытка описать несколько `Set-Cookie` как array: OpenAPI теперь моделирует один
+  header value, а требование отдельных header lines остаётся в описании. Будущий native transport через OS secure
+  storage и authorization headers определён ADR 0004, но отдельная mobile API поверхность отложена до этапа 14.
+- AsyncAPI получил внутренний, не WebSocket, канал `identity.events.v1` и шесть минимальных событий linking,
+  unlinking, session revocation, onboarding completion, consent change и deletion request. Generated
+  `IdentityDomainEvent` отделён от `WebSocketMessage`; policy запрещает email, provider subject, init data, URL и
+  credentials в event payload.
+- Prisma и migration добавляют `User`, `Identity`, `Session`, access/refresh hashes, `MagicLink`, Telegram replay
+  marker, operation-bound identity attempt, immutable consent documents/history, `PlayerProfileDraft`, locality
+  catalogue и зашифрованные 24-hour identity idempotency records. Unique/partial indexes защищают provider subject,
+  provider-per-user, current refresh и pending magic scope; deferred triggers не позволяют активному пользователю
+  остаться без способа входа. CHECK/transition triggers ограничивают TTL и запрещают resurrection/replay обычным
+  update.
+- ADR 0004 фиксирует 5-minute access, refresh inactivity 7 days / absolute 30 days, 10-minute magic links,
+  same-origin browser transport, mobile boundary и одноразовую отправку raw magic secret только из памяти. Magic
+  secret не сохраняется в outbox/BullMQ/idempotency; неопределённая доставка остаётся нейтральным 202 и требует
+  нового запроса. DUPR links остаются выключенными до утверждения host/path allowlist.
+- Policy tests проверяют полный path inventory, no-store, CSRF, bearer/cookie transport, запрет credential
+  idempotency, sealed safe events и статические обязательные свойства migration. OpenAPI mock теперь проверяет
+  browser context, нейтральный magic request, current user и отсутствие ещё не принадлежащего контракту `/matches`.
+- Изменённые editable files: `contracts/rest/identity.tsp`, `contracts/rest/main.tsp`, `asyncapi.yaml`, contract
+  generators/policy/mock scripts и tests, `backend/prisma/schema.prisma`, migration
+  `20260908090000_identity_onboarding`, `contracts/README.md`, ADR 0004, architecture/domain model, root package
+  metadata и этот журнал. Перегенерированы root OpenAPI, contract TypeScript и API-client types. Пользовательские
+  PNG в `design/` не изменялись.
+
+### Проверки этапа identity 02-contract-data
+
+- `PRISMA_SCHEMA_ENGINE_BINARY=/usr/bin/true PRISMA_QUERY_ENGINE_LIBRARY=/usr/bin/true npm run prisma:generate
+--workspace @picklehub/backend` — успешно; Prisma Client 6.16.2 обновлён по схеме без сетевой загрузки engines.
+- `npm run contracts:check` — успешно: TypeSpec compile, Redocly, policy 28 REST/11 messages и 12 policy tests,
+  compatibility с HEAD, generated drift, strict TypeScript и Prism identity mock. Первый расширенный mock обнаружил
+  crash Prism на array `Set-Cookie`; после исправления scalar wire header проверка health/identity успешна.
+- Первый `npm run verify` в sandbox дошёл до Prism и получил ожидаемый `listen EPERM 127.0.0.1`. Повтор с
+  разрешённым loopback прошёл contracts, format/docs, lint и typecheck, затем выявил отсутствующий root-resolvable
+  optional peer `jsdom` у hoisted Vitest. `npm install --save-dev --save-exact jsdom@27.4.0 --ignore-scripts
+--no-audit --no-fund --fetch-retries=2 --fetch-timeout=120000` закрепил уже используемую версию в root и обновил
+  lockfile; это устраняет зависимость тестов от случайной раскладки `node_modules`.
+- Финальный `npm run verify` с разрешённым loopback — успешно: workspace/lockfile, contracts, format и 115 Markdown
+  files, lint/typecheck для восьми workspaces, 13 test tasks и восемь build tasks. Backend: 6 suites/11 tests;
+  shared/Web/TMA: 7 files/9 tests; Web PWA и production TMA build checks успешны.
+- `npm run format:check`, `npm run docs:check`, `npm run contracts:lint`, `npm run contracts:generated:check` и
+  `git diff --check` проходили отдельно. `npm ls --depth=0` не показал unmet/extraneous dependencies.
+- SQL migration не применена к чистому PostgreSQL: Docker daemon не запущен (`Cannot connect to the Docker daemon`),
+  а локального `psql` нет. Статические migration policy tests проходят, но не заменяют integration test реальных
+  constraints/triggers; применение обеих migrations и конкурентные проверки обязательны в backend/verification.
+- Небезопасная внешняя переменная `NODE_TLS_REJECT_UNAUTHORIZED=0` по-прежнему присутствует только в окружении и
+  вызывает warning; она не добавлена в репозиторий. Provider/legal/retention/DUPR approvals также не заявляются.
+- Критерии контрактного этапа выполнены с явно записанным ограничением SQL runtime-проверки. Следующий промпт:
+  `llm/02-identity-onboarding/03-backend.md`; к нему не переходили.
+
+## 2026-09-09 — идентификация и первичная настройка, этап 03-backend
+
+- Активный промпт: `llm/02-identity-onboarding/03-backend.md`. Реализован NestJS-модуль `identity`, покрывающий
+  все 26 identity/onboarding REST operations опубликованного TypeSpec-контракта; клиентские экраны этапа 04 не
+  добавлялись.
+- Telegram init data проверяется по подписи WebAppData, уникальности полей, `auth_date`, future skew и
+  пятиминутному TTL. Только проверенный Telegram user id превращается в HMAC lookup key и AES-256-GCM ciphertext;
+  keyed proof fingerprint атомарно записывается в PostgreSQL и не допускает replay.
+- Magic email secret содержит 256 случайных бит, хранится только как HMAC и передаётся HTTPS `EmailProvider`
+  один раз в памяти во fragment landing URL. Adapter имеет пятисекундный budget и флаги запрета click tracking и
+  URL rewriting; production требует явно настроенный одобренный endpoint. Запрос остаётся нейтральным при
+  неизвестном адресе, throttling и любом результате доставки.
+- Browser security использует exact origin allowlist, Redis-backed context cookie и связанный CSRF token на всех
+  мутациях. Access credential живёт пять минут и хранится только как hash, refresh выдаётся только Secure/HttpOnly
+  cookie, ротируется без grace window и отзывает всё семейство при replay. Реализованы logout, logout-all,
+  немедленная проверка revocation/auth epoch и безопасные session-revocation events.
+- Operation-bound proof attempts реализуют связывание, отвязывание и удаление аккаунта с независимыми CURRENT и
+  TARGET proofs. Транзакции блокируют пользователя, ограничения базы предотвращают merge/duplicate identity и
+  удаление последнего способа входа; linking/unlinking заменяют все сессии и пишут audit/outbox без provider
+  subject или credentials.
+- Черновик onboarding обновляется compare-and-set по версии. Изменения согласий append-only; completion в одной
+  транзакции проверяет обязательные поля, актуальные TERMS/PERSONAL_DATA и их явное принятие, выставляет completed
+  state и создаёт ровно одно `identity.onboarding.completed.v1`. Повторяемые safe mutations сохраняют HMAC
+  fingerprint и AES-256-GCM response в той же транзакции на 24 часа; повтор другого payload отклоняется.
+- Redis rate limits разделены namespace и применены к context, Telegram, magic request/consume, refresh family,
+  proof attempts, onboarding/consent mutations, deletion и documents. Identity success/error responses получают
+  `Cache-Control: no-store`; логи содержат только method, route, status и безопасные reason codes. Consent и
+  locality pagination используют подписанные 15-минутные cursors, связанные с user, snapshot, query и версией
+  каталога.
+- Добавлены поддельные `Clock` и `EmailProvider`, unit-тесты Telegram signature/TTL/tampering, credential crypto и
+  provider flags и cursor integrity/expiry, а также integration-тесты wire email login, конкуренции Telegram proof,
+  rotated refresh replay, зашифрованной idempotency и привязки locality cursor.
+
+### Проверки этапа identity 03-backend
+
+- `npx prettier --write backend/src backend/test backend/README.md` — успешно; изменённые TypeScript и Markdown
+  файлы отформатированы.
+- `npm run lint --workspace @picklehub/backend`, `npm run typecheck --workspace @picklehub/backend`,
+  `npm test --workspace @picklehub/backend` и `npm run build --workspace @picklehub/backend` — успешно. Unit:
+  10 suites, 16 tests; lint без warnings, strict TypeScript и backend build прошли.
+- `docker compose --project-name picklehub-identity-backend up --detach --wait postgres redis` — успешно; создан
+  отдельный healthy test project. Обе migration применены последовательно через
+  `docker exec -i picklehub-identity-backend-postgres-1 psql -v ON_ERROR_STOP=1 -U picklehub -d picklehub < ...` —
+  успешно, включая foundation и `20260908090000_identity_onboarding` SQL со всеми triggers/constraints.
+- `DATABASE_URL='postgresql://picklehub:picklehub@127.0.0.1:5432/picklehub?schema=public'
+REDIS_URL='redis://127.0.0.1:6379/0' REDIS_NAMESPACE=identity-backend npm run test:integration --workspace
+  @picklehub/backend` — финальный запуск успешен: 2 suites, 10 tests. Реальная база подтвердила одну identity и одну
+  session при конкурентном replay, отзыв новой access credential после кражи rotated refresh, одну версию draft
+  при idempotency replay, ciphertext вместо email/response, contract-compatible cookie/JSON/no-store wire flow и
+  cursor pagination с запретом переноса позиции между пользователями.
+- Первый integration-запуск внутри sandbox ожидаемо не имел доступа к loopback (`EPERM`) и выполнялся до запуска
+  test dependencies; результат не засчитан. После запуска изолированного Docker project тесты повторены вне
+  sandbox и прошли полностью.
+- Финальный `npm run verify` — успешно: 8 workspaces и один lockfile; 28 REST operations, 11 AsyncAPI messages и
+  12 identity policy/data tests; TypeSpec, Redocly, compatibility, generated drift/typecheck, Prism mock,
+  formatting, 115 Markdown files, lint/typecheck/test/build всех workspace прошли. Root tests включили backend
+  10 suites/16 tests и неизменённые frontend/shared suites.
+- `docker compose --project-name picklehub-identity-backend down --volumes --remove-orphans` — успешно; удалены
+  только созданные для этапа test containers, network и оба test volumes. `git diff --check` — успешно.
+- Внешняя переменная `NODE_TLS_REJECT_UNAUTHORIZED=0` по-прежнему присутствует только в окружении и вызвала warning
+  Redocly; в репозиторий она не добавлена. Реальный email endpoint, legal/provider review, retention approvals и
+  DUPR allowlist остаются production prerequisites, как зафиксировано предыдущими требованиями и ADR 0004.
+- Критерии backend-этапа выполнены. Следующий промпт: `llm/02-identity-onboarding/04-tma-web.md`; к нему не
+  переходили.
+
+## 2026-09-09 — идентификация и первичная настройка, этап 04-tma-web
+
+- Активный промпт: `llm/02-identity-onboarding/04-tma-web.md`. Реализованы отдельные адаптивные интерфейсы web/PWA
+  и TMA поверх опубликованного identity API. Web запрашивает magic email нейтральным ответом и погашает ссылку
+  только после явного подтверждения; TMA сначала восстанавливает cookie-сессию, затем автоматически обменивает
+  свежие init data через backend. Loading, offline, invalid/expired link, rate limit, конфликт, временная ошибка и
+  подтверждённый успех представлены раздельно.
+- Общий browser identity client держит access и CSRF только в памяти замыкания, отправляет refresh только через
+  `credentials: include`, ставит `cache: no-store`, сериализует параллельный refresh и один раз повторяет
+  защищённый запрос после успешной ротации. Credentials, init data, email и значения профиля не передаются в
+  аналитику, storage или console. Service worker по-прежнему не имеет runtime API cache и mutation queue.
+- Первичная настройка восстанавливает versioned server draft и действующие согласия, поддерживает явное сохранение
+  без ложного offline-успеха и валидирует имя, IANA timezone из server options, locality из локального справочника,
+  `SINGLES`/`DOUBLES`, шкалу самооценки 1.0–5.0 с шагом 0.5 и необязательный безопасный DUPR URL. DUPR input
+  выключен при server capability `false`. Тексты обязательных и необязательных документов раскрываются до
+  отдельных unchecked согласий; активационный переход выполняется только после ответа backend `COMPLETED`.
+- Экраны управления доступом показывают собственные provider kinds без subject, запускают operation-bound LINK и
+  UNLINK proofs, поддерживают Telegram proof в TMA, email proof и выход на всех устройствах. Для proof email link
+  backend теперь добавляет во fragment непрозрачные `attempt` и при отвязывании `identity`: без них новая вкладка
+  не могла вызвать contract endpoint с обязательным path ID. Token остаётся только во fragment, URL очищается до
+  рендера, неизвестный `next` заменяется на `/onboarding`, а готовая proof-операция завершается после восстановления
+  исходной cookie-сессии. Добавлен unit-тест, что secret и operation context отсутствуют в query.
+- Изменённые области: browser identity SDK и тесты в `frontend/packages/api-client`, validation/deep-link helpers,
+  allowlisted analytics event type, web/TMA routes, платформенные UI и CSS, Telegram init-data adapter, README обоих
+  клиентов, proof-link builder backend и его unit-тест. Generated client и TypeSpec не редактировались. Четыре
+  пользовательских PNG в `design/` не изменялись.
+
+### Проверки этапа identity 04-tma-web
+
+- Workspace-проверки `lint`, `typecheck`, `test` и `build` затронутых `@picklehub/api-client`,
+  `@picklehub/validation`, `@picklehub/analytics`, `@picklehub/web`, `@picklehub/tg` и backend выполнялись отдельно и
+  успешно. Финальные UI tests: web — 2 файла/4 теста, TMA — 1 файл/2 теста; shared API/validation — 2 и 4 теста;
+  backend — 11 suites/17 unit tests. Покрыты явный POST magic link, очистка fragment и safe target, offline запрет
+  мутаций, автоматический TMA exchange, memory-only Authorization и серверно подтверждённая активация.
+- Production builds web и TMA успешны. Web PWA создала manifest/service worker и precache только оболочки; TMA
+  build-check подтвердил отсутствие development Telegram mock. Backend и все общие пакеты также собраны успешно.
+- Первый `npm run verify` успешно прошёл workspace check, TypeSpec/Redocly, 28 REST/11 messages policy,
+  compatibility, generated drift/typecheck и Prism mock, затем обнаружил единственный неотформатированный новый
+  UI test. После `npx prettier --write` второй полный запуск повторно прошёл contract lint/compatibility/drift, но
+  Prism не смог открыть `127.0.0.1` из-за sandbox `listen EPERM`; это не засчитано как повторный успех mock.
+  Отдельная финальная команда `npm run format:check && npm run docs:check && npm run lint && npm run typecheck &&
+npm test && npm run build && git diff --check` прошла полностью: 115 Markdown-файлов, восемь workspace для
+  lint/typecheck/build и 13 test tasks без ошибок.
+- Не запускались live browser e2e и backend integration с PostgreSQL/Redis: prompt требует UI tests/builds, а
+  единственное backend-изменение — чистый builder fragment — покрыто unit-тестом. Реальные email/TMA smoke остаются
+  невозможны без одобренного email provider, Telegram bot и production legal/provider gates; их наличие не
+  заявляется. Внешняя `NODE_TLS_REJECT_UNAUTHORIZED=0` остаётся проблемой окружения и не добавлена в репозиторий.
+- Критерии клиентского этапа выполнены. Следующий промпт: `llm/02-identity-onboarding/05-verification.md`; к нему не
+  переходили.
+
+## 2026-09-09 — идентификация и первичная настройка, этап 05-verification
+
+- Активный промпт: `llm/02-identity-onboarding/05-verification.md`. Добавлен самостоятельный Playwright-контур с
+  `@playwright/test` 1.55.0 и проверкой production-сборок без HTTP test server: статические файлы отдаются через
+  browser route interception из `/private/tmp`, а API заменён contract-shaped mock. Это позволяет не встраивать
+  тестовую аутентификацию в приложение и не зависит от разрешения на открытие loopback-порта.
+- Web-сценарий проверяет, что fragment magic-ссылки очищен до явного подтверждения, token погашается только после
+  клика, серверный onboarding draft загружается и сохраняется, а после новой загрузки восстанавливаются имя и
+  выбранный timezone. Один сценарий параметризован для `Europe/Moscow` и `Asia/Yekaterinburg`; дополнительно
+  проверяются один `main`/`h1`, доступные имена полей и действий и отсутствие горизонтального переполнения.
+- TMA-сценарий запускает production bundle с Telegram launch parameters, проверяет автоматический refresh fallback,
+  передачу raw init data только в `/auth/telegram` и открытие сохранённого черновика. Development adapter теперь
+  может взять `tgWebAppData` из стандартного launch fragment; ветка остаётся под `import.meta.env.DEV`, а штатный
+  build-check подтвердил её отсутствие в production bundle.
+- Contract regression запрещает lookup-dependent status для запроса magic email и поля, раскрывающие email,
+  регистрацию или доставку. Backend regression расширен проверками точных cookie flags, запрещённого Origin/CSRF,
+  одинакового нейтрального ответа, конкурентного погашения magic link, гонки присоединения одной identity к двум
+  аккаунтам, безопасного outbox, удаления с отзывом access и очисткой refresh cookie, единственности deletion event
+  и одинаковой ошибки для истёкшего/неизвестного token. Telegram unit test фиксирует границы TTL и future skew.
+- Требование продукта упоминает доступность экспорта собственных данных, но опубликованный TypeSpec и закреплённый
+  exact operation inventory не содержат export operation, а backend и клиенты её не реализуют. На verification
+  этапе новый wire contract молча не добавлялся. Это обнаруженный release gap: сначала нужен отдельный
+  contract/data design с форматом, повторной аутентификацией, аудитом, retention/legal hold и правилами доставки.
+
+### Проверки этапа identity 05-verification
+
+- `npm install --save-dev @playwright/test@1.55.0 --offline` — успешно из локального npm cache; обновлены только
+  корневые manifest и lockfile, аудит сообщил 0 vulnerabilities.
+- `npm run contracts:lint` — успешно: TypeSpec compile, Redocly, 28 REST/11 messages policy и 13 identity
+  policy/data tests, включая новый отрицательный fixture email enumeration.
+- `npm run lint --workspace @picklehub/backend`, `npm run lint --workspace @picklehub/web`,
+  `npm run lint --workspace @picklehub/tg`, их typecheck/test/build и `npm run test:e2e:typecheck` — успешно.
+  Backend unit: 11 suites/19 tests; web: 2 files/4 tests; TMA: 1 file/2 tests. Production web/TMA builds успешны;
+  TMA check подтвердил отсутствие development Telegram mock.
+- Финальный `npm run verify` — успешно: workspace/lockfile, TypeSpec/Redocly, compatibility, generated drift и
+  typecheck, Prism mock, форматирование, 115 Markdown-файлов, lint/typecheck/test/build всех восьми workspace.
+  Root tests выполнили 13 Turbo tasks без ошибок; `git diff --check` также успешен.
+- `npm run test:e2e` успешно собрал обе production-версии и начал три Playwright-сценария, но sandbox завершил
+  каждый системный headless Chrome сразу после запуска с `SIGABRT`; попытка kill также получила `EPERM`. Результат
+  e2e не засчитан. Вне этого sandbox команда не требует test server; при отсутствии системного Chrome нужен
+  `npx playwright install chromium` либо `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH`.
+- Docker daemon недоступен из sandbox (`permission denied` к `/Users/ruasvyn/.docker/run/docker.sock`). Прямой
+  integration-запуск также не засчитан: соединения к PostgreSQL `127.0.0.1:5432`, Redis `127.0.0.1:6379` и
+  временный listener Supertest запрещены с `EPERM`. Новые database concurrency/deletion tests прошли lint и strict
+  TypeScript, но требуют повторного runtime-прогона в разрешённой среде.
+- Внешняя `NODE_TLS_REJECT_UNAUTHORIZED=0` по-прежнему присутствует только в окружении и вызвала warning Redocly;
+  в репозиторий она не добавлена. Пользовательские PNG в `design/` не изменялись.
+- Этап не объявлен полностью принятым: нужны успешные runtime-прогоны `npm run test:e2e` и backend integration, а
+  также контрактное решение для экспорта. К следующим feature-промптам не переходили.

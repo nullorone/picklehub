@@ -13,6 +13,8 @@ interface ValidationIssue {
 interface NestErrorResponse {
     message?: string | string[] | ValidationIssue[];
     error?: string;
+    code?: string;
+    details?: { code: string; field?: string; message: string }[];
 }
 
 function collectValidationDetails(
@@ -50,6 +52,7 @@ export class ApiExceptionFilter implements ExceptionFilter {
                 ? collectValidationDetails(body.message).slice(0, 50)
                 : undefined;
         const isValidation = status === 400 && validationIssues !== undefined;
+        const explicitCode = typeof body.code === 'string' ? body.code : undefined;
 
         if (status >= 500) {
             this.logger.error(
@@ -61,13 +64,22 @@ export class ApiExceptionFilter implements ExceptionFilter {
             this.logger.warn({ event: 'http.request.rejected', statusCode: status }, ApiExceptionFilter.name);
         }
 
+        response.setHeader('Cache-Control', 'no-store');
+        response.setHeader('Pragma', 'no-cache');
         response.status(status).json({
             error: {
-                code: isValidation ? 'VALIDATION_FAILED' : this.codeForStatus(status),
-                message: isValidation ? 'Проверьте заполнение полей.' : this.messageForStatus(status),
-                ...(validationIssues === undefined || validationIssues.length === 0
+                code: explicitCode ?? (isValidation ? 'VALIDATION_FAILED' : this.codeForStatus(status)),
+                message:
+                    explicitCode === undefined
+                        ? isValidation
+                            ? 'Проверьте заполнение полей.'
+                            : this.messageForStatus(status)
+                        : typeof body.message === 'string'
+                          ? body.message
+                          : this.messageForStatus(status),
+                ...((body.details ?? validationIssues) === undefined || (body.details ?? validationIssues)?.length === 0
                     ? {}
-                    : { details: validationIssues }),
+                    : { details: body.details ?? validationIssues }),
             },
             requestId,
         });

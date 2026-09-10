@@ -21,9 +21,20 @@ Compose project, применяет `prisma migrate deploy` к чистой ба
 
 ## Границы
 
-`health`, `outbox`, `integrations` и `audit` — отдельные технические модули. Общие config, database, Redis,
-request context, logging, errors и lifecycle находятся в `common`. Контроллеры работают через сервисы и не
-обращаются к Prisma напрямую. Продуктовых модулей и событий на этом этапе нет.
+`identity` реализует browser-вход через проверенные Telegram init data и одноразовые email-ссылки, серверные
+access/refresh-сессии, связывание способов входа, согласия и первичную настройку. Raw credentials не сохраняются:
+для поиска используются HMAC, а восстанавливаемые provider subject и idempotency-ответы шифруются AES-256-GCM.
+Email доставляется через порт `EmailProvider` и HTTPS adapter с пятисекундным budget; локально без endpoint он не
+отправляет письма, а production-конфигурация требует одобренный endpoint и token. Adapter явно просит отключить
+click tracking и переписывание URL; соответствие этим флагам проверяется при одобрении конкретного провайдера.
+
+Browser-клиент сначала получает context cookie и CSRF token через `GET /v1/auth/context`, затем посылает точный
+разрешённый `Origin`, cookie и `X-CSRF-Token` на каждой мутации. Access token живёт в памяти клиента пять минут;
+refresh выдаётся только в Secure/HttpOnly cookie, ротируется и отзывает всё семейство при replay.
+
+`health`, `outbox`, `integrations` и `audit` остаются отдельными техническими модулями. Общие config, database,
+Redis, request context, logging, errors и lifecycle находятся в `common`. Контроллеры работают через сервисы и
+не обращаются к Prisma напрямую.
 
 Outbox-запись создаётся прикладным сценарием через `OutboxService` и переданный `Prisma.TransactionClient` — так
 она попадает в ту же транзакцию, что и будущее доменное изменение. Worker конкурентно забирает записи через

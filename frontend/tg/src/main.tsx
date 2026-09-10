@@ -26,7 +26,7 @@ async function bootstrap(): Promise<void> {
                 <I18nextProvider i18n={i18n}>
                     <QueryClientProvider client={queryClient}>
                         <BrowserRouter>
-                            <App config={config} />
+                            <App config={config} initData={telegram.initData} />
                         </BrowserRouter>
                     </QueryClientProvider>
                 </I18nextProvider>
