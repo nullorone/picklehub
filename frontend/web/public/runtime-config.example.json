@@ -1,4 +1,9 @@
 {
     "apiBaseUrl": "/v1",
-    "environment": "production"
+    "environment": "production",
+    "map": {
+        "attributionText": "Замените на обязательное авторство разрешённого провайдера",
+        "attributionUrl": "https://tiles.example.invalid/terms",
+        "styleUrl": "https://tiles.example.invalid/maplibre-style.json"
+    }
 }

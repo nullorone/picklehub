@@ -13,3 +13,7 @@ npm run build --workspace @picklehub/tg
 
 Production-конфигурация загружается из `/runtime-config.json` без кеширования и должна соответствовать
 `public/runtime-config.example.json`.
+
+Карта площадок включается блоком `map` с MapLibre-compatible `styleUrl` и обязательными текстом и HTTPS-ссылкой
+атрибуции. Значения `example.invalid` — безопасные заглушки, а не выбранный провайдер. Без одобренной конфигурации
+TMA явно показывает доступный список; legal/terms/residency review остаётся production gate.

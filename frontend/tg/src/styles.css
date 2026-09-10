@@ -420,3 +420,211 @@ fieldset {
         transition: none !important;
     }
 }
+.app-header nav {
+    display: flex;
+    gap: 1rem;
+}
+
+.venues-main {
+    width: min(76rem, calc(100% - 2rem));
+    margin: 0 auto;
+    padding: 2rem 0 5rem;
+}
+
+.venues-heading,
+.map-toolbar,
+.search-actions,
+.venue-card-heading,
+.address-search {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.venues-heading h1 {
+    font-size: clamp(3rem, 7vw, 5rem);
+}
+
+.venues-heading .primary-action,
+.search-actions .primary-action,
+.search-actions .secondary-action,
+.address-search .secondary-action {
+    flex: none;
+    margin-top: 0;
+}
+
+.venue-search,
+.venue-filters,
+.map-panel,
+.venue-details,
+.new-venue-card {
+    margin-top: 1.5rem;
+    padding: 1.25rem;
+    border: 1px solid var(--border);
+    border-radius: 1.25rem;
+    background: var(--surface);
+}
+
+.venue-filters {
+    grid-template-columns: repeat(4, 1fr);
+}
+
+.view-switch {
+    display: inline-flex;
+    margin-top: 1.5rem;
+    padding: 0.25rem;
+    border: 1px solid var(--border);
+    border-radius: 0.85rem;
+}
+
+.view-switch button {
+    min-height: 2.6rem;
+    padding: 0.5rem 1rem;
+    border: 0;
+    border-radius: 0.65rem;
+    background: transparent;
+}
+
+.view-switch button[aria-pressed='true'] {
+    background: var(--primary);
+}
+
+.venue-map {
+    height: min(60vh, 34rem);
+    border-radius: 1rem;
+}
+
+.map-toolbar h2,
+.map-toolbar p {
+    margin: 0.25rem 0;
+}
+
+.map-accessibility-note,
+.attribution,
+.catalogue-attribution,
+.venue-card small {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+.attribution a,
+.catalogue-attribution a {
+    color: var(--focus);
+}
+
+.provider-error,
+.privacy-warning {
+    padding: 1rem;
+    border-left: 0.3rem solid var(--warning);
+    border-radius: 0.7rem;
+    background: var(--surface-strong);
+}
+
+.venue-list,
+.suggestions {
+    display: grid;
+    gap: 0.8rem;
+    padding: 0;
+    list-style: none;
+}
+
+.venue-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.venue-card,
+.suggestions button {
+    display: grid;
+    gap: 0.45rem;
+    width: 100%;
+    padding: 1rem;
+    border: 1px solid var(--border);
+    border-radius: 1rem;
+    color: var(--text);
+    background: var(--surface);
+    text-align: left;
+    cursor: pointer;
+}
+
+.venue-card:hover,
+.suggestions button:hover {
+    border-color: var(--focus);
+    background: var(--surface-strong);
+}
+
+.verification {
+    color: #86efac;
+    font-weight: 700;
+}
+
+.verification.stale {
+    color: #fbbf24;
+}
+
+.venue-facts {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+}
+
+.venue-facts div {
+    padding: 0.75rem;
+    border-radius: 0.75rem;
+    background: var(--background);
+}
+
+.venue-facts dt {
+    color: var(--text-muted);
+}
+
+.venue-facts dd {
+    margin: 0.25rem 0 0;
+    font-weight: 700;
+}
+
+.venue-details details {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+}
+
+.venue-details summary {
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.venue-details form {
+    display: grid;
+    gap: 0.8rem;
+    margin-top: 0.8rem;
+}
+
+.address-search input {
+    margin-top: 0;
+}
+
+.suggestions small {
+    display: block;
+    color: var(--text-muted);
+}
+
+@media (max-width: 760px) {
+    .venues-heading,
+    .map-toolbar,
+    .search-actions,
+    .address-search {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .venue-filters,
+    .venue-list,
+    .venue-facts {
+        grid-template-columns: 1fr;
+    }
+
+    .venue-map {
+        height: 24rem;
+    }
+}

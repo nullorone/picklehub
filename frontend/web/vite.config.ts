@@ -25,7 +25,18 @@ export default defineConfig({
             workbox: {
                 cleanupOutdatedCaches: true,
                 navigateFallback: '/index.html',
-                runtimeCaching: [],
+                runtimeCaching: [
+                    {
+                        urlPattern: /\/venues(?:\/map|\/[0-9a-f-]{36})?(?:\?.*)?$/u,
+                        handler: 'NetworkFirst',
+                        method: 'GET',
+                        options: {
+                            cacheName: 'picklehub-public-venues-v1',
+                            expiration: { maxAgeSeconds: 900, maxEntries: 50 },
+                            networkTimeoutSeconds: 3,
+                        },
+                    },
+                ],
             },
         }),
     ],

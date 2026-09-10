@@ -4,6 +4,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { I18nextProvider } from 'react-i18next';
 import { BrowserRouter } from 'react-router-dom';
+import 'maplibre-gl/dist/maplibre-gl.css';
 
 import { App } from './app';
 import { loadRuntimeConfig } from './config';

@@ -14,6 +14,31 @@ describe('parseRuntimeConfig', () => {
         expect(() => parseRuntimeConfig({ apiBaseUrl: '/v1', environment: 'production', token: 'secret' })).toThrow();
     });
 
+    it('accepts only an HTTPS MapLibre style and attribution link', () => {
+        expect(
+            parseRuntimeConfig({
+                apiBaseUrl: '/v1',
+                environment: 'production',
+                map: {
+                    attributionText: 'Approved tile provider',
+                    attributionUrl: 'https://tiles.example.test/terms',
+                    styleUrl: 'https://tiles.example.test/style.json',
+                },
+            }).map
+        ).toEqual({
+            attributionText: 'Approved tile provider',
+            attributionUrl: 'https://tiles.example.test/terms',
+            styleUrl: 'https://tiles.example.test/style.json',
+        });
+        expect(() =>
+            parseRuntimeConfig({
+                apiBaseUrl: '/v1',
+                environment: 'production',
+                map: { attributionText: 'Tiles', attributionUrl: 'http://tiles.test', styleUrl: 'http://tiles.test' },
+            })
+        ).toThrow();
+    });
+
     it('allows only internal post-login targets and validates the secret shape', () => {
         expect(readSafeMagicFragment(`#token=${'a'.repeat(43)}&next=https://evil.example`)).toEqual({
             attemptId: undefined,

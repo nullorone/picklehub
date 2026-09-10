@@ -55,4 +55,59 @@ describe('createIdentityClient', () => {
         );
         expect(fetch.mock.calls[1]?.[1]?.body).not.toContain(session.accessToken);
     });
+
+    it('uses typed venue queries and protects venue mutations', async () => {
+        const session = {
+            accessExpiresAt: '2026-09-10T12:05:00.000Z',
+            accessToken: 'a'.repeat(43),
+            csrfToken: 'c'.repeat(43),
+            session: {
+                absoluteExpiresAt: '2026-10-10T12:00:00.000Z',
+                createdAt: '2026-09-10T12:00:00.000Z',
+                id: crypto.randomUUID(),
+                idleExpiresAt: '2026-09-17T12:00:00.000Z',
+                status: 'ACTIVE',
+            },
+            tokenType: 'Bearer',
+            user: {
+                completedAt: '2026-09-10T12:00:00.000Z',
+                createdAt: '2026-09-09T12:00:00.000Z',
+                id: crypto.randomUUID(),
+                onboardingStatus: 'COMPLETED',
+                requiredConsentsSatisfied: true,
+                status: 'ACTIVE',
+            },
+        } as const;
+        const page = {
+            items: [],
+            pageInfo: { hasMore: false, nextCursor: null },
+            snapshotAt: '2026-09-10T12:00:00.000Z',
+        };
+        const report = {
+            createdAt: '2026-09-10T12:00:00.000Z',
+            id: crypto.randomUUID(),
+            reason: 'CLOSED',
+            resolvedAt: null,
+            state: 'PENDING_REVIEW',
+            venueId: crypto.randomUUID(),
+        } as const;
+        const fetch = vi
+            .fn<typeof globalThis.fetch>()
+            .mockResolvedValueOnce(Response.json({ csrfToken: 'b'.repeat(43) }))
+            .mockResolvedValueOnce(Response.json(session))
+            .mockResolvedValueOnce(Response.json(page))
+            .mockResolvedValueOnce(Response.json(report, { status: 201 }));
+        const client = createIdentityClient({ baseUrl: '/v1', fetch }, 'WEB');
+        await client.consumeMagicLink('t'.repeat(43));
+        await client.searchVenues({ environment: 'OUTDOOR', latitude: 55.75, longitude: 37.61, radiusMeters: 5_000 });
+        await client.reportVenue(report.venueId, { reason: 'CLOSED' });
+
+        expect(fetch.mock.calls[2]?.[0]).toBe(
+            '/v1/venues?environment=OUTDOOR&latitude=55.75&longitude=37.61&radiusMeters=5000'
+        );
+        const mutationHeaders = new Headers(fetch.mock.calls[3]?.[1]?.headers);
+        expect(mutationHeaders.get('Authorization')).toBe(`Bearer ${session.accessToken}`);
+        expect(mutationHeaders.get('X-CSRF-Token')).toBe(session.csrfToken);
+        expect(mutationHeaders.get('Idempotency-Key')).toMatch(/^[0-9a-f-]{36}$/u);
+    });
 });

@@ -14,7 +14,17 @@ import type {
     SchemaOnboardingOptions,
     SchemaStartIdentityAttempt,
     SchemaUpdateDraft,
+    SchemaCreateVenueCandidate,
+    SchemaCreateVenueReport,
+    SchemaGeocodingSuggestions,
+    SchemaProposeVenueRevision,
+    SchemaVenue,
+    SchemaVenueCandidate,
+    SchemaVenuePage,
+    SchemaVenueReport,
+    SchemaVenueRevision,
 } from './generated/openapi';
+import type { operations } from './generated/openapi';
 
 export type { components, operations, paths } from './generated/openapi';
 
@@ -128,6 +138,15 @@ export function createIdentityClient(options: ApiClientOptions, platform: Client
         return parse<T>(response);
     }
 
+    function query(parameters: Readonly<Record<string, unknown>>): URLSearchParams {
+        const result = new URLSearchParams();
+        for (const [key, value] of Object.entries(parameters)) {
+            if (typeof value === 'string' && value !== '') result.set(key, value);
+            if (typeof value === 'number' || typeof value === 'boolean') result.set(key, String(value));
+        }
+        return result;
+    }
+
     function remember(session: SchemaAuthenticatedSession): SchemaAuthenticatedSession {
         accessToken = session.accessToken;
         csrfToken = session.csrfToken;
@@ -197,6 +216,9 @@ export function createIdentityClient(options: ApiClientOptions, platform: Client
         getOnboarding: () => call<SchemaOnboarding>('/me/onboarding', undefined, { auth: true }),
         getOnboardingOptions: () =>
             call<SchemaOnboardingOptions>('/identity/onboarding-options', undefined, { auth: true }),
+        getVenue: (venueId: string) => call<SchemaVenue>(`/venues/${venueId}`),
+        getVenueCandidate: (candidateId: string) =>
+            call<SchemaVenueCandidate>(`/venue-candidates/${candidateId}`, undefined, { auth: true }),
         listLocalities: (query = '') => {
             const parameters = new URLSearchParams({ limit: '50' });
             if (query.trim()) parameters.set('query', query.trim());
@@ -229,6 +251,15 @@ export function createIdentityClient(options: ApiClientOptions, platform: Client
             call(`/me/identity-attempts/${attemptId}/email/request`, { email, side }, { auth: true, mutation: true }),
         requestMagicLink: (email: string) =>
             call('/auth/magic-links/request', { email, platform }, { mutation: true, retrySession: false }),
+        searchVenueMap: (parameters: operations['searchVenueMap']['parameters']['query']) =>
+            call<SchemaVenuePage>('/venues/map', undefined, { query: query(parameters) }),
+        searchVenues: (parameters: NonNullable<operations['searchVenues']['parameters']['query']>) =>
+            call<SchemaVenuePage>('/venues', undefined, { query: query(parameters) }),
+        suggestVenueAddresses: (searchQuery: string) =>
+            call<SchemaGeocodingSuggestions>('/venues/geocoding/suggestions', undefined, {
+                auth: true,
+                query: query({ limit: 5, query: searchQuery }),
+            }),
         startIdentityAttempt: (body: SchemaStartIdentityAttempt) =>
             call<SchemaIdentityAttempt>('/me/identity-attempts', body, {
                 auth: true,
@@ -246,6 +277,24 @@ export function createIdentityClient(options: ApiClientOptions, platform: Client
                 auth: true,
                 idempotent: true,
                 method: 'PATCH',
+                mutation: true,
+            }),
+        createVenueCandidate: (body: SchemaCreateVenueCandidate) =>
+            call<SchemaVenueCandidate>('/venues/candidates', body, {
+                auth: true,
+                idempotent: true,
+                mutation: true,
+            }),
+        proposeVenueRevision: (venueId: string, body: SchemaProposeVenueRevision) =>
+            call<SchemaVenueRevision>(`/venues/${venueId}/revisions`, body, {
+                auth: true,
+                idempotent: true,
+                mutation: true,
+            }),
+        reportVenue: (venueId: string, body: SchemaCreateVenueReport) =>
+            call<SchemaVenueReport>(`/venues/${venueId}/reports`, body, {
+                auth: true,
+                idempotent: true,
                 mutation: true,
             }),
     } as const;

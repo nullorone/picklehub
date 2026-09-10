@@ -7,6 +7,7 @@ import { Link, Navigate, Route, Routes } from 'react-router-dom';
 
 import { useOnlineStatus } from './connectivity';
 import { TelegramAccount, TelegramLogin, TelegramOnboarding } from './identity-ui';
+import { VenuesScreen } from './venues-ui';
 
 type Session = components['schemas']['AuthenticatedSession'];
 
@@ -43,7 +44,12 @@ export function App({ config, initData }: { readonly config: RuntimeConfig; read
                     <span className="brand-mark" aria-hidden="true" />
                     <span>{t('appName')}</span>
                 </div>
-                {session && !onboarding && <Link to="/account">Аккаунт</Link>}
+                {session && !onboarding && (
+                    <nav aria-label="Личный кабинет">
+                        <Link to="/venues">Площадки</Link>
+                        <Link to="/account">Аккаунт</Link>
+                    </nav>
+                )}
             </header>
             <Routes>
                 <Route
@@ -68,6 +74,16 @@ export function App({ config, initData }: { readonly config: RuntimeConfig; read
                             <TelegramOnboarding client={client} online={online} onCompleted={complete} />
                         ) : (
                             <Navigate to="/login" replace />
+                        )
+                    }
+                />
+                <Route
+                    path="/venues"
+                    element={
+                        session && !onboarding ? (
+                            <VenuesScreen client={client} config={config} online={online} />
+                        ) : (
+                            <Navigate to={session ? '/onboarding' : '/login'} replace />
                         )
                     }
                 />
@@ -97,6 +113,9 @@ export function App({ config, initData }: { readonly config: RuntimeConfig; read
                                         </div>
                                         <div className="court-graphic" aria-hidden="true" />
                                     </section>
+                                    <Link className="primary-action" to="/venues">
+                                        Найти площадку
+                                    </Link>
                                 </main>
                             )
                         ) : (

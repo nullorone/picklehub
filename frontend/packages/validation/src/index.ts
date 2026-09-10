@@ -12,6 +12,20 @@ const apiBaseUrlSchema = z
 export const runtimeConfigSchema = z.strictObject({
     apiBaseUrl: apiBaseUrlSchema,
     environment: z.enum(['development', 'test', 'production']),
+    map: z
+        .strictObject({
+            attributionText: z.string().trim().min(1).max(200),
+            attributionUrl: z.url().refine((value) => new URL(value).protocol === 'https:', 'Use an HTTPS link'),
+            styleUrl: z
+                .string()
+                .trim()
+                .min(1)
+                .refine(
+                    (value) => value.startsWith('/') || (URL.canParse(value) && new URL(value).protocol === 'https:'),
+                    'map.styleUrl must be an HTTPS URL or a root-relative path'
+                ),
+        })
+        .optional(),
     release: z.string().trim().min(1).optional(),
 });
 

@@ -786,3 +786,49 @@ format:check`, отдельные venues policy/data tests и `git diff --check`
   всех migrations в разрешённом CI/PostGIS окружении; их runtime-успех не заявляется.
 - Следующий промпт: `llm/03-venues/04-tma-web.md`; к нему не переходили. Production enablement OSM/geocoder остаётся
   отдельным legal, terms, attribution, endpoint-usage и data-residency gate.
+
+## 2026-09-10 — площадки, этап 04-tma-web
+
+- Активный промпт: `llm/03-venues/04-tma-web.md`. В отдельных React-интерфейсах web/PWA и TMA добавлен маршрут
+  `/venues`: общий по смыслу набор фильтров, text/radius/bbox search, cursor pagination, явный запрос геолокации,
+  ручной выбор области, список и MapLibre-карта с server-side выборкой и встроенной кластеризацией GeoJSON.
+  Отказ в геолокации запоминается до размонтирования экрана и не мешает текстовому/ручному поиску.
+- Карта загружается отдельным lazy chunk только при выборе представления и наличии runtime-блока `map` с HTTPS
+  style/attribution. Конкретный provider не выбран: `example.invalid` намеренно неработоспособен, отсутствие
+  одобренной конфигурации явно оставляет list fallback. Tile error не скрывает список и атрибуцию источников.
+- Карточка показывает отдельное verification state, дату проверки, unknown-семантику часов/удобств и все
+  разрешённые attribution records. Явный выбор отправляет только allowlisted `venue_selected` с surface и bucket
+  расстояния; query, bbox, радиус, venue ID, адрес и координаты в analytics не передаются.
+- Добавлены typed API-client methods для восьми venue operations. Public catalogue/detail не требуют bearer;
+  geocoder и self status требуют session, а candidate/revision/report дополнительно используют CSRF и новый UUIDv4
+  idempotency key. Provider/version/rate/privacy errors имеют отдельные безопасные русские состояния.
+- Форма match-only кандидата поддерживает transient geocoder suggestion и manual coordinates, требует source match
+  ID и явного подтверждения публичности адреса. Очевидные признаки частного дома блокируются до API; успех
+  показывается только после server response и не обещает публикацию до состоявшегося матча и модерации. Исправление
+  создаёт revision без оптимистической смены карточки; жалоба ограничена `PRIVATE_RESIDENCE`/`DUPLICATE`/`CLOSED`.
+- Web service worker получил ограниченный 15-минутный `NetworkFirst` cache только для публичных GET каталога,
+  bbox-карты и detail, без geocoder/self/mutations. Offline web показывает время снимка; TMA сохраняет уже
+  загруженный список в памяти. Все мутации отключены offline. Добавлены MapLibre GL 5.7.1 и runtime-config tests.
+- UI tests проверяют list attribution, tile-config fallback, отказ геолокации без блокировки поиска, offline
+  поведение и запрет очевидного частного адреса: web — 3 suites/8 tests, TMA — 2 suites/6 tests. API-client tests
+  проверяют query serialization, bearer/CSRF/idempotency mutation headers; validation проверяет HTTPS map config.
+  Пользовательские PNG в `design/` не изменялись.
+
+### Проверки этапа venues 04-tma-web
+
+- `npm run workspace:check` — успешно: восемь workspaces и один корневой lockfile.
+- `npm run contracts:check` прошёл TypeSpec, Redocly, policy 36 REST/14 messages и 27 tests, compatibility с HEAD,
+  generated drift и contract typecheck; финальный Prism mock заблокирован sandbox на `listen EPERM 127.0.0.1`.
+  Поэтому единый `contracts:check`/`verify` не заявляется полностью успешным; контрактный source не менялся.
+- `npm run format:check`, `npm run docs:check`, `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`,
+  `npm ls --depth=0` и `git diff --check` — успешно. Turbo: lint/typecheck/build по восьми пакетам, tests 13 задач;
+  backend 12 suites/23 tests, web 3/8, TMA 2/6. PWA manifest/service worker и TMA production guard прошли.
+- Отдельно после cursor pagination успешно повторены `npm run lint --workspace @picklehub/web`, `npm run lint
+--workspace @picklehub/tg`, обе workspace typecheck/test/build. MapLibre chunk вынесен из main bundle; Vite оставил
+  неблокирующее предупреждение о размере lazy map chunk 924 kB (247.97 kB gzip).
+- Диагностическая ранняя команда `npm test --workspace @picklehub/web -- --runInBand` была отклонена Vitest как
+  неизвестный флаг; корректная команда без Jest-флага затем прошла. Ранняя TMA build выявила и после исправления
+  единственного лишнего символа CSS успешно прошла повторно.
+- Следующий промпт: `llm/03-venues/05-verification.md`; к нему не переходили. Реальные tiles/geocoder остаются
+  выключенными до legal/terms/attribution/residency review; live WebGL/provider smoke требует одобренной runtime
+  конфигурации и браузерного окружения.

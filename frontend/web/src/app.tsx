@@ -7,6 +7,7 @@ import { Link, Navigate, Route, Routes } from 'react-router-dom';
 
 import { useOnlineStatus } from './connectivity';
 import { AccountScreen, EmailLogin, MagicConfirmation, OnboardingScreen } from './identity-ui';
+import { VenuesScreen } from './venues-ui';
 
 type Session = components['schemas']['AuthenticatedSession'];
 
@@ -54,6 +55,7 @@ export function App({ config }: { readonly config: RuntimeConfig }) {
                 </Link>
                 {session?.user.onboardingStatus === 'COMPLETED' && (
                     <nav aria-label="Личный кабинет">
+                        <Link to="/venues">Площадки</Link>
                         <Link to="/account">Аккаунт</Link>
                     </nav>
                 )}
@@ -94,6 +96,16 @@ export function App({ config }: { readonly config: RuntimeConfig }) {
                     }
                 />
                 <Route
+                    path="/venues"
+                    element={
+                        session && !requiresOnboarding ? (
+                            <VenuesScreen client={client} config={config} online={online} />
+                        ) : (
+                            <Navigate to={session ? '/onboarding' : '/login'} replace />
+                        )
+                    }
+                />
+                <Route
                     path="/account"
                     element={
                         session && !requiresOnboarding ? (
@@ -121,6 +133,9 @@ export function App({ config }: { readonly config: RuntimeConfig }) {
                                         </div>
                                         <div className="court-graphic" aria-hidden="true" />
                                     </section>
+                                    <Link className="primary-action" to="/venues">
+                                        Найти площадку
+                                    </Link>
                                 </main>
                             )
                         ) : (
