@@ -1042,3 +1042,53 @@ test/integration/matches-migration.integration-spec.ts` запущен, но в�
   проверки score migration в этой sandbox-сессии не считаются пройденными.
 - До полной приёмки требуется применить migrations с нуля в PostgreSQL/PostGIS, запустить весь backend integration
   suite с Redis и повторяемый matches concurrency suite. `llm/04-matches/04-tma-web.md` не начинался.
+
+## 2026-09-10 — матчи, этап 04-tma-web
+
+- Активный промпт: `llm/04-matches/04-tma-web.md`. Реализован одинаковый полный матчевый сценарий в отдельных
+  интерфейсах web/PWA и TMA: публичный поиск, объяснимые рекомендации, список/карта, публичные deep links и
+  capability links, создание черновика, карточка матча, состав, заявки, FIFO-очередь, organizer/player actions,
+  ввод и разрешение результата. Mobile, чат/доставка уведомлений и backend-контракты не изменялись.
+- Поиск использует contract filters, rule-based score и две enum-причины. Карта повторно применяет те же фильтры
+  с вычисленным центром/радиусом и открывает матч по marker площадки. Поскольку `MatchSummary` не содержит venue
+  reference/point, клиент безопасно обогащает текущую страницу публичными `getMatch`/`getVenue`; это рабочий N+1
+  компромисс до отдельного контрактного решения, а не молчаливое изменение OpenAPI.
+- Создание поддерживает `SINGLES`/`DOUBLES`, UTC-конвертацию выбранного venue-local времени из IANA timezone,
+  диапазон уровня с шагом 0,5, `AUTO`/`APPROVAL`, `PUBLIC`/`UNLISTED`, редактируемые guest slots, external booking
+  state/note и описание. Новый публичный адрес создаётся только после private match draft, затем candidate
+  атомарно привязывается versioned update; obvious private-residence input блокируется до запроса.
+- `@picklehub/api-client` получил типизированные методы всех match routes. UI хранит один UUIDv4 mutation key на
+  логическую команду: сетевой retry повторяет тот же key; после успеха или version conflict key удаляется.
+  `MATCH_VERSION_CONFLICT`, `RESULT_VERSION_CONFLICT` и `WAITLIST_ORDER_CONFLICT` вызывают обязательный refetch и
+  понятное сообщение вместо ложного успеха. Все mutations отключены offline.
+- Organizer видит pending requests/FIFO и может approve/reject/promote, publish, start, cancel и propose/supersede
+  результат; участник может join/leave/withdraw own waitlist entry. Result form валидирует game margin и полную
+  `BEST_OF_1/3/5` серию, а `PROPOSED`/`DISPUTED` явно не показываются как окончательная статистика. Confirm/dispute
+  доступны только активному зарегистрированному не-organizer участнику и требуют доступного confirm dialog с
+  `aria-modal`, описанием, autofocus, Escape и возвратом фокуса.
+- Raw `UNLISTED` invite показывается только в одноразовом in-memory delivery после publish/rotate; обе оболочки
+  задают `Referrer-Policy: no-referrer`, token не попадает в analytics. Добавлен allowlisted `match_viewed` только с
+  channel/entry/format/visibility. Отдельного notification-preferences route в текущем контракте нет, поэтому
+  карточка честно показывает включённый in-app канал и не имитирует сохранение Telegram/email до этапа 05.
+- Основные изменённые файлы: `frontend/{web,tg}/src/{app,matches-ui,matches-ui.test}.tsx`, обе platform CSS и
+  `index.html`, `frontend/packages/{api-client,validation}/src/{index,index.test}.ts`,
+  `frontend/packages/analytics/src/index.ts`, `test/e2e/matches.spec.ts` и этот журнал.
+
+### Проверки этапа matches 04-tma-web
+
+- Целевые `lint`, strict `typecheck`, Vitest и production `build` для `@picklehub/analytics`,
+  `@picklehub/api-client`, `@picklehub/validation`, `@picklehub/web` и `@picklehub/tg` — успешно. Web: 4 suites/13
+  tests; TMA: 3/11; API client: 1/4; validation: 1/6. Новые parity tests доказывают explanation, provisional result,
+  refetch stale roster и повтор одного idempotency key после network failure в обоих клиентах.
+- `npm run verify` — успешно полностью: 8 workspaces/один lockfile, TypeSpec/Redocly, 59 REST operations/23
+  messages и 38 contract/data policy tests, compatibility/generated drift/typecheck, Prism mock, formatting/docs,
+  lint/typecheck/test/build всех workspaces. Backend unit regression: 16 suites/32 tests; web 4/13; TMA 3/11.
+- `npm run test:e2e:typecheck` и production e2e builds web/TMA — успешно. `npm run test:e2e` и отдельный
+  `npx playwright test test/e2e/matches.spec.ts --workers=1` не выполнили browser assertions: локальный Google
+  Chrome завершался `SIGABRT` при `browserType.launch` за 1–2 ms во всех новых и прежних identity/venue tests.
+  Это sandbox/browser-launch блокировка, а не результат тестового кода; три match browser smoke обязательны в CI.
+- `npm run format:check`, `npm ls --depth=0` и `git diff --check` — успешно; unmet/extraneous dependencies и
+  whitespace errors отсутствуют. Vite оставил известное предупреждение о lazy MapLibre chunk 924 kB; основной TMA
+  bundle также пересёк 500 kB, поэтому дальнейшее route-level splitting остаётся performance debt.
+- Приёмочные правила идемпотентности, refetch конфликта и parity покрыты зелёными component/client tests; live
+  browser smoke не заявляется. Следующий промпт — `llm/04-matches/05-verification.md`.

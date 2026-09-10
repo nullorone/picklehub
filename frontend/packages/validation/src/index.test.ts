@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { onboardingFormSchema, parseRuntimeConfig, readSafeMagicFragment } from './index';
+import {
+    localDateTimeToUtc,
+    onboardingFormSchema,
+    parseRuntimeConfig,
+    readSafeMagicFragment,
+    validateMatchSeries,
+} from './index';
 
 describe('parseRuntimeConfig', () => {
     it('accepts a root-relative API URL', () => {
@@ -75,5 +81,19 @@ describe('parseRuntimeConfig', () => {
                 timeZone: '',
             }).success
         ).toBe(false);
+    });
+
+    it('converts a venue-local match time to UTC and validates a complete series', () => {
+        expect(localDateTimeToUtc('2026-09-12T18:00', 'Europe/Moscow')).toBe('2026-09-12T15:00:00.000Z');
+        expect(
+            validateMatchSeries('BEST_OF_3', [
+                { teamAPoints: 11, teamBPoints: 7 },
+                { teamAPoints: 8, teamBPoints: 11 },
+                { teamAPoints: 13, teamBPoints: 11 },
+            ])
+        ).toBe('TEAM_A');
+        expect(() => validateMatchSeries('BEST_OF_3', [{ teamAPoints: 11, teamBPoints: 7 }])).toThrow(
+            /Добавьте партии/
+        );
     });
 });

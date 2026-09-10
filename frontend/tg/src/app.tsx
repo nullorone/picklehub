@@ -3,13 +3,36 @@ import { createIdentityClient, type components } from '@picklehub/api-client';
 import type { RuntimeConfig } from '@picklehub/validation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, Navigate, Route, Routes } from 'react-router-dom';
+import { Link, Navigate, Route, Routes, useParams } from 'react-router-dom';
 
 import { useOnlineStatus } from './connectivity';
 import { TelegramAccount, TelegramLogin, TelegramOnboarding } from './identity-ui';
+import { CreateMatchScreen, MatchDetailsScreen, MatchesScreen } from './matches-ui';
 import { VenuesScreen } from './venues-ui';
 
 type Session = components['schemas']['AuthenticatedSession'];
+
+function MatchRoute({
+    client,
+    online,
+    userId,
+}: {
+    readonly client: ReturnType<typeof createIdentityClient>;
+    readonly online: boolean;
+    readonly userId?: string | undefined;
+}) {
+    const { inviteToken, matchId } = useParams();
+    return (
+        <MatchDetailsScreen
+            client={client}
+            channel="telegram"
+            inviteToken={inviteToken}
+            matchId={matchId}
+            online={online}
+            userId={userId}
+        />
+    );
+}
 
 export function App({ config, initData }: { readonly config: RuntimeConfig; readonly initData: string | undefined }) {
     const { t } = useTranslation();
@@ -46,6 +69,7 @@ export function App({ config, initData }: { readonly config: RuntimeConfig; read
                 </div>
                 {session && !onboarding && (
                     <nav aria-label="Личный кабинет">
+                        <Link to="/matches">Матчи</Link>
                         <Link to="/venues">Площадки</Link>
                         <Link to="/account">Аккаунт</Link>
                     </nav>
@@ -76,6 +100,35 @@ export function App({ config, initData }: { readonly config: RuntimeConfig; read
                             <Navigate to="/login" replace />
                         )
                     }
+                />
+                <Route
+                    path="/matches"
+                    element={
+                        <MatchesScreen
+                            client={client}
+                            config={config}
+                            online={online}
+                            signedIn={Boolean(session && !onboarding)}
+                        />
+                    }
+                />
+                <Route
+                    path="/matches/new"
+                    element={
+                        session && !onboarding ? (
+                            <CreateMatchScreen client={client} online={online} />
+                        ) : (
+                            <Navigate to={session ? '/onboarding' : '/login'} replace />
+                        )
+                    }
+                />
+                <Route
+                    path="/matches/:matchId"
+                    element={<MatchRoute client={client} online={online} userId={session?.user.id} />}
+                />
+                <Route
+                    path="/match-invites/:inviteToken"
+                    element={<MatchRoute client={client} online={online} userId={session?.user.id} />}
                 />
                 <Route
                     path="/venues"
@@ -113,8 +166,8 @@ export function App({ config, initData }: { readonly config: RuntimeConfig; read
                                         </div>
                                         <div className="court-graphic" aria-hidden="true" />
                                     </section>
-                                    <Link className="primary-action" to="/venues">
-                                        Найти площадку
+                                    <Link className="primary-action" to="/matches">
+                                        Найти матч
                                     </Link>
                                 </main>
                             )

@@ -16,6 +16,43 @@ describe('createApiClient', () => {
 });
 
 describe('createIdentityClient', () => {
+    it('uses an explicit idempotency key for a retried match command', async () => {
+        const session = {
+            accessExpiresAt: '2026-09-10T12:05:00.000Z',
+            accessToken: 'a'.repeat(43),
+            csrfToken: 'c'.repeat(43),
+            session: {
+                absoluteExpiresAt: '2026-10-10T12:00:00.000Z',
+                createdAt: '2026-09-10T12:00:00.000Z',
+                id: crypto.randomUUID(),
+                idleExpiresAt: '2026-09-17T12:00:00.000Z',
+                status: 'ACTIVE',
+            },
+            tokenType: 'Bearer',
+            user: {
+                completedAt: '2026-09-10T12:00:00.000Z',
+                createdAt: '2026-09-09T12:00:00.000Z',
+                id: crypto.randomUUID(),
+                onboardingStatus: 'COMPLETED',
+                requiredConsentsSatisfied: true,
+                status: 'ACTIVE',
+            },
+        } as const;
+        const fetch = vi
+            .fn<typeof globalThis.fetch>()
+            .mockResolvedValueOnce(Response.json({ csrfToken: 'b'.repeat(43) }))
+            .mockResolvedValueOnce(Response.json(session))
+            .mockResolvedValue(Response.json({ id: crypto.randomUUID(), state: 'DRAFT', version: 0 }));
+        const client = createIdentityClient({ baseUrl: '/v1', fetch }, 'WEB');
+        await client.bootstrap();
+        const key = crypto.randomUUID();
+        await client.createMatchDraft({ format: 'SINGLES' }, key);
+        await client.createMatchDraft({ format: 'SINGLES' }, key);
+
+        expect(new Headers(fetch.mock.calls[2]?.[1]?.headers).get('Idempotency-Key')).toBe(key);
+        expect(new Headers(fetch.mock.calls[3]?.[1]?.headers).get('Idempotency-Key')).toBe(key);
+    });
+
     it('keeps access credentials in memory and sends cookies through fetch', async () => {
         const session = {
             accessExpiresAt: '2026-09-09T12:05:00.000Z',

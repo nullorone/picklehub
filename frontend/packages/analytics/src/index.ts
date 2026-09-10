@@ -14,6 +14,13 @@ export type AnalyticsEvent =
           readonly channel: ClientChannel;
           readonly surface: 'MAP' | 'LIST' | 'TEXT';
           readonly distanceBucket: 'LT_1KM' | '1_5KM' | '5_20KM' | 'GE_20KM' | 'UNKNOWN';
+      }
+    | {
+          readonly name: 'match_viewed';
+          readonly channel: ClientChannel;
+          readonly entry: 'SEARCH' | 'INVITE';
+          readonly format: 'SINGLES' | 'DOUBLES';
+          readonly visibility: 'PUBLIC' | 'UNLISTED';
       };
 
 export interface AnalyticsPort {

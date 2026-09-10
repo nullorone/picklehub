@@ -9,6 +9,18 @@ import type {
     SchemaIdentityAttempt,
     SchemaIdentityList,
     SchemaLocalityPage,
+    SchemaDraftMatchInput,
+    SchemaJoinRequest,
+    SchemaMatch,
+    SchemaMatchInvite,
+    SchemaMatchJoinCommand,
+    SchemaMatchJoinOutcome,
+    SchemaMatchPage,
+    SchemaMatchResult,
+    SchemaProposeMatchResult,
+    SchemaResolveMatchResult,
+    SchemaUpdateMatchDraft,
+    SchemaWaitlistEntry,
     SchemaMe,
     SchemaOnboarding,
     SchemaOnboardingOptions,
@@ -81,7 +93,8 @@ type JsonBody = Record<string, unknown>;
 interface RequestOptions {
     readonly auth?: boolean;
     readonly idempotent?: boolean;
-    readonly method?: 'GET' | 'POST' | 'PATCH';
+    readonly idempotencyKey?: string | undefined;
+    readonly method?: 'GET' | 'POST' | 'PATCH' | 'DELETE';
     readonly mutation?: boolean;
     readonly query?: URLSearchParams;
     readonly retrySession?: boolean;
@@ -122,7 +135,7 @@ export function createIdentityClient(options: ApiClientOptions, platform: Client
             if (!csrfToken) throw new Error('Browser security context is unavailable');
             requestHeaders['X-CSRF-Token'] = csrfToken;
         }
-        if (settings.idempotent) requestHeaders['Idempotency-Key'] = crypto.randomUUID();
+        if (settings.idempotent) requestHeaders['Idempotency-Key'] = settings.idempotencyKey ?? crypto.randomUUID();
         const requestInit: RequestInit = {
             cache: 'no-store',
             credentials: 'include',
@@ -279,10 +292,11 @@ export function createIdentityClient(options: ApiClientOptions, platform: Client
                 method: 'PATCH',
                 mutation: true,
             }),
-        createVenueCandidate: (body: SchemaCreateVenueCandidate) =>
+        createVenueCandidate: (body: SchemaCreateVenueCandidate, idempotencyKey?: string) =>
             call<SchemaVenueCandidate>('/venues/candidates', body, {
                 auth: true,
                 idempotent: true,
+                idempotencyKey,
                 mutation: true,
             }),
         proposeVenueRevision: (venueId: string, body: SchemaProposeVenueRevision) =>
@@ -295,6 +309,125 @@ export function createIdentityClient(options: ApiClientOptions, platform: Client
             call<SchemaVenueReport>(`/venues/${venueId}/reports`, body, {
                 auth: true,
                 idempotent: true,
+                mutation: true,
+            }),
+        searchMatches: (parameters: NonNullable<operations['searchMatches']['parameters']['query']>) =>
+            call<SchemaMatchPage>('/matches', undefined, { query: query(parameters) }),
+        recommendMatches: (parameters: NonNullable<operations['recommendMatches']['parameters']['query']>) =>
+            call<SchemaMatchPage>('/matches/recommendations', undefined, { auth: true, query: query(parameters) }),
+        getMatch: (matchId: string) => call<SchemaMatch>(`/matches/${matchId}`),
+        getMatchByInvite: (inviteToken: string) =>
+            call<SchemaMatch>(`/match-invites/${encodeURIComponent(inviteToken)}`),
+        createMatchDraft: (body: SchemaDraftMatchInput, idempotencyKey?: string) =>
+            call<SchemaMatch>('/matches', body, {
+                auth: true,
+                idempotent: true,
+                idempotencyKey,
+                mutation: true,
+            }),
+        updateMatchDraft: (matchId: string, body: SchemaUpdateMatchDraft, idempotencyKey?: string) =>
+            call<SchemaMatch>(`/matches/${matchId}`, body, {
+                auth: true,
+                idempotent: true,
+                idempotencyKey,
+                method: 'PATCH',
+                mutation: true,
+            }),
+        deleteMatchDraft: (matchId: string, expectedVersion: number, idempotencyKey?: string) =>
+            call<undefined>(`/matches/${matchId}`, undefined, {
+                auth: true,
+                idempotent: true,
+                idempotencyKey,
+                method: 'DELETE',
+                mutation: true,
+                query: query({ expectedVersion }),
+            }),
+        publishMatch: (matchId: string, expectedVersion: number, idempotencyKey?: string) =>
+            call<SchemaMatch | SchemaMatchInvite>(
+                `/matches/${matchId}/publish`,
+                { expectedVersion },
+                { auth: true, idempotent: true, idempotencyKey, mutation: true }
+            ),
+        rotateMatchInvite: (matchId: string, expectedVersion: number, idempotencyKey?: string) =>
+            call<SchemaMatchInvite>(
+                `/matches/${matchId}/invite/rotate`,
+                { expectedVersion },
+                { auth: true, idempotent: true, idempotencyKey, mutation: true }
+            ),
+        joinMatch: (matchId: string, body: SchemaMatchJoinCommand, idempotencyKey?: string) =>
+            call<SchemaMatchJoinOutcome>(`/matches/${matchId}/join`, body, {
+                auth: true,
+                idempotent: true,
+                idempotencyKey,
+                mutation: true,
+            }),
+        listMatchJoinRequests: (matchId: string) =>
+            call<{ readonly items: readonly SchemaJoinRequest[] }>(`/matches/${matchId}/join-requests`, undefined, {
+                auth: true,
+            }),
+        listMatchWaitlist: (matchId: string) =>
+            call<{ readonly items: readonly SchemaWaitlistEntry[] }>(`/matches/${matchId}/waitlist`, undefined, {
+                auth: true,
+            }),
+        decideMatchJoinRequest: (
+            matchId: string,
+            joinRequestId: string,
+            decision: 'approve' | 'reject' | 'withdraw',
+            expectedVersion: number,
+            idempotencyKey?: string
+        ) =>
+            call<SchemaMatchJoinOutcome | SchemaJoinRequest>(
+                `/matches/${matchId}/join-requests/${joinRequestId}/${decision}`,
+                { expectedVersion },
+                { auth: true, idempotent: true, idempotencyKey, mutation: true }
+            ),
+        actOnMatchWaitlist: (
+            matchId: string,
+            entryId: string,
+            action: 'promote' | 'withdraw',
+            expectedVersion: number,
+            idempotencyKey?: string
+        ) =>
+            call<SchemaMatchJoinOutcome | SchemaWaitlistEntry>(
+                `/matches/${matchId}/waitlist/${entryId}/${action}`,
+                { expectedVersion },
+                { auth: true, idempotent: true, idempotencyKey, mutation: true }
+            ),
+        leaveMatch: (matchId: string, participantId: string, expectedVersion: number, idempotencyKey?: string) =>
+            call<SchemaMatch>(
+                `/matches/${matchId}/participants/${participantId}/leave`,
+                { expectedVersion },
+                { auth: true, idempotent: true, idempotencyKey, mutation: true }
+            ),
+        transitionMatch: (
+            matchId: string,
+            transition: 'cancel' | 'start',
+            expectedVersion: number,
+            idempotencyKey?: string
+        ) =>
+            call<SchemaMatch>(
+                `/matches/${matchId}/${transition}`,
+                { expectedVersion },
+                { auth: true, idempotent: true, idempotencyKey, mutation: true }
+            ),
+        proposeMatchResult: (matchId: string, body: SchemaProposeMatchResult, idempotencyKey?: string) =>
+            call<SchemaMatchResult>(`/matches/${matchId}/results`, body, {
+                auth: true,
+                idempotent: true,
+                idempotencyKey,
+                mutation: true,
+            }),
+        resolveMatchResult: (
+            matchId: string,
+            resultId: string,
+            decision: 'confirm' | 'dispute',
+            body: SchemaResolveMatchResult,
+            idempotencyKey?: string
+        ) =>
+            call<SchemaMatchResult>(`/matches/${matchId}/results/${resultId}/${decision}`, body, {
+                auth: true,
+                idempotent: true,
+                idempotencyKey,
                 mutation: true,
             }),
     } as const;
