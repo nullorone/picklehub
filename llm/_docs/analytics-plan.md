@@ -100,3 +100,45 @@ Backend/venues владеет server events и operational metrics; клиент
 UI-состояний. Повтор outbox сохраняет event ID, consumer применяет уникальность. Недоступность analytics не
 блокирует поиск, публикацию, privacy quarantine или audit; события до согласия не буферизуются и не
 воспроизводятся после него.
+
+## Матчи
+
+Проекции в behavioral analytics используют consent policy и envelope `v1` раздела identity. Доменный marker и
+минимальный внутренний event обязательного агрегата главной метрики создаются независимо от optional analytics
+consent и не экспортируются провайдеру без него. Raw invite token/URL, описание, booking note, venue
+ID/адрес/координаты, search origin, точные расстояние/время, ID других игроков, очередь, значение уровня, счёт и
+причина спора запрещены. Разрешены только закрытые enum и buckets ниже.
+
+| Событие                     | Условие и источник                         | Дополнительные свойства                                                                           | Дедупликация                     | Применение                                 |
+| --------------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------- | -------------------------------- | ------------------------------------------ |
+| `match_created`             | Backend после первого commit черновика     | `format`, `visibility`, `joinMode`: разрешённые значения либо `UNSET`                             | Один event ID на match ID        | Первое намерение и mix правил.             |
+| `match_published`           | Единственный `DRAFT` → `PUBLISHED`         | Те же enum; `leadTimeBucket`: `LT_6H`/`6_24H`/`1_7D`/`GT_7D`                                      | Match ID + transition            | Конверсия черновика в доступный матч.      |
+| `match_search_completed`    | Backend после успешной публичной выдачи    | `resultBucket`: `ZERO`/`ONE_FIVE`/`SIX_TWENTY`/`GT_TWENTY`; `hasTimeWindow`; `hasLocation`        | Принятый request ID              | Полезность выдачи без слежения.            |
+| `match_viewed`              | Клиент при осмысленном показе карточки     | `entry`: `SEARCH`/`INVITE`; `format`; `visibility`                                                | Match + screen session           | Search/invite → view в consented sample.   |
+| `join_requested`            | Commit заявки, auto join или FIFO entry    | `path`: `AUTO_JOINED`/`AUTO_WAITLISTED`/`APPROVAL_PENDING`; `format`; `teamChoice`: `A`/`B`/`ANY` | ID доменной операции             | Намерение сыграть и путь вступления.       |
+| `join_request_decided`      | Терминальное решение организатора          | `decision`: `APPROVED_TO_ROSTER`/`APPROVED_TO_WAITLIST`/`REJECTED`                                | Request ID                       | Approval conversion.                       |
+| `waitlist_resolved`         | `PROMOTED`/`WITHDRAWN`/`SKIPPED`/`EXPIRED` | `outcome`; `waitBucket`: `LT_30M`/`30M_2H`/`2_12H`/`GE_12H`                                       | Entry ID + outcome               | Конверсия/время очереди без позиции.       |
+| `match_roster_completed`    | Вычисляемый переход незаполнен → заполнен  | `format`; `hoursToStartBucket`: `PAST`/`LT_2H`/`2_24H`/`GE_24H`                                   | Match ID + completion sequence   | Время заполнения без status drift.         |
+| `match_started`             | Единственный переход в `IN_PROGRESS`       | `format`; `roster`: `MINIMUM`/`FULL`                                                              | Match ID + transition            | Доля публикаций, дошедших до игры.         |
+| `match_result_proposed`     | Commit новой версии предложения            | `mode`: `SCORED`/`PLAYED_WITHOUT_SCORE`; `submissionBucket`: `LT_6H`/`6_24H`/`1_3D`               | Match ID + result version        | Потери между началом и предложением.       |
+| `match_result_disputed`     | Единственный переход версии в `DISPUTED`   | `mode`; `responseBucket`: `LT_6H`/`6_24H`/`1_2D`/`GE_2D`                                          | Match ID + result version        | Доля споров без содержания.                |
+| `match_completed_confirmed` | Транзакция immutable confirmed marker      | `mode`; `format`; `confirmationPath`: `PLAYER`/`MODERATOR`; `responseBucket`                      | Match + `CONFIRMED_MATCH` marker | Главная недельная метрика и пилот.         |
+| `match_cancelled`           | Терминальный переход до начала             | `stage`: `DRAFT`/`PUBLISHED`; `leadTimeBucket`: `PAST`/`LT_2H`/`2_24H`/`GE_24H`                   | Match ID + transition            | Доля/момент отмен без текста.              |
+| `match_participant_left`    | Участие переходит в `LEFT`                 | `timing`: `LATE`/`NOT_LATE`                                                                       | Participant ID + transition      | Late-exit guardrail и нагрузка на очередь. |
+
+Immutable confirmed marker — единственный источник главной метрики; одноимённый analytics event является его
+consent-filtered проекцией. Внутренняя витрина дедуплицирует marker, использует серверный `confirmedAt` для
+UTC-недели и разделяет `PLAYER`/`MODERATOR`. Пилотная конверсия строится из
+серверных фактов: знаменатель — уникальные опубликованные матчи хотя бы с заявкой, auto join или waitlist;
+числитель — их marker. Результат показывается при выборке от 30. Клиентские события и analytics consent не
+определяют этот operational KPI.
+
+Продуктовая панель показывает create → publish → first intent → computed roster complete → start → propose →
+confirm, медиану/p90 заполнения и подтверждения, approval и waitlist promotion rates, доли late exit, cancel и
+dispute. Для consented funnel показывается размер выборки; агрегированный marker не используется для профилирования.
+
+Operational metrics без user IDs: capacity/version/idempotency conflicts, конкурентные проигрыши, превышение
+team capacity (цель ноль), активные/просроченные offer/result confirmation, возраст очереди, invalid transitions,
+latency join/promotion/confirmation, outbox lag/retry и расхождение матча с result/marker (цель ноль). Audit и эти
+счётчики не зависят от analytics consent и не содержат token, состав, текст или географию. Недоступность analytics
+не откатывает транзакцию; retry сохраняет event ID, consumer обеспечивает уникальность.

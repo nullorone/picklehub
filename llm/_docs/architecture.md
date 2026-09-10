@@ -117,6 +117,26 @@ budget/circuit breaker и не повторяет небезопасную му�
 удаление venue. Публикация, merge/alias, audit и outbox выполняются одной транзакцией. Privacy quarantine после
 жалобы инвалидирует публичные caches только после commit и закрывает выдачу при cache miss из PostgreSQL.
 
+### Граница матчей
+
+`matches` владеет агрегатом матча, командами, участниками/гостями, заявками, FIFO-очередью, capability links,
+результатом и immutable metric marker. `profiles` предоставляет актуальный уровень и публичную проекцию через
+application port; `venues` разрешает canonical/alias/candidate и privacy state. Эти снимки не становятся
+владением matches. Communications, statistics и trust/safety потребляют committed events асинхронно и не меняют
+таблицы matches напрямую; moderator resolution вызывается отдельным авторизованным application use case.
+
+Все меняющие вместимость операции сериализуются по match/version в PostgreSQL. Ограничения базы запрещают
+переполнение команды и одновременную активную заявку/очередь/участие одного игрока. Освобождение места и
+promotion/offer — одна транзакция с неизменяемой FIFO sequence; Redis не является арбитром. Подтверждение
+результата атомарно создаёт согласованные состояния match/result, metric marker, audit и outbox. Уникальность
+marker и idempotency record защищает повтор HTTP, worker и moderator resolution.
+
+Поиск использует параметризованный PostGIS port venues и версионируемую rule-based scoring policy после hard
+filters. Search origin не записывается в домен. `UNLISTED` исключён из обычной read model и открывается по token
+не менее 128 бит, хранимому только как keyed hash; raw capability не проходит в логи, очереди или события.
+Booking note — непроверенное заявление организатора, не provider integration. Встроенных бронирования, оплаты,
+повторения расписания и автоматического подтверждения результата нет.
+
 ## Общие frontend-пакеты
 
 Разрешены framework-neutral пакеты `api-client`, `domain`, `validation`, `i18n` и `analytics`. Они не импортируют

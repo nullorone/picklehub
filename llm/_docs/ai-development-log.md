@@ -894,3 +894,53 @@ format:check`, отдельные venues policy/data tests и `git diff --check`
   репозиторий.
 - Код matches не начинался. Следующий промпт после чтения `llm/04-matches/00-overview.md` —
   `llm/04-matches/01-requirements.md`.
+
+## 2026-09-10 — матчи, этап 01-requirements
+
+- Активный промпт: `llm/04-matches/01-requirements.md`. Изменения ограничены требованиями, доменной моделью,
+  архитектурой, безопасностью и аналитикой; TypeSpec/AsyncAPI, Prisma, backend и клиентский код матчей не
+  создавались.
+- Product requirements получили 15 историй: черновик/публикация, поиск/карточка/capability link, `AUTO` и
+  `APPROVAL`, решение/отзыв заявки, FIFO promotion, выход, отмена, начало, предложение, подтверждение и спор.
+  Определены автоматы матча, участника, заявки, очереди/offer и версий результата и 26 сценариев
+  «Дано/Когда/Тогда» для гонок, replay и недопустимых переходов.
+- Вместимость вычисляется по активным участникам и гостям, а offer только резервирует вакансию; отдельного full
+  status нет. SQL constraints и сериализация агрегата обязаны защищать пределы `SINGLES`/`DOUBLES`, уникальность
+  участия и FIFO. Организатор всегда первый игрок `TEAM_A`; гость не имеет аккаунта, подтверждения или статистики.
+- Зафиксированы hard filters и версионируемая rule-based рекомендация 0–100: расстояние 35%, время 30%, формат
+  20%, уровень 15%, стабильный tie-break и две объяснимые причины. Product policy задаёт draft retention,
+  publish/search horizon, join/offer/start/result/confirmation deadlines; границы считаются серверными UTC-часами.
+- `UNLISTED` использует capability token не менее 128 бит с хранением keyed hash, ротацией, одинаковым not-found и
+  запретом утечки в referrer/log/analytics/cache. Booking note остаётся непроверенным plain text о внешней броне;
+  платежи, booking provider, повторение расписания и обещание брони не добавлялись.
+- Результат — `SCORED` с валидной серией `BEST_OF_1/3/5` либо `PLAYED_WITHOUT_SCORE`. Только зарегистрированный
+  соперник подтверждает конкретную версию. Immutable marker по match + metric type — единственный источник
+  недельной основной метрики; proposed/disputed/voided/cancelled/no-show не учитываются, replay не дублирует
+  marker. Behavioral analytics остаётся consent-filtered, обязательный внутренний агрегат marker — нет.
+- Domain model/architecture фиксируют владение matches и ports к profiles/venues, атомарность roster/result/marker,
+  минимальные события для venues/communications/statistics/trust-safety. Security/privacy добавляет классификацию,
+  rate limits, audit и предлагаемый retention, который требует legal review до production. Analytics plan задаёт
+  allowlisted события, дедупликацию, владельцев, funnel/guardrails и запрет token, состава, счёта и географии.
+- Изменённые файлы: `llm/_docs/product-requirements.md`, `llm/_docs/domain-model.md`,
+  `llm/_docs/analytics-plan.md`, `llm/_docs/security-privacy.md`, `llm/_docs/architecture.md` и этот журнал.
+
+### Проверки этапа matches 01-requirements
+
+- `npx prettier --write llm/_docs/product-requirements.md llm/_docs/domain-model.md
+llm/_docs/analytics-plan.md llm/_docs/security-privacy.md llm/_docs/architecture.md` — успешно.
+- `npm run format:check`, `npm run docs:check`, read-only Node.js-проверка относительных Markdown-ссылок в пяти
+  документах и `git diff --check` — успешно: TypeSpec format без изменений, 116 Markdown-файлов без ошибок,
+  проверено 30 ссылок с существующими целями.
+- `npm run verify` — успешно полностью: workspace audit (8 workspace, один lockfile), TypeSpec/Redocly, policy
+  36 REST operations/14 messages и 27 tests, compatibility, generated drift/typecheck, Prism mock, format/docs,
+  lint/typecheck/test/build всех восьми workspace. Backend unit: 13 suites/27 tests; web: 3/9; TMA: 2/7;
+  production PWA/TMA guards прошли. Turbo использовал cache для неизменённого продуктового кода.
+- `npm ls --depth=0` и финальный `git diff --check` — успешно; unmet/extraneous dependencies и whitespace errors
+  отсутствуют. Vite сохранил известное неблокирующее предупреждение о lazy MapLibre chunk 924 kB. Внешняя
+  `NODE_TLS_REJECT_UNAUTHORIZED=0` по-прежнему присутствует только в окружении и вызвала Redocly warning; она не
+  добавлена в репозиторий.
+- Новые integration/e2e/Docker проверки не добавлялись и не запускались: этап меняет только документацию.
+  Успешный regression не является тестом ещё не реализованных матчевых constraints и гонок. Legal approval
+  retention и обработка public/unlisted данных до production не заявляются.
+- Содержательные критерии этапа выполнены. Следующий промпт: `llm/04-matches/02-contract-data.md`; к нему не
+  переходили.

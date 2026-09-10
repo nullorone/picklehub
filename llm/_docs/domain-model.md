@@ -83,3 +83,37 @@ canonical venue автоматически: доступность оставш�
 `venue.candidate.created.v1`, `venue.verified.v1` и `venue.merged.v1` в отдельный внутренний канал
 `venue.events.v1`. Payload содержит только opaque IDs и ограниченный verification enum; координаты, адреса,
 источник, search origin и contributor/moderator ID запрещены.
+
+## Матчи
+
+Граница `matches` владеет разовым агрегатом и не владеет каталогом площадок, профилем или trust/safety:
+
+- `matches` — корень с организатором, версией, policy version, форматом, видимостью, режимом вступления, временем,
+  диапазоном уровня и ссылкой на venue/candidate; жизненный цикл включает `DRAFT`, `PUBLISHED`, `IN_PROGRESS`,
+  `AWAITING_CONFIRMATION`, `DISPUTED` и терминальные `CANCELLED`, `COMPLETED`, `VOIDED`;
+- `match_teams` — ровно `TEAM_A` и `TEAM_B` с ёмкостью из формата; заполненность вычисляется, а не хранится;
+- `match_participants`, `match_guest_slots` — зарегистрированные и гостевые места конкретной команды; только
+  участник имеет user ID, право подтверждения и будущую статистику;
+- `join_requests` — одно активное намерение `APPROVAL` и неизменяемый терминальный исход;
+- `waitlist_entries`, `waitlist_offers` — монотонная FIFO-позиция, выбор команды и ограниченный offer;
+- `match_invites` — версия capability с keyed hash непредсказуемого token; raw token не сохраняется;
+- `match_results`, `game_scores`, `result_confirmations`, `match_metric_markers` — версии предложения, партии,
+  решение соперника и уникальный подтверждённый outcome/вклад в метрику.
+
+Организатор — первый участник `TEAM_A`. Уникальность match + user среди активной заявки, очереди и участия и
+граница мест команды защищаются SQL constraints/triggers и транзакцией. Освобождение места и promotion, решение
+заявки, guest slot и join сериализуются по версии агрегата. FIFO sequence неизменяема; неподходящий кандидат
+получает terminal skip до следующего. `AUTO` создаёт участие/очередь, `APPROVAL` — заявку, затем участие/очередь и
+offer при вакансии.
+
+Матч и результат меняются согласованной парой: `AWAITING_CONFIRMATION` соответствует `PROPOSED`, `COMPLETED` —
+immutable `CONFIRMED`, `DISPUTED` — спору, `VOIDED` — отсутствию подтверждённой игры. Подтвердить может активный
+зарегистрированный соперник организатора. Транзакция подтверждения записывает outcome, `PLAYED` участия,
+уникальный metric marker, audit и outbox. Уникальность marker по match + metric type защищает HTTP/outbox/moderation
+replay. Спор не создаёт marker и не передаётся статистике до решения moderator.
+
+`matches` читает уровень через application port profiles и разрешает venue alias через port `venues`, не копируя
+координаты. После подтверждения публикуется минимальное событие для идемпотентной qualification venue candidate.
+Будущие communications/statistics/trust-safety реагируют на события, но не меняют таблицы matches. Payload содержит
+opaque match ID, версию и закрытые enum/buckets; raw invite token, booking note, адрес/координаты, имена, уровень и
+состав запрещены.

@@ -194,6 +194,45 @@ residency review. IP и provider request metadata не маскируются о
 ошибки cache invalidation имеют operational alerts. Заметки модератора, адрес кандидата и координаты не входят в
 audit payload: аудит хранит target ID, действие, outcome и безопасный reason code.
 
+## Политика матчей
+
+Основание — [требования матчей](product-requirements.md). Публичны только опубликованные поля карточки и публичные
+проекции участников. Join requests, FIFO-позиции, withdrawn/rejected причины, match-only candidate, raw booking
+note до публикации и внутренние версии результата — `restricted/internal` по конкретному use case. Состав
+показывает только необходимые публичные профильные поля; email, Telegram identity и контакты не раскрываются.
+
+Token `UNLISTED` — capability secret не менее 128 бит. Сервер хранит keyed hash и версию, сравнивает безопасно,
+ротирует с немедленным отзывом и не включает raw token/URL в log, analytics, audit, outbox, error report, sitemap,
+push/email preview или cache key общего доступа. Страница не загружает сторонние ресурсы с capability URL и задаёт
+`Referrer-Policy: no-referrer`. Ответ по отсутствующему/отозванному/чужому token одинаков; ссылка разрешает только
+просмотр и не заменяет аутентификацию/авторизацию мутаций.
+
+Описание, guest label и booking note — недоверенный plain text: Unicode normalize, ограничение длины, запрет
+control characters/HTML/ссылок для гостя и output escaping. Booking note не принимает цену, payment/booking
+credential или payment link и явно маркируется как непроверенное внешнее бронирование. Эти поля, счёт, очередь,
+причина отказа/спора и точная search origin не попадают в analytics/log/audit summary. Точное место публично лишь
+пока разрешает venues privacy state; quarantine закрывает адрес в карточках и caches.
+
+Стартовые rate limits одновременно применяются по authenticated user, match и IP/network: публичный поиск
+60/минуту на IP; detail/invite 120/минуту на IP и 60/минуту на пользователя; create/publish/edit/cancel/start/result
+20/минуту на пользователя и 60/минуту на IP; join/request/withdraw/leave 30/минуту на пользователя, 60/минуту на
+match и 120/минуту на IP; organizer decisions/promotion 30/минуту на organizer + match; confirm/dispute 10/час на
+user + match. Это типизированная стартовая policy, не результат нагрузочного теста. Недоступность distributed
+limiter закрывает мутации 503; публичное чтение допускает только ограниченный local fallback с метрикой.
+
+Предлагаемый для legal review retention: неактивный draft — 30 суток; rejected/withdrawn/expired requests и
+waitlist — 90 суток после терминала, затем агрегирование/удаление actor link; cancelled/voided match — один год;
+confirmed match и минимальный состав/result outcome — пока нужен истории/статистике пользователя и не более трёх
+лет после удаления последнего связанного аккаунта без отдельного основания; raw result versions и dispute
+evidence — один год после решения; invite hashes — до terminal match плюс 24 часа; idempotency responses — 24
+часа; consented raw analytics — 90 суток. Guest label/booking note удаляются или обезличиваются при terminal
+retention и не становятся бессрочным audit. Production сбор закрыт до утверждения основания и очистки/backups.
+
+Audit атомарно фиксирует publish/cancel/start, organizer decisions, late leave, invite rotation, result proposal,
+confirm/dispute и moderator resolution только с opaque actor/target ID, enum действия и outcome. Клиентские
+мутации не показывают optimistic success. Security tests обязаны использовать canary token/text и гонки capacity,
+FIFO, idempotency и confirmation, доказывая отсутствие утечки и единственность эффекта.
+
 ## Политика identity и онбординга
 
 Основание — [обзор identity](../02-identity-onboarding/00-overview.md) и
