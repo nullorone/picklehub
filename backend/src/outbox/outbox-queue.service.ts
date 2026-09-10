@@ -15,6 +15,7 @@ export interface OutboxJobData {
 export class OutboxQueueService implements OnModuleDestroy {
     private readonly queue: Queue<OutboxJobData>;
     private readonly matchStatisticsQueue: Queue<OutboxJobData>;
+    private readonly communicationQueue: Queue<OutboxJobData>;
     private readonly maxAttempts: number;
 
     constructor(@Inject(ENVIRONMENT) environment: Environment, redis: RedisService) {
@@ -31,12 +32,24 @@ export class OutboxQueueService implements OnModuleDestroy {
         this.matchStatisticsQueue = new Queue<OutboxJobData>(`${environment.REDIS_NAMESPACE}-match-statistics-v1`, {
             connection: redis.client,
         });
+        this.communicationQueue = new Queue<OutboxJobData>(`${environment.REDIS_NAMESPACE}-communication-events-v1`, {
+            connection: redis.client,
+        });
     }
 
     async publish(data: OutboxJobData): Promise<void> {
         await this.queue.add('dispatch-outbox-event.v1', data, { jobId: data.eventId });
         if (data.type === 'match.completed.confirmed.v1') {
             await this.matchStatisticsQueue.add('project-confirmed-match.v1', data, {
+                jobId: data.eventId,
+                attempts: this.maxAttempts,
+                backoff: { type: 'exponential', delay: 500 },
+                removeOnComplete: { age: 86_400, count: 100_000 },
+                removeOnFail: { age: 604_800, count: 100_000 },
+            });
+        }
+        if (data.type.startsWith('match.') || data.type === 'communication.chat.stream.changed.v1') {
+            await this.communicationQueue.add('consume-communication-event.v1', data, {
                 jobId: data.eventId,
                 attempts: this.maxAttempts,
                 backoff: { type: 'exponential', delay: 500 },
@@ -52,6 +65,6 @@ export class OutboxQueueService implements OnModuleDestroy {
     }
 
     async onModuleDestroy(): Promise<void> {
-        await Promise.all([this.queue.close(), this.matchStatisticsQueue.close()]);
+        await Promise.all([this.queue.close(), this.matchStatisticsQueue.close(), this.communicationQueue.close()]);
     }
 }

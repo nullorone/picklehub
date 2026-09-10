@@ -65,6 +65,17 @@ const environmentSchema = z
         MATCH_START_LATE_HOURS: z.coerce.number().int().min(1).max(72).default(6),
         MATCH_RESULT_DEADLINE_HOURS: z.coerce.number().int().min(1).max(720).default(72),
         MATCH_CONFIRMATION_DEADLINE_HOURS: z.coerce.number().int().min(1).max(720).default(48),
+        COMMUNICATION_DELIVERY_POLL_INTERVAL_MS: z.coerce.number().int().min(100).max(60_000).default(1000),
+        COMMUNICATION_DELIVERY_MAX_ATTEMPTS: z.coerce.number().int().min(1).max(12).default(8),
+        COMMUNICATION_PROVIDER_TIMEOUT_MS: z.coerce.number().int().min(500).max(30_000).default(5000),
+        COMMUNICATION_ENCRYPTION_KEY: z
+            .string()
+            .regex(/^[a-f0-9]{64}$/u)
+            .default('abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789'),
+        NOTIFICATION_EMAIL_PROVIDER_ENDPOINT: httpsUrl.optional(),
+        NOTIFICATION_EMAIL_PROVIDER_TOKEN: z.string().min(32).optional(),
+        NOTIFICATION_TELEGRAM_ENABLED: z.enum(['true', 'false']).default('false'),
+        NOTIFICATION_EMAIL_ENABLED: z.enum(['true', 'false']).default('false'),
     })
     .superRefine((environment, context) => {
         if (environment.NODE_ENV === 'production' && environment.REDIS_NAMESPACE === 'local') {
@@ -84,6 +95,27 @@ const environmentSchema = z
                 code: 'custom',
                 path: ['IDENTITY_HMAC_KEY'],
                 message: 'Production identity secrets must be explicitly configured',
+            });
+        }
+        if (
+            environment.NODE_ENV === 'production' &&
+            environment.COMMUNICATION_ENCRYPTION_KEY.startsWith('abcdef0123456789')
+        ) {
+            context.addIssue({
+                code: 'custom',
+                path: ['COMMUNICATION_ENCRYPTION_KEY'],
+                message: 'Production communication encryption key must be explicitly configured',
+            });
+        }
+        if (
+            environment.NOTIFICATION_EMAIL_ENABLED === 'true' &&
+            (environment.NOTIFICATION_EMAIL_PROVIDER_ENDPOINT === undefined ||
+                environment.NOTIFICATION_EMAIL_PROVIDER_TOKEN === undefined)
+        ) {
+            context.addIssue({
+                code: 'custom',
+                path: ['NOTIFICATION_EMAIL_PROVIDER_ENDPOINT'],
+                message: 'Notification email delivery requires an explicitly configured provider',
             });
         }
         const overpassConfigured = environment.VENUE_OVERPASS_ENDPOINT !== undefined;

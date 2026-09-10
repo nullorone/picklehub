@@ -7,6 +7,7 @@ import { LifecycleModule } from './common/lifecycle/lifecycle.module';
 import { LoggingModule } from './common/logging/logging.module';
 import { RedisModule } from './common/redis/redis.module';
 import { RequestContextModule } from './common/request-context/request-context.module';
+import { CommunicationsModule } from './communications/communications.module';
 import { HealthModule } from './health/health.module';
 import { IntegrationsModule } from './integrations/integrations.module';
 import { IdentityModule } from './identity/identity.module';
@@ -29,6 +30,7 @@ import { VenuesModule } from './venues/venues.module';
         IdentityModule,
         VenuesModule,
         MatchesModule,
+        CommunicationsModule,
     ],
 })
 export class AppModule {}

@@ -1231,3 +1231,63 @@ diff --check` — успешно, 117 Markdown-файлов без ошибок.
   approval этим этапом не заявляются.
 - Контрактные и кодовые критерии выполнены; runtime-критерий применения миграции остаётся environment-blocked.
   Следующий промпт `llm/05-chat-notifications/03-backend.md` не начинался.
+
+## 2026-09-10 — чат и уведомления, этап 03-backend
+
+- Активный промпт: `llm/05-chat-notifications/03-backend.md`. Реализован NestJS-модуль communications с 15
+  контрактными REST operations, `no-store`, bearer/Origin/CSRF-проверками, Redis rate limit и зашифрованным
+  24-часовым idempotency replay. Нормализованный plain text сохраняется до fan-out; edit/delete добавляют
+  append-only revision/tombstone и проверяют автора, ожидаемую revision, 15-минутное окно и состояние чата.
+- Snapshot, backward history и forward catch-up используют подписанный 15-минутный cursor, привязанный к user,
+  conversation, направлению и неизменяемой former-member boundary. Unread исключает собственные и заблокированные
+  пользовательские сообщения; read position продвигается только вперёд. Report фиксирует одну revision-bound
+  encrypted evidence запись без свободного текста, а communication replay/evidence используют отдельный ключ.
+- Добавлен WebSocket gateway `/v1/ws` на `ws`: Origin и одноразовое Redis-погашение ticket до подписки,
+  авторизация subscription/command и повторная авторизация каждого Redis fan-out, cursor catch-up с bounded gap,
+  структурированные contract-compatible errors, UUIDv4 idempotency для create/update/delete и graceful close.
+  Wire parser маршрутизирует исходные AsyncAPI envelopes по `type`; session credential/ticket не помещается в URL.
+- Outbox dispatcher публикует минимальные match/chat references в отдельную BullMQ communication queue.
+  Идемпотентный PostgreSQL consumer создаёт чат при публикации, синхронизирует access intervals после системного
+  roster event, формирует закрытые system types, persistent in-app items и внешние delivery rows. Receipt,
+  system message, membership boundary, notification и delivery коммитятся одной транзакцией; replay подавляется
+  storage uniqueness, а текст чата не попадает в generic outbox, BullMQ data, логи или provider preview.
+- Durable delivery dispatcher оставляет `PENDING`/`DEFERRED` в PostgreSQL при сбое Redis. BullMQ worker повторно
+  проверяет preference и linked identity на каждой попытке, применяет bounded exponential retry с jitter,
+  provider rate limit, safe error codes и terminal suppression/failure observability. Telegram/email adapters
+  получают contact только расшифрованным в памяти, используют allowlisted locale template, стабильный idempotency
+  key и отключённый email tracking; provider IDs хранятся только как HMAC. Оба внешних канала выключены по
+  умолчанию, резервный provider не добавлялся.
+- Тихие часы вычисляются в сохранённой IANA timezone сканированием фактической UTC timeline до первого локального
+  выхода из окна, включая DST overlap/gap; отмена и спор обходят окно. Maintenance worker переводит истёкшее
+  7-дневное окно записи в `READ_ONLY`, очищает истёкшие inbox/delivery/idempotency/conversation записи и корректно
+  ждёт активную работу при shutdown. Добавлены privacy-safe operational counters без user/match labels.
+- Добавлена backend-миграция backfill для уже опубликованных/terminal матчей и membership intervals, не меняющая
+  контрактную схему. Добавлены зависимости Nest WebSocket/ws, configuration gates и `.env.example` без секретов.
+  Основные файлы: `backend/src/communications/*`, `backend/src/bootstrap.ts`, app/worker/outbox wiring,
+  `backend/prisma/migrations/20260911130000_chat_notifications_backend/migration.sql`, package manifests и тесты.
+
+### Проверки этапа chat/notifications 03-backend
+
+- `npm run verify` — успешно полностью: workspace audit, TypeSpec/Redocly, policy для 74 REST operations/37
+  messages, 47 contract/data tests, compatibility/generated drift/typecheck, Prism mock, formatting/docs,
+  lint/typecheck/unit tests/build восьми workspaces. После последних backend-only уточнений отдельно успешно прошли
+  `npm run lint --workspace @picklehub/backend`, `npm run typecheck --workspace @picklehub/backend`,
+  `npm test --workspace @picklehub/backend -- --runInBand` (19 suites, 45 tests) и
+  `npm run build --workspace @picklehub/backend`.
+- `PRISMA_SCHEMA_ENGINE_BINARY=/usr/bin/true PRISMA_QUERY_ENGINE_LIBRARY=/usr/bin/true DATABASE_URL=... npm run
+prisma:validate --workspace @picklehub/backend` — успешно, Prisma schema валидна. Обычный `prisma:generate`
+  сначала не смог скачать checksum engine из-за `getaddrinfo ENOTFOUND`; повтор с уже используемыми в репозитории
+  локальными synthetic engine paths успешно сгенерировал Prisma Client 6.16.2.
+- `npm ls --depth=0` и `git diff --check` — успешно; unmet/extraneous dependencies и whitespace errors отсутствуют.
+- `npm run test:integration --workspace @picklehub/backend -- --runInBand` запущен, но runtime запрещает соединения
+  с локальными PostgreSQL/Redis (`connect EPERM 127.0.0.1:5432` и `:6379`) и открытие HTTP listener (`listen
+EPERM`). Поэтому все существующие database suites остановились на инфраструктуре. Новый
+  `communications-backend.integration-spec.ts` действительно использует AppModule, настоящие Prisma/PostgreSQL и
+  Redis и проверяет event receipt replay, system sequence, logical notification deduplication и запрет бывшему
+  участнику читать новые сообщения, но его зелёный runtime-прогон и применение новой backfill migration должны
+  быть выполнены в CI/локальном окружении с разрешёнными сервисами; успех не заявляется.
+- Unit privacy checks подтверждают отдельное randomized authenticated encryption, подпись/TTL cursor и отсутствие
+  chat preview/canary в email provider payload при выключенном tracking. Реальные Telegram/email/failover
+  providers, их terms/residency и legal retention approval этим этапом не заявляются.
+- Кодовые и статические критерии этапа выполнены; runtime integration criterion остаётся environment-blocked.
+  Следующий промпт `llm/05-chat-notifications/04-tma-web.md` не начинался.

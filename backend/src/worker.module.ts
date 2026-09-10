@@ -7,6 +7,7 @@ import { LifecycleModule } from './common/lifecycle/lifecycle.module';
 import { LoggingModule } from './common/logging/logging.module';
 import { RedisModule } from './common/redis/redis.module';
 import { RequestContextModule } from './common/request-context/request-context.module';
+import { CommunicationsModule } from './communications/communications.module';
 import { IntegrationsModule } from './integrations/integrations.module';
 import { MatchesModule } from './matches/matches.module';
 import { OutboxModule } from './outbox/outbox.module';
@@ -26,6 +27,7 @@ import { VenuesModule } from './venues/venues.module';
         AuditModule,
         VenuesModule,
         MatchesModule,
+        CommunicationsModule,
     ],
     providers: [OutboxWorkerService],
 })
