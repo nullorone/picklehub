@@ -80,6 +80,33 @@ channels:
                 $ref: '#/components/messages/VenueVerified'
             VenueMerged:
                 $ref: '#/components/messages/VenueMerged'
+    matchEvents:
+        address: match.events.v1
+        title: Internal match domain events
+        description: Transactional outbox only, ordered by match aggregate version and delivered at least once.
+            Payloads contain opaque IDs and closed enums only; no invite token, roster identity, score, text,
+            level, venue, coordinates, search origin or dispute reason.
+        servers:
+            - $ref: '#/servers/outbox'
+        messages:
+            MatchCreated:
+                $ref: '#/components/messages/MatchCreated'
+            MatchPublished:
+                $ref: '#/components/messages/MatchPublished'
+            MatchJoinIntentRecorded:
+                $ref: '#/components/messages/MatchJoinIntentRecorded'
+            MatchRosterChanged:
+                $ref: '#/components/messages/MatchRosterChanged'
+            MatchStarted:
+                $ref: '#/components/messages/MatchStarted'
+            MatchResultProposed:
+                $ref: '#/components/messages/MatchResultProposed'
+            MatchResultDisputed:
+                $ref: '#/components/messages/MatchResultDisputed'
+            MatchCompletedConfirmed:
+                $ref: '#/components/messages/MatchCompletedConfirmed'
+            MatchCancelled:
+                $ref: '#/components/messages/MatchCancelled'
 operations:
     receiveClientControl:
         action: receive
@@ -133,6 +160,24 @@ operations:
             - $ref: '#/channels/venueEvents/messages/VenueCandidateCreated'
             - $ref: '#/channels/venueEvents/messages/VenueVerified'
             - $ref: '#/channels/venueEvents/messages/VenueMerged'
+    publishMatchEvents:
+        action: send
+        title: Publish committed match transitions
+        summary: Publish privacy-minimized match events through the transactional outbox.
+        description: The stream key is match:{matchId}; aggregateVersion supplies monotonic ordering. Consumers
+            deduplicate by messageId and never infer a successful mutation before its REST response/commit.
+        channel:
+            $ref: '#/channels/matchEvents'
+        messages:
+            - $ref: '#/channels/matchEvents/messages/MatchCreated'
+            - $ref: '#/channels/matchEvents/messages/MatchPublished'
+            - $ref: '#/channels/matchEvents/messages/MatchJoinIntentRecorded'
+            - $ref: '#/channels/matchEvents/messages/MatchRosterChanged'
+            - $ref: '#/channels/matchEvents/messages/MatchStarted'
+            - $ref: '#/channels/matchEvents/messages/MatchResultProposed'
+            - $ref: '#/channels/matchEvents/messages/MatchResultDisputed'
+            - $ref: '#/channels/matchEvents/messages/MatchCompletedConfirmed'
+            - $ref: '#/channels/matchEvents/messages/MatchCancelled'
 components:
     messages:
         Authenticate:
@@ -295,6 +340,87 @@ components:
                 location: $message.payload#/correlationId
             payload:
                 $ref: '#/components/schemas/VenueMergedEnvelope'
+        MatchCreated:
+            name: match.created.v1
+            title: MatchCreated
+            summary: A private one-off match draft was committed.
+            contentType: application/json
+            correlationId:
+                location: $message.payload#/correlationId
+            payload:
+                $ref: '#/components/schemas/MatchCreatedEnvelope'
+        MatchPublished:
+            name: match.published.v1
+            title: MatchPublished
+            summary: A valid match was published.
+            contentType: application/json
+            correlationId:
+                location: $message.payload#/correlationId
+            payload:
+                $ref: '#/components/schemas/MatchPublishedEnvelope'
+        MatchJoinIntentRecorded:
+            name: match.join.intent.recorded.v1
+            title: MatchJoinIntentRecorded
+            summary: A join transaction produced one roster, waitlist or approval outcome.
+            contentType: application/json
+            correlationId:
+                location: $message.payload#/correlationId
+            payload:
+                $ref: '#/components/schemas/MatchJoinIntentRecordedEnvelope'
+        MatchRosterChanged:
+            name: match.roster.changed.v1
+            title: MatchRosterChanged
+            summary: Roster occupancy changed without exposing its members.
+            contentType: application/json
+            correlationId:
+                location: $message.payload#/correlationId
+            payload:
+                $ref: '#/components/schemas/MatchRosterChangedEnvelope'
+        MatchStarted:
+            name: match.started.v1
+            title: MatchStarted
+            summary: A published match entered play.
+            contentType: application/json
+            correlationId:
+                location: $message.payload#/correlationId
+            payload:
+                $ref: '#/components/schemas/MatchStartedEnvelope'
+        MatchResultProposed:
+            name: match.result.proposed.v1
+            title: MatchResultProposed
+            summary: A result version was proposed without exposing its score.
+            contentType: application/json
+            correlationId:
+                location: $message.payload#/correlationId
+            payload:
+                $ref: '#/components/schemas/MatchResultProposedEnvelope'
+        MatchResultDisputed:
+            name: match.result.disputed.v1
+            title: MatchResultDisputed
+            summary: A result version was disputed without exposing a reason or actor.
+            contentType: application/json
+            correlationId:
+                location: $message.payload#/correlationId
+            payload:
+                $ref: '#/components/schemas/MatchResultDisputedEnvelope'
+        MatchCompletedConfirmed:
+            name: match.completed.confirmed.v1
+            title: MatchCompletedConfirmed
+            summary: The immutable confirmed-match metric marker was committed.
+            contentType: application/json
+            correlationId:
+                location: $message.payload#/correlationId
+            payload:
+                $ref: '#/components/schemas/MatchCompletedConfirmedEnvelope'
+        MatchCancelled:
+            name: match.cancelled.v1
+            title: MatchCancelled
+            summary: A draft or published match was cancelled.
+            contentType: application/json
+            correlationId:
+                location: $message.payload#/correlationId
+            payload:
+                $ref: '#/components/schemas/MatchCancelledEnvelope'
     schemas:
         Uuid:
             type: string
@@ -784,3 +910,190 @@ components:
                             $ref: '#/components/schemas/Uuid'
                         canonicalVenueId:
                             $ref: '#/components/schemas/Uuid'
+        MatchCreatedEnvelope:
+            type: object
+            additionalProperties: false
+            required: [messageId, type, occurredAt, correlationId, data]
+            properties:
+                messageId: { $ref: '#/components/schemas/Uuid' }
+                type: { type: string, const: match.created.v1 }
+                occurredAt: { $ref: '#/components/schemas/Timestamp' }
+                correlationId: { $ref: '#/components/schemas/Uuid' }
+                causationId:
+                    oneOf: [{ $ref: '#/components/schemas/Uuid' }, { type: 'null' }]
+                data:
+                    type: object
+                    additionalProperties: false
+                    required: [matchId, aggregateVersion]
+                    properties:
+                        matchId: { $ref: '#/components/schemas/Uuid' }
+                        aggregateVersion: { type: integer, minimum: 0 }
+        MatchPublishedEnvelope:
+            type: object
+            additionalProperties: false
+            required: [messageId, type, occurredAt, correlationId, data]
+            properties:
+                messageId: { $ref: '#/components/schemas/Uuid' }
+                type: { type: string, const: match.published.v1 }
+                occurredAt: { $ref: '#/components/schemas/Timestamp' }
+                correlationId: { $ref: '#/components/schemas/Uuid' }
+                causationId:
+                    oneOf: [{ $ref: '#/components/schemas/Uuid' }, { type: 'null' }]
+                data:
+                    type: object
+                    additionalProperties: false
+                    required: [matchId, aggregateVersion, format, visibility, joinMode]
+                    properties:
+                        matchId: { $ref: '#/components/schemas/Uuid' }
+                        aggregateVersion: { type: integer, minimum: 1 }
+                        format: { type: string, enum: [SINGLES, DOUBLES] }
+                        visibility: { type: string, enum: [PUBLIC, UNLISTED] }
+                        joinMode: { type: string, enum: [AUTO, APPROVAL] }
+        MatchJoinIntentRecordedEnvelope:
+            type: object
+            additionalProperties: false
+            required: [messageId, type, occurredAt, correlationId, data]
+            properties:
+                messageId: { $ref: '#/components/schemas/Uuid' }
+                type: { type: string, const: match.join.intent.recorded.v1 }
+                occurredAt: { $ref: '#/components/schemas/Timestamp' }
+                correlationId: { $ref: '#/components/schemas/Uuid' }
+                causationId:
+                    oneOf: [{ $ref: '#/components/schemas/Uuid' }, { type: 'null' }]
+                data:
+                    type: object
+                    additionalProperties: false
+                    required: [matchId, aggregateVersion, outcome, teamChoice]
+                    properties:
+                        matchId: { $ref: '#/components/schemas/Uuid' }
+                        aggregateVersion: { type: integer, minimum: 1 }
+                        outcome:
+                            type: string
+                            enum: [AUTO_JOINED, AUTO_WAITLISTED, APPROVAL_PENDING]
+                        teamChoice: { type: string, enum: [TEAM_A, TEAM_B, ANY] }
+        MatchRosterChangedEnvelope:
+            type: object
+            additionalProperties: false
+            required: [messageId, type, occurredAt, correlationId, data]
+            properties:
+                messageId: { $ref: '#/components/schemas/Uuid' }
+                type: { type: string, const: match.roster.changed.v1 }
+                occurredAt: { $ref: '#/components/schemas/Timestamp' }
+                correlationId: { $ref: '#/components/schemas/Uuid' }
+                causationId:
+                    oneOf: [{ $ref: '#/components/schemas/Uuid' }, { type: 'null' }]
+                data:
+                    type: object
+                    additionalProperties: false
+                    required: [matchId, aggregateVersion, rosterComplete, completionSequence]
+                    properties:
+                        matchId: { $ref: '#/components/schemas/Uuid' }
+                        aggregateVersion: { type: integer, minimum: 1 }
+                        rosterComplete: { type: boolean }
+                        completionSequence: { type: integer, minimum: 0 }
+        MatchStartedEnvelope:
+            type: object
+            additionalProperties: false
+            required: [messageId, type, occurredAt, correlationId, data]
+            properties:
+                messageId: { $ref: '#/components/schemas/Uuid' }
+                type: { type: string, const: match.started.v1 }
+                occurredAt: { $ref: '#/components/schemas/Timestamp' }
+                correlationId: { $ref: '#/components/schemas/Uuid' }
+                causationId:
+                    oneOf: [{ $ref: '#/components/schemas/Uuid' }, { type: 'null' }]
+                data:
+                    type: object
+                    additionalProperties: false
+                    required: [matchId, aggregateVersion, format, roster]
+                    properties:
+                        matchId: { $ref: '#/components/schemas/Uuid' }
+                        aggregateVersion: { type: integer, minimum: 1 }
+                        format: { type: string, enum: [SINGLES, DOUBLES] }
+                        roster: { type: string, enum: [MINIMUM, FULL] }
+        MatchResultProposedEnvelope:
+            type: object
+            additionalProperties: false
+            required: [messageId, type, occurredAt, correlationId, data]
+            properties:
+                messageId: { $ref: '#/components/schemas/Uuid' }
+                type: { type: string, const: match.result.proposed.v1 }
+                occurredAt: { $ref: '#/components/schemas/Timestamp' }
+                correlationId: { $ref: '#/components/schemas/Uuid' }
+                causationId:
+                    oneOf: [{ $ref: '#/components/schemas/Uuid' }, { type: 'null' }]
+                data:
+                    type: object
+                    additionalProperties: false
+                    required: [matchId, aggregateVersion, resultId, resultVersion, mode]
+                    properties:
+                        matchId: { $ref: '#/components/schemas/Uuid' }
+                        aggregateVersion: { type: integer, minimum: 1 }
+                        resultId: { $ref: '#/components/schemas/Uuid' }
+                        resultVersion: { type: integer, minimum: 1 }
+                        mode: { type: string, enum: [SCORED, PLAYED_WITHOUT_SCORE] }
+        MatchResultDisputedEnvelope:
+            type: object
+            additionalProperties: false
+            required: [messageId, type, occurredAt, correlationId, data]
+            properties:
+                messageId: { $ref: '#/components/schemas/Uuid' }
+                type: { type: string, const: match.result.disputed.v1 }
+                occurredAt: { $ref: '#/components/schemas/Timestamp' }
+                correlationId: { $ref: '#/components/schemas/Uuid' }
+                causationId:
+                    oneOf: [{ $ref: '#/components/schemas/Uuid' }, { type: 'null' }]
+                data:
+                    type: object
+                    additionalProperties: false
+                    required: [matchId, aggregateVersion, resultId, resultVersion, mode]
+                    properties:
+                        matchId: { $ref: '#/components/schemas/Uuid' }
+                        aggregateVersion: { type: integer, minimum: 1 }
+                        resultId: { $ref: '#/components/schemas/Uuid' }
+                        resultVersion: { type: integer, minimum: 1 }
+                        mode: { type: string, enum: [SCORED, PLAYED_WITHOUT_SCORE] }
+        MatchCompletedConfirmedEnvelope:
+            type: object
+            additionalProperties: false
+            required: [messageId, type, occurredAt, correlationId, data]
+            properties:
+                messageId: { $ref: '#/components/schemas/Uuid' }
+                type: { type: string, const: match.completed.confirmed.v1 }
+                occurredAt: { $ref: '#/components/schemas/Timestamp' }
+                correlationId: { $ref: '#/components/schemas/Uuid' }
+                causationId:
+                    oneOf: [{ $ref: '#/components/schemas/Uuid' }, { type: 'null' }]
+                data:
+                    type: object
+                    additionalProperties: false
+                    required:
+                        [matchId, aggregateVersion, resultId, resultVersion, markerId, mode, format, confirmationPath]
+                    properties:
+                        matchId: { $ref: '#/components/schemas/Uuid' }
+                        aggregateVersion: { type: integer, minimum: 1 }
+                        resultId: { $ref: '#/components/schemas/Uuid' }
+                        resultVersion: { type: integer, minimum: 1 }
+                        markerId: { $ref: '#/components/schemas/Uuid' }
+                        mode: { type: string, enum: [SCORED, PLAYED_WITHOUT_SCORE] }
+                        format: { type: string, enum: [SINGLES, DOUBLES] }
+                        confirmationPath: { type: string, enum: [PLAYER, MODERATOR] }
+        MatchCancelledEnvelope:
+            type: object
+            additionalProperties: false
+            required: [messageId, type, occurredAt, correlationId, data]
+            properties:
+                messageId: { $ref: '#/components/schemas/Uuid' }
+                type: { type: string, const: match.cancelled.v1 }
+                occurredAt: { $ref: '#/components/schemas/Timestamp' }
+                correlationId: { $ref: '#/components/schemas/Uuid' }
+                causationId:
+                    oneOf: [{ $ref: '#/components/schemas/Uuid' }, { type: 'null' }]
+                data:
+                    type: object
+                    additionalProperties: false
+                    required: [matchId, aggregateVersion, stage]
+                    properties:
+                        matchId: { $ref: '#/components/schemas/Uuid' }
+                        aggregateVersion: { type: integer, minimum: 1 }
+                        stage: { type: string, enum: [DRAFT, PUBLISHED] }

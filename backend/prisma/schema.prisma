@@ -111,6 +111,13 @@ model User {
   venueReports        VenueReport[]
   venueSources        VenueSource[]
   venueDecisions      VenueModerationDecision[]
+  organizedMatches    Match[]                    @relation("MatchOrganizer")
+  matchParticipants   MatchParticipant[]
+  matchGuestOwners    MatchGuestSlot[]
+  matchJoinRequests   JoinRequest[]
+  matchWaitlist       WaitlistEntry[]
+  resultProposals     MatchResult[]               @relation("MatchResultProposer")
+  resultConfirmations ResultConfirmation[]
 
   @@map("identity_users")
 }
@@ -457,6 +464,7 @@ model Venue {
   decisions                VenueModerationDecision[]
   previousMerges           VenueMerge[]             @relation("VenueMergePrevious")
   canonicalMerges          VenueMerge[]             @relation("VenueMergeCanonical")
+  matches                  Match[]
 
   @@index([publicationState, name, id], map: "venues_catalogue_sort_idx")
   @@index([publicationState, lastVerifiedAt], map: "venues_staleness_idx")
@@ -483,6 +491,7 @@ model VenueCandidate {
   canonicalVenue           Venue?                 @relation(fields: [canonicalVenueId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   sources                  VenueSource[]
   decisions                VenueModerationDecision[]
+  matches                  Match[]
 
   @@index([state, qualifiedAt, id], map: "venue_candidates_review_idx")
   @@map("venue_candidates")
@@ -646,4 +655,345 @@ model VenueImportCheckpoint {
 
   @@id([providerKey, scopeKey])
   @@map("venue_import_checkpoints")
+}
+
+// Matches data contract. Cross-table capacity, active-involvement, state-pair and immutable-outcome rules are
+// enforced by the SQL migration with deferred constraint triggers and row-level serialization on matches.
+enum MatchFormat {
+  SINGLES
+  DOUBLES
+
+  @@map("match_format")
+}
+
+enum MatchVisibility {
+  PUBLIC
+  UNLISTED
+
+  @@map("match_visibility")
+}
+
+enum MatchJoinMode {
+  AUTO
+  APPROVAL
+
+  @@map("match_join_mode")
+}
+
+enum MatchState {
+  DRAFT
+  PUBLISHED
+  IN_PROGRESS
+  AWAITING_CONFIRMATION
+  DISPUTED
+  CANCELLED
+  COMPLETED
+  VOIDED
+
+  @@map("match_state")
+}
+
+enum MatchTeamCode {
+  TEAM_A
+  TEAM_B
+
+  @@map("match_team_code")
+}
+
+enum MatchTeamChoice {
+  TEAM_A
+  TEAM_B
+  ANY
+
+  @@map("match_team_choice")
+}
+
+enum MatchParticipantState {
+  ACTIVE
+  LEFT
+  CANCELLED
+  PLAYED
+
+  @@map("match_participant_state")
+}
+
+enum MatchJoinRequestState {
+  PENDING
+  APPROVED
+  REJECTED
+  WITHDRAWN
+  EXPIRED
+
+  @@map("match_join_request_state")
+}
+
+enum MatchWaitlistState {
+  WAITING
+  OFFERED
+  PROMOTED
+  WITHDRAWN
+  SKIPPED
+  EXPIRED
+
+  @@map("match_waitlist_state")
+}
+
+enum MatchResultState {
+  PROPOSED
+  SUPERSEDED
+  CONFIRMED
+  DISPUTED
+  VOIDED
+
+  @@map("match_result_state")
+}
+
+enum MatchResultMode {
+  SCORED
+  PLAYED_WITHOUT_SCORE
+
+  @@map("match_result_mode")
+}
+
+enum MatchSeriesFormat {
+  BEST_OF_1
+  BEST_OF_3
+  BEST_OF_5
+
+  @@map("match_series_format")
+}
+
+enum ResultConfirmationDecision {
+  CONFIRMED
+  DISPUTED
+
+  @@map("result_confirmation_decision")
+}
+
+enum MatchMetricType {
+  CONFIRMED_MATCH
+
+  @@map("match_metric_type")
+}
+
+enum ExternalBookingState {
+  UNKNOWN
+  NOT_BOOKED
+  BOOKED_EXTERNALLY
+
+  @@map("external_booking_state")
+}
+
+model Match {
+  id                       String                 @id @db.Uuid
+  organizerId              String                 @map("organizer_id") @db.Uuid
+  version                  Int                    @default(0)
+  state                    MatchState             @default(DRAFT)
+  format                   MatchFormat?
+  visibility               MatchVisibility?
+  joinMode                 MatchJoinMode?         @map("join_mode")
+  startsAt                 DateTime?              @map("starts_at") @db.Timestamptz(3)
+  timeZone                 String?                @map("time_zone") @db.VarChar(64)
+  venueId                  String?                @map("venue_id") @db.Uuid
+  venueCandidateId         String?                @map("venue_candidate_id") @db.Uuid
+  skillMin                 Decimal?               @map("skill_min") @db.Decimal(2, 1)
+  skillMax                 Decimal?               @map("skill_max") @db.Decimal(2, 1)
+  description              String?                @db.VarChar(1000)
+  bookingState             ExternalBookingState   @default(UNKNOWN) @map("booking_state")
+  bookingNote              String?                @map("booking_note") @db.VarChar(280)
+  policyVersion            String?                @map("policy_version") @db.VarChar(64)
+  waitlistSequence         BigInt                 @default(0) @map("waitlist_sequence")
+  rosterCompletionSequence Int                    @default(0) @map("roster_completion_sequence")
+  createdAt                DateTime               @default(now()) @map("created_at") @db.Timestamptz(3)
+  publishedAt              DateTime?              @map("published_at") @db.Timestamptz(3)
+  updatedAt                DateTime               @default(now()) @map("updated_at") @db.Timestamptz(3)
+  organizer                User                   @relation("MatchOrganizer", fields: [organizerId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  venue                    Venue?                 @relation(fields: [venueId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  venueCandidate           VenueCandidate?        @relation(fields: [venueCandidateId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  teams                    MatchTeam[]
+  participants             MatchParticipant[]
+  guests                   MatchGuestSlot[]
+  joinRequests             JoinRequest[]
+  waitlistEntries          WaitlistEntry[]
+  invites                  MatchInvite[]
+  results                  MatchResult[]
+  metricMarkers            MatchMetricMarker[]
+  idempotencyRecords       MatchIdempotencyRecord[]
+
+  @@index([visibility, state, startsAt, id], map: "matches_public_search_idx")
+  @@index([organizerId, state, updatedAt], map: "matches_organizer_idx")
+  @@map("matches")
+}
+
+model MatchTeam {
+  matchId   String        @map("match_id") @db.Uuid
+  code      MatchTeamCode
+  capacity  Int           @db.SmallInt
+  match     Match         @relation(fields: [matchId], references: [id], onDelete: Cascade, onUpdate: Restrict)
+
+  @@id([matchId, code])
+  @@map("match_teams")
+}
+
+model MatchParticipant {
+  id          String                @id @db.Uuid
+  matchId     String                @map("match_id") @db.Uuid
+  userId      String                @map("user_id") @db.Uuid
+  team        MatchTeamCode
+  state       MatchParticipantState @default(ACTIVE)
+  isOrganizer Boolean               @default(false) @map("is_organizer")
+  joinedAt    DateTime              @default(now()) @map("joined_at") @db.Timestamptz(3)
+  resolvedAt  DateTime?             @map("resolved_at") @db.Timestamptz(3)
+  match       Match                 @relation(fields: [matchId], references: [id], onDelete: Cascade, onUpdate: Restrict)
+  user        User                  @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([matchId, userId], map: "match_participants_match_user_key")
+  @@index([matchId, state, team], map: "match_participants_roster_idx")
+  @@map("match_participants")
+}
+
+model MatchGuestSlot {
+  id        String        @id @db.Uuid
+  matchId   String        @map("match_id") @db.Uuid
+  team      MatchTeamCode
+  label     String        @db.VarChar(50)
+  createdBy String        @map("created_by") @db.Uuid
+  createdAt DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  match     Match         @relation(fields: [matchId], references: [id], onDelete: Cascade, onUpdate: Restrict)
+  owner     User          @relation(fields: [createdBy], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([matchId, team], map: "match_guest_slots_team_idx")
+  @@map("match_guest_slots")
+}
+
+model JoinRequest {
+  id          String                @id @db.Uuid
+  matchId     String                @map("match_id") @db.Uuid
+  requesterId String                @map("requester_id") @db.Uuid
+  teamChoice  MatchTeamChoice       @map("team_choice")
+  state       MatchJoinRequestState @default(PENDING)
+  createdAt   DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
+  decidedAt   DateTime?             @map("decided_at") @db.Timestamptz(3)
+  match       Match                 @relation(fields: [matchId], references: [id], onDelete: Cascade, onUpdate: Restrict)
+  requester   User                  @relation(fields: [requesterId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([matchId, state, createdAt, id], map: "join_requests_pending_idx")
+  @@map("join_requests")
+}
+
+model WaitlistEntry {
+  id             String             @id @db.Uuid
+  matchId        String             @map("match_id") @db.Uuid
+  playerId       String             @map("player_id") @db.Uuid
+  teamChoice     MatchTeamChoice    @map("team_choice")
+  state          MatchWaitlistState @default(WAITING)
+  sequence       BigInt
+  offeredTeam    MatchTeamCode?     @map("offered_team")
+  offeredAt      DateTime?          @map("offered_at") @db.Timestamptz(3)
+  offerExpiresAt DateTime?          @map("offer_expires_at") @db.Timestamptz(3)
+  createdAt      DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  resolvedAt     DateTime?          @map("resolved_at") @db.Timestamptz(3)
+  match          Match              @relation(fields: [matchId], references: [id], onDelete: Cascade, onUpdate: Restrict)
+  player         User               @relation(fields: [playerId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([matchId, sequence], map: "waitlist_entries_match_sequence_key")
+  @@index([matchId, state, sequence], map: "waitlist_entries_fifo_idx")
+  @@map("waitlist_entries")
+}
+
+model MatchInvite {
+  id         String   @id @db.Uuid
+  matchId    String   @map("match_id") @db.Uuid
+  version    Int
+  tokenHash  String   @map("token_hash") @db.Char(64)
+  keyVersion Int      @map("key_version")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  revokedAt  DateTime? @map("revoked_at") @db.Timestamptz(3)
+  expiresAt  DateTime @map("expires_at") @db.Timestamptz(3)
+  match      Match    @relation(fields: [matchId], references: [id], onDelete: Cascade, onUpdate: Restrict)
+
+  @@unique([matchId, version], map: "match_invites_match_version_key")
+  @@unique([tokenHash], map: "match_invites_token_hash_key")
+  @@map("match_invites")
+}
+
+model MatchResult {
+  id            String            @id @db.Uuid
+  matchId       String            @map("match_id") @db.Uuid
+  version       Int
+  state         MatchResultState  @default(PROPOSED)
+  mode          MatchResultMode
+  seriesFormat  MatchSeriesFormat? @map("series_format")
+  winningTeam   MatchTeamCode?    @map("winning_team")
+  proposedBy    String            @map("proposed_by") @db.Uuid
+  proposedAt    DateTime          @default(now()) @map("proposed_at") @db.Timestamptz(3)
+  resolvedAt    DateTime?         @map("resolved_at") @db.Timestamptz(3)
+  match         Match             @relation(fields: [matchId], references: [id], onDelete: Cascade, onUpdate: Restrict)
+  proposer      User              @relation("MatchResultProposer", fields: [proposedBy], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  games         GameScore[]
+  confirmations ResultConfirmation[]
+  metricMarkers MatchMetricMarker[]
+
+  @@unique([matchId, version], map: "match_results_match_version_key")
+  @@index([matchId, state], map: "match_results_current_idx")
+  @@map("match_results")
+}
+
+model GameScore {
+  resultId    String      @map("result_id") @db.Uuid
+  gameNumber Int         @map("game_number") @db.SmallInt
+  teamAPoints Int        @map("team_a_points") @db.SmallInt
+  teamBPoints Int        @map("team_b_points") @db.SmallInt
+  result      MatchResult @relation(fields: [resultId], references: [id], onDelete: Cascade, onUpdate: Restrict)
+
+  @@id([resultId, gameNumber])
+  @@map("game_scores")
+}
+
+model ResultConfirmation {
+  id        String                     @id @db.Uuid
+  resultId  String                     @map("result_id") @db.Uuid
+  playerId  String                     @map("player_id") @db.Uuid
+  decision  ResultConfirmationDecision
+  createdAt DateTime                   @default(now()) @map("created_at") @db.Timestamptz(3)
+  result    MatchResult                @relation(fields: [resultId], references: [id], onDelete: Cascade, onUpdate: Restrict)
+  player    User                       @relation(fields: [playerId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([resultId, playerId], map: "result_confirmations_result_player_key")
+  @@map("result_confirmations")
+}
+
+model MatchMetricMarker {
+  id               String          @id @db.Uuid
+  matchId          String          @map("match_id") @db.Uuid
+  resultId         String          @map("result_id") @db.Uuid
+  metricType       MatchMetricType @map("metric_type")
+  confirmationPath String          @map("confirmation_path") @db.VarChar(16)
+  confirmedAt      DateTime        @map("confirmed_at") @db.Timestamptz(3)
+  match            Match           @relation(fields: [matchId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  result           MatchResult     @relation(fields: [resultId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([matchId, metricType], map: "match_metric_markers_effective_key")
+  @@unique([resultId, metricType], map: "match_metric_markers_result_key")
+  @@map("match_metric_markers")
+}
+
+model MatchIdempotencyRecord {
+  id                   String   @id @db.Uuid
+  matchId              String?  @map("match_id") @db.Uuid
+  userId               String   @map("user_id") @db.Uuid
+  idempotencyKey       String   @map("idempotency_key") @db.Uuid
+  method               String   @db.VarChar(8)
+  canonicalPath        String   @map("canonical_path") @db.VarChar(200)
+  requestFingerprint   String   @map("request_fingerprint") @db.Char(64)
+  responseStatus       Int      @map("response_status") @db.SmallInt
+  responseCiphertext   Bytes    @map("response_ciphertext")
+  encryptionKeyVersion Int      @map("encryption_key_version")
+  createdAt            DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  expiresAt            DateTime @default(dbgenerated("CURRENT_TIMESTAMP + INTERVAL '24 hours'")) @map("expires_at") @db.Timestamptz(3)
+  match                Match?   @relation(fields: [matchId], references: [id], onDelete: Cascade, onUpdate: Restrict)
+
+  @@unique([userId, method, canonicalPath, idempotencyKey], map: "match_idempotency_scope_key")
+  @@index([expiresAt], map: "match_idempotency_expiry_idx")
+  @@map("match_idempotency_records")
 }

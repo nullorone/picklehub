@@ -944,3 +944,56 @@ llm/_docs/analytics-plan.md llm/_docs/security-privacy.md llm/_docs/architecture
   retention и обработка public/unlisted данных до production не заявляются.
 - Содержательные критерии этапа выполнены. Следующий промпт: `llm/04-matches/02-contract-data.md`; к нему не
   переходили.
+
+## 2026-09-10 — матчи, этап 02-contract-data
+
+- Активный промпт: `llm/04-matches/02-contract-data.md`. Backend use cases/controllers и UI матчей не создавались;
+  они принадлежат следующим этапам.
+- TypeSpec добавляет 23 match operations: публичный поиск, аутентифицированные рекомендации, create/read/update/
+  delete draft, publish/rotate invite, join и organizer decisions, withdrawal/leave, FIFO waitlist, cancel/start и
+  versioned propose/confirm/dispute result. Все ответы `no-store`; мутации защищены bearer, browser CSRF,
+  UUIDv4 `Idempotency-Key` и `expectedVersion` существующего агрегата. `UNLISTED` отсутствует в discovery, имеет
+  отдельный read-only capability route и одинаковую `INVITE_INVALID` ошибку.
+- OpenAPI содержит модели `Match`, `MatchTeam`, `MatchParticipant`, `JoinRequest`, `WaitlistEntry`, `MatchResult`,
+  `GameScore`, `ResultConfirmation` и закрытые enum жизненного цикла. Generated OpenAPI и TypeScript artifacts,
+  включая `@picklehub/api-client`, обновлены только генератором.
+- AsyncAPI получил внутренний `match.events.v1` и девять совместимых `match.*.v1` событий. Payload ограничен opaque
+  match/result/marker IDs, aggregate/result version и enum/buckets; token, пользователи/состав, score, text,
+  skill/venue/geography и dispute reason запрещены policy test.
+- Prisma schema и forward migration создают агрегат, команды, registered/guest places, заявки, FIFO entries,
+  keyed-hash invites, versioned results/games/confirmations, immutable metric marker и encrypted idempotency
+  responses. PostgreSQL row lock корня и immediate/deferred constraint triggers защищают capacity, одно active
+  involvement, FIFO/offer, допустимые terminal transitions и атомарную пару match/result. Уникальный marker по
+  match + `CONFIRMED_MATCH` удерживает единственный вклад в главную метрику.
+- `game_scores` требует неотрицательные очки, минимум 11 и разницу минимум два; deferred series guard проверяет
+  последовательную завершённую `BEST_OF_1/3/5`, winner и отсутствие лишних партий. Это допускает корректные игры
+  до 11, 15, 21 и deuce. Добавлен PostgreSQL integration test для 11/15/21, invalid margin и конкурентных claims
+  последнего места.
+- Изменённые source/config files: `contracts/rest/main.tsp`, `contracts/rest/matches.tsp`, `asyncapi.yaml`,
+  `backend/prisma/schema.prisma`, migration `20260910150000_matches_contract_data`, match policy/data-policy tests,
+  PostgreSQL integration test, contract policy/mock scripts, `contracts/README.md`, root contract test script и
+  этот журнал. Generated files: `openapi.yaml`, `contracts/generated/{openapi,asyncapi}.ts` и
+  `frontend/packages/api-client/src/generated/openapi.ts`.
+
+### Проверки этапа matches 02-contract-data
+
+- `npm run contracts:check` — успешно: TypeSpec и Redocly, contract policy (59 REST operations/23 messages),
+  38 policy/data tests, compatibility against `HEAD`, deterministic generated drift/typecheck и Prism smoke.
+- `DATABASE_URL=... PRISMA_SCHEMA_ENGINE_BINARY=<локальный кеш> PRISMA_QUERY_ENGINE_LIBRARY=<локальный кеш>
+npm exec --workspace @picklehub/backend -- prisma validate` и `prisma generate` с теми же engine overrides —
+  успешно, schema valid и Prisma Client сгенерирован. Явные engine paths нужны только из-за заблокированного DNS к
+  `binaries.prisma.sh`; секреты и paths в репозиторий не добавлялись.
+- `npm exec --workspace @picklehub/backend -- eslint test/integration/matches-migration.integration-spec.ts
+--max-warnings=0`, backend strict `tsc`, unit Jest (13 suites/27 tests) — успешно.
+- `npm run format:check`, `npm run docs:check`, `npm run lint`, `npm run typecheck`, `npm test`, `npm run build` —
+  успешно для восьми workspace. Web/TMA сохранили известное неблокирующее предупреждение о MapLibre chunk 924 kB.
+- Первый полный `npm run verify` остановился на formatting нового mock script; после `prettier --write` повтор
+  дошёл до `contracts:mock:check`, где один запуск не смог открыть `127.0.0.1` с `EPERM`. Немедленный отдельный
+  `npm run contracts:mock:check` успешен; все оставшиеся команды полного verify затем успешны.
+- `npm exec --workspace @picklehub/backend -- jest --config jest.integration.config.cjs --runInBand
+test/integration/matches-migration.integration-spec.ts` — не выполнен по существу: все три теста остановились на
+  `pool.connect()` (`localhost:5432` недоступен). Docker daemon запрещён sandbox (`permission denied` на socket),
+  поэтому миграция не применена к чистому PostgreSQL/PostGIS и конкурентный runtime test в этой сессии не доказан.
+- Приёмка не объявляется полностью выполненной до успешных `prisma migrate deploy` с нуля и указанного integration
+  test в среде с PostgreSQL/PostGIS. Следующий промпт остаётся `llm/04-matches/02-contract-data.md`; переход к
+  `03-backend` допустим только после закрытия этой проверки.

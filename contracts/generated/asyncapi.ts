@@ -109,6 +109,198 @@ export namespace IdentityUnlinkedMessage {
     export type DataProvider = 'TELEGRAM' | 'EMAIL';
 }
 
+export namespace MatchCancelledMessage {
+    export interface MatchCancelledEnvelope {
+        messageId: string;
+        type: 'match.cancelled.v1';
+        occurredAt: string;
+        correlationId: string;
+        causationId?: string | null;
+        data: Data;
+    }
+
+    export interface Data {
+        matchId: string;
+        aggregateVersion: number;
+        stage: DataStage;
+    }
+
+    export type DataStage = 'DRAFT' | 'PUBLISHED';
+}
+
+export namespace MatchCompletedConfirmedMessage {
+    export interface MatchCompletedConfirmedEnvelope {
+        messageId: string;
+        type: 'match.completed.confirmed.v1';
+        occurredAt: string;
+        correlationId: string;
+        causationId?: string | null;
+        data: Data;
+    }
+
+    export interface Data {
+        matchId: string;
+        aggregateVersion: number;
+        resultId: string;
+        resultVersion: number;
+        markerId: string;
+        mode: DataMode;
+        format: DataFormat;
+        confirmationPath: DataConfirmationPath;
+    }
+
+    export type DataMode = 'SCORED' | 'PLAYED_WITHOUT_SCORE';
+
+    export type DataFormat = 'SINGLES' | 'DOUBLES';
+
+    export type DataConfirmationPath = 'PLAYER' | 'MODERATOR';
+}
+
+export namespace MatchCreatedMessage {
+    export interface MatchCreatedEnvelope {
+        messageId: string;
+        type: 'match.created.v1';
+        occurredAt: string;
+        correlationId: string;
+        causationId?: string | null;
+        data: Data;
+    }
+
+    export interface Data {
+        matchId: string;
+        aggregateVersion: number;
+    }
+}
+
+export namespace MatchJoinIntentRecordedMessage {
+    export interface MatchJoinIntentRecordedEnvelope {
+        messageId: string;
+        type: 'match.join.intent.recorded.v1';
+        occurredAt: string;
+        correlationId: string;
+        causationId?: string | null;
+        data: Data;
+    }
+
+    export interface Data {
+        matchId: string;
+        aggregateVersion: number;
+        outcome: DataOutcome;
+        teamChoice: DataTeamChoice;
+    }
+
+    export type DataOutcome = 'AUTO_JOINED' | 'AUTO_WAITLISTED' | 'APPROVAL_PENDING';
+
+    export type DataTeamChoice = 'TEAM_A' | 'TEAM_B' | 'ANY';
+}
+
+export namespace MatchPublishedMessage {
+    export interface MatchPublishedEnvelope {
+        messageId: string;
+        type: 'match.published.v1';
+        occurredAt: string;
+        correlationId: string;
+        causationId?: string | null;
+        data: Data;
+    }
+
+    export interface Data {
+        matchId: string;
+        aggregateVersion: number;
+        format: DataFormat;
+        visibility: DataVisibility;
+        joinMode: DataJoinMode;
+    }
+
+    export type DataFormat = 'SINGLES' | 'DOUBLES';
+
+    export type DataVisibility = 'PUBLIC' | 'UNLISTED';
+
+    export type DataJoinMode = 'AUTO' | 'APPROVAL';
+}
+
+export namespace MatchResultDisputedMessage {
+    export interface MatchResultDisputedEnvelope {
+        messageId: string;
+        type: 'match.result.disputed.v1';
+        occurredAt: string;
+        correlationId: string;
+        causationId?: string | null;
+        data: Data;
+    }
+
+    export interface Data {
+        matchId: string;
+        aggregateVersion: number;
+        resultId: string;
+        resultVersion: number;
+        mode: DataMode;
+    }
+
+    export type DataMode = 'SCORED' | 'PLAYED_WITHOUT_SCORE';
+}
+
+export namespace MatchResultProposedMessage {
+    export interface MatchResultProposedEnvelope {
+        messageId: string;
+        type: 'match.result.proposed.v1';
+        occurredAt: string;
+        correlationId: string;
+        causationId?: string | null;
+        data: Data;
+    }
+
+    export interface Data {
+        matchId: string;
+        aggregateVersion: number;
+        resultId: string;
+        resultVersion: number;
+        mode: DataMode;
+    }
+
+    export type DataMode = 'SCORED' | 'PLAYED_WITHOUT_SCORE';
+}
+
+export namespace MatchRosterChangedMessage {
+    export interface MatchRosterChangedEnvelope {
+        messageId: string;
+        type: 'match.roster.changed.v1';
+        occurredAt: string;
+        correlationId: string;
+        causationId?: string | null;
+        data: Data;
+    }
+
+    export interface Data {
+        matchId: string;
+        aggregateVersion: number;
+        rosterComplete: boolean;
+        completionSequence: number;
+    }
+}
+
+export namespace MatchStartedMessage {
+    export interface MatchStartedEnvelope {
+        messageId: string;
+        type: 'match.started.v1';
+        occurredAt: string;
+        correlationId: string;
+        causationId?: string | null;
+        data: Data;
+    }
+
+    export interface Data {
+        matchId: string;
+        aggregateVersion: number;
+        format: DataFormat;
+        roster: DataRoster;
+    }
+
+    export type DataFormat = 'SINGLES' | 'DOUBLES';
+
+    export type DataRoster = 'MINIMUM' | 'FULL';
+}
+
 export namespace OnboardingCompletedMessage {
     export interface OnboardingCompletedEnvelope {
         messageId: string;
@@ -251,6 +443,15 @@ export type AuthenticatedEnvelope = AuthenticatedMessage.AuthenticatedEnvelope;
 export type ConsentChangedEnvelope = ConsentChangedMessage.ConsentChangedEnvelope;
 export type IdentityLinkedEnvelope = IdentityLinkedMessage.IdentityLinkedEnvelope;
 export type IdentityUnlinkedEnvelope = IdentityUnlinkedMessage.IdentityUnlinkedEnvelope;
+export type MatchCancelledEnvelope = MatchCancelledMessage.MatchCancelledEnvelope;
+export type MatchCompletedConfirmedEnvelope = MatchCompletedConfirmedMessage.MatchCompletedConfirmedEnvelope;
+export type MatchCreatedEnvelope = MatchCreatedMessage.MatchCreatedEnvelope;
+export type MatchJoinIntentRecordedEnvelope = MatchJoinIntentRecordedMessage.MatchJoinIntentRecordedEnvelope;
+export type MatchPublishedEnvelope = MatchPublishedMessage.MatchPublishedEnvelope;
+export type MatchResultDisputedEnvelope = MatchResultDisputedMessage.MatchResultDisputedEnvelope;
+export type MatchResultProposedEnvelope = MatchResultProposedMessage.MatchResultProposedEnvelope;
+export type MatchRosterChangedEnvelope = MatchRosterChangedMessage.MatchRosterChangedEnvelope;
+export type MatchStartedEnvelope = MatchStartedMessage.MatchStartedEnvelope;
 export type OnboardingCompletedEnvelope = OnboardingCompletedMessage.OnboardingCompletedEnvelope;
 export type PingEnvelope = PingMessage.PingEnvelope;
 export type PongEnvelope = PongMessage.PongEnvelope;
@@ -262,6 +463,15 @@ export type VenueVerifiedEnvelope = VenueVerifiedMessage.VenueVerifiedEnvelope;
 export type WebSocketMessage =
     | AuthenticateEnvelope
     | AuthenticatedEnvelope
+    | MatchCancelledEnvelope
+    | MatchCompletedConfirmedEnvelope
+    | MatchCreatedEnvelope
+    | MatchJoinIntentRecordedEnvelope
+    | MatchPublishedEnvelope
+    | MatchResultDisputedEnvelope
+    | MatchResultProposedEnvelope
+    | MatchRosterChangedEnvelope
+    | MatchStartedEnvelope
     | PingEnvelope
     | PongEnvelope
     | ProtocolErrorEnvelope

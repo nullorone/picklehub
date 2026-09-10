@@ -22,9 +22,9 @@ npm run contracts:check
 - `contracts:lint` проверяет TypeSpec без записи artifacts, валидирует OpenAPI и AsyncAPI официальными
   parser/linter и применяет PickleHub policy: `/v1`, разрешённые owning-feature paths, уникальные
   operation/message IDs, версионированные envelopes, UTC timestamps, `no-store`, browser CSRF/cookie и безопасный
-  payload внутренних identity/venue events. Статические data-policy тесты дополнительно удерживают обязательные
-  migration constraints, GiST-стратегию, provenance и постоянные merge aliases; они не заменяют применение SQL к
-  PostgreSQL и проверку плана через `EXPLAIN`.
+  payload внутренних identity/venue/match events. Статические data-policy тесты дополнительно удерживают
+  обязательные migration constraints, GiST-стратегию, provenance, постоянные merge aliases, вместимость/FIFO и
+  единственный эффективный результат; они не заменяют применение SQL к PostgreSQL и конкурентные integration tests.
 - `contracts:breaking` сравнивает working tree с `CONTRACT_BASE_REF` либо `HEAD`. При первом добавлении контрактов
   baseline отсутствует и проверяется встроенный compatibility self-test. В pull request CI передаёт merge-base
   целевой ветки через `CONTRACT_BASE_REF`.
@@ -35,9 +35,9 @@ npm run contracts:check
 - `contracts:typecheck` проверяет сгенерированные TypeScript-типы в strict mode.
 - `contracts:mock` запускает локальный Prism на `127.0.0.1:4010`; он предназначен только для разработки и не
   является backend или production fallback.
-- `contracts:mock:check` запускает mock на свободном localhost port, запрашивает health и representative identity
-  endpoints identity и venues, проверяет status, JSON shape, `no-store` и отсутствие ещё не принадлежащих
-  контракту paths. AsyncAPI examples проверяются parser/linter в `contracts:lint`.
+- `contracts:mock:check` запускает mock на свободном localhost port, запрашивает representative endpoints health,
+  identity, venues и matches, проверяет status, JSON shape и `no-store`. AsyncAPI examples проверяются
+  parser/linter в `contracts:lint`.
 
 Prism сопоставляет OpenAPI Path Item без относительного `servers.url`, поэтому локальные mock URL —
 `/health/live`, `/auth/context`, `/venues` и другие paths без `/v1`. Реальные API URL включают версию `/v1`; клиенты получают
@@ -63,7 +63,7 @@ namespace сообщения: так одинаковые внутренние �
 
 Prism отвечает строго по OpenAPI examples/schemas. Mock не подтверждает бизнес-правило, авторизацию, сохранение,
 идемпотентность или доступность провайдера. TMA/web development явно показывают mock mode; production build не
-имеет mock URL или silent fallback. Внутренние identity и venue events проверяются по AsyncAPI schema и не
+имеет mock URL или silent fallback. Внутренние identity, venue и match events проверяются по AsyncAPI schema и не
 выставляются как WebSocket subscription; contract mock не имитирует их фактическую доставку через outbox.
 
 ## Площадки
@@ -78,3 +78,18 @@ bbox — 100×100 км, координаты принимаются как WGS84
 принадлежат функции `08`. Внутренние события публикуются как совместимые с общей версионностью
 `venue.candidate.created.v1`, `venue.verified.v1` и `venue.merged.v1`; адреса, координаты и личности авторов в них
 не входят.
+
+## Матчи
+
+[`rest/matches.tsp`](rest/matches.tsp) владеет публичным поиском, аутентифицированными рекомендациями, черновиком,
+публикацией, capability read, составом/заявками/FIFO-очередью и предложением/подтверждением/спором результата. Все
+мутации требуют bearer, browser CSRF, UUIDv4 `Idempotency-Key`; существующий агрегат также проверяет
+`expectedVersion`. Capability `UNLISTED` не участвует в `/matches` и `/matches/recommendations`, выдаётся raw только
+организатору, а хранится как keyed hash.
+
+Миграция сериализует меняющие состав операции блокировкой корня `matches`, а constraint triggers независимо от
+application precheck защищают вместимость команды, одно активное участие/заявку/очередь, FIFO offer и согласованную
+пару match/result. `game_scores` принимает завершённые партии от 11 очков с разницей минимум два, поэтому корректны
+игры до 11, 15, 21 и deuce; deferred series guard проверяет `BEST_OF_1/3/5`. Уникальный immutable marker
+`CONFIRMED_MATCH` — единственный storage-факт основной метрики. События `match.*.v1` не содержат token, состава,
+счёта, текста, уровня или географии.

@@ -147,11 +147,20 @@ try {
         throw new Error(`Unexpected venue candidate mock: ${candidate.status} ${JSON.stringify(candidateBody)}`);
     }
 
-    const productPath = await fetch(`http://${host}:${port}/matches`);
-    if (productPath.status !== 404) {
-        throw new Error(`Identity mock unexpectedly exposes unowned /matches with status ${productPath.status}.`);
+    const matches = await fetch(`http://${host}:${port}/matches?format=SINGLES&limit=20`, {
+        headers: { 'accept-language': 'ru-RU' },
+    });
+    const matchesBody = await matches.json();
+    requireNoStore(matches, 'Match search response');
+    if (
+        matches.status !== 200 ||
+        !Array.isArray(matchesBody.items) ||
+        !matchesBody.pageInfo ||
+        !matchesBody.snapshotAt
+    ) {
+        throw new Error(`Unexpected match search mock: ${matches.status} ${JSON.stringify(matchesBody)}`);
     }
-    console.log('OpenAPI mock passed: health, identity and venue examples are valid; unowned paths are absent.');
+    console.log('OpenAPI mock passed: health, identity, venue and match examples are valid.');
 } finally {
     child.kill('SIGTERM');
     await new Promise((resolveExit) => {
