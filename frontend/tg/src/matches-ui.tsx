@@ -903,6 +903,7 @@ export function MatchDetailsScreen({
             </main>
         );
     const ownParticipant = match.participants.find((item) => item.userId === userId && item.state === 'ACTIVE');
+    const hasChatHistory = isOrganizer || match.participants.some((item) => item.userId === userId);
     const result = match.currentResult;
     return (
         <main className="matches-main narrow">
@@ -927,6 +928,11 @@ export function MatchDetailsScreen({
                 </p>
             )}
             {!online && <p role="status">Без сети доступны только уже загруженные сведения. Действия отключены.</p>}
+            {hasChatHistory && match.state !== 'DRAFT' && (
+                <Link className="primary-action compact-action" to={`/matches/${match.id}/chat`}>
+                    Открыть чат матча
+                </Link>
+            )}
             <section className="match-panel">
                 <h2>Состав</h2>
                 <div className="teams">

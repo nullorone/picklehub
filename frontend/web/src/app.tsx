@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { Link, Navigate, Route, Routes, useParams } from 'react-router-dom';
 
 import { useOnlineStatus } from './connectivity';
+import { ChatScreen, NotificationBadge, NotificationsScreen } from './communications-ui';
 import { AccountScreen, EmailLogin, MagicConfirmation, OnboardingScreen } from './identity-ui';
 import { CreateMatchScreen, MatchDetailsScreen, MatchesScreen } from './matches-ui';
 import { VenuesScreen } from './venues-ui';
@@ -30,6 +31,30 @@ function MatchRoute({
             matchId={matchId}
             online={online}
             userId={userId}
+        />
+    );
+}
+
+function ChatRoute({
+    client,
+    online,
+    userId,
+    onAuthenticationExpired,
+}: {
+    readonly client: ReturnType<typeof createIdentityClient>;
+    readonly online: boolean;
+    readonly userId: string;
+    readonly onAuthenticationExpired: () => void;
+}) {
+    const { matchId = '' } = useParams();
+    return (
+        <ChatScreen
+            channel="web"
+            client={client}
+            matchId={matchId}
+            online={online}
+            userId={userId}
+            onAuthenticationExpired={onAuthenticationExpired}
         />
     );
 }
@@ -80,6 +105,10 @@ export function App({ config }: { readonly config: RuntimeConfig }) {
                     <nav aria-label="Личный кабинет">
                         <Link to="/matches">Матчи</Link>
                         <Link to="/venues">Площадки</Link>
+                        <Link to="/notifications">
+                            Уведомления
+                            <NotificationBadge client={client} />
+                        </Link>
                         <Link to="/account">Аккаунт</Link>
                     </nav>
                 )}
@@ -145,6 +174,21 @@ export function App({ config }: { readonly config: RuntimeConfig }) {
                     element={<MatchRoute client={client} online={online} userId={session?.user.id} />}
                 />
                 <Route
+                    path="/matches/:matchId/chat"
+                    element={
+                        session && !requiresOnboarding ? (
+                            <ChatRoute
+                                client={client}
+                                online={online}
+                                userId={session.user.id}
+                                onAuthenticationExpired={signedOut}
+                            />
+                        ) : (
+                            <Navigate to={session ? '/onboarding' : '/login'} replace />
+                        )
+                    }
+                />
+                <Route
                     path="/match-invites/:inviteToken"
                     element={<MatchRoute client={client} online={online} userId={session?.user.id} />}
                 />
@@ -153,6 +197,16 @@ export function App({ config }: { readonly config: RuntimeConfig }) {
                     element={
                         session && !requiresOnboarding ? (
                             <VenuesScreen client={client} config={config} online={online} />
+                        ) : (
+                            <Navigate to={session ? '/onboarding' : '/login'} replace />
+                        )
+                    }
+                />
+                <Route
+                    path="/notifications"
+                    element={
+                        session && !requiresOnboarding ? (
+                            <NotificationsScreen client={client} online={online} />
                         ) : (
                             <Navigate to={session ? '/onboarding' : '/login'} replace />
                         )

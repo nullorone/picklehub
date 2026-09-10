@@ -21,6 +21,22 @@ export type AnalyticsEvent =
           readonly entry: 'SEARCH' | 'INVITE';
           readonly format: 'SINGLES' | 'DOUBLES';
           readonly visibility: 'PUBLIC' | 'UNLISTED';
+      }
+    | {
+          readonly name: 'chat_opened';
+          readonly channel: ClientChannel;
+          readonly entry: 'MATCH' | 'NOTIFICATION';
+          readonly unreadBucket: 'ZERO' | 'ONE_FIVE' | 'SIX_TWENTY' | 'GT_20';
+      }
+    | {
+          readonly name: 'chat_resync_required';
+          readonly reason: 'CURSOR_EXPIRED' | 'RETENTION' | 'GAP_LIMIT';
+      }
+    | {
+          readonly name: 'notification_opened';
+          readonly ageBucket: 'LT_5M' | '5M_1H' | 'GT_1H';
+          readonly category: 'ROSTER' | 'REQUESTS' | 'MATCH_CRITICAL' | 'REMINDERS' | 'RESULTS' | 'CHAT';
+          readonly channel: 'IN_APP' | 'TELEGRAM' | 'EMAIL';
       };
 
 export interface AnalyticsPort {

@@ -16,6 +16,63 @@ describe('createApiClient', () => {
 });
 
 describe('createIdentityClient', () => {
+    it('reuses an explicit client key for a failed chat retry without exposing text in the URL', async () => {
+        const session = {
+            accessExpiresAt: '2026-09-11T12:05:00.000Z',
+            accessToken: 'a'.repeat(43),
+            csrfToken: 'c'.repeat(43),
+            session: {
+                absoluteExpiresAt: '2026-10-11T12:00:00.000Z',
+                createdAt: '2026-09-11T12:00:00.000Z',
+                id: crypto.randomUUID(),
+                idleExpiresAt: '2026-09-18T12:00:00.000Z',
+                status: 'ACTIVE',
+            },
+            tokenType: 'Bearer',
+            user: {
+                completedAt: '2026-09-11T12:00:00.000Z',
+                createdAt: '2026-09-10T12:00:00.000Z',
+                id: crypto.randomUUID(),
+                onboardingStatus: 'COMPLETED',
+                requiredConsentsSatisfied: true,
+                status: 'ACTIVE',
+            },
+        } as const;
+        const created = {
+            authorId: session.user.id,
+            conversationId: crypto.randomUUID(),
+            createdAt: '2026-09-11T12:00:00.000Z',
+            deletedAt: null,
+            editedAt: null,
+            id: crypto.randomUUID(),
+            kind: 'USER',
+            revision: 1,
+            sequence: 1,
+            systemType: null,
+            text: 'Секретный текст чата',
+        } as const;
+        const fetch = vi
+            .fn<typeof globalThis.fetch>()
+            .mockResolvedValueOnce(Response.json({ csrfToken: 'b'.repeat(43) }))
+            .mockResolvedValueOnce(Response.json(session))
+            .mockRejectedValueOnce(new TypeError('network'))
+            .mockResolvedValueOnce(Response.json(created, { status: 201 }));
+        const client = createIdentityClient({ baseUrl: '/v1', fetch }, 'WEB');
+        await client.consumeMagicLink('t'.repeat(43));
+        const key = crypto.randomUUID();
+        const matchId = crypto.randomUUID();
+
+        await expect(client.sendConversationMessage(matchId, { text: created.text }, key)).rejects.toBeInstanceOf(
+            TypeError
+        );
+        await expect(client.sendConversationMessage(matchId, { text: created.text }, key)).resolves.toEqual(created);
+
+        expect(fetch.mock.calls[2]?.[0]).toBe(`/v1/matches/${matchId}/conversation/messages`);
+        expect(fetch.mock.calls[2]?.[0]).not.toContain(created.text);
+        expect(new Headers(fetch.mock.calls[2]?.[1]?.headers).get('Idempotency-Key')).toBe(key);
+        expect(new Headers(fetch.mock.calls[3]?.[1]?.headers).get('Idempotency-Key')).toBe(key);
+    });
+
     it('uses an explicit idempotency key for a retried match command', async () => {
         const session = {
             accessExpiresAt: '2026-09-10T12:05:00.000Z',

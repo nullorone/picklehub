@@ -28,8 +28,22 @@ import type {
     SchemaUpdateDraft,
     SchemaCreateVenueCandidate,
     SchemaCreateVenueReport,
+    SchemaConversationReadPosition,
+    SchemaConversationSnapshot,
+    SchemaEditMessageCommand,
     SchemaGeocodingSuggestions,
+    SchemaMarkConversationReadCommand,
+    SchemaMessage,
+    SchemaMessagePage,
+    SchemaMessageReportReceipt,
+    SchemaNotificationPage,
+    SchemaNotificationPreference,
+    SchemaNotificationReadReceipt,
     SchemaProposeVenueRevision,
+    SchemaReportMessageCommand,
+    SchemaSendMessageCommand,
+    SchemaUpdateNotificationPreference,
+    SchemaUserBlock,
     SchemaVenue,
     SchemaVenueCandidate,
     SchemaVenuePage,
@@ -94,7 +108,7 @@ interface RequestOptions {
     readonly auth?: boolean;
     readonly idempotent?: boolean;
     readonly idempotencyKey?: string | undefined;
-    readonly method?: 'GET' | 'POST' | 'PATCH' | 'DELETE';
+    readonly method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
     readonly mutation?: boolean;
     readonly query?: URLSearchParams;
     readonly retrySession?: boolean;
@@ -189,6 +203,11 @@ export function createIdentityClient(options: ApiClientOptions, platform: Client
     }
 
     return {
+        getRealtimeUrl: () => {
+            const url = new URL(joinUrl(options.baseUrl, '/ws'), globalThis.location.href);
+            url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
+            return url.toString();
+        },
         bootstrap: async () => {
             await context();
             return refresh();
@@ -226,6 +245,7 @@ export function createIdentityClient(options: ApiClientOptions, platform: Client
         getDocuments: () => call<SchemaConsentDocuments>('/identity/documents'),
         getIdentities: () => call<SchemaIdentityList>('/me/identities', undefined, { auth: true }),
         getMe: () => call<SchemaMe>('/me', undefined, { auth: true }),
+        getRealtimeTicket: async () => (await refresh()).accessToken,
         getOnboarding: () => call<SchemaOnboarding>('/me/onboarding', undefined, { auth: true }),
         getOnboardingOptions: () =>
             call<SchemaOnboardingOptions>('/identity/onboarding-options', undefined, { auth: true }),
@@ -428,6 +448,112 @@ export function createIdentityClient(options: ApiClientOptions, platform: Client
                 auth: true,
                 idempotent: true,
                 idempotencyKey,
+                mutation: true,
+            }),
+        getMatchConversation: (matchId: string) =>
+            call<SchemaConversationSnapshot>(`/matches/${matchId}/conversation`, undefined, { auth: true }),
+        listConversationMessages: (matchId: string, cursor: string, limit = 50) =>
+            call<SchemaMessagePage>(`/matches/${matchId}/conversation/messages`, undefined, {
+                auth: true,
+                query: query({ cursor, limit }),
+            }),
+        sendConversationMessage: (matchId: string, body: SchemaSendMessageCommand, idempotencyKey?: string) =>
+            call<SchemaMessage>(`/matches/${matchId}/conversation/messages`, body, {
+                auth: true,
+                idempotent: true,
+                idempotencyKey,
+                mutation: true,
+            }),
+        editConversationMessage: (
+            matchId: string,
+            messageId: string,
+            body: SchemaEditMessageCommand,
+            idempotencyKey?: string
+        ) =>
+            call<SchemaMessage>(`/matches/${matchId}/conversation/messages/${messageId}`, body, {
+                auth: true,
+                idempotent: true,
+                idempotencyKey,
+                method: 'PATCH',
+                mutation: true,
+            }),
+        deleteConversationMessage: (
+            matchId: string,
+            messageId: string,
+            expectedRevision: number,
+            idempotencyKey?: string
+        ) =>
+            call<SchemaMessage>(`/matches/${matchId}/conversation/messages/${messageId}`, undefined, {
+                auth: true,
+                idempotent: true,
+                idempotencyKey,
+                method: 'DELETE',
+                mutation: true,
+                query: query({ expectedRevision }),
+            }),
+        reportConversationMessage: (
+            matchId: string,
+            messageId: string,
+            body: SchemaReportMessageCommand,
+            idempotencyKey?: string
+        ) =>
+            call<SchemaMessageReportReceipt>(`/matches/${matchId}/conversation/messages/${messageId}/reports`, body, {
+                auth: true,
+                idempotent: true,
+                idempotencyKey,
+                mutation: true,
+            }),
+        markConversationRead: (matchId: string, body: SchemaMarkConversationReadCommand, idempotencyKey?: string) =>
+            call<SchemaConversationReadPosition>(`/matches/${matchId}/conversation/read`, body, {
+                auth: true,
+                idempotent: true,
+                idempotencyKey,
+                mutation: true,
+            }),
+        blockCommunicationUser: (blockedUserId: string, idempotencyKey?: string) =>
+            call<SchemaUserBlock>(
+                `/communication-blocks/${blockedUserId}`,
+                {},
+                {
+                    auth: true,
+                    idempotent: true,
+                    idempotencyKey,
+                    method: 'PUT',
+                    mutation: true,
+                }
+            ),
+        unblockCommunicationUser: (blockedUserId: string, idempotencyKey?: string) =>
+            call<undefined>(`/communication-blocks/${blockedUserId}`, undefined, {
+                auth: true,
+                idempotent: true,
+                idempotencyKey,
+                method: 'DELETE',
+                mutation: true,
+            }),
+        listNotifications: (cursor?: string, limit = 50) =>
+            call<SchemaNotificationPage>('/notifications', undefined, {
+                auth: true,
+                query: query({ cursor, limit }),
+            }),
+        markNotificationRead: (notificationId: string, idempotencyKey?: string) =>
+            call<SchemaNotificationReadReceipt>(
+                `/notifications/${notificationId}/read`,
+                {},
+                {
+                    auth: true,
+                    idempotent: true,
+                    idempotencyKey,
+                    mutation: true,
+                }
+            ),
+        getNotificationPreferences: () =>
+            call<SchemaNotificationPreference>('/notification-preferences', undefined, { auth: true }),
+        updateNotificationPreferences: (body: SchemaUpdateNotificationPreference, idempotencyKey?: string) =>
+            call<SchemaNotificationPreference>('/notification-preferences', body, {
+                auth: true,
+                idempotent: true,
+                idempotencyKey,
+                method: 'PUT',
                 mutation: true,
             }),
     } as const;

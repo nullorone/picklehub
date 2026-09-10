@@ -1291,3 +1291,54 @@ EPERM`). Поэтому все существующие database suites оста
   providers, их terms/residency и legal retention approval этим этапом не заявляются.
 - Кодовые и статические критерии этапа выполнены; runtime integration criterion остаётся environment-blocked.
   Следующий промпт `llm/05-chat-notifications/04-tma-web.md` не начинался.
+
+## 2026-09-10 — чат и уведомления, этап 04-tma-web
+
+- Активный промпт: `llm/05-chat-notifications/04-tma-web.md`. В отдельных web/PWA и TMA source-файлах добавлены
+  чат матча, центр уведомлений, навигация и индикатор непрочитанных. Контракты, backend и generated-файлы не
+  менялись; файловые вложения, изображения, голос, typing и reactions в интерфейс не добавлялись.
+- Чат открывается только из карточки состава и начинает с авторизованного REST snapshot. История догружается
+  opaque cursor-страницами, а PostgreSQL `sequence` остаётся единственным порядком. Merge по message ID и revision
+  подавляет повторы. WebSocket получает новый in-memory ticket через session refresh, аутентифицируется payload-ом,
+  подписывается с последним catch-up cursor и переподключается с bounded exponential backoff. Live event запускает
+  REST catch-up; cursor/resync error переоткрывает snapshot, поэтому socket не становится источником истины.
+- Отправка немедленно создаёт локальную запись с client ID и отдельным UUIDv4 idempotency key. Сетевой сбой явно
+  показывает «Не отправлено», повтор использует тот же key, а offline-кнопка отключена. Offline draft хранится
+  только в `sessionStorage`, не показывается доставленным и не попадает в console/analytics. Edit/delete проверяют
+  server revision; user/system, edited, tombstone, blocked и locally reported состояния различаются. Доступны
+  закрытые причины жалобы и block/unblock; после unblock выполняется новый snapshot.
+- В chat live region объявляются только добавления/изменения сообщений, а состояния reconnect не являются live
+  announcements. Время показывается в IANA timezone клиента с краткой зоной. `READ_ONLY` убирает composer.
+  `SESSION_INVALID` очищает клиентскую сессию и возвращает к безопасному входу; chat text, credentials, IDs и routes
+  не добавлены в analytics. Добавлены только allowlisted `chat_opened`, `chat_resync_required` и
+  `notification_opened`; внешняя notification route дополнительно ограничена локальным absolute path.
+- Центр уведомлений показывает persistent inbox, unread item state, cursor pagination и foreground read. Header
+  badge обновляется после read и периодически без объявления transport receipt чтением. Настройки охватывают все
+  шесть категорий и `IN_APP`/`TELEGRAM`/`EMAIL`, locale, IANA timezone и quiet hours. `IN_APP` нельзя выключить;
+  внешние каналы заблокированы с подсказкой до привязки соответствующей identity, есть предупреждения о
+  негарантированной доставке и critical bypass тихих часов. Version conflict вызывает refetch.
+- `@picklehub/api-client` получил типизированные методы 13 communication REST routes, защищённые mutation headers,
+  явные idempotency keys и in-memory realtime ticket/URL. Добавлены unit/parity tests web и TMA для sequence/revision
+  merge, system/blocked/edited state, offline draft, optimistic failure/retry одного key, mandatory in-app channel,
+  identity hints и отклонения внешней notification route.
+
+### Проверки этапа chat/notifications 04-tma-web
+
+- Целевые `lint`, strict `typecheck`, Vitest и production `build` для `@picklehub/analytics`,
+  `@picklehub/api-client`, `@picklehub/web` и `@picklehub/tg` — успешно. Финальные client tests: API client 1 suite/5
+  tests, web 5/19, TMA 4/14. Web PWA manifest/service worker и production TMA no-mock check успешны.
+- `npm run test:e2e:typecheck` — успешно. Browser e2e для нового экрана не добавлялся и не запускался; realtime
+  transport проверен unit-level state tests, а полный WebSocket/PostgreSQL/Redis runtime остаётся частью следующей
+  verification matrix и CI с разрешёнными локальными сервисами.
+- Первый `npm run verify` успешно прошёл workspace audit, TypeSpec/Redocly, policy (74 REST operations/37 messages),
+  47 contract/data tests, compatibility и generated drift/typecheck, затем остановился на sandbox `listen EPERM
+127.0.0.1` в Prism. Немедленный отдельный `npm run contracts:mock:check` один раз прошёл; два более поздних
+  повтора снова получили тот же `EPERM`, поэтому единый полный verify не заявляется зелёным.
+- После первого сбоя отдельно успешно прошли `format:check`, `docs:check`, root `lint`, `typecheck`, `test`, `build`,
+  `npm ls --depth=0` и `git diff --check`: восемь workspaces зелёные, backend regression 19 suites/45 tests. После
+  финальных badge/safe-route изменений повторно успешны web/TMA lint, typecheck, 5/19 и 4/14 tests, production
+  builds и `git diff --check`.
+- Сохранилось известное предупреждение о MapLibre chunk 924 kB; основной TMA bundle теперь около 533 kB и остаётся
+  кандидатом на route-level splitting. Реальные Telegram/email/failover provider guarantees и legal/residency
+  approval не заявляются. Содержательные критерии клиентского этапа выполнены; следующий промпт —
+  `llm/05-chat-notifications/05-verification.md`, к нему не переходили.
