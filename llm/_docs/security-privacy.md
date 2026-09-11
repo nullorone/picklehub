@@ -558,3 +558,47 @@ Backend/verification должны доказать AC-01–AC-17 из требо
 Canary secrets проверяются в HTTP, audit, trace/error sinks, очередях, редиректах и analytics; отдельно проверяются
 GET сканера, потеря ответа refresh, конкурентные вкладки и восстановление backups после удаления. Успешная
 проверка документации не заменяет эти тесты или юридическое согласование провайдеров.
+
+## Политика административной панели
+
+Административная поверхность отделена от player/TMA audience. Обычная пользовательская сессия, platform role в
+непроверенном client claim, скрытый маршрут или сетевой allowlist не являются достаточной авторизацией. Production
+admin session требует server-owned active role, phishing-resistant MFA, абсолютный срок не более 8 часов и idle
+timeout не более 15 минут. Свежая re-auth обязательна для role change, break-glass, permanent/broad restriction и
+любого будущего export. Отзыв роли, закрытие staff identity и security incident немедленно повышают session epoch.
+
+Capability map фиксируется кодом и deny-by-default; конструктора ролей, wildcard capability и неявного
+`SUPERADMIN = *` нет. Комбинация ролей не снимает assignment/no-conflict/purpose checks. `EDITOR` и `ADS_MANAGER`
+не могут читать list/detail/description/evidence/response/appeal safety cases, искать пользователей или security
+audit. `MODERATOR` читает narrative/evidence только назначенного case; appeal требует другого reviewer.
+`SUPERADMIN` видит routing metadata и audit, но restricted evidence — только через адресный break-glass.
+
+Break-glass связан с одним case, incident/ticket, actor и максимум 30 минутами, требует свежей MFA и закрытой
+причины с bounded justification. Он не разрешает queue browse, export или final decision, не переносится между
+case и не продлевается автоматически. Grant, каждое чтение/отказ, revoke и expiry создают отдельный минимальный
+audit и безопасное security notification. До реального on-call/post-review процесса production capability
+выключена. Self-grant при конфликте интересов запрещён.
+
+User lookup допускает только exact UUID/receipt или exact нормализованный identity через keyed index и заявленную
+support/security purpose. Raw query передаётся только в POST body, не попадает в URL/log/audit/analytics и после
+поиска не сохраняется. Wildcard, partial email/name, browse-all и identity enumeration отсутствуют. Возвращается
+минимальная account projection; восстановимое identity закрыто и masked по умолчанию. Case/venue/audit list
+используют подписанный cursor, привязанный к actor/capability/purpose/filter, default 25 и maximum 100.
+
+Каждая административная мутация атомарно пишет доменное изменение и audit с actor, action, target opaque ID,
+reason code, policy/version, safe outcome, changed-field allowlist и correlation. Narrative, email, case evidence,
+координаты и полные before/after в audit запрещены. Bounded exception note хранится в restricted owning record.
+Отказ и restricted read также аудируются; поиск audit сам создаёт audit. Если audit sink транзакционно недоступен,
+мутация откатывается. Generic telemetry получает только агрегированные enum/buckets без staff/user/case/venue ID.
+
+MVP не экспортирует user, queue, venue, audit или evidence и не создаёт CSV/JSON, print packet, background export
+job или signed URL. Будущий адресный export требует отдельного legal/security решения, второго approver, re-auth,
+field/row allowlist, шифрования, РФ-residency, короткого TTL, watermark, audit каждого download и удаления из
+primary/cache/queue/DLQ/backups по утверждённому retention. Evidence и safety narrative не входят в общий
+user/audit export. Clipboard/print не считаются защищённым каналом и UI не предлагает их как workflow.
+
+Role grants, break-glass grants и admin sessions хранятся только пока нужны для active access и audit: session
+metadata очищается после максимального security investigation window; break-glass capability прекращается по TTL,
+а минимальный grant/access audit следует общему трёхлетнему предложению audit retention. Конкретные сроки и
+правовые основания подтверждаются до production. Rate limiter для login/MFA/re-auth, lookup, restricted read,
+mutation, audit search и break-glass имеет разные ненулевые лимиты и fail-closed при недоступном shared state.

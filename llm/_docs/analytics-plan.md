@@ -247,3 +247,27 @@ no-show даёт один effect; reversal полностью компенсир
 read без assignment, просроченный temporary effect, пропущенный cleanup и canary text/contact/coordinate в любом
 запрещённом sink имеют целевое значение ноль. Analytics outage не блокирует report, review, block, decision,
 appeal, audit или cleanup, а события периода без согласия не буферизуются и не воспроизводятся.
+
+## Административная панель
+
+Административные действия не являются behavioral analytics и не зависят от пользовательского или staff consent.
+Role/capability checks, user lookup, queue/card read, decision, venue moderation, restriction, audit search и
+break-glass не отправляются внешнему analytics provider как event-level поток. Запрещены actor/user/reporter/
+subject/case/venue IDs и пары, email/identity query, IP, exact time, safety reason на малой выборке, narrative/
+evidence, before/after, policy note, cursor, request ID и correlation ID.
+
+Operational dashboard получает только агрегаты с role, action enum, broad object class, safe outcome и buckets:
+
+- admin login, MFA/re-auth, session revoke, authorization deny и rate-limit/dependency fail-closed;
+- role grant/revoke, active grant age bucket и просроченный review без actor/target;
+- case queue depth/age, claim/reassignment conflict, first-action/close time и appeal age/outcome class;
+- venue candidate/revision/report queue age, approve/reject/merge class и stale/concurrent conflict;
+- restriction apply/retract/expiry lag и duplicate/idempotency suppression;
+- audit write/read/search failure, restricted-read denial и break-glass grant/read/revoke/expiry;
+- попытки запрещённого MVP export и обнаруженные export artifacts, целевое значение последних — ноль.
+
+Точные counts малых когорт подавляются, интервалы округляются до buckets, labels имеют закрытый allowlist.
+Dashboard не ранжирует сотрудников, не показывает incident map и не восстанавливает граф reporter–subject или
+историю пользователя. Audit — отдельный security record и не заменяется метрикой. Недоступность metrics/provider
+не блокирует безопасную операцию, а недоступность обязательного audit блокирует мутацию. Будущие CMS/ad product
+events определяются их требованиями; этот этап не собирает просмотры экранов редактора или менеджера рекламы.

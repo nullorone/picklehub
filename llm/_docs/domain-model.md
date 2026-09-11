@@ -253,3 +253,35 @@ Evidence хранится отдельно от searchable metadata как authe
 generic event содержит opaque source/signal/case ID и закрытую категорию, но не текст, score, coordinates,
 reporter/subject pair или вложение. Public reputation projection читает только текущие eligible review revisions и
 final authoritative effects, поддерживает retract/rebuild и не использует pending reports, blocks или sanctions.
+
+## Административная панель
+
+Граница `administration` владеет доступом сотрудников и координирует use cases, но не копирует и не редактирует
+authoritative таблицы `identity`, `trust-safety`, `venues`, `matches` или будущих `content`/`advertising` напрямую:
+
+- `platform_role_grants` — versioned grant одной из четырёх code-defined ролей с actor/subject, reason code,
+  approval reference, validity/review timestamps и revoke revision; wildcard/custom permission отсутствует;
+- `admin_sessions` — отдельная audience, MFA/re-auth timestamps, idle/absolute expiry и security epoch без raw
+  credential;
+- `break_glass_grants` — один actor + case + incident, bounded justification, expiry ≤ 30 минут и revoke state;
+- `admin_operation_receipts` — idempotency fingerprint, target/version, safe outcome и связь с audit без domain
+  narrative;
+- `AuditEntry` остаётся общей append-only security capability с owning partition/port; administration предоставляет
+  allowlisted search, но не становится владельцем evidence или произвольных before/after snapshots.
+
+Use case сначала проверяет server-owned role/capability, purpose, свежую re-auth, assignment, conflict и expected
+target revision, затем вызывает application-port owning module. Доменная мутация, effect/outbox и audit коммитятся
+владельцем атомарно; administration не координирует распределённую транзакцию и не пишет чужую таблицу. Изменения
+role/grant/session принадлежат administration и содержат audit в собственной транзакции. Повтор idempotency
+fingerprint возвращает тот же safe receipt.
+
+Queue — авторизованная read model из безопасных metadata. Narrative/evidence разрешает owning `trust-safety`
+repository только assignee без conflict либо exact-case break-glass; `SUPERADMIN` сам по себе не проходит port.
+Venue approve/reject/merge вызывает `venues` port, где candidate lock, expected revision, canonical survivor,
+provenance, decision, outbox и audit защищаются одной транзакцией. User lookup использует `identity` port и exact
+keyed lookup, а не копию email/Telegram subject.
+
+Cursor списка opaque, подписан и связан с actor, capability, purpose, filters и snapshot boundary; порядок
+завершается opaque ID. Записи administration и audit подчиняются retention/legal hold, но hard delete и перезапись
+истории через UI отсутствуют. CMS и advertising позже добавят свои агрегаты/capabilities; резервирование ролей не
+создаёт преждевременных admin-таблиц или зависимостей от этих модулей.

@@ -1936,3 +1936,59 @@ test/integration/trust-safety-backend.integration-spec.ts` обнаружил ч
 - Локально исполнимые критерии и автоматизация этапа выполнены. Runtime PostgreSQL и browser E2E остаются
   environment-blocked до зелёных CI jobs. Следующий промпт — `llm/08-admin-backoffice/01-requirements.md`; к нему
   не переходили.
+
+## 2026-09-11 — административная панель, этап 01-requirements
+
+- Активный промпт: `llm/08-admin-backoffice/01-requirements.md`. Изменения ограничены продуктовыми требованиями,
+  доменной/архитектурной границей, privacy и operational analytics; TypeSpec/AsyncAPI, Prisma, backend и admin UI
+  не создавались.
+- Зафиксирована code-defined матрица для `SUPERADMIN`, `MODERATOR`, `EDITOR`, `ADS_MANAGER` без конструктора ролей,
+  wildcard или неявного наследования всех данных superadmin. Обычная player-сессия и client-side route не дают
+  административных прав; production admin требует отдельную audience/session, phishing-resistant MFA, idle и
+  absolute timeout, свежую re-auth для чувствительных операций и server-side capability check на каждом запросе.
+- Определены 11 MVP-историй и 12 сценариев «Дано/Когда/Тогда»: управление platform role, точный минимизированный
+  user lookup, case queue/assignment/decision/appeal, ограничение пользователя, approve/reject/merge venue,
+  audit search и break-glass. Каждая мутация требует actor, reason code, policy/version, idempotency key, expected
+  revision и атомарный audit; недоступность audit откатывает доменное изменение.
+- `MODERATOR` читает description/evidence только назначенного case без конфликта, апелляцию рассматривает другой
+  reviewer. `SUPERADMIN` не имеет постоянного evidence bypass: break-glass адресован одному case, действует не
+  более 30 минут, требует incident/reason/re-auth, не разрешает bulk/export/final decision и отдельно аудирует
+  grant, чтения, отказы, отзыв и expiry. `EDITOR` и `ADS_MANAGER` не видят очередь, описание, evidence или стороны
+  safety case.
+- Списки получили opaque signed cursor, snapshot boundary, default 25/maximum 100 и allowlist-фильтры. User search
+  ограничен exact UUID/receipt или exact identity через keyed index без query в URL/log/audit/analytics; audit
+  search ограничен 31 сутками и не ищет narrative/evidence/before-after. Venue merge требует явного survivor,
+  re-auth, отдельного подтверждения и optimistic revision.
+- Административные CSV/JSON/export jobs/signed URL, bulk actions и case print packet запрещены в MVP. Для будущего
+  legal/incident export перечислены отдельные approval, purpose, field/row limit, encryption, РФ-residency,
+  download audit и cleanup gates. CMS и advertising оставлены точками расширения с отдельными capabilities без
+  преждевременных экранов, API или таблиц и без доступа Editor/Ads manager к safety descriptions.
+- Operational metrics используют только role/action/object/outcome/time-count buckets, не зависят от analytics
+  consent, не содержат staff/user/case/venue IDs или narrative и не ранжируют сотрудников. Administration
+  координирует узкие owning-module ports, но не копирует restricted данные и не пишет чужие authoritative таблицы.
+- Изменённые файлы: `llm/_docs/product-requirements.md`, `llm/_docs/domain-model.md`,
+  `llm/_docs/architecture.md`, `llm/_docs/security-privacy.md`, `llm/_docs/analytics-plan.md` и этот журнал.
+
+### Проверки этапа admin backoffice 01-requirements
+
+- Первый `git diff --check && npm run format:check && npm run docs:check` остановился на `format:check`: Prettier
+  обнаружил форматирование `llm/_docs/product-requirements.md`; `docs:check` в этой цепочке не запускался.
+- `npx prettier --write llm/_docs/product-requirements.md llm/_docs/security-privacy.md
+llm/_docs/analytics-plan.md llm/_docs/domain-model.md llm/_docs/architecture.md` — успешно; product requirements
+  отформатирован, остальные четыре файла уже соответствовали стилю.
+- `npm run format:check` — успешно: Prettier проверил репозиторий, TypeSpec format check — семь файлов.
+- `npm run docs:check` — успешно: markdownlint проверил 121 Markdown-файл, ошибок нет.
+- Read-only Node.js-проверка относительных Markdown-ссылок по списку `rg --files -g '*.md'` — успешно: проверена
+  101 ссылка, отсутствующих целей нет.
+- `npm ls --depth=0` — успешно; unmet/extraneous dependencies отсутствуют. `git diff --check` — успешно,
+  whitespace errors отсутствуют.
+- Первый финальный `npm run format:check` после добавления журнала обнаружил форматирование самого журнала;
+  `npx prettier --write llm/_docs/ai-development-log.md` исправил его. После этого `npm run format:check`,
+  `npm run docs:check`, проверка 101 Markdown-ссылки, `npm ls --depth=0` и `git diff --check` повторно успешны.
+- Contracts, lint/typecheck/tests/build и runtime integration/e2e не запускались: документационный этап не меняет
+  contracts, generated artifacts или исполняемый код, а эти проверки не подтверждают ещё не реализованные RBAC,
+  admin session, break-glass, audit atomicity, pagination и venue moderation. Ранее заблокированные окружением
+  PostgreSQL и Playwright проверки не выдаются за выполненные.
+- Критерии этапа выполнены на уровне требований: каждое изменение имеет исполнителя, причину и audit; Editor и Ads
+  manager не имеют доступа к описаниям safety cases; гибкого конструктора разрешений нет. Следующий промпт —
+  `llm/08-admin-backoffice/02-contract-data.md`; к нему не переходили.

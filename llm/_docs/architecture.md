@@ -176,6 +176,21 @@ module. Повтор, reversal и replay не умножают effect. Недо�
 результат, но при lag/failure чувствительная мутация закрывается. Существующий общий матч использует ограниченную
 проекцию и не разрушается блокировкой.
 
+### Граница administration
+
+`administration` владеет platform-role grants, отдельными admin sessions, адресными break-glass grants и
+идемпотентными квитанциями координации. Он не является универсальным data access layer: user lookup, safety case,
+venue decision и audit search вызывают узкие application-ports владельцев, повторяющие авторизацию на чтении и
+изменении. Прямые Prisma imports между модулями, wildcard `SUPERADMIN` bypass и копирование restricted data в
+admin read store запрещены. Мутация authoritative объекта, effect/outbox и audit остаётся одной транзакцией
+владеющего модуля; сбой обязательного audit откатывает её.
+
+Web admin использует отдельный route tree и server session audience. TMA и player web bundles не получают admin
+routes или capability из скрытого client flag. Backend проверяет active role, capability, purpose, session epoch,
+fresh re-auth, assignment/conflict и target revision независимо от UI. Подписанные cursors связаны с actor и query
+scope. CMS/advertising подключатся позже через собственные ports; резервирование ролей не создаёт сейчас их экраны,
+API или хранилища.
+
 ## Общие frontend-пакеты
 
 Разрешены framework-neutral пакеты `api-client`, `domain`, `validation`, `i18n` и `analytics`. Они не импортируют

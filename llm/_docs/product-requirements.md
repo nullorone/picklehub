@@ -1135,3 +1135,147 @@ Wire contracts, SQL-модели, AsyncAPI, административная о�
 `07-trust-safety/02-contract-data.md`, `07-trust-safety/03-backend.md` и `08-admin-backoffice`; этот этап не заявляет
 их реализацию. Границы владения уточнены в [доменной модели](domain-model.md), безопасность и retention — в
 [безопасности](security-privacy.md), таксономия измерений — в [плане аналитики](analytics-plan.md).
+
+## Административная панель
+
+Источник объёма — [обзор функции](../08-admin-backoffice/00-overview.md); правила ниже определены
+[этапом требований](../08-admin-backoffice/01-requirements.md). Это спецификация операций MVP, а не заявление о
+готовности административного API, staffing, круглосуточной модерации или production-доступа. Админка существует
+только в web и не является расширенным режимом player UI. Гибкого конструктора ролей и пользовательских наборов
+разрешений нет: четыре платформенные роли и их capabilities фиксируются кодом и проверяются backend на каждом запросе.
+
+### Роли и принцип наименьших привилегий
+
+Наличие нескольких ролей не объединяет их права неявно: запрос проходит, только если активная роль явно разрешает
+конкретную capability, а ограничения assignment, conflict, purpose и свежести аутентификации всё равно применяются.
+`SUPERADMIN` управляет доступом и эксплуатационными исключениями, но не получает постоянного чтения safety evidence.
+Player-, club- и tournament-роли не дают административных прав.
+
+| Возможность                                                | `SUPERADMIN`                                                   | `MODERATOR`                                                                | `EDITOR`                               | `ADS_MANAGER`                                |
+| ---------------------------------------------------------- | -------------------------------------------------------------- | -------------------------------------------------------------------------- | -------------------------------------- | -------------------------------------------- |
+| Вход в отдельную admin surface                             | Да, после усиленной проверки                                   | Да, после усиленной проверки                                               | Да, после усиленной проверки           | Да, после усиленной проверки                 |
+| Назначить/отозвать платформенную роль                      | Да, кроме self-grant; повышение — с независимым подтверждением | Нет                                                                        | Нет                                    | Нет                                          |
+| Точный поиск пользователя и минимальная account projection | Да, для заявленной support/security цели                       | Только из case или по exact receipt/user ID для triage                     | Нет                                    | Нет                                          |
+| Очередь safety cases, assignment и безопасные metadata     | Только routing/oversight без narrative/evidence                | Да, в своей очереди и доступном triage scope                               | Нет                                    | Нет                                          |
+| Описание обращения, evidence, response и appeal            | Нет по роли; только адресный break-glass                       | Только назначенный case без конфликта; appeal — не автор исходного решения | Нет                                    | Нет                                          |
+| Решение case и ограничение пользователя                    | Нет без отдельной moderator capability                         | Да, по policy, assignment и expected revision, с обязательной причиной     | Нет                                    | Нет                                          |
+| Очередь venue candidates/revisions/reports                 | Только контроль доступности и переназначение                   | Да                                                                         | Нет                                    | Нет                                          |
+| Одобрить, отклонить или слить venue candidate              | Нет по роли                                                    | Да, с reason, подтверждением merge и expected revision                     | Нет                                    | Нет                                          |
+| Поиск security audit                                       | Да, по allowlist-фильтрам; поиск сам аудируется                | Только события назначенного case и собственных решений                     | Только квитанции будущих CMS-изменений | Только квитанции будущих ad-изменений        |
+| CMS                                                        | Будущий emergency unpublish, не повседневное редактирование    | Только будущая маршрутизация нарушения                                     | Будущие draft/review/publish операции  | Нет                                          |
+| Реклама                                                    | Будущий emergency pause, не управление кампанией               | Нет                                                                        | Нет                                    | Будущие campaign/creative/placement операции |
+| Административный экспорт                                   | Нет в MVP                                                      | Нет                                                                        | Нет                                    | Нет                                          |
+
+Один человек может иметь несколько ролей только по документированной служебной необходимости. Выдача и отзыв роли
+требуют target, закрытого reason code, заявки/основания, срока или даты пересмотра, свежей повторной аутентификации
+и неизменяемого аудита. Самовыдача, self-approval, shared accounts, наследование `SUPERADMIN → все данные` и права
+на основе UI-маршрута запрещены. Bootstrap первого superadmin выполняется отдельной эксплуатационной процедурой,
+не через публичный API; её доказательства и отзыв временных credentials проверяются до production.
+
+### Истории MVP
+
+| ID    | История                                                | Ожидаемый результат                                                                                                     |
+| ----- | ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- |
+| AD-01 | Как сотрудник, я безопасно вхожу в админку             | Player-сессия недостаточна; backend проверяет platform role, усиленную аутентификацию и admin session на каждый запрос. |
+| AD-02 | Как superadmin, я выдаю или отзываю роль               | Изменение не одобряет target; оно имеет основание/review date, отзывает лишние сессии и атомарно создаёт audit.         |
+| AD-03 | Как уполномоченный сотрудник, я нахожу аккаунт         | Использую exact ID для заявленной цели и вижу минимум без массового просмотра, точных перемещений или текста.           |
+| AD-04 | Как moderator, я разбираю очередь обращений            | Вижу приоритетную очередь без narrative до assignment; claim/reassign защищены revision и конфликтом интересов.         |
+| AD-05 | Как назначенный moderator, я принимаю решение          | Читаю только нужный case, выбираю policy outcome/scope/срок и причину; decision, effect, outbox и audit согласованы.    |
+| AD-06 | Как независимый moderator, я рассматриваю апелляцию    | Не являюсь автором решения; новая revision сохраняет историю и идемпотентно применяет либо компенсирует effect.         |
+| AD-07 | Как moderator, я ограничиваю пользователя              | Restriction следует решению, имеет минимальный scope и срок; постоянное/широкое действие требует усиленной проверки.    |
+| AD-08 | Как moderator, я рассматриваю venue candidate          | Вижу provenance, версии и nearby-кандидатов; approve/reject публикует только после атомарного решения с reason и audit. |
+| AD-09 | Как moderator, я сливаю дубли площадок                 | Выбираю survivor и duplicate, вижу последствия и подтверждаю перенаправление; stale revision ничего не меняет.          |
+| AD-10 | Как superadmin, я расследую административное изменение | Ищу audit по времени, actor/action/target/outcome/correlation без поиска по narrative и раскрытия evidence.             |
+| AD-11 | Как дежурный superadmin, я запрашиваю аварийный доступ | Указываю один case, incident и reason; после re-auth получаю короткий grant, а выдача, чтения и истечение аудируются.   |
+
+### Безопасный доступ и аварийное исключение
+
+Production admin требует отдельной audience/session, phishing-resistant MFA, свежей повторной аутентификации для
+role change, break-glass, постоянного или широкого restriction и любого будущего экспорта. Admin session имеет
+абсолютный срок не более 8 часов и idle timeout не более 15 минут; закрытие staff identity и отзыв роли немедленно
+отзывают её. Origin/CSRF, rate limit, session epoch и capability проверяются сервером. VPN/IP allowlist может быть
+дополнительным барьером, но не заменяет identity, MFA и авторизацию. При недоступности role/audit/rate-limit
+dependencies чувствительные чтения и мутации закрываются безопасной ошибкой.
+
+Break-glass не является ролью и не создаёт общий bypass. Его активирует только `SUPERADMIN` для одного case максимум
+на 30 минут после свежей MFA, с incident/ticket ID, закрытой причиной и обоснованием до 500 символов. Нельзя выдать
+grant себе при личном конфликте, продлить без новой операции, читать очередь целиком, выгружать evidence или принять
+итоговое решение тем же grant. Создание grant, каждое разрешённое/запрещённое чтение, отзыв и истечение аудируются;
+без реального security notification и последующего review production capability выключена.
+
+### Очереди, поиск и пагинация
+
+Все списки используют opaque cursor, детерминированный tie-breaker ID и snapshot/upper-bound, чтобы новые записи не
+создавали пропуски. Размер страницы по умолчанию 25, максимум 100; offset и неограниченный `pageSize` запрещены.
+Сервер применяет allowlist фильтров и ограничивает интервал audit 31 сутками на запрос.
+
+- Case queue: broad kind, state, priority, assignment state и age bucket; порядок priority → oldest actionable
+  timestamp → ID. Reporter/subject, узкая причина, текст и evidence не являются фильтрами списка.
+- Venue queue: candidate/revision/report type, moderation state, source class, locality и age bucket; nearby-поиск
+  доступен только в карточке кандидата и не раскрывает private candidates посторонней роли.
+- User lookup: exact opaque user UUID, case receipt ID либо exact нормализованный email/Telegram subject через
+  keyed index. Query не попадает в URL, audit, log или analytics; partial email/name search, wildcard, browse-all и
+  export отсутствуют. Ответ содержит UUID, account state, public display projection и restriction scopes; identity
+  masked и требует отдельной support-purpose capability.
+- Audit: UTC-интервал, actor ID, action code, target type + exact target ID, outcome и request/correlation ID.
+  Поиск по reason message, evidence, email, тексту жалобы и before/after отсутствует.
+
+Cursor подписан и связан с actor, capability, purpose, filters и сроком; перенос другой роли или фильтру запрещён.
+Список не выдаёт exact total для restricted малых выборок: доступны `hasNext` и агрегированные buckets. Карточка
+повторно проверяет текущие role, assignment, conflict и target state.
+
+### Причина, подтверждение и согласованность изменения
+
+Каждая административная мутация требует actor ID из сессии, target type/ID, закрытый reason code, policy/version,
+idempotency key и expected revision. Свободное обоснование обязательно только для исключения или `OTHER`, хранится
+в restricted domain record и не копируется в generic audit. Audit атомарно сохраняет actor, action, target, reason
+code, outcome, UTC-время, request/correlation ID и changed-field allowlist без email, narrative, evidence, точных
+координат и полных before/after. Если обязательный audit не записан, доменное изменение откатывается.
+
+Любое действие показывает точный target, последствия, scope и срок. Для venue merge, permanent account restriction,
+role grant/revoke, break-glass и будущего экспорта нужны свежая re-auth, отдельный confirmation step, повтор target +
+consequences и одноразовый operation token. Merge дополнительно требует явно выбрать survivor; broad/permanent
+restriction — ввести показанный target identifier. Hard delete пользователя, case, решения, audit или venue нет;
+исправление создаёт revision/reversal. Ошибка, stale revision или replay не создают частичного effect или второго audit.
+
+### Экспорт, CMS и реклама
+
+В MVP нет CSV/JSON export пользователей, очередей, audit, площадок или safety evidence, bulk action, печати case
+packet и прямого доступа к базе из UI. Будущий legal/incident export требует отдельного требования и контракта:
+адресный scope, purpose/legal basis, второго approver, re-auth, лимит строк/полей, шифрование, РФ-residency,
+короткоживущую download capability, watermark, audit скачивания и подтверждённую очистку всех copies. Safety
+narrative никогда не входит в общий audit/user export.
+
+`EDITOR` и `ADS_MANAGER` резервируются для последующих модулей. CMS добавит редактору draft/review/publish,
+реклама — менеджеру campaign/creative/placement/pause; ни одна роль не получает user search, safety queue,
+case description/evidence, venue moderation или security audit. `MODERATOR` позднее сможет только маршрутизировать
+нарушающий article/creative через trust/safety, не редактируя материал или кампанию. Emergency unpublish/pause для
+`SUPERADMIN` потребует узкой capability, reason и audit. Экраны, контракты и таблицы CMS/рекламы сейчас не создаются.
+
+### Эксплуатационные метрики и критерии приёмки
+
+Метрики не зависят от analytics consent: admin login/MFA/re-auth outcome, authorization deny, role grant/revoke,
+queue depth/age, claim/reassignment conflict, time-to-first-action/close, venue decision/merge conflict, restriction
+expiry lag, audit failure, break-glass grant/read/expiry и rate-limit/dependency fail-closed. Labels содержат только
+role, action enum, broad object class, safe outcome и buckets; IDs, email, narrative, evidence и exact timestamp
+запрещены. Dashboard не ранжирует сотрудников и не является behavioral analytics.
+
+| ID      | Дано                                                           | Когда                                             | Тогда                                                                                           |
+| ------- | -------------------------------------------------------------- | ------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| AD-AC1  | Editor или Ads manager                                         | Открывает safety case напрямую                    | Получает безопасный отказ; description/evidence и факт сторон не раскрываются, отказ аудирован. |
+| AD-AC2  | Superadmin без break-glass                                     | Запрашивает safety evidence                       | Доступ запрещён; роль не даёт неявного bypass.                                                  |
+| AD-AC3  | Moderator не назначен, конфликтует или автор исходного решения | Читает evidence/решает case/appeal                | Операция запрещена и аудирована; case передаётся независимому reviewer.                         |
+| AD-AC4  | Допустимая административная мутация                            | Audit недоступен либо reason/actor отсутствует    | Транзакция откатывается; неаудированного изменения или effect нет.                              |
+| AD-AC5  | Два moderator одновременно меняют один объект                  | Оба отправляют одну expected revision             | Коммитится один переход; второй получает stale conflict без частичного effect.                  |
+| AD-AC6  | Moderator approve/reject venue candidate                       | Решение коммитится                                | Публикация/terminal state, provenance, outbox и audit согласованы и содержат reason.            |
+| AD-AC7  | Moderator сливает duplicate venue                              | Не выбрал survivor или не подтвердил последствия  | Merge запрещён; canonical ID и публичная карточка не меняются.                                  |
+| AD-AC8  | Сотрудник меняет role, restriction или decision                | Повторяет запрос после потерянного ответа         | Один effect и одна логическая audit operation; исправление — новая revision.                    |
+| AD-AC9  | Restricted список велик и меняется                             | Сотрудник проходит cursor pages                   | Нет дублей/пропусков в snapshot; page ≤ 100, cursor нельзя перенести другой роли/фильтру.       |
+| AD-AC10 | Break-glass выдан на один case                                 | Запрошен другой case, bulk/export или grant истёк | Доступ запрещён и аудирован; grant не расширяется и не продлевается.                            |
+| AD-AC11 | Любая роль в MVP                                               | Пытается экспортировать admin list/audit/evidence | Нет файла, job, signed URL или копии в analytics.                                               |
+| AD-AC12 | Analytics недоступна или consent отсутствует                   | Выполняются admin access/change/audit             | Операция и обязательный audit работают независимо; behavioral event не создаётся.               |
+
+Wire contracts, SQL-модели, admin session/grant, reason codes и API принадлежат
+`08-admin-backoffice/02-contract-data.md`; backend и UI этим этапом не заявлены. Границы данных уточнены в
+[доменной модели](domain-model.md), доступ и экспорт — в [безопасности](security-privacy.md), архитектурная граница —
+в [архитектуре](architecture.md), измерения — в [плане аналитики](analytics-plan.md).
