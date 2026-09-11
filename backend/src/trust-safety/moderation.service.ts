@@ -23,27 +23,41 @@ export class ModerationService {
         private readonly context: RequestContextService
     ) {}
 
-    async triage(caseId: string, expectedRevision: number, priority: 'URGENT' | 'HIGH' | 'NORMAL'): Promise<void> {
+    async triage(
+        caseId: string,
+        moderatorId: string,
+        expectedRevision: number,
+        priority: 'URGENT' | 'HIGH' | 'NORMAL'
+    ): Promise<void> {
         await this.prisma.$transaction((tx) =>
-            this.transition(tx, caseId, expectedRevision, ModerationCaseState.OPEN, ModerationCaseState.TRIAGED, {
-                priority,
-            })
+            this.transition(
+                tx,
+                caseId,
+                moderatorId,
+                expectedRevision,
+                ModerationCaseState.OPEN,
+                ModerationCaseState.TRIAGED,
+                { priority },
+                'safety.case.triaged'
+            )
         );
     }
 
-    async assign(caseId: string, moderatorId: string, expectedRevision: number): Promise<void> {
+    async assign(caseId: string, actorId: string, moderatorId: string, expectedRevision: number): Promise<void> {
         await this.prisma.$transaction(async (tx) => {
             const moderator = await tx.user.findUnique({ where: { id: moderatorId }, select: { status: true } });
             if (moderator?.status !== 'ACTIVE') throw trustSafetyError('INTERACTION_NOT_ALLOWED', 403);
             await this.transition(
                 tx,
                 caseId,
+                actorId,
                 expectedRevision,
                 ModerationCaseState.TRIAGED,
                 ModerationCaseState.ASSIGNED,
                 {
                     assignedModeratorId: moderatorId,
-                }
+                },
+                'safety.case.assigned'
             );
         });
     }
@@ -54,10 +68,12 @@ export class ModerationService {
             await this.transition(
                 tx,
                 caseId,
+                moderatorId,
                 expectedRevision,
                 ModerationCaseState.ASSIGNED,
                 ModerationCaseState.INVESTIGATING,
-                {}
+                {},
+                'safety.case.investigation.started'
             );
             await tx.safetySignal.updateMany({
                 where: {
@@ -275,10 +291,12 @@ export class ModerationService {
     private async transition(
         tx: Transaction,
         caseId: string,
+        moderatorId: string,
         expectedRevision: number,
         from: ModerationCaseState,
         to: ModerationCaseState,
-        data: Prisma.ModerationCaseUpdateInput
+        data: Prisma.ModerationCaseUpdateInput,
+        auditAction: string
     ): Promise<void> {
         const changed = await tx.moderationCase.updateMany({
             where: { id: caseId, state: from, revision: expectedRevision },
@@ -287,6 +305,7 @@ export class ModerationService {
         if (changed.count !== 1) throw trustSafetyError('REVIEW_REVISION_CONFLICT', 409);
         const row = await tx.moderationCase.findUniqueOrThrow({ where: { id: caseId } });
         await this.event(tx, 'safety.case.status.changed.v1', 'caseId', caseId, row.category);
+        await this.auditEntry(tx, moderatorId, auditAction, 'MODERATION_CASE', caseId, ['state', 'revision']);
     }
 
     private async assertAssigned(tx: Transaction, caseId: string, moderatorId: string) {

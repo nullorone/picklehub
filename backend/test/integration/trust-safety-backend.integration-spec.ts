@@ -1,10 +1,11 @@
 import { type INestApplicationContext } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import { MatchJoinMode, MatchState, MatchTeamCode } from '@prisma/client';
+import { MatchJoinMode, MatchState, MatchTeamCode, ModerationDecisionOutcome } from '@prisma/client';
 
 import { AuditModule } from '../../src/audit/audit.module';
 import { TypedConfigModule } from '../../src/common/config/config.module';
 import { DatabaseModule } from '../../src/common/database/database.module';
+import { InteractionPolicyService } from '../../src/common/database/interaction-policy.service';
 import { PrismaService } from '../../src/common/database/prisma.service';
 import { uuidV7 } from '../../src/common/identifiers/uuid-v7';
 import { RequestContextModule } from '../../src/common/request-context/request-context.module';
@@ -38,6 +39,7 @@ describe('trust/safety privacy and concurrent workflows', () => {
     let idempotency: TrustSafetyIdempotencyService;
     let communications: CommunicationService;
     let matches: MatchService;
+    let interactionPolicy: InteractionPolicyService;
     let localityId: string;
 
     beforeAll(async () => {
@@ -60,6 +62,7 @@ describe('trust/safety privacy and concurrent workflows', () => {
                 CommunicationService,
                 MatchPolicyService,
                 MatchService,
+                InteractionPolicyService,
             ],
         }).compile();
         application = module;
@@ -70,6 +73,7 @@ describe('trust/safety privacy and concurrent workflows', () => {
         idempotency = application.get(TrustSafetyIdempotencyService);
         communications = application.get(CommunicationService);
         matches = application.get(MatchService);
+        interactionPolicy = application.get(InteractionPolicyService);
         localityId = uuidV7();
         await prisma.onboardingLocality.create({
             data: {
@@ -225,6 +229,16 @@ describe('trust/safety privacy and concurrent workflows', () => {
             );
         const responses = await Promise.all([submit(), submit()]);
         expect(new Set(responses.map((response) => JSON.stringify(response.value))).size).toBe(1);
+        const replayWithAnotherTransportKey = await idempotency.execute(
+            reporterId,
+            'e57c4838-2d22-4f3b-9ab6-3ecf04197631',
+            'POST',
+            `/v1/matches/${matchId}/no-show-reports`,
+            body,
+            201,
+            (tx) => safety.submitNoShow(reporterId, matchId, body, tx)
+        );
+        expect(replayWithAnotherTransportKey.value).toEqual(responses[0].value);
         await expect(prisma.safetySignal.count({ where: { reporterId, kind: 'NO_SHOW' } })).resolves.toBe(1);
         const event = await prisma.outboxEvent.findFirstOrThrow({
             where: { type: 'safety.signal.received.v1' },
@@ -247,6 +261,8 @@ describe('trust/safety privacy and concurrent workflows', () => {
             new Date(now.getTime() + 3_600_000)
         );
         await prisma.$transaction((tx) => communications.block(organizerId, blockedId, tx));
+        await expect(interactionPolicy.blocked(organizerId, blockedId)).resolves.toBe(true);
+        await expect(interactionPolicy.blocked(blockedId, organizerId)).resolves.toBe(true);
         await expect(
             prisma.$transaction((tx) =>
                 matches.join(blockedId, matchId, { expectedVersion: 3, teamChoice: MatchTeamChoiceDto.ANY }, tx)
@@ -268,13 +284,65 @@ describe('trust/safety privacy and concurrent workflows', () => {
             )
         )) as { receiptId: string };
         const link = await prisma.moderationCaseSignal.findUniqueOrThrow({ where: { signalId: receipt.receiptId } });
-        await moderation.triage(link.caseId, 0, 'NORMAL');
-        await moderation.assign(link.caseId, moderatorId, 1);
+        await moderation.triage(link.caseId, moderatorId, 0, 'NORMAL');
+        await moderation.assign(link.caseId, moderatorId, moderatorId, 1);
+        await expect(safety.getOwn(organizerId, receipt.receiptId)).resolves.toMatchObject({
+            submittedEvidence: 'restricted-canary',
+        });
+        await expect(safety.getOwn(blockedId, receipt.receiptId)).resolves.toMatchObject({
+            submittedEvidence: null,
+        });
+        await expect(safety.getOwn(outsiderId, receipt.receiptId)).rejects.toMatchObject({
+            code: 'SAFETY_RECEIPT_NOT_FOUND',
+        });
         await expect(moderation.readAssignedEvidence(outsiderId, link.caseId)).rejects.toMatchObject({
             code: 'INTERACTION_NOT_ALLOWED',
         });
         await expect(moderation.readAssignedEvidence(moderatorId, link.caseId)).resolves.toEqual([
             expect.objectContaining({ evidence: 'restricted-canary' }),
         ]);
+
+        await prisma.$transaction((tx) => communications.unblock(organizerId, blockedId, tx));
+        await expect(interactionPolicy.blocked(organizerId, blockedId)).resolves.toBe(false);
+        await expect(interactionPolicy.blocked(blockedId, organizerId)).resolves.toBe(false);
+    });
+
+    it('audits every implemented moderation transition without narrative content', async () => {
+        const [reporterId, subjectId, moderatorId] = await Promise.all([player(), player(), player()]);
+        const matchId = await match(reporterId, subjectId, MatchState.PUBLISHED, new Date(now.getTime() - 3_600_000));
+        const canary = 'transition-audit-canary@example.test';
+        const receipt = (await prisma.$transaction((tx) =>
+            safety.submitNoShow(
+                reporterId,
+                matchId,
+                { subjectPlayerId: subjectId, reason: NoShowReasonDto.DID_NOT_ARRIVE, evidence: canary },
+                tx
+            )
+        )) as { receiptId: string };
+        const link = await prisma.moderationCaseSignal.findUniqueOrThrow({ where: { signalId: receipt.receiptId } });
+
+        await moderation.triage(link.caseId, moderatorId, 0, 'NORMAL');
+        await moderation.assign(link.caseId, moderatorId, moderatorId, 1);
+        await moderation.beginInvestigation(link.caseId, moderatorId, 2);
+        await moderation.recordDecision(moderatorId, link.caseId, 3, {
+            outcome: ModerationDecisionOutcome.NO_VIOLATION,
+            policyCode: 'NO_VIOLATION',
+            policyVersion: 'safety-v1',
+            scopeCode: 'CASE',
+            basisChecksum: 'a'.repeat(64),
+        });
+
+        const audit = await prisma.auditEntry.findMany({
+            where: { targetType: 'MODERATION_CASE', targetId: link.caseId },
+            orderBy: { createdAt: 'asc' },
+        });
+        expect(audit.map((entry) => entry.action)).toEqual([
+            'safety.case.triaged',
+            'safety.case.assigned',
+            'safety.case.investigation.started',
+            'safety.decision.recorded',
+        ]);
+        expect(audit.every((entry) => entry.actorId === moderatorId && entry.outcome === 'SUCCEEDED')).toBe(true);
+        expect(JSON.stringify(audit)).not.toContain(canary);
     });
 });

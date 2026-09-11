@@ -27,6 +27,12 @@ const REDACTED_PATHS = [
     '*.score',
     '*.pointsFor',
     '*.pointsAgainst',
+    '*.evidence',
+    '*.submittedEvidence',
+    '*.reviewText',
+    '*.responseText',
+    '*.appealText',
+    '*.reportDescription',
     'req.headers.authorization',
     'req.headers.cookie',
     "req.headers['x-telegram-init-data']",
@@ -52,6 +58,12 @@ const SENSITIVE_KEYS = new Set([
     'score',
     'pointsfor',
     'pointsagainst',
+    'evidence',
+    'submittedevidence',
+    'reviewtext',
+    'responsetext',
+    'appealtext',
+    'reportdescription',
 ]);
 
 export function redactSensitiveData(value: unknown): unknown {

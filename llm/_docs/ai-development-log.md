@@ -1879,3 +1879,60 @@ test/integration/trust-safety-backend.integration-spec.ts` — suite обнар�
 - Runtime PostgreSQL integration предыдущего backend-этапа в этом frontend-промпте не повторялась и остаётся
   обязательной CI-проверкой, как записано выше. Локально исполнимые критерии текущего этапа выполнены. Следующий
   промпт — `llm/07-trust-safety/05-verification.md`; к нему не переходили.
+
+## 2026-09-11 — доверие и безопасность, этап 05-verification
+
+- Активный промпт: `llm/07-trust-safety/05-verification.md`. Создана матрица проверки
+  `llm/_docs/trust-safety-verification.md`: assets/trust boundaries, threat model, actor matrix для заявителя,
+  обвиняемого, постороннего игрока, назначенного и неназначенного Moderator, Superadmin, Editor и Ads manager,
+  privacy/retention scan и прослеживаемость contract, unit, PostgreSQL, component и browser слоёв.
+- Проверка обнаружила, что реализованные переходы `OPEN → TRIAGED → ASSIGNED → INVESTIGATING` создавали outbox
+  event без audit entry. Moderator repository теперь требует actor ID для triage/assignment и атомарно пишет
+  минимальные `safety.case.triaged`, `safety.case.assigned` и `safety.case.investigation.started` с полями только
+  `state/revision`. Решение сохраняет существующий `safety.decision.recorded`; narrative в audit не попадает.
+- PostgreSQL regression расширен: concurrent same-key retry и business duplicate с другим transport key дают один
+  signal; block проверяется в обе стороны и снимается unblock; reporter видит собственный evidence, subject — только
+  safe receipt без evidence, outsider получает тот же 404, а restricted repository разрешён только exact assignee.
+  Отдельный сценарий проводит case по всему реализованному lifecycle до `DECIDED` и требует точный audit trail без
+  canary-текста.
+- Общий structured logger теперь рекурсивно скрывает `evidence`, `submittedEvidence`, `reviewText`, `responseText`,
+  `appealText` и `reportDescription`. Unit test проверяет canary на глубине error-report metadata. Новый обязательный
+  contract verification scan не допускает эти поля в analytics/client telemetry, проверяет public projection,
+  минимальный outbox, audit actions и retention primary/cache/queue/DLQ/export/backups/legal hold.
+- Локальный unit regression проводит moderation repository по переходам до `INVESTIGATING` через транзакционный
+  порт и проверяет actor, action, минимальные changed fields и по одному outbox event без зависимости от PostgreSQL.
+- Добавлен Playwright workflow на production builds для Web и TMA: safety report с emergency boundary и ad-free
+  surface, очистка narrative из DOM, no-show без ложного публичного эффекта, block confirmation, unblock и UUID
+  idempotency headers. TypeSpec/OpenAPI/generated clients/Prisma schema и migration не менялись.
+
+### Проверки этапа trust/safety 05-verification
+
+- `npm run verify` — успешно полностью: 8 workspaces/один lockfile, TypeSpec/Redocly, policy для 98 REST operations
+  и 45 messages, 70 contract/data/privacy tests, compatibility/generated drift/typecheck, OpenAPI mock,
+  format/docs, lint, strict typecheck, tests и production build. Backend: 24 suites/60 tests; Web: 7/30; TMA: 6/21;
+  API client: 1/6. PWA manifest/service worker и отсутствие development Telegram mock подтверждены.
+- `node --test contracts/scripts/trust-safety-policy.test.mjs contracts/scripts/trust-safety-data-policy.test.mjs
+contracts/scripts/trust-safety-verification-policy.test.mjs` — 11/11 успешно. Полный `npm run contracts:lint` —
+  70/70 policy/data/privacy tests успешно. `npm run test:e2e:typecheck` и `npm run test:e2e:build` — успешно для
+  нового safety spec и обоих production clients.
+- `npm run lint --workspace @picklehub/backend`, `npm run typecheck --workspace @picklehub/backend` и
+  `npm test --workspace @picklehub/backend -- --runInBand` — успешно, 24/24 suites и 60/60 tests. Исправленные
+  команды `npm test --workspace @picklehub/web`, `npm test --workspace @picklehub/tg` и
+  `npm test --workspace @picklehub/api-client` — успешно: 30/30, 21/21 и 6/6 tests. Первая попытка передать
+  Jest-флаг `--runInBand` в Vitest корректно завершилась ошибкой unknown option и не считается прогоном тестов.
+- `npm run test:integration --workspace @picklehub/backend -- --runInBand
+test/integration/trust-safety-backend.integration-spec.ts` обнаружил четыре сценария, но все остановились в общем
+  setup до первого assertion на `onboardingLocality.create`: локальная PostgreSQL недоступна. Поэтому новые
+  concurrency, actor matrix, block/unblock и lifecycle audit assertions должны пройти в PostgreSQL CI job; их успех
+  в этой сессии не заявляется.
+- `npx playwright test test/e2e/safety.spec.ts` обнаружил два сценария, но оба остановились до первого test step:
+  sandbox завершил local Chrome с `SIGABRT`, а cleanup получил `kill EPERM`. Typecheck и production build spec
+  зелёные, component tests покрывают соответствующие состояния, но browser assertions должны пройти в Playwright
+  CI job; их успех в этой сессии не заявляется.
+- После записи журнала `npm run format:check`, `npm run docs:check`, `npm ls --depth=0` и `git diff --check`
+  повторены успешно; unmet/extraneous dependencies и whitespace errors отсутствуют. Сохраняются внешнее
+  предупреждение `NODE_TLS_REJECT_UNAUTHORIZED=0` и неблокирующие Vite warnings: web/TMA main bundles около
+  531/578 kB и MapLibre chunk 924 kB.
+- Локально исполнимые критерии и автоматизация этапа выполнены. Runtime PostgreSQL и browser E2E остаются
+  environment-blocked до зелёных CI jobs. Следующий промпт — `llm/08-admin-backoffice/01-requirements.md`; к нему
+  не переходили.

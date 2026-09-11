@@ -56,4 +56,22 @@ describe('redactSensitiveData', () => {
         for (const value of Object.values(canaries)) expect(captured).not.toContain(String(value));
         expect(captured.match(/\[REDACTED\]/gu)).toHaveLength(Object.keys(canaries).length);
     });
+
+    it('removes trust and safety narratives from logs and error-report metadata', () => {
+        const canaries = {
+            appealText: 'SAFETY-APPEAL-CANARY',
+            evidence: 'SAFETY-EVIDENCE-CANARY',
+            reportDescription: 'SAFETY-DESCRIPTION-CANARY',
+            responseText: 'SAFETY-RESPONSE-CANARY',
+            reviewText: 'SAFETY-REVIEW-CANARY',
+            submittedEvidence: 'SAFETY-SUBMITTED-CANARY',
+        };
+
+        const captured = JSON.stringify(
+            redactSensitiveData({ event: 'safety.error', errorReport: { request: { body: canaries } } })
+        );
+
+        for (const value of Object.values(canaries)) expect(captured).not.toContain(value);
+        expect(captured.match(/\[REDACTED\]/gu)).toHaveLength(Object.keys(canaries).length);
+    });
 });
