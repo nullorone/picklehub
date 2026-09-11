@@ -216,3 +216,40 @@ consumer получает opaque match/result/revision ID и дочитывае�
 REST-контракт использует snapshot-bound opaque cursor для истории. События `profile.changed.v1`,
 `profile.statistics.source.changed.v1` и lifecycle rebuild несут только opaque source/profile/generation ID,
 revision и закрытое состояние: consumer дочитывает authoritative данные после авторизации.
+
+## Доверие и безопасность
+
+Граница `trust-safety` владеет пользовательскими отзывами, сигналами, объединёнными moderation cases,
+append-only ответами и апелляциями, решениями/эффектами и публичной агрегированной репутацией. Блокировки уже
+физически принадлежат `communications`, но `trust-safety` определяет общую direct-interaction policy через
+авторизованный port; перенос таблицы или дублирующая копия графа блокировок не требуются. Venue reports и match
+result disputes остаются authoritative в своих границах, а единая trust/safety квитанция маршрутизирует их и
+хранит только ссылку на source revision. Модуль не редактирует таблицы matches, venues, profiles или communications.
+
+Концептуальные сущности следующего контрактного этапа:
+
+- `Review` — одна эффективная author + subject + match запись с append-only revisions, eligibility policy version
+  и закрытым текстом; публичная проекция содержит только reversible aggregate после порога;
+- `SafetySignal` — immutable receipt конкретного reporter, category, subject/source reference и encrypted evidence;
+  withdrawal является новым намерением, а не удалением истории;
+- `ModerationCase` — закрытый контейнер одного или нескольких сигналов со state, priority, assignment и conflict
+  marker; объединение не меняет уникальность исходных сигналов и не видно игроку;
+- `CaseResponse` и `Appeal` — append-only позиции сторон; одна апелляция на decision назначается reviewer, отличному
+  от автора решения;
+- `ModerationDecision` — immutable revision с policy version, outcome, scope, expiry/review deadline и reviewer;
+  reversal создаёт новую revision и компенсирующий effect;
+- `ModerationEffect` — идемпотентный обратимый effect конкретного типа; для no-show уникален по match + subject,
+  для result correction ссылается на новую authoritative result revision;
+- `AuditEntry` — отдельный минимальный append-only security record без текста, evidence, rating и before/after.
+
+Сигнал не равен case, case не равен решению, решение не равно применённому effect. Уникальность reporter signal
+подавляет retry, но сигналы разных reporters не схлопываются; один effect не умножается числом сигналов.
+`RECEIVED → LINKED/UNDER_REVIEW → RESOLVED` является пользовательским автоматом сигнала, а закрытый case проходит
+`OPEN → TRIAGED → ASSIGNED → INVESTIGATING → DECIDED → CLOSED` и может стать `REOPENED` только из-за апелляции или
+существенных новых данных. Все переходы используют ожидаемую revision, ограничения БД и один transaction outbox.
+
+Evidence хранится отдельно от searchable metadata как authenticated ciphertext с key version. Immutable snapshot
+существующего контента создаёт владеющий модуль и отдаёт trust/safety только через least-privilege read port;
+generic event содержит opaque source/signal/case ID и закрытую категорию, но не текст, score, coordinates,
+reporter/subject pair или вложение. Public reputation projection читает только текущие eligible review revisions и
+final authoritative effects, поддерживает retract/rebuild и не использует pending reports, blocks или sanctions.

@@ -213,3 +213,37 @@ source/contribution/aggregate count mismatch и checksum/reconciliation result. 
 totals запрещены как metric labels. Цели: duplicate current contribution, отрицательный total, `wins + losses >
 played`, `ALL != SINGLES + DOUBLES` и переключение неполного generation — ноль. Analytics outage не блокирует
 сохранение профиля, privacy invalidation, чтение истории или rebuild.
+
+## Доверие и безопасность
+
+Behavioral events подчиняются общей consent policy и envelope `v1`. Report/review/case/decision/appeal ID,
+reporter/subject/moderator ID, их пары, match/content/venue ID, rating, tags, текст, evidence, block side, emergency
+number, точное время/место, sanction scope и internal reason запрещены. Не отправляются события просмотра формы,
+набора текста, показа emergency warning или открытия статуса конкретного case: они создали бы чувствительный граф.
+
+| Событие                   | Условие и источник                                         | Дополнительные свойства                                                                                   | Дедупликация                          | Применение                                    |
+| ------------------------- | ---------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- | ------------------------------------- | --------------------------------------------- |
+| `safety_signal_submitted` | Backend после commit сигнала при действующем consent       | `kind`: `NO_SHOW`/`SAFETY`/`CONTENT`/`VENUE`/`RESULT`; `entry`: `MATCH`/`CHAT`/`PROFILE`/`VENUE`/`STATUS` | Signal operation ID                   | Доступность путей обращения без содержания.   |
+| `review_submitted`        | Backend после первой eligible review revision              | `timing`: `LT_24H`/`1_7D`/`8_14D`                                                                         | Review ID; updates не создают событие | Использование отзыва без rating/subject.      |
+| `safety_status_viewed`    | Клиент показал список receipt без открытия отдельного case | `state`: `EMPTY`/`HAS_OPEN`/`RESOLVED_ONLY`; `countBucket`: `ZERO`/`ONE`/`TWO_FIVE`/`GT_FIVE`             | User + screen session у producer      | Находимость квитанций без категории и связей. |
+| `safety_appeal_submitted` | Backend после commit допустимой апелляции                  | `decisionKind`: `NO_ACTION`/`ACTION_TAKEN`/`ROUTED`/`CANNOT_REVIEW`; `timing`: `LT_24H`/`1_7D`/`8_14D`    | Appeal operation ID                   | Понятность решений и пути пересмотра.         |
+
+Блокировка/разблокировка, ответ затронутого игрока, moderator action, emergency warning и автоматический quarantine —
+обязательные safety/security операции, а не behavioral analytics. Они не экспортируются как пользовательские
+events даже при consent. `safety_signal_submitted` не содержит узкую reason taxonomy: малые категории и context
+могут деанонимизировать пострадавшего. Существующие `chat_report_submitted` и `venue_report_submitted` после
+перехода на единый lifecycle считаются source-specific проекциями той же операции и не должны одновременно
+увеличивать общий report total; единый event ID обеспечивает дедупликацию.
+
+Operational dashboard работает независимо от analytics consent и только на агрегатах: received/resolved по broad
+kind, queue-age buckets, assignment/reassignment, duplicate/link rate, decision outcome class,
+time-to-first-human-action и time-to-close buckets, appeal/uphold/change, expired temporary restrictions, effect
+apply/retract/replay, notification deferral, restricted-read denial и retention cleanup lag. Нельзя использовать
+reporter/subject/case ID, точный timestamp, venue/match, moderator identity или свободный policy reason как labels.
+Размеры малых когорт подавляются; dashboard не строит рейтинг сотрудников, карту инцидентов или профиль игрока.
+
+Guardrails: pending report, число reports и withdrawal не публикуются как подтверждённое нарушение; один final
+no-show даёт один effect; reversal полностью компенсирует публичную/статистическую проекцию; restricted evidence
+read без assignment, просроченный temporary effect, пропущенный cleanup и canary text/contact/coordinate в любом
+запрещённом sink имеют целевое значение ноль. Analytics outage не блокирует report, review, block, decision,
+appeal, audit или cleanup, а события периода без согласия не буферизуются и не воспроизводятся.

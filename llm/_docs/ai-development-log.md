@@ -1647,3 +1647,61 @@ EPERM`). Поэтому все существующие database suites оста
 - Локально исполнимые критерии и автоматизация этапа выполнены, но runtime-приёмка равенства перестроенной и
   инкрементальной проекций остаётся environment-blocked до зелёного PostgreSQL-прогона. Следующий промпт —
   `llm/07-trust-safety/01-requirements.md`; к нему не переходили.
+
+## 2026-09-11 — доверие и безопасность, этап 01-requirements
+
+- Активный промпт: `llm/07-trust-safety/01-requirements.md`. Изменения ограничены продуктовыми требованиями,
+  моделью домена, архитектурными границами, privacy/retention и аналитикой; TypeSpec/AsyncAPI, Prisma, backend,
+  административная очередь и клиентские экраны trust/safety не создавались.
+- Зафиксированы девять пользовательских историй и 16 сценариев «Дано/Когда/Тогда»: отзыв после подтверждённого
+  матча, no-show signal, safety/content/venue/result reports, блокировка/разблокировка, собственная квитанция и
+  статус, уведомление затронутого игрока, ответ, апелляция и проверяемый fallback-канал связи.
+- Стартовые окна: отзыв — 14 суток после confirmation, no-show — от `startsAt + 30 минут` до семи суток, safety —
+  до 90 суток после связанного взаимодействия, исключительный review подтверждённого результата — 14 суток.
+  Повторы одного reporter идемпотентны, независимые сигналы не теряются при объединении case, но один no-show или
+  иной decision effect уникален и не умножается числом reports.
+- Разделены immutable signal, закрытый moderation case, append-only response/appeal, versioned human decision и
+  идемпотентный reversible effect. Pending/withdrawn/rejected report, число заявителей и молчание target не
+  становятся доказанной виной, публичным фактом, санкцией или статистическим вкладом. Автоматически разрешены
+  только технические rate/spam/privacy quarantine и собственная block preference; остальные эффекты требуют
+  одобренной versioned policy и human decision.
+- Отзыв использует закрытые rating/tags и optional text; публично доступен только обратимый средний aggregate
+  после пяти eligible авторов по разным матчам. Reports, texts, tags, blocks, sanctions и no-show evidence не
+  публикуются. Подтверждённая moderation неявка создаёт один authoritative source для уже определённой profile
+  statistics, а result correction меняет marker/statistics только через новую authoritative revision.
+- Блокировка немедленно запрещает в обе стороны новый direct profile/search/invite/join/request/waitlist/promotion
+  и будущий direct channel, но не разрушает существующий общий матч, системные факты или report action. Unblock не
+  обходит встречный block/restriction и не восстанавливает прошлые заявки или очищенный контент.
+- Экстренный путь прямо сообщает обратиться в `112`/местную службу при непосредственной угрозе и что PickleHub не
+  является экстренной службой и не гарантирует немедленный ответ. Показ предупреждения не выдаётся за triage или
+  вызов службы; реальный номер, текст, staffing, часы и внешний канал остаются production gates legal/operations.
+- Evidence минимизировано, отделено от searchable metadata и предложено к authenticated encryption в РФ;
+  moderator access требует assignment/no-conflict, апелляцию рассматривает другой reviewer, break-glass адресный
+  и аудируемый. Зафиксированы предлагаемые retention до одного/трёх лет по категории, case-local pseudonymization,
+  legal hold, cleanup всех производных sinks и запрет текста/контактов/координат/rating в logs, trace, error,
+  audit, analytics, outbox, BullMQ и DLQ.
+- Analytics plan получил четыре consented события только с broad enum/buckets и обязательные operational
+  queue/decision/appeal/effect/cleanup guardrails без reporter-subject graph, case IDs, узкой причины или текста.
+  Block, target response, moderator action и emergency warning не экспортируются как behavioral analytics.
+- Изменённые файлы: `llm/_docs/product-requirements.md`, `llm/_docs/domain-model.md`,
+  `llm/_docs/architecture.md`, `llm/_docs/security-privacy.md`, `llm/_docs/analytics-plan.md` и этот журнал.
+
+### Проверки этапа trust/safety 01-requirements
+
+- `npx prettier --write llm/_docs/product-requirements.md llm/_docs/domain-model.md llm/_docs/architecture.md
+llm/_docs/security-privacy.md llm/_docs/analytics-plan.md` — успешно; пять содержательных документов
+  отформатированы.
+- После исправлений `npx prettier --write llm/_docs/product-requirements.md llm/_docs/analytics-plan.md` — успешно,
+  файловый drift отсутствовал.
+- `npm run format:check` — успешно: Prettier и TypeSpec format check прошли, шесть TypeSpec source не изменены.
+- `npm run docs:check` — успешно: markdownlint проверил 119 Markdown-файлов, ошибок нет.
+- Read-only Node.js-проверка всех относительных Markdown-ссылок через `rg --files -g '*.md'` — успешно: проверено
+  92 ссылки, отсутствующих целей нет.
+- `git diff --check` — успешно; whitespace errors отсутствуют.
+- `contracts:check`, lint/typecheck/tests/build и runtime integration/e2e не запускались: документационный этап не
+  меняет контракты, generated artifacts или исполняемый код, а их успешность не проверяет ещё не реализованные
+  lifecycle, RBAC, encryption, concurrency и cross-module block guarantees. Предыдущие environment-blocked
+  PostgreSQL/Redis/Playwright проверки не выдаются за выполненные.
+- Критерии этапа выполнены на уровне требований: неподтверждённая жалоба не публикуется как факт, direct
+  взаимодействие заблокированных пользователей запрещено, а продукт явно не выдаёт модерацию за экстренную
+  службу. Следующий промпт — `llm/07-trust-safety/02-contract-data.md`; к нему не переходили.

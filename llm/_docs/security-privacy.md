@@ -357,6 +357,96 @@ retention/deletion и выключение tracking. Failover разрешён �
 логическом delivery ID; без одобрения конфигурация fail-closed. Email и Telegram не подменяют друг друга, а их
 недоступность не откатывает match/chat/in-app транзакцию и не маскируется сообщением об успешной доставке.
 
+## Политика доверия и безопасности
+
+Reports, review text/responses, evidence, assignment и moderation notes относятся к `restricted personal`;
+safety-сведения о здоровье, угрозе или дискриминации могут стать специальной категорией после legal review и
+обрабатываются по более строгому режиму. Rating, broad category, timestamps и opaque references являются
+`internal`, пока не соединены с человеком; соединённый набор restricted. Публичны только агрегат отзывов после
+пороговой проверки и безопасный outcome собственного обращения. Неподтверждённый report никогда не является
+публичным фактом.
+
+### Сбор, шифрование и доступ
+
+- Сначала собираются allowlisted category/source revision; plain text появляется только там, где структурированного
+  ответа недостаточно. Report text ограничен 2 000, review text — 500 символами. Вложения, URL ingestion,
+  документы, изображения, аудио и точная текущая геопозиция запрещены.
+- Existing content evidence создаётся сервером как immutable snapshot точной revision. Evidence и responses
+  хранятся в PostgreSQL trust/safety в РФ как authenticated ciphertext с отдельным key version/AAD; searchable
+  metadata не содержит текст, contact или координаты. Ключи разделены по среде и workload и ротируются.
+- Игровой API читает только собственную receipt projection. Moderator repository требует активную роль,
+  assignment к case и отсутствие conflict marker на каждом запросе. Reviewer апелляции отличается от автора
+  решения. Ни superadmin, ни support не получают bulk evidence read неявно.
+- Break-glass требует incident ID, case scope, владельца, причины и expiry; каждое чтение аудируется и вызывает
+  review. Массовый поиск текста, выгрузка в локальные файлы, использование evidence для обучения/аналитики и
+  production snapshots в non-production запрещены.
+- Target notification, provider message, frontend telemetry и error SDK получают только receipt/status/outcome
+  class и локальный route. Reporter, текст, evidence, число сигналов, moderator identity и sanction detail не
+  покидают in-app restricted boundary. Внешний safety-канал запрещён до проверки residency, terms, tracking,
+  retention, escalation hours и удаления.
+
+При подозрении на непосредственную угрозу до формы показывается 112 для России либо совет обратиться в местную
+экстренную службу. Это только предупреждение: событие не означает triage, связь с оператором или вызов службы.
+PickleHub не определяет местоположение и не пересылает сведения полиции автоматически. Конкретный текст, номер по
+рынку и обязательства ответа требуют legal/operations approval; production нельзя запускать с фиктивным контактом
+или заявлением о 24/7.
+
+### Злоупотребления, решения и блокировки
+
+Стартовые лимиты: create report/no-show — 5/сутки на пользователя и 20/сутки на subject-context; review revisions —
+10/сутки и один effective review на author + subject + match; block/unblock — 20/час; status list/read — 60/минуту;
+response/appeal — 10/сутки; moderator queue/read — 120/минуту, decision/export/break-glass — отдельные низкие
+лимиты с re-authentication. Keys используют opaque IDs/keyed network prefix, не текст. Недоступность distributed
+limiter закрывает create/block/response/appeal/moderator mutation 503; собственный read-only receipt list может
+использовать bounded fallback. Значения требуют abuse/load review.
+
+Idempotency и уникальные subject constraints дополняют rate limit. Несколько reports не создают автоматическую
+вину, приоритет или санкцию. Разрешённые автоматические меры ограничены rate limiting, spam/privacy quarantine и
+собственной блокировкой; human-impacting решение требует versioned approved policy, assignment и audit. Temporary
+restriction максимум на 72 часа без нового human review, имеет expiry job и alert. Decision effect и reversal
+идемпотентны и применяются owning-модулем; очередь не содержит evidence. Failure/retry сохраняет один effect ID и
+не изображается завершённым решением.
+
+Direct block deny проверяется в обе стороны перед profile/search/invite/join/request/waitlist/promotion и будущим
+direct channel. Cache положительного разрешения не является авторитетным; при недоступности block port новая
+чувствительная связь закрывается. Target не уведомляется о block, а ответ не раскрывает сторону. Общий существующий
+матч и системные факты сохраняются в минимальной проекции. Unblock не восстанавливает заявки, promotion, удалённый
+контент или чужой block.
+
+### Аудит, удаление и retention
+
+Audit содержит opaque receipt/case/decision/policy revision, actor/subject, действие, access basis, outcome и
+timestamp; rating, text, evidence, contact, IP, coordinates, moderator display name, notification body и
+before/after отсутствуют. Аудируются create/link/assign/read restricted evidence/response/decision/effect/reversal,
+notification deferral, appeal, export, break-glass, legal hold и cleanup. Доступ к audit отделён от moderator
+evidence role; поиск/экспорт audit сам аудируется.
+
+Предлагаемые до legal review сроки:
+
+| Категория                                       | Получатель/хранилище                                        | Предлагаемый срок                                                                                         |
+| ----------------------------------------------- | ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| Receipt и структурированный signal metadata     | Trust/safety PostgreSQL в РФ; игрок — только своя проекция  | До 1 года после окончательного решения; без case — 90 суток после закрытия                                |
+| Report text, responses и immutable evidence     | Encrypted restricted records в РФ; назначенные reviewers    | До 1 года после окончательного решения или апелляции; затем криптоудаление и проверяемая очистка          |
+| Review revisions и текст                        | Encrypted trust/safety records; автор/назначенный reviewer  | Текст 180 суток после effective/withdrawn review; минимальная eligible revision до 3 лет для пересчёта    |
+| Moderation case/decision/effect/appeal metadata | Restricted case store; owning module получает только effect | 3 года после окончательного закрытия; subject link удаляется раньше, если он не нужен для safety/legal    |
+| Block preference                                | Communications PostgreSQL в РФ; только владелец и deny port | До unblock или удаления владельца; revoked metadata 30 суток для replay/audit                             |
+| Public review aggregate/contributions           | Profiles projection в РФ                                    | Пока нужен профилю; скрыть сразу при privacy/deletion, максимум 3 года после удаления связанных аккаунтов |
+| Trust/safety audit                              | Изолированное append-only хранилище в РФ                    | Предложение 3 года после закрытия case; partition cleanup, не бессрочно                                   |
+| Operational metrics/behavioral analytics        | Агрегаты в РФ/одобренный provider                           | Raw operational 90 суток; consented analytics 90 суток; анонимные пороговые агрегаты до 1 года            |
+
+Удаление аккаунта сразу скрывает профиль/reputation, отзывает block-owned direct links и удаляет contact mapping.
+Active case не удаляется каскадно: identity заменяется case-local pseudonym, а минимальное evidence живёт только до
+своего срока. Адресный legal hold указывает case, конкретные records, основание, owner, expiry/review date; он не
+продлевает все отзывы, чат или аккаунт. Withdrawal не является удалением. Cleanup охватывает primary/read models,
+search/cache, queues/DLQ, exports и encryption keys; backups истекают за 35 суток, а restore сначала применяет
+deletion/suppression ledger. Late retry не должен оживлять очищенный payload.
+
+Operational alerts без пользовательских labels: restricted read denial, assignment conflict, duplicate effect,
+expired temporary restriction, queue/appeal age bucket, deferred target notice, key/decryption failure, cleanup
+lag и canary text/contact/coordinate/rating в logs, traces, error reports, audit, analytics, outbox, BullMQ или DLQ.
+Реальные safety-данные запрещены до утверждения правового основания, privacy notice, сроков, РФ-размещения,
+процесса доступа, staffing/escalation и проверяемых delete/recovery jobs.
+
 ## Политика identity и онбординга
 
 Основание — [обзор identity](../02-identity-onboarding/00-overview.md) и

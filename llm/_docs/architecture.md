@@ -157,6 +157,25 @@ provider failover не входят в доменную транзакцию м�
 несёт preview текста. Один внешний канал не подменяется другим без явного выбора пользователя. Production
 адаптер/резерв запрещён до review условий, РФ-размещения, tracking, suppression, retention и idempotency.
 
+### Граница trust/safety
+
+`trust-safety` владеет lifecycle сигнала/case/decision/appeal, назначением, encrypted evidence и перестраиваемой
+репутацией. Она не становится общей базой контента: matches, venues и communications сохраняют authoritative
+объект и отдают точную revision через узкий авторизованный port. Исходные события несут opaque ID и category;
+consumer перечитывает source и eligibility, поэтому outbox/DLQ не содержат жалобу или текст пострадавшего.
+
+Игровой API видит только собственную receipt/status projection. Restricted repository требует assignment,
+moderator role и отсутствия конфликта интересов на каждый read/write; break-glass выдаётся на один case и срок.
+Решение создаёт идемпотентный effect через owning-module port после commit/outbox: no-show обновляет profile source,
+result correction создаёт новую match revision, venue action остаётся в venues, content restriction — в source
+module. Повтор, reversal и replay не умножают effect. Недоступность проекции/аналитики не блокирует обязательный
+приём сигнала, блок или audit; недоступность authoritative owner оставляет effect pending, а не изображает успех.
+
+Блокировки остаются в communications как единый safety preference store. Остальные модули проверяют
+двусторонний deny синхронно для нового direct interaction и повторно перед commit; кеш может ускорить отрицательный
+результат, но при lag/failure чувствительная мутация закрывается. Существующий общий матч использует ограниченную
+проекцию и не разрушается блокировкой.
+
 ## Общие frontend-пакеты
 
 Разрешены framework-neutral пакеты `api-client`, `domain`, `validation`, `i18n` и `analytics`. Они не импортируют
