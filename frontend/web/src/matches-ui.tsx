@@ -947,7 +947,11 @@ export function MatchDetailsScreen({
                                     .filter((item) => item.team === team.code && item.state === 'ACTIVE')
                                     .map((item) => (
                                         <li key={item.id}>
-                                            {item.userId === userId ? 'Вы' : 'Игрок'}
+                                            {item.userId === userId ? (
+                                                <Link to="/profile">Вы</Link>
+                                            ) : (
+                                                <Link to={`/players/${item.userId}`}>Игрок</Link>
+                                            )}
                                             {item.isOrganizer ? ' · организатор' : ''}
                                         </li>
                                     ))}

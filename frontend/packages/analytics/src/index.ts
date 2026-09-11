@@ -37,6 +37,28 @@ export type AnalyticsEvent =
           readonly ageBucket: 'LT_5M' | '5M_1H' | 'GT_1H';
           readonly category: 'ROSTER' | 'REQUESTS' | 'MATCH_CRITICAL' | 'REMINDERS' | 'RESULTS' | 'CHAT';
           readonly channel: 'IN_APP' | 'TELEGRAM' | 'EMAIL';
+      }
+    | {
+          readonly name: 'profile_viewed';
+          readonly entry: 'MATCH' | 'HISTORY' | 'DIRECT';
+          readonly ownership: 'SELF' | 'OTHER';
+          readonly visibility: 'PUBLIC' | 'PRIVATE_SELF';
+      }
+    | {
+          readonly name: 'match_history_opened';
+          readonly ownership: 'SELF' | 'OTHER';
+          readonly resultBucket: 'ZERO' | 'ONE_FIVE' | 'SIX_TWENTY' | 'GT_TWENTY';
+      }
+    | {
+          readonly name: 'statistics_viewed';
+          readonly format: 'ALL' | 'SINGLES' | 'DOUBLES';
+          readonly ownership: 'SELF' | 'OTHER';
+          readonly state: 'EMPTY' | 'AVAILABLE' | 'UPDATING';
+      }
+    | {
+          readonly name: 'dupr_link_opened';
+          readonly ownership: 'SELF' | 'OTHER';
+          readonly surface: 'PROFILE';
       };
 
 export interface AnalyticsPort {

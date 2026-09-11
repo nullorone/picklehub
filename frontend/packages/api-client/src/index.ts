@@ -39,10 +39,20 @@ import type {
     SchemaNotificationPage,
     SchemaNotificationPreference,
     SchemaNotificationReadReceipt,
+    SchemaAvatarUploadPolicy,
+    SchemaAvatarUploadRequest,
+    SchemaMatchHistoryPage,
+    SchemaPlayerProfile,
+    SchemaPlayerStatistics,
+    SchemaProfilePrivacySettings,
     SchemaProposeVenueRevision,
+    SchemaPublicPlayerProfile,
+    SchemaPublicPlayerStatistics,
     SchemaReportMessageCommand,
     SchemaSendMessageCommand,
     SchemaUpdateNotificationPreference,
+    SchemaUpdatePlayerProfile,
+    SchemaUpdateProfilePrivacySettings,
     SchemaUserBlock,
     SchemaVenue,
     SchemaVenueCandidate,
@@ -556,6 +566,65 @@ export function createIdentityClient(options: ApiClientOptions, platform: Client
                 method: 'PUT',
                 mutation: true,
             }),
+        getOwnPlayerProfile: () => call<SchemaPlayerProfile>('/me/profile', undefined, { auth: true }),
+        updateOwnPlayerProfile: (body: SchemaUpdatePlayerProfile, idempotencyKey?: string) =>
+            call<SchemaPlayerProfile>('/me/profile', body, {
+                auth: true,
+                idempotent: true,
+                idempotencyKey,
+                method: 'PATCH',
+                mutation: true,
+            }),
+        getProfilePrivacySettings: () =>
+            call<SchemaProfilePrivacySettings>('/me/profile/privacy', undefined, { auth: true }),
+        updateProfilePrivacySettings: (body: SchemaUpdateProfilePrivacySettings, idempotencyKey?: string) =>
+            call<SchemaProfilePrivacySettings>('/me/profile/privacy', body, {
+                auth: true,
+                idempotent: true,
+                idempotencyKey,
+                method: 'PATCH',
+                mutation: true,
+            }),
+        setDuprProfileLink: (url: string, expectedVersion: number, idempotencyKey?: string) =>
+            call<SchemaPlayerProfile>(
+                '/me/profile/external-links/dupr',
+                { expectedVersion, url },
+                { auth: true, idempotent: true, idempotencyKey, method: 'PUT', mutation: true }
+            ),
+        removeDuprProfileLink: (expectedVersion: number, idempotencyKey?: string) =>
+            call<undefined>(
+                '/me/profile/external-links/dupr',
+                { expectedVersion },
+                { auth: true, idempotent: true, idempotencyKey, method: 'DELETE', mutation: true }
+            ),
+        createProfileAvatarUpload: (body: SchemaAvatarUploadRequest, idempotencyKey?: string) =>
+            call<SchemaAvatarUploadPolicy>('/me/profile/avatar-uploads', body, {
+                auth: true,
+                idempotent: true,
+                idempotencyKey,
+                mutation: true,
+            }),
+        removeProfileAvatar: (expectedVersion: number, idempotencyKey?: string) =>
+            call<undefined>(
+                '/me/profile/avatar',
+                { expectedVersion },
+                { auth: true, idempotent: true, idempotencyKey, method: 'DELETE', mutation: true }
+            ),
+        listOwnMatchHistory: (cursor?: string, limit = 20) =>
+            call<SchemaMatchHistoryPage>('/me/match-history', undefined, {
+                auth: true,
+                query: query({ cursor, limit }),
+            }),
+        getOwnPlayerStatistics: () => call<SchemaPlayerStatistics>('/me/statistics', undefined, { auth: true }),
+        getPublicPlayerProfile: (playerId: string) =>
+            call<SchemaPublicPlayerProfile>(`/players/${playerId}`, undefined, { auth: true }),
+        listPublicPlayerMatchHistory: (playerId: string, cursor?: string, limit = 20) =>
+            call<SchemaMatchHistoryPage>(`/players/${playerId}/match-history`, undefined, {
+                auth: true,
+                query: query({ cursor, limit }),
+            }),
+        getPublicPlayerStatistics: (playerId: string) =>
+            call<SchemaPublicPlayerStatistics>(`/players/${playerId}/statistics`, undefined, { auth: true }),
     } as const;
 }
 

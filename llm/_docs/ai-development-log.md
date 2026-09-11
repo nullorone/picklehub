@@ -1549,3 +1549,50 @@ EPERM`). Поэтому все существующие database suites оста
 - Локально исполнимые критерии этапа выполнены. PostgreSQL integration/concurrency приёмка остаётся
   environment-blocked и должна быть зелёной до перехода к `llm/06-player-profile-stats/04-tma-web.md`; следующий
   промпт не начинался.
+
+## 2026-09-11 — профиль и статистика, этап 04-tma-web
+
+- Активный промпт: `llm/06-player-profile-stats/04-tma-web.md`. Web/PWA и TMA получили паритетные собственный и
+  публичный профили, маршруты `/profile` и `/players/:playerId` и переходы из состава матча. Собственный экран
+  редактирует имя, населённый пункт, форматы, строгую самооценку, часовой пояс и видимость; мутации используют
+  optimistic version и сохраняют один idempotency key при сетевом повторе.
+- Аватар ограничен JPEG/PNG/WebP и 5 МиБ, до выдачи upload policy в браузере считается SHA-256; PUT отправляется
+  только на server-signed URL с обязательными заголовками, а UI честно сообщает об отложенной безопасной
+  обработке. DUPR показан только как внешняя непроверенная и несинхронизируемая ссылка; переход имеет
+  `noopener`/`noreferrer`, а capability может оставить его выключенным.
+- Статистика показывает три серверных среза, timestamp расчёта в часовом поясе пользователя, textual `dl` рядом с
+  полосой win rate и последнее подтверждение. Нулевой denominator даёт отсутствующий процент, а не `0%`.
+  `UPDATING` сохраняет последнее согласованное состояние. Надёжность и посещаемость соблюдают public threshold и
+  не раскрывают source match. Ожидающие и оспоренные записи истории отделены как ещё не вошедшие в статистику.
+- Loading, empty, partial statistics/history, unavailable, retry и offline состояния не подставляют вымышленные
+  нули; offline блокирует мутации. Public route вызывает только public API и не объединяет ответ с self cache.
+  API client получил типизированные методы всех 13 profile routes, `no-store`, защищённые mutation headers,
+  optional bearer для public read и cursor pagination.
+- Аналитика соответствует утверждённой allowlist: `profile_viewed`, `match_history_opened`, `statistics_viewed` и
+  `dupr_link_opened` передают только ownership, enum состояния/источника/формата и bucket количества без player,
+  match, profile values или totals. События успешных экранов дедуплицируются на screen scope.
+- Добавлены одинаковые Web/TMA component tests: public-only boundary, нулевой denominator, updating и disputed
+  state, partial load без нулей, offline readable state и повтор mutation с тем же key. Во время теста найден и
+  исправлен runtime-дефект `Intl.DateTimeFormat`: несовместимое сочетание date/time styles с `timeZoneName`
+  заменено явными полями даты и времени.
+
+### Проверки этапа profile/statistics 04-tma-web
+
+- Целевые `lint`, strict `typecheck`, Vitest и production `build` для `@picklehub/analytics`,
+  `@picklehub/api-client`, `@picklehub/web` и `@picklehub/tg` — успешно. Web: 6 suites/23 tests; TMA: 5/18;
+  профильный parity-набор — по 4/4 в каждом клиенте; API client — 1/5; analytics — 1/1.
+- `npm run verify` до финальной синхронизации analytics taxonomy прошёл полностью. Итоговый прогон после
+  синхронизации и записи журнала успешно прошёл workspace/lockfile, TypeSpec/Redocly, policy для 87 REST
+  operations/41 messages, 58 contract/data/privacy tests, compatibility и generated drift/typecheck, затем один
+  раз остановился на sandbox `listen EPERM 127.0.0.1` в OpenAPI mock. Немедленный отдельный
+  `npm run contracts:mock:check` успешно проверил все шесть групп examples; оставшаяся точная цепочка
+  `format:check`, `docs:check`, `lint`, `typecheck`, `test`, `build`, `npm ls --depth=0` и `git diff --check` также
+  успешна для восьми workspaces без unmet/extraneous dependencies.
+- Production Web/PWA build подтвердил manifest/service worker; TMA guard подтвердил отсутствие development mock.
+  Сохранились неблокирующие предупреждения Vite: MapLibre chunk около 924 кБ, основной web bundle около 507 кБ и
+  TMA около 553 кБ; route-level splitting остаётся последующей оптимизацией.
+- `NODE_TLS_REJECT_UNAUTHORIZED=0` остаётся внешним небезопасным свойством окружения и не добавлен в репозиторий.
+  Реальный object storage, decode/re-encode/malware scanning, размещение медиа в РФ и DUPR provider/legal approval
+  не заявляются; backend capabilities по умолчанию остаются выключенными.
+- Содержательные критерии клиентского этапа выполнены. Следующий промпт —
+  `llm/06-player-profile-stats/05-verification.md`; к нему не переходили.

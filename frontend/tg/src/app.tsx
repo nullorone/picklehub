@@ -9,6 +9,7 @@ import { useOnlineStatus } from './connectivity';
 import { ChatScreen, NotificationBadge, NotificationsScreen } from './communications-ui';
 import { TelegramAccount, TelegramLogin, TelegramOnboarding } from './identity-ui';
 import { CreateMatchScreen, MatchDetailsScreen, MatchesScreen } from './matches-ui';
+import { ProfileScreen } from './profiles-ui';
 import { VenuesScreen } from './venues-ui';
 
 type Session = components['schemas']['AuthenticatedSession'];
@@ -59,6 +60,17 @@ function ChatRoute({
     );
 }
 
+function PublicProfileRoute({
+    client,
+    online,
+}: {
+    readonly client: ReturnType<typeof createIdentityClient>;
+    readonly online: boolean;
+}) {
+    const { playerId } = useParams();
+    return <ProfileScreen client={client} online={online} ownership="OTHER" playerId={playerId} />;
+}
+
 export function App({ config, initData }: { readonly config: RuntimeConfig; readonly initData: string | undefined }) {
     const { t } = useTranslation();
     const online = useOnlineStatus();
@@ -100,6 +112,7 @@ export function App({ config, initData }: { readonly config: RuntimeConfig; read
                             Уведомления
                             <NotificationBadge client={client} />
                         </Link>
+                        <Link to="/profile">Профиль</Link>
                         <Link to="/account">Аккаунт</Link>
                     </nav>
                 )}
@@ -194,6 +207,17 @@ export function App({ config, initData }: { readonly config: RuntimeConfig; read
                         )
                     }
                 />
+                <Route
+                    path="/profile"
+                    element={
+                        session && !onboarding ? (
+                            <ProfileScreen client={client} online={online} ownership="SELF" />
+                        ) : (
+                            <Navigate to={session ? '/onboarding' : '/login'} replace />
+                        )
+                    }
+                />
+                <Route path="/players/:playerId" element={<PublicProfileRoute client={client} online={online} />} />
                 <Route
                     path="/account"
                     element={
