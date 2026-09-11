@@ -23,6 +23,6 @@ import { TrustSafetyService } from './trust-safety.service';
         TrustSafetyMetricsService,
         ModerationService,
     ],
-    exports: [TrustSafetyService, TrustSafetyMetricsService, ModerationService],
+    exports: [TrustSafetyService, TrustSafetyMetricsService, ModerationService, TrustSafetyCryptoService],
 })
 export class TrustSafetyModule {}

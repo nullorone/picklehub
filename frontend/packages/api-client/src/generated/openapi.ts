@@ -2201,7 +2201,7 @@ export type components = {
                   readonly receiptId: components['schemas']['Uuid'];
               }
             | {
-                  readonly exactEmail: components['schemas']['AdminExactIdentity'];
+                  readonly exactEmail: components['schemas']['EmailInput'];
               }
             | {
                   readonly exactTelegramSubject: components['schemas']['AdminExactIdentity'];

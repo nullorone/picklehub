@@ -46167,7 +46167,7 @@ components:
         - type: object
           properties:
             exactEmail:
-              $ref: '#/components/schemas/AdminExactIdentity'
+              $ref: '#/components/schemas/EmailInput'
           required:
             - exactEmail
           unevaluatedProperties:

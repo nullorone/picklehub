@@ -2060,3 +2060,69 @@ llm/_docs/analytics-plan.md llm/_docs/domain-model.md llm/_docs/architecture.md`
   `npm run format:check`, `npm run docs:check`, `npm ls --depth=0` и `git diff --check` успешны, unmet/extraneous
   dependencies и whitespace errors отсутствуют. Следующий prompt — `llm/08-admin-backoffice/03-backend.md`; к нему
   не переходили.
+
+## 2026-09-11 — административная панель, этап 03-backend
+
+- Активный промпт: `llm/08-admin-backoffice/03-backend.md`. Создан NestJS-модуль `administration` и подключён к
+  API application. Реализованы 17 ранее согласованных `/v1/admin` routes без export/bulk/CMS/advertising API:
+  session context, role grant/revoke, exact user lookup, case queue/detail/assignment/decision, reversible user
+  restrictions, venue candidate queue/detail/approve/reject/merge, bounded audit search и exact-case break-glass.
+- Центральный deny-by-default registry фиксирует capabilities четырёх `PlatformRole`; wildcard и динамических
+  разрешений нет. Каждая операция восстанавливает отдельную `picklehub-admin` session, проверяет активный grant,
+  MFA-backed session timestamps, idle/absolute TTL, user security epoch и capability. Player bearer не принимается.
+  Role revoke в одной транзакции отзывает admin sessions и увеличивает security epoch, поэтому кешированная сессия
+  не сохраняет прежние права.
+- Sensitive role, break-glass, venue merge и broad/permanent restriction требуют re-auth не старше пяти минут и
+  одноразового HMAC confirmation proof, связанного с actor/action/target и погашаемого fail-closed через Redis.
+  Все browser mutations также проходят существующую Origin/CSRF-защиту. Redis rate limits ограничивают exact user
+  lookup, очереди, audit search и мутации; недоступность rate limiter закрывает административный доступ.
+- User lookup принимает только один exact UUID/receipt/email/Telegram subject из POST body, использует существующий
+  keyed identity index, не сохраняет raw lookup и возвращает минимальную account projection. Masked identity
+  раскрывается только для `SUPPORT`. Списки имеют максимум 100 строк, allowlisted filters, snapshot и подписанный
+  actor/role/query-bound cursor; audit interval ограничен 31 сутками, export route отсутствует.
+- Case detail повторно проверяет assignment/no-conflict либо активный break-glass ровно для case. Superadmin role
+  сама по себе не раскрывает narrative; разрешённые и запрещённые case reads аудируются. Case decision создаёт
+  versioned decision/effect, terminal signal state, outbox и minimal admin audit атомарно. Break-glass не даёт
+  decision capability.
+- Venue approve/reject и explicit survivor/duplicate merge используют expected revision/state guard. Публикация,
+  provenance relink, canonical alias, moderation decision, outbox и audit находятся в одной serializable transaction.
+  User restriction создаётся только из решения по тому же subject, отзывается новой revision без hard delete, а
+  platform-wide restriction также отзывает player sessions.
+- Каждая мутация получает UUIDv4 idempotency key. Encrypted 24-hour operation receipt возвращает сохранённый ответ
+  при безопасном replay и не повторяет effect/audit. Domain mutation, outbox, administration-shaped append-only
+  audit и receipt коммитятся одной serializable transaction; исключение audit откатывает изменение и поднимает
+  `ADMIN_AUDIT_WRITE_FAILED` alert. Operational metrics/alerts имеют только role/action/object/outcome/age labels;
+  добавлены alerts для queue age, audit failure и пяти повторных authorization denials без actor/target IDs.
+- `AuditService` расширен уже предусмотренными nullable `operationId`/`policyVersion`; `TrustSafetyCryptoService`
+  экспортирован узко для авторизованной расшифровки case card. Добавлены unit tests fixed policy/no wildcard,
+  actor-bound cursor, operational alerts и немедленного session invalidation по revoked grant/security epoch.
+- При воспроизводимой генерации обнаружен оставшийся после этапа 02 stale generated type exact email
+  (`AdminExactIdentity` вместо source-of-truth `EmailInput`). `openapi.yaml` и оба generated TypeScript клиента
+  обновлены только командой `npm run contracts:generate`; TypeSpec source не менялся.
+
+### Проверки этапа admin backoffice 03-backend
+
+- Обычный `npm run prisma:generate --workspace=@picklehub/backend` не смог загрузить checksum schema engine из-за
+  restricted network (`ENOTFOUND claude-fwd.raiffeisen.ru`). Повтор с локально доступными
+  `PRISMA_SCHEMA_ENGINE_BINARY` и `PRISMA_QUERY_ENGINE_LIBRARY` успешно сгенерировал Prisma Client v6.16.2 из
+  принятой схемы; внешняя сеть не использовалась.
+- Backend targeted: `npm run lint --workspace=@picklehub/backend`, `npm run typecheck --workspace=@picklehub/backend`,
+  `npm test --workspace=@picklehub/backend -- --runInBand` и `npm run build --workspace=@picklehub/backend` —
+  успешно; 27/27 suites и 66/66 tests.
+- `npm run contracts:lint` — успешно: TypeSpec/OpenAPI/allowlist и 78/78 contract/data/privacy tests. Первый
+  `contracts:generated:check` корректно обнаружил stale generated exact-email reference; после штатного
+  `npm run contracts:generate` команды `contracts:generated:check`, `contracts:typecheck`, `contracts:breaking` и
+  отдельный `contracts:mock:check` успешны.
+- Полная monorepo-регрессия `npm run lint`, `npm run typecheck`, `npm test` и `npm run build` успешна для восьми
+  workspaces. Backend — 27 suites/66 tests, API client — 6 tests, web — 7 suites/30 tests, TMA — 6/21; production
+  PWA и отсутствие TMA development mock подтверждены. Сохраняются прежние неблокирующие warnings о web/TMA
+  bundles около 531/578 kB и MapLibre chunk 924 kB.
+- `npm run format:check` и `npm run docs:check` до финальной записи журнала успешны: восемь TypeSpec sources и 122
+  Markdown files. Финальные повторы после журнала перечислены ниже.
+- `npm run test:integration --workspace=@picklehub/backend -- --runInBand` запущен, но runtime suite не выполнен:
+  sandbox запретил соединение с Redis `127.0.0.1:6379` (`EPERM`), а PostgreSQL calls завершились ошибками
+  Prisma connection. Поэтому применение migration, DB constraints, audit rollback и конкурентные admin transitions
+  должны быть подтверждены PostgreSQL/Redis CI; их локальный успех не заявляется.
+- Локально исполнимые критерии backend выполнены. Production bootstrap первого superadmin, реальная MFA/re-auth
+  ceremony, security notification/post-review для break-glass и on-call delivery alerts остаются эксплуатационными
+  gates и не выдаются за проверенные. Следующий промпт — `llm/08-admin-backoffice/04-tma-web.md`; к нему не переходили.

@@ -4,6 +4,7 @@ import type { Prisma } from '@prisma/client';
 import { uuidV7 } from '../common/identifiers/uuid-v7';
 
 export interface AppendAuditEntry {
+    operationId?: string;
     actorType: string;
     actorId?: string;
     action: string;
@@ -11,6 +12,7 @@ export interface AppendAuditEntry {
     targetId?: string;
     outcome: string;
     reasonCode?: string;
+    policyVersion?: string;
     changedFields: Prisma.InputJsonObject;
     requestId: string;
     correlationId: string;
