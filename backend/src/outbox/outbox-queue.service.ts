@@ -16,6 +16,7 @@ export class OutboxQueueService implements OnModuleDestroy {
     private readonly queue: Queue<OutboxJobData>;
     private readonly matchStatisticsQueue: Queue<OutboxJobData>;
     private readonly communicationQueue: Queue<OutboxJobData>;
+    private readonly profileStatisticsQueue: Queue<OutboxJobData>;
     private readonly maxAttempts: number;
 
     constructor(@Inject(ENVIRONMENT) environment: Environment, redis: RedisService) {
@@ -33,6 +34,9 @@ export class OutboxQueueService implements OnModuleDestroy {
             connection: redis.client,
         });
         this.communicationQueue = new Queue<OutboxJobData>(`${environment.REDIS_NAMESPACE}-communication-events-v1`, {
+            connection: redis.client,
+        });
+        this.profileStatisticsQueue = new Queue<OutboxJobData>(`${environment.REDIS_NAMESPACE}-profile-statistics-v1`, {
             connection: redis.client,
         });
     }
@@ -57,6 +61,15 @@ export class OutboxQueueService implements OnModuleDestroy {
                 removeOnFail: { age: 604_800, count: 100_000 },
             });
         }
+        if (data.type.startsWith('match.')) {
+            await this.profileStatisticsQueue.add('reconcile-profile-statistics-source.v1', data, {
+                jobId: data.eventId,
+                attempts: this.maxAttempts,
+                backoff: { type: 'exponential', delay: 500 },
+                removeOnComplete: { age: 86_400, count: 100_000 },
+                removeOnFail: { age: 604_800, count: 100_000 },
+            });
+        }
     }
 
     async isReady(): Promise<boolean> {
@@ -65,6 +78,11 @@ export class OutboxQueueService implements OnModuleDestroy {
     }
 
     async onModuleDestroy(): Promise<void> {
-        await Promise.all([this.queue.close(), this.matchStatisticsQueue.close(), this.communicationQueue.close()]);
+        await Promise.all([
+            this.queue.close(),
+            this.matchStatisticsQueue.close(),
+            this.communicationQueue.close(),
+            this.profileStatisticsQueue.close(),
+        ]);
     }
 }

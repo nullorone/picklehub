@@ -510,6 +510,19 @@ export class IdentityService {
                 throw identityError('DRAFT_VERSION_CONFLICT', 409);
             }
             await transaction.user.update({ where: { id: auth.session.userId }, data: { completedAt: now } });
+            await transaction.playerProfile.create({
+                data: {
+                    userId: auth.session.userId,
+                    version: draft.version,
+                    visibility: 'PUBLIC',
+                    displayName: draft.displayName,
+                    localityId: draft.localityId,
+                    gameFormats: draft.gameFormats as ('SINGLES' | 'DOUBLES')[],
+                    skillSelfAssessment: draft.skillSelfAssessment,
+                    timeZone: draft.timeZone,
+                    updatedAt: now,
+                },
+            });
             await this.outbox.enqueue(transaction, {
                 type: 'identity.onboarding.completed.v1',
                 schemaVersion: 1,

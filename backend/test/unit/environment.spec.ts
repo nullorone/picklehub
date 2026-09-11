@@ -39,6 +39,25 @@ describe('parseEnvironment', () => {
         expect(environment.VENUE_OVERPASS_ENDPOINT).toBeUndefined();
         expect(environment.VENUE_OVERPASS_STORAGE_ALLOWED).toBe('false');
         expect(environment.VENUE_GEOCODER_STORAGE_ALLOWED).toBe('false');
+        expect(environment.PROFILE_DUPR_ALLOWED_HOSTS).toBe('');
+        expect(environment.PROFILE_DUPR_OUTBOUND_ENABLED).toBe('false');
+    });
+
+    it('keeps DUPR outbound fail-closed without an approved policy and allowlist', () => {
+        expect(() => parseEnvironment({ ...validEnvironment, PROFILE_DUPR_OUTBOUND_ENABLED: 'true' })).toThrow(
+            'Invalid environment configuration: PROFILE_DUPR_OUTBOUND_ENABLED'
+        );
+        expect(() =>
+            parseEnvironment({ ...validEnvironment, PROFILE_DUPR_ALLOWED_HOSTS: 'dupr.example.test' })
+        ).toThrow('Invalid environment configuration: PROFILE_DUPR_POLICY_VERSION');
+        expect(
+            parseEnvironment({
+                ...validEnvironment,
+                PROFILE_DUPR_POLICY_VERSION: 'review-2026-09-11',
+                PROFILE_DUPR_ALLOWED_HOSTS: 'dupr.example.test',
+                PROFILE_DUPR_OUTBOUND_ENABLED: 'true',
+            }).PROFILE_DUPR_OUTBOUND_ENABLED
+        ).toBe('true');
     });
 
     it('rejects an Overpass endpoint without reviewed provenance and storage capability', () => {

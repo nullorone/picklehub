@@ -76,6 +76,11 @@ const environmentSchema = z
         NOTIFICATION_EMAIL_PROVIDER_TOKEN: z.string().min(32).optional(),
         NOTIFICATION_TELEGRAM_ENABLED: z.enum(['true', 'false']).default('false'),
         NOTIFICATION_EMAIL_ENABLED: z.enum(['true', 'false']).default('false'),
+        PROFILE_DUPR_POLICY_VERSION: z.string().min(1).max(128).optional(),
+        PROFILE_DUPR_ALLOWED_HOSTS: z.string().default(''),
+        PROFILE_DUPR_ALLOWED_PATH_PATTERN: z.string().max(500).default('^/player/[^/]+/?$'),
+        PROFILE_DUPR_OUTBOUND_ENABLED: z.enum(['true', 'false']).default('false'),
+        PROFILE_AVATAR_STORAGE_BASE_URL: httpsUrl.optional(),
     })
     .superRefine((environment, context) => {
         if (environment.NODE_ENV === 'production' && environment.REDIS_NAMESPACE === 'local') {
@@ -154,6 +159,23 @@ const environmentSchema = z
                 code: 'custom',
                 path: ['EMAIL_PROVIDER_ENDPOINT'],
                 message: 'Production requires an approved email provider adapter',
+            });
+        }
+        if (environment.PROFILE_DUPR_ALLOWED_HOSTS !== '' && environment.PROFILE_DUPR_POLICY_VERSION === undefined) {
+            context.addIssue({
+                code: 'custom',
+                path: ['PROFILE_DUPR_POLICY_VERSION'],
+                message: 'DUPR links require an explicitly reviewed policy version',
+            });
+        }
+        if (
+            environment.PROFILE_DUPR_OUTBOUND_ENABLED === 'true' &&
+            (environment.PROFILE_DUPR_ALLOWED_HOSTS === '' || environment.PROFILE_DUPR_POLICY_VERSION === undefined)
+        ) {
+            context.addIssue({
+                code: 'custom',
+                path: ['PROFILE_DUPR_OUTBOUND_ENABLED'],
+                message: 'DUPR outbound links require an approved allowlist and policy version',
             });
         }
     });

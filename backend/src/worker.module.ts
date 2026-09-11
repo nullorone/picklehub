@@ -12,6 +12,7 @@ import { IntegrationsModule } from './integrations/integrations.module';
 import { MatchesModule } from './matches/matches.module';
 import { OutboxModule } from './outbox/outbox.module';
 import { OutboxWorkerService } from './outbox/outbox-worker.service';
+import { ProfilesModule } from './profiles/profiles.module';
 import { VenuesModule } from './venues/venues.module';
 
 @Module({
@@ -28,6 +29,7 @@ import { VenuesModule } from './venues/venues.module';
         VenuesModule,
         MatchesModule,
         CommunicationsModule,
+        ProfilesModule,
     ],
     providers: [OutboxWorkerService],
 })

@@ -1490,3 +1490,62 @@ EPERM`). Поэтому все существующие database suites оста
 - Контрактные, generated, статические data и общие кодовые критерии выполнены. Runtime-критерий миграции остаётся
   environment-blocked до PostgreSQL-прогона. Следующий промпт `llm/06-player-profile-stats/03-backend.md` не
   начинался.
+
+## 2026-09-11 — профиль и статистика, этап 03-backend
+
+- Активный промпт: `llm/06-player-profile-stats/03-backend.md`. Добавлен NestJS-модуль `profiles` с 13 ранее
+  опубликованными REST operations: owner/public DTO, optimistic version и 24-часовая зашифрованная
+  идемпотентность мутаций, отдельная privacy setting, cursor-bound owner/public history и три статистических
+  среза. Закрытый, отсутствующий, удаляемый и заблокированный профиль сохраняют общий
+  `PROFILE_NOT_AVAILABLE`; direct block проверяется в обе стороны, а anonymous чтение следует `PUBLIC`.
+- Валидация повторяет утверждённые поля онбординга: NFC-имя без control characters, locality catalogue, непустые
+  distinct форматы, шкала 1.0–5.0 с шагом 0.5 и IANA timezone. Биография не добавлена, поскольку утверждённые
+  требования и REST-контракт намеренно оставляют тот же набор полей, что у онбординга. Завершение онбординга
+  теперь атомарно создаёт `player_profiles`; это закрывает разрыв, при котором stage-02 backfill покрывал только
+  профили, завершённые до миграции.
+- DUPR проверяется локально без HTTP/fetch/scraping: HTTPS, отсутствие credentials/query/fragment/non-default port,
+  точный approved host и path regexp. Capability и outbound fail-closed через `PROFILE_DUPR_*`; raw URL хранится
+  только authenticated ciphertext, наружу всегда идёт маркировка `EXTERNAL_NOT_VERIFIED_OR_SYNCED`. Avatar port
+  выдаёт пятиминутную policy только для server-generated private key и остаётся выключенным без media gateway;
+  подписанный URL в БД не хранится и непроверенный asset не активируется.
+- Новый BullMQ consumer получает минимальную ссылку на любое committed `match.*`, перечитывает authoritative match,
+  result, marker, зарегистрированный состав и games и применяет monotonic contribution revision. Одинаковая
+  revision обязана иметь тот же checksum, старая доставка не уменьшает revision, а aggregate полностью
+  пересчитывается из текущих contributions в serializable transaction. Поэтому спор/void/cancel создаёт tombstone
+  или удаляет organizer reliability contribution вместо конкурентного `-1`; guest slots вообще не читаются.
+  Team points сохраняются целиком каждому зарегистрированному игроку и не делятся в doubles.
+- Команда `profiles:rebuild-statistics` строит или возобновляет `BUILDING` shadow generation, сохраняет
+  `checkpoint_match_id` отдельной migration, выполняет catch-up под общей advisory lock, сверяет канонические
+  count/SHA-256 через PostgreSQL trigger и атомарно делает generation `ACTIVE`. Сбой помечает только shadow как
+  `FAILED`, не заменяя прежнюю проекцию. Запрос/завершение rebuild и изменения профиля пишут минимальные outbox
+  events; rebuild и profile mutations имеют audit без персональных значений.
+- Изменённые области: `backend/src/profiles/`, App/Worker module, outbox routing, identity onboarding completion,
+  typed environment и `.env.example`, Prisma schema и migration `20260911190000_profiles_backend`, backend README,
+  profile data policy и unit/integration tests.
+
+### Проверки этапа profile/statistics 03-backend
+
+- Финальный `npm run verify` — успешно полностью: workspace/lockfile, TypeSpec/Redocly, policy для 87 REST
+  operations/41 messages, 58 contract/data/privacy tests, compatibility с `HEAD`, generated drift/typecheck,
+  OpenAPI mock, format/docs, lint/typecheck/unit tests/build всех восьми workspaces. Backend: 22 suite/56 tests;
+  web: 5/19; TMA: 4/14. Сохранились известные неблокирующие Vite warnings о 924 kB map chunk и 533 kB TMA bundle.
+- `npm run lint --workspace @picklehub/backend`, `npm run typecheck --workspace @picklehub/backend` и
+  `npm run build --workspace @picklehub/backend` — успешно. Полный backend unit run — 22 suite, 56 tests,
+  включая подпись, access-boundary, tamper и expiry profile cursor и fail-closed DUPR environment gates.
+- `PRISMA_SCHEMA_ENGINE_BINARY=/usr/bin/true PRISMA_QUERY_ENGINE_LIBRARY=/usr/bin/true npx prisma generate
+--schema backend/prisma/schema.prisma`, `prisma format` и `prisma validate` с synthetic `DATABASE_URL` — успешно;
+  Prisma Client 6.16.2 сгенерирован, schema валидна. Целевые `profiles-policy`/`profiles-data-policy` — 8/8 успешно,
+  включая постоянный rebuild checkpoint.
+- Целевой integration run обнаружил три migration и два backend/concurrency сценария, но sandbox остановил их до
+  assertions: `pg` получил запрет подключения к `127.0.0.1:5432`, а Prisma завершил первый create без выполнения
+  теста; пробный AppModule run также получил ожидаемый `connect EPERM 127.0.0.1:6379`. Тест переведён на минимальный
+  testing module без Redis, однако PostgreSQL runtime всё равно недоступен. Поэтому duplicate/out-of-order
+  convergence, guest exclusion, privacy/block и checkpoint migration runtime должны быть подтверждены CI job
+  после `prisma migrate deploy`; их успех в этой сессии не заявляется.
+- Первый корневой `npm run verify` дошёл до `format:check` и корректно остановился на новом неформатированном
+  environment unit test; после Prettier финальный полный `npm run verify` успешен. `git diff --check` успешен.
+  Provider/legal approval DUPR, object storage, decode/re-encode/malware scanner и размещение медиа в РФ не
+  проверялись; соответствующие capabilities остаются выключенными по умолчанию.
+- Локально исполнимые критерии этапа выполнены. PostgreSQL integration/concurrency приёмка остаётся
+  environment-blocked и должна быть зелёной до перехода к `llm/06-player-profile-stats/04-tma-web.md`; следующий
+  промпт не начинался.

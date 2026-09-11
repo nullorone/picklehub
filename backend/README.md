@@ -86,6 +86,18 @@ npm run notifications:retry-delivery --workspace @picklehub/backend -- \
 после фактической отправки, поэтому повтор при timeout всё равно допускает внешний дубль; inbox-дедупликация от
 этого не зависит.
 
+`profiles` отделяет изменяемый профиль от generation-scoped статистики. Consumer перечитывает authoritative
+матч при каждой доставке, поэтому duplicate и out-of-order события не складывают счётчики. Полное перестроение
+возобновляет незавершённое shadow generation, сверяет count/checksum и атомарно переключает его после catch-up:
+
+```sh
+npm run profiles:rebuild-statistics --workspace @picklehub/backend
+```
+
+DUPR проверяется только локально по `PROFILE_DUPR_*`: backend не загружает страницу и не импортирует рейтинг.
+Пустая allowlist выключает запись ссылки, а переход отдельно включается только явным `PROFILE_DUPR_OUTBOUND_ENABLED`.
+Аватар использует приватный server-generated object key; до настройки media gateway upload закрыт.
+
 ## Проверки
 
 ```sh

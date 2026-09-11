@@ -54,6 +54,9 @@ function environment(): Environment {
         COMMUNICATION_ENCRYPTION_KEY: 'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789',
         NOTIFICATION_TELEGRAM_ENABLED: 'false',
         NOTIFICATION_EMAIL_ENABLED: 'false',
+        PROFILE_DUPR_ALLOWED_HOSTS: '',
+        PROFILE_DUPR_ALLOWED_PATH_PATTERN: '^/player/[^/]+/?$',
+        PROFILE_DUPR_OUTBOUND_ENABLED: 'false',
     };
 }
 

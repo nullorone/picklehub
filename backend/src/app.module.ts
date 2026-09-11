@@ -13,6 +13,7 @@ import { IntegrationsModule } from './integrations/integrations.module';
 import { IdentityModule } from './identity/identity.module';
 import { MatchesModule } from './matches/matches.module';
 import { OutboxModule } from './outbox/outbox.module';
+import { ProfilesModule } from './profiles/profiles.module';
 import { VenuesModule } from './venues/venues.module';
 
 @Module({
@@ -31,6 +32,7 @@ import { VenuesModule } from './venues/venues.module';
         VenuesModule,
         MatchesModule,
         CommunicationsModule,
+        ProfilesModule,
     ],
 })
 export class AppModule {}

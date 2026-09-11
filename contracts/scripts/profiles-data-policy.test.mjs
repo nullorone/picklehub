@@ -7,6 +7,10 @@ const migration = readFileSync(
     'utf8'
 );
 const prisma = readFileSync(new URL('../../backend/prisma/schema.prisma', import.meta.url), 'utf8');
+const backendMigration = readFileSync(
+    new URL('../../backend/prisma/migrations/20260911190000_profiles_backend/migration.sql', import.meta.url),
+    'utf8'
+);
 
 test('profile migration owns mutable data and rebuildable projections separately', () => {
     for (const table of [
@@ -40,6 +44,8 @@ test('shadow generation activation verifies source count and checksum', () => {
     assert.match(migration, /profile generation count or checksum mismatch/);
     assert.match(migration, /digest\(/);
     assert.match(migration, /SUPERSEDED/);
+    assert.match(backendMigration, /ADD COLUMN "checkpoint_match_id" UUID/);
+    assert.match(prisma, /checkpointMatchId\s+String\?/);
 });
 
 test('aggregate invariants and all-format identity are storage protected', () => {
