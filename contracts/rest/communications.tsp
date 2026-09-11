@@ -402,15 +402,15 @@ interface CommunicationBlocks {
     @put
     @operationId("blockCommunicationUser")
     @summary("Hide future chat text from one user")
-    @doc("Creates an idempotent safety preference. It does not change match membership, authorization or system-event visibility.")
+    @doc("Creates an idempotent platform-wide safety preference. New direct profile, search, invite, join, request, waitlist, promotion and chat interactions are denied in both directions without changing an existing shared match or required system facts.")
     block(@path blockedUserId: Uuid, ...RequestHeaders, ...BrowserMutationHeaders, ...MutationKey):
         | CommunicationOk<UserBlock>
         | CommunicationMutationErrors;
 
     @delete
     @operationId("unblockCommunicationUser")
-    @summary("Remove a communication block")
-    @doc("Restores user-message visibility inside the caller's current access boundary without changing unread history retroactively.")
+    @summary("Remove the caller's active block")
+    @doc("Allows only future direct interactions when no reciprocal block or moderation restriction exists. It never restores removed requests, promotions or content and does not reveal another party's block.")
     unblock(@path blockedUserId: Uuid, ...RequestHeaders, ...BrowserMutationHeaders, ...MutationKey):
         | CommunicationNoContent
         | CommunicationMutationErrors;

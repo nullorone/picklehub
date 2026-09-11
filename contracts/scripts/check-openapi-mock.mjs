@@ -192,7 +192,28 @@ try {
     ) {
         throw new Error(`Unexpected player statistics mock: ${statistics.status} ${JSON.stringify(statisticsBody)}`);
     }
-    console.log('OpenAPI mock passed: health, identity, venue, match, communication and profile examples are valid.');
+
+    const safetyReceipts = await fetch(`http://${host}:${port}/me/safety-reports?limit=20`, {
+        headers: {
+            'accept-language': 'ru-RU',
+            authorization: `Bearer ${'A'.repeat(43)}`,
+        },
+    });
+    const safetyBody = await safetyReceipts.json();
+    requireNoStore(safetyReceipts, 'Safety receipt list response');
+    if (
+        safetyReceipts.status !== 200 ||
+        !Array.isArray(safetyBody.items) ||
+        !safetyBody.pageInfo ||
+        safetyBody.items.some((item) =>
+            ['caseId', 'reporterId', 'subjectId', 'sourceId', 'evidence', 'assignee'].some((field) => field in item)
+        )
+    ) {
+        throw new Error(`Unexpected safety receipt mock: ${safetyReceipts.status} ${JSON.stringify(safetyBody)}`);
+    }
+    console.log(
+        'OpenAPI mock passed: health, identity, venue, match, communication, profile and trust/safety examples are valid.'
+    );
 } finally {
     child.kill('SIGTERM');
     await new Promise((resolveExit) => {

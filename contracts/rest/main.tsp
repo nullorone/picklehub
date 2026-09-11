@@ -4,6 +4,7 @@ import "@typespec/openapi3";
 import "./identity.tsp";
 import "./matches.tsp";
 import "./profiles.tsp";
+import "./trust-safety.tsp";
 import "./venues.tsp";
 import "./communications.tsp";
 
@@ -19,6 +20,7 @@ using TypeSpec.OpenAPI;
     #{ name: "Identity", description: "Identity, browser sessions, consent and onboarding." },
     #{ name: "Matches", description: "One-off match discovery, roster lifecycle and confirmed results." },
     #{ name: "Profiles", description: "Player profiles, privacy, match history and rebuildable statistics." },
+    #{ name: "TrustSafety", description: "Private reviews, safety reports, blocks and user-visible case receipts." },
     #{ name: "Venues", description: "Published venue discovery and player venue contributions." },
     #{ name: "Communications", description: "Authorized match chat, notification inbox and delivery preferences." }
 ])

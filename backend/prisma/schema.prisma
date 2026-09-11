@@ -1255,6 +1255,409 @@ model ProfileIdempotencyRecord {
   @@map("profile_idempotency_records")
 }
 
+// Trust and safety data contract. Restricted text is ciphertext; SQL owns lifecycle and append-only guards.
+enum SafetyReviewState {
+  ACTIVE
+  WITHDRAWN
+  EXCLUDED
+
+  @@map("safety_review_state")
+}
+
+enum SafetyReviewRevisionKind {
+  SUBMITTED
+  WITHDRAWN
+  TEXT_REDACTED
+
+  @@map("safety_review_revision_kind")
+}
+
+enum SafetySignalKind {
+  NO_SHOW
+  SAFETY
+  CONTENT
+  VENUE
+  RESULT
+
+  @@map("safety_signal_kind")
+}
+
+enum SafetySignalState {
+  RECEIVED
+  LINKED
+  UNDER_REVIEW
+  WITHDRAW_REQUESTED
+  RESOLVED
+
+  @@map("safety_signal_state")
+}
+
+enum SafetyNoShowReason {
+  DID_NOT_ARRIVE
+  LEFT_BEFORE_PLAY
+  UNREACHABLE_AT_START
+
+  @@map("safety_no_show_reason")
+}
+
+enum SafetyReportSourceKind {
+  MATCH
+  CHAT_MESSAGE
+  PROFILE
+  VENUE
+  MATCH_RESULT
+
+  @@map("safety_report_source_kind")
+}
+
+enum ModerationCaseState {
+  OPEN
+  TRIAGED
+  ASSIGNED
+  INVESTIGATING
+  DECIDED
+  CLOSED
+  REOPENED
+
+  @@map("moderation_case_state")
+}
+
+enum ModerationCasePriority {
+  URGENT
+  HIGH
+  NORMAL
+
+  @@map("moderation_case_priority")
+}
+
+enum ModerationDecisionOutcome {
+  NO_VIOLATION
+  CONTENT_RESTRICTED
+  WARNING
+  INTERACTION_RESTRICTED
+  ACCOUNT_RESTRICTED
+  NO_SHOW_CONFIRMED
+  RESULT_CORRECTED
+  VENUE_ROUTED
+
+  @@map("moderation_decision_outcome")
+}
+
+enum ModerationEffectState {
+  PENDING
+  APPLIED
+  RETRACTION_PENDING
+  RETRACTED
+  FAILED
+
+  @@map("moderation_effect_state")
+}
+
+enum ModerationAppealState {
+  SUBMITTED
+  UNDER_REVIEW
+  UPHELD
+  CHANGED
+  REJECTED
+
+  @@map("moderation_appeal_state")
+}
+
+enum SafetyPartyRole {
+  REPORTER
+  SUBJECT
+
+  @@map("safety_party_role")
+}
+
+enum SafetyResponseDisposition {
+  AGREE
+  DISPUTE
+  PROVIDE_CONTEXT
+
+  @@map("safety_response_disposition")
+}
+
+model Review {
+  id                  String            @id @db.Uuid
+  authorId            String            @map("author_id") @db.Uuid
+  subjectId           String            @map("subject_id") @db.Uuid
+  matchId             String            @map("match_id") @db.Uuid
+  state               SafetyReviewState @default(ACTIVE)
+  currentRevision     Int               @default(1) @map("current_revision")
+  eligibilityRevision BigInt            @map("eligibility_revision")
+  policyVersion       String            @map("policy_version") @db.VarChar(128)
+  editableUntil       DateTime          @map("editable_until") @db.Timestamptz(3)
+  createdAt           DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt           DateTime          @default(now()) @map("updated_at") @db.Timestamptz(3)
+  revisions           ReviewRevision[]
+
+  @@unique([authorId, subjectId, matchId], map: "safety_reviews_author_subject_match_key")
+  @@index([subjectId, state, updatedAt], map: "safety_reviews_subject_projection_idx")
+  @@map("safety_reviews")
+}
+
+model ReviewRevision {
+  reviewId             String                   @map("review_id") @db.Uuid
+  revision             Int
+  kind                 SafetyReviewRevisionKind
+  experienceRating     Int?                     @map("experience_rating") @db.SmallInt
+  tags                 String[]
+  textCiphertext       Bytes?                   @map("text_ciphertext")
+  encryptionKeyVersion Int?                     @map("encryption_key_version")
+  payloadChecksum      String                   @map("payload_checksum") @db.Char(64)
+  createdAt            DateTime                 @default(now()) @map("created_at") @db.Timestamptz(3)
+  review               Review                   @relation(fields: [reviewId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@id([reviewId, revision])
+  @@map("safety_review_revisions")
+}
+
+model SafetySignal {
+  id                String                @id @db.Uuid
+  reporterId        String?               @map("reporter_id") @db.Uuid
+  reporterPseudonym String?               @map("reporter_pseudonym") @db.Uuid
+  subjectId         String?               @map("subject_id") @db.Uuid
+  subjectPseudonym  String?               @map("subject_pseudonym") @db.Uuid
+  kind              SafetySignalKind
+  state             SafetySignalState     @default(RECEIVED)
+  version           Int                   @default(0)
+  policyVersion     String                @map("policy_version") @db.VarChar(128)
+  uniquenessKey     String                @map("uniqueness_key") @db.Char(64)
+  receiptExpiresAt  DateTime              @map("receipt_expires_at") @db.Timestamptz(3)
+  resolvedAt        DateTime?             @map("resolved_at") @db.Timestamptz(3)
+  createdAt         DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime              @default(now()) @map("updated_at") @db.Timestamptz(3)
+  noShowReport      NoShowReport?
+  report            Report?
+  evidence          SafetyEvidence?
+  caseLink          ModerationCaseSignal?
+  responses         SafetyCaseResponse[]
+
+  @@unique([reporterId, uniquenessKey], map: "safety_signals_reporter_subject_key")
+  @@index([reporterId, createdAt(sort: Desc), id(sort: Desc)], map: "safety_signals_receipt_idx")
+  @@index([state, createdAt], map: "safety_signals_state_idx")
+  @@index([receiptExpiresAt], map: "safety_signals_retention_idx")
+  @@map("safety_signals")
+}
+
+model NoShowReport {
+  signalId        String             @id @map("signal_id") @db.Uuid
+  matchId         String             @map("match_id") @db.Uuid
+  subjectPlayerId String             @map("subject_player_id") @db.Uuid
+  reason          SafetyNoShowReason
+  sourceRevision  BigInt             @map("source_revision")
+  eligibilityEnds DateTime           @map("eligibility_ends") @db.Timestamptz(3)
+  signal          SafetySignal       @relation(fields: [signalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([matchId, subjectPlayerId], map: "no_show_reports_subject_match_idx")
+  @@map("no_show_reports")
+}
+
+model Report {
+  signalId       String                 @id @map("signal_id") @db.Uuid
+  sourceKind     SafetyReportSourceKind @map("source_kind")
+  sourceId       String                 @map("source_id") @db.Uuid
+  sourceRevision BigInt                 @map("source_revision")
+  reasonCode     String                 @map("reason_code") @db.VarChar(64)
+  timeBucket     String?                @map("time_bucket") @db.VarChar(32)
+  signal         SafetySignal           @relation(fields: [signalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([sourceKind, sourceId, sourceRevision], map: "safety_reports_source_idx")
+  @@map("safety_reports")
+}
+
+model SafetyEvidence {
+  signalId             String       @id @map("signal_id") @db.Uuid
+  ciphertext           Bytes
+  encryptionKeyVersion Int          @map("encryption_key_version")
+  aadVersion           Int          @map("aad_version")
+  contentChecksum      String       @map("content_checksum") @db.Char(64)
+  retentionExpiresAt   DateTime     @map("retention_expires_at") @db.Timestamptz(3)
+  cryptoshreddedAt     DateTime?    @map("cryptoshredded_at") @db.Timestamptz(3)
+  createdAt            DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  signal               SafetySignal @relation(fields: [signalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([retentionExpiresAt], map: "safety_evidence_retention_idx")
+  @@map("safety_evidence")
+}
+
+model ModerationCase {
+  id                  String                 @id @db.Uuid
+  category            SafetySignalKind
+  state               ModerationCaseState    @default(OPEN)
+  priority            ModerationCasePriority @default(NORMAL)
+  revision            Int                    @default(0)
+  assignedModeratorId String?                @map("assigned_moderator_id") @db.Uuid
+  conflictDetectedAt  DateTime?              @map("conflict_detected_at") @db.Timestamptz(3)
+  retentionExpiresAt  DateTime               @map("retention_expires_at") @db.Timestamptz(3)
+  createdAt           DateTime               @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt           DateTime               @default(now()) @map("updated_at") @db.Timestamptz(3)
+  closedAt            DateTime?              @map("closed_at") @db.Timestamptz(3)
+  signals             ModerationCaseSignal[]
+  decisions           ModerationDecision[]
+  responses           SafetyCaseResponse[]
+  legalHolds          SafetyLegalHold[]
+
+  @@index([state, priority, createdAt], map: "moderation_cases_queue_idx")
+  @@index([assignedModeratorId, state], map: "moderation_cases_assignment_idx")
+  @@index([retentionExpiresAt], map: "moderation_cases_retention_idx")
+  @@map("moderation_cases")
+}
+
+model ModerationCaseSignal {
+  caseId   String         @map("case_id") @db.Uuid
+  signalId String         @unique(map: "moderation_case_signals_signal_key") @map("signal_id") @db.Uuid
+  linkedAt DateTime       @default(now()) @map("linked_at") @db.Timestamptz(3)
+  case     ModerationCase @relation(fields: [caseId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  signal   SafetySignal   @relation(fields: [signalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@id([caseId, signalId])
+  @@map("moderation_case_signals")
+}
+
+model SafetyCaseResponse {
+  id                   String                     @id @db.Uuid
+  caseId               String                     @map("case_id") @db.Uuid
+  signalId             String                     @map("signal_id") @db.Uuid
+  authorId             String                     @map("author_id") @db.Uuid
+  partyRole            SafetyPartyRole            @map("party_role")
+  disposition          SafetyResponseDisposition?
+  ciphertext           Bytes
+  encryptionKeyVersion Int                        @map("encryption_key_version")
+  aadVersion           Int                        @map("aad_version")
+  retentionExpiresAt   DateTime                   @map("retention_expires_at") @db.Timestamptz(3)
+  createdAt            DateTime                   @default(now()) @map("created_at") @db.Timestamptz(3)
+  case                 ModerationCase             @relation(fields: [caseId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  signal               SafetySignal               @relation(fields: [signalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([caseId, createdAt], map: "safety_case_responses_case_idx")
+  @@index([retentionExpiresAt], map: "safety_case_responses_retention_idx")
+  @@map("safety_case_responses")
+}
+
+model ModerationDecision {
+  id                   String                    @id @db.Uuid
+  caseId               String                    @map("case_id") @db.Uuid
+  revision             Int
+  supersedesDecisionId String?                   @map("supersedes_decision_id") @db.Uuid
+  reviewerId           String                    @map("reviewer_id") @db.Uuid
+  outcome              ModerationDecisionOutcome
+  policyCode           String                    @map("policy_code") @db.VarChar(96)
+  policyVersion        String                    @map("policy_version") @db.VarChar(128)
+  scopeCode            String                    @map("scope_code") @db.VarChar(96)
+  basisChecksum        String                    @map("basis_checksum") @db.Char(64)
+  expiresAt            DateTime?                 @map("expires_at") @db.Timestamptz(3)
+  reviewDeadline       DateTime?                 @map("review_deadline") @db.Timestamptz(3)
+  createdAt            DateTime                  @default(now()) @map("created_at") @db.Timestamptz(3)
+  case                 ModerationCase            @relation(fields: [caseId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  effects              ModerationEffect[]
+  appeals              ModerationAppeal[]
+
+  @@unique([caseId, revision], map: "moderation_decisions_case_revision_key")
+  @@index([expiresAt], map: "moderation_decisions_expiry_idx")
+  @@map("moderation_decisions")
+}
+
+model ModerationEffect {
+  id               String                    @id @db.Uuid
+  decisionId       String                    @map("decision_id") @db.Uuid
+  kind             ModerationDecisionOutcome
+  state            ModerationEffectState     @default(PENDING)
+  logicalKey       String                    @unique(map: "moderation_effects_logical_key") @map("logical_key") @db.Char(64)
+  ownerReferenceId String                    @map("owner_reference_id") @db.Uuid
+  noShowMatchId    String?                   @map("no_show_match_id") @db.Uuid
+  noShowSubjectId  String?                   @map("no_show_subject_id") @db.Uuid
+  sourceRevision   BigInt                    @map("source_revision")
+  appliedAt        DateTime?                 @map("applied_at") @db.Timestamptz(3)
+  retractedAt      DateTime?                 @map("retracted_at") @db.Timestamptz(3)
+  createdAt        DateTime                  @default(now()) @map("created_at") @db.Timestamptz(3)
+  decision         ModerationDecision        @relation(fields: [decisionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([state, createdAt], map: "moderation_effects_dispatch_idx")
+  @@map("moderation_effects")
+}
+
+model ModerationAppeal {
+  id                   String                @id @db.Uuid
+  decisionId           String                @map("decision_id") @db.Uuid
+  appellantId          String                @map("appellant_id") @db.Uuid
+  reviewerId           String?               @map("reviewer_id") @db.Uuid
+  state                ModerationAppealState @default(SUBMITTED)
+  reasonCode           String                @map("reason_code") @db.VarChar(64)
+  textCiphertext       Bytes?                @map("text_ciphertext")
+  encryptionKeyVersion Int?                  @map("encryption_key_version")
+  retentionExpiresAt   DateTime              @map("retention_expires_at") @db.Timestamptz(3)
+  createdAt            DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt            DateTime              @default(now()) @map("updated_at") @db.Timestamptz(3)
+  decision             ModerationDecision    @relation(fields: [decisionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([decisionId, appellantId], map: "moderation_appeals_decision_appellant_key")
+  @@index([state, createdAt], map: "moderation_appeals_queue_idx")
+  @@index([retentionExpiresAt], map: "moderation_appeals_retention_idx")
+  @@map("moderation_appeals")
+}
+
+model ReviewReputationContribution {
+  reviewId       String   @id @map("review_id") @db.Uuid
+  subjectId      String   @map("subject_id") @db.Uuid
+  matchId        String   @map("match_id") @db.Uuid
+  authorKey      String   @map("author_key") @db.Char(64)
+  reviewRevision Int      @map("review_revision")
+  rating         Int      @db.SmallInt
+  eligible       Boolean
+  sourceChecksum String   @map("source_checksum") @db.Char(64)
+  appliedAt      DateTime @default(now()) @map("applied_at") @db.Timestamptz(3)
+
+  @@unique([subjectId, matchId, authorKey], map: "review_reputation_distinct_source_key")
+  @@index([subjectId, eligible], map: "review_reputation_contributions_subject_idx")
+  @@map("review_reputation_contributions")
+}
+
+model ReviewReputationAggregate {
+  subjectId    String   @id @map("subject_id") @db.Uuid
+  ratingSum    BigInt   @default(0) @map("rating_sum")
+  reviewCount  BigInt   @default(0) @map("review_count")
+  sourceDigest String   @map("source_digest") @db.Char(64)
+  calculatedAt DateTime @default(now()) @map("calculated_at") @db.Timestamptz(3)
+
+  @@map("review_reputation_aggregates")
+}
+
+model SafetyLegalHold {
+  id          String         @id @db.Uuid
+  caseId      String         @map("case_id") @db.Uuid
+  recordScope String         @map("record_scope") @db.VarChar(96)
+  reasonCode  String         @map("reason_code") @db.VarChar(96)
+  ownerId     String         @map("owner_id") @db.Uuid
+  reviewAt    DateTime       @map("review_at") @db.Timestamptz(3)
+  expiresAt   DateTime       @map("expires_at") @db.Timestamptz(3)
+  releasedAt  DateTime?      @map("released_at") @db.Timestamptz(3)
+  createdAt   DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  case        ModerationCase @relation(fields: [caseId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([expiresAt, releasedAt], map: "safety_legal_holds_expiry_idx")
+  @@map("safety_legal_holds")
+}
+
+model SafetyIdempotencyRecord {
+  id                   String   @id @db.Uuid
+  userId               String   @map("user_id") @db.Uuid
+  idempotencyKey       String   @map("idempotency_key") @db.Uuid
+  method               String   @db.VarChar(8)
+  canonicalPath        String   @map("canonical_path") @db.VarChar(200)
+  requestFingerprint   String   @map("request_fingerprint") @db.Char(64)
+  responseStatus       Int      @map("response_status") @db.SmallInt
+  responseCiphertext   Bytes    @map("response_ciphertext")
+  encryptionKeyVersion Int      @map("encryption_key_version")
+  createdAt            DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  expiresAt            DateTime @default(dbgenerated("CURRENT_TIMESTAMP + INTERVAL '24 hours'")) @map("expires_at") @db.Timestamptz(3)
+
+  @@unique([userId, method, canonicalPath, idempotencyKey], map: "safety_idempotency_scope_key")
+  @@index([expiresAt], map: "safety_idempotency_expiry_idx")
+  @@map("safety_idempotency_records")
+}
+
 // Communications data contract. SQL owns partial uniqueness, append-only revisions and monotonic sequence guards.
 enum ConversationState {
   WRITABLE

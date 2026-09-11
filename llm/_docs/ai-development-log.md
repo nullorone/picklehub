@@ -1705,3 +1705,58 @@ llm/_docs/security-privacy.md llm/_docs/analytics-plan.md` — успешно; �
 - Критерии этапа выполнены на уровне требований: неподтверждённая жалоба не публикуется как факт, direct
   взаимодействие заблокированных пользователей запрещено, а продукт явно не выдаёт модерацию за экстренную
   службу. Следующий промпт — `llm/07-trust-safety/02-contract-data.md`; к нему не переходили.
+
+## 2026-09-11 — доверие и безопасность, этап 02-contract-data
+
+- Активный промпт: `llm/07-trust-safety/02-contract-data.md`. TypeSpec добавляет 11 player operations: создание,
+  замена и отзыв review; no-show и safety/content/venue/result report; cursor-bound список и собственный detail
+  квитанции; withdrawal intent, response, appeal; список собственных active blocks и пороговую публичную
+  репутацию. Существующие `/communication-blocks/{blockedUserId}` сохранены совместимыми и теперь документируют
+  платформенный двухсторонний deny новых direct interactions.
+- Все мутации требуют bearer, browser Origin/CSRF и UUIDv4 idempotency key. Чужой receipt совпадает с отсутствующим;
+  список содержит только receipt/category/status/safe outcome, а detail возвращает лишь собственный сохранённый
+  текст. Case/reporters/subject/source/reason/evidence другой стороны/assignment/sanction detail отсутствуют.
+  Публичная репутация отдаёт только reversible average и count после пяти eligible независимых источников.
+- Prisma и SQL migration добавляют `Review` с append-only revisions, immutable `SafetySignal` и отдельные
+  `NoShowReport`/`Report`/encrypted evidence, `ModerationCase`, links/responses, append-only versioned decisions,
+  appeal, idempotent reversible effect, rebuildable review contributions/aggregate, scoped legal hold и
+  encrypted 24-hour idempotency response. Физический active block и общий `AuditEntry` не дублируются:
+  communications остаётся владельцем block graph, а audit защищён новым UPDATE/DELETE trigger.
+- Ограничения БД фиксируют author-subject-match review, reporter business hash, exact signal subtype/taxonomy,
+  автоматы signal/case/appeal/effect, monotonic revisions, decision assignment/no-conflict, другого appeal reviewer,
+  72-часовой temporary review, один appeal стороны и один final no-show effect на match + subject. Account deletion
+  поддерживает одноразовую замену actor links на несвязуемые pseudonyms; текст не хранится в searchable metadata.
+- `trust-safety.events.v1` содержит четыре outbox-события. Каждое несёт только один opaque
+  signal/case/decision/effect ID и broad category; subject/reporter/source/revision/reason/status/outcome/rating,
+  text/evidence/attachments и block direction запрещены policy test. Generated OpenAPI, AsyncAPI TypeScript и
+  копия API client обновлены только генератором.
+- Новый `trust-safety-data-policy.md` документирует authenticated encryption/AAD, least-privilege evidence access,
+  proposed retention, cryptoshredding, deletion/suppression ledger, 35-дневное истечение backups и адресный
+  case/record-scoped legal hold. Это проект контракта, а не legal/residency/staffing approval; реальные safety-данные
+  до approvals собирать нельзя.
+
+### Проверки этапа trust/safety 02-contract-data
+
+- `npm run verify` — успешно полностью на финальном содержательном состоянии: workspace/lockfile, TypeSpec/Redocly,
+  policy для 98 REST operations и 45 messages, 66 contract/data/privacy tests, compatibility с `HEAD`, generated
+  drift/typecheck, OpenAPI mock с trust/safety, format/docs, lint/typecheck/unit tests/build всех восьми workspaces.
+  Backend: 22 suite/57 tests; web: 6/25; TMA: 5/20. Сохранились известные неблокирующие Vite warnings о 924 kB map
+  chunk, web main 507 kB и TMA main 554 kB.
+- После финального no-op уточнения TypeSpec полный `npm run verify` повторно прошёл до `contracts:mock:check`, но
+  sandbox три раза запретил новый listener `127.0.0.1` с `EPERM`. Перед этим отдельный `npm run contracts:mock:check`
+  уже успешно проверил trust/safety response; после уточнения generated schemas структурно не менялись. Оставшаяся
+  цепочка `format:check`, `docs:check`, lint/typecheck/tests/build прошла успешно, а `contracts:generated:check` и
+  `contracts:typecheck` повторены успешно на окончательных файлах.
+- `PRISMA_SCHEMA_ENGINE_BINARY=/usr/bin/true PRISMA_QUERY_ENGINE_LIBRARY=/usr/bin/true npx prisma format`,
+  `prisma validate` с synthetic `DATABASE_URL` и `prisma generate` — успешно; Prisma Client 6.16.2 сгенерирован,
+  schema валидна.
+- Целевой `trust-safety-migration.integration-spec.ts` обнаружил два PostgreSQL scenario, но оба остановились до
+  первого assertion на `pool.connect()` из-за запрещённого sandbox подключения. Поэтому runtime применение новой
+  SQL migration и assertions business dedup/subtype, append-only history и unique no-show effect должны пройти в
+  CI PostgreSQL job; их успех здесь не заявляется. Static migration/data policy tests — 4/4 успешно, но не заменяют
+  runtime PostgreSQL.
+- `npm ls --depth=0` и `git diff --check` — успешно; unmet/extraneous dependencies и whitespace errors отсутствуют.
+  Внешняя настройка `NODE_TLS_REJECT_UNAUTHORIZED=0` остаётся свойством окружения и один раз дала предупреждение
+  Redocly; она не добавлена в репозиторий.
+- Локально исполнимые критерии этапа выполнены. Runtime-критерий миграции остаётся environment-blocked до зелёного
+  PostgreSQL-прогона; следующий промпт `llm/07-trust-safety/03-backend.md` не начинался.

@@ -359,6 +359,9 @@ retention/deletion и выключение tracking. Failover разрешён �
 
 ## Политика доверия и безопасности
 
+Wire-схемы, SQL-инварианты и точное поведение cleanup/legal hold зафиксированы в
+[`trust-safety-data-policy.md`](trust-safety-data-policy.md).
+
 Reports, review text/responses, evidence, assignment и moderation notes относятся к `restricted personal`;
 safety-сведения о здоровье, угрозе или дискриминации могут стать специальной категорией после legal review и
 обрабатываются по более строгому режиму. Rating, broad category, timestamps и opaque references являются

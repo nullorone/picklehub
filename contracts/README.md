@@ -37,7 +37,8 @@ npm run contracts:check
 - `contracts:mock` запускает локальный Prism на `127.0.0.1:4010`; он предназначен только для разработки и не
   является backend или production fallback.
 - `contracts:mock:check` запускает mock на свободном localhost port, запрашивает representative endpoints health,
-  identity, venues, matches, communications и profiles, проверяет status, JSON shape и `no-store`. AsyncAPI examples проверяются
+  identity, venues, matches, communications, profiles и trust/safety, проверяет status, JSON shape и `no-store`.
+  AsyncAPI examples проверяются
   parser/linter в `contracts:lint`.
 
 Prism сопоставляет OpenAPI Path Item без относительного `servers.url`, поэтому локальные mock URL —
@@ -67,6 +68,25 @@ Prism отвечает строго по OpenAPI examples/schemas. Mock не п�
 имеет mock URL или silent fallback. Внутренние identity, venue, match и communication events проверяются по
 AsyncAPI schema и не
 выставляются как WebSocket subscription; contract mock не имитирует их фактическую доставку через outbox.
+
+## Доверие и безопасность
+
+[`rest/trust-safety.tsp`](rest/trust-safety.tsp) описывает private review revisions, no-show и другие safety reports,
+caller-only receipt/status, response/appeal, собственный список блокировок и пороговый публичный review aggregate.
+Все мутации требуют bearer, browser CSRF и UUIDv4 `Idempotency-Key`; read models имеют `no-store`. Чужая квитанция
+неотличима от отсутствующей, а case, reporter/subject, source, evidence другой стороны, assignee и sanction detail
+никогда не входят в receipt DTO. Собственный detail может вернуть только собственный ещё хранимый текст.
+
+Миграция разделяет `Review`, immutable signal, case, append-only response/decision, appeal и idempotent reversible
+effect. Business uniqueness дополняет encrypted 24-hour replay; один no-show effect защищён partial unique index.
+Restricted text хранится отдельно как authenticated ciphertext с key/AAD version, а review aggregate перестраивается
+из текущих eligible contributions и публикуется только после пяти независимых источников. Retention, account
+deletion, cryptoshredding и адресный legal hold описаны в
+[`trust-safety-data-policy.md`](../llm/_docs/trust-safety-data-policy.md).
+
+`trust-safety.events.v1` несёт ровно один opaque aggregate ID и broad category. Reporter, subject, source/revision,
+reason, state, rating, text, evidence, attachment, block direction, outcome и decision detail запрещены; consumer
+перечитывает минимальные данные через авторизованный port и дедуплицирует message ID.
 
 ## Профиль и статистика
 

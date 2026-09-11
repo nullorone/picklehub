@@ -173,6 +173,19 @@ channels:
             ProfileStatisticsSourceChanged: { $ref: '#/components/messages/ProfileStatisticsSourceChanged' }
             ProfileStatisticsRebuildRequested: { $ref: '#/components/messages/ProfileStatisticsRebuildRequested' }
             ProfileStatisticsRebuildCompleted: { $ref: '#/components/messages/ProfileStatisticsRebuildCompleted' }
+    trustSafetyEvents:
+        address: trust-safety.events.v1
+        title: Internal privacy-minimized trust and safety events
+        description: Transactional outbox only, delivered at least once. Payloads contain one opaque aggregate ID
+            and a broad report category; reporter, subject, source, reason, text, rating, evidence, decision detail,
+            block direction and attachments are forbidden. Authorized consumers reload the minimum necessary data.
+        servers:
+            - $ref: '#/servers/outbox'
+        messages:
+            SafetySignalReceived: { $ref: '#/components/messages/SafetySignalReceived' }
+            SafetyCaseStatusChanged: { $ref: '#/components/messages/SafetyCaseStatusChanged' }
+            SafetyDecisionRecorded: { $ref: '#/components/messages/SafetyDecisionRecorded' }
+            SafetyEffectRequested: { $ref: '#/components/messages/SafetyEffectRequested' }
 operations:
     receiveClientControl:
         action: receive
@@ -304,6 +317,18 @@ operations:
             - $ref: '#/channels/profileEvents/messages/ProfileStatisticsSourceChanged'
             - $ref: '#/channels/profileEvents/messages/ProfileStatisticsRebuildRequested'
             - $ref: '#/channels/profileEvents/messages/ProfileStatisticsRebuildCompleted'
+    publishTrustSafetyEvents:
+        action: send
+        title: Publish committed trust and safety lifecycle references
+        summary: Publish only opaque IDs and broad report categories through the transactional outbox.
+        description: Each mutation commits its event atomically. Consumers deduplicate by messageId and perform an
+            authorized source read; neither the event nor a retry/DLQ payload contains people, evidence or reasons.
+        channel: { $ref: '#/channels/trustSafetyEvents' }
+        messages:
+            - $ref: '#/channels/trustSafetyEvents/messages/SafetySignalReceived'
+            - $ref: '#/channels/trustSafetyEvents/messages/SafetyCaseStatusChanged'
+            - $ref: '#/channels/trustSafetyEvents/messages/SafetyDecisionRecorded'
+            - $ref: '#/channels/trustSafetyEvents/messages/SafetyEffectRequested'
 components:
     messages:
         Authenticate:
@@ -673,6 +698,34 @@ components:
             contentType: application/json
             correlationId: { location: $message.payload#/correlationId }
             payload: { $ref: '#/components/schemas/ProfileStatisticsRebuildCompletedEnvelope' }
+        SafetySignalReceived:
+            name: safety.signal.received.v1
+            title: SafetySignalReceived
+            summary: A private report signal was committed.
+            contentType: application/json
+            correlationId: { location: $message.payload#/correlationId }
+            payload: { $ref: '#/components/schemas/SafetySignalReceivedEnvelope' }
+        SafetyCaseStatusChanged:
+            name: safety.case.status.changed.v1
+            title: SafetyCaseStatusChanged
+            summary: A private case changed lifecycle state.
+            contentType: application/json
+            correlationId: { location: $message.payload#/correlationId }
+            payload: { $ref: '#/components/schemas/SafetyCaseStatusChangedEnvelope' }
+        SafetyDecisionRecorded:
+            name: safety.decision.recorded.v1
+            title: SafetyDecisionRecorded
+            summary: An append-only moderation decision revision was committed.
+            contentType: application/json
+            correlationId: { location: $message.payload#/correlationId }
+            payload: { $ref: '#/components/schemas/SafetyDecisionRecordedEnvelope' }
+        SafetyEffectRequested:
+            name: safety.effect.requested.v1
+            title: SafetyEffectRequested
+            summary: An owning module must reconcile one idempotent moderation effect.
+            contentType: application/json
+            correlationId: { location: $message.payload#/correlationId }
+            payload: { $ref: '#/components/schemas/SafetyEffectRequestedEnvelope' }
     schemas:
         Uuid:
             type: string
@@ -1633,6 +1686,78 @@ components:
                         matchId: { $ref: '#/components/schemas/Uuid' }
                         aggregateVersion: { type: integer, minimum: 1 }
                         stage: { type: string, enum: [DRAFT, PUBLISHED] }
+        SafetySignalReceivedEnvelope:
+            type: object
+            additionalProperties: false
+            required: [messageId, type, occurredAt, correlationId, data]
+            properties:
+                messageId: { $ref: '#/components/schemas/Uuid' }
+                type: { type: string, const: safety.signal.received.v1 }
+                occurredAt: { $ref: '#/components/schemas/Timestamp' }
+                correlationId: { $ref: '#/components/schemas/Uuid' }
+                causationId:
+                    oneOf: [{ $ref: '#/components/schemas/Uuid' }, { type: 'null' }]
+                data:
+                    type: object
+                    additionalProperties: false
+                    required: [signalId, category]
+                    properties:
+                        signalId: { $ref: '#/components/schemas/Uuid' }
+                        category: { type: string, enum: [NO_SHOW, SAFETY, CONTENT, VENUE, RESULT] }
+        SafetyCaseStatusChangedEnvelope:
+            type: object
+            additionalProperties: false
+            required: [messageId, type, occurredAt, correlationId, data]
+            properties:
+                messageId: { $ref: '#/components/schemas/Uuid' }
+                type: { type: string, const: safety.case.status.changed.v1 }
+                occurredAt: { $ref: '#/components/schemas/Timestamp' }
+                correlationId: { $ref: '#/components/schemas/Uuid' }
+                causationId:
+                    oneOf: [{ $ref: '#/components/schemas/Uuid' }, { type: 'null' }]
+                data:
+                    type: object
+                    additionalProperties: false
+                    required: [caseId, category]
+                    properties:
+                        caseId: { $ref: '#/components/schemas/Uuid' }
+                        category: { type: string, enum: [NO_SHOW, SAFETY, CONTENT, VENUE, RESULT] }
+        SafetyDecisionRecordedEnvelope:
+            type: object
+            additionalProperties: false
+            required: [messageId, type, occurredAt, correlationId, data]
+            properties:
+                messageId: { $ref: '#/components/schemas/Uuid' }
+                type: { type: string, const: safety.decision.recorded.v1 }
+                occurredAt: { $ref: '#/components/schemas/Timestamp' }
+                correlationId: { $ref: '#/components/schemas/Uuid' }
+                causationId:
+                    oneOf: [{ $ref: '#/components/schemas/Uuid' }, { type: 'null' }]
+                data:
+                    type: object
+                    additionalProperties: false
+                    required: [decisionId, category]
+                    properties:
+                        decisionId: { $ref: '#/components/schemas/Uuid' }
+                        category: { type: string, enum: [NO_SHOW, SAFETY, CONTENT, VENUE, RESULT] }
+        SafetyEffectRequestedEnvelope:
+            type: object
+            additionalProperties: false
+            required: [messageId, type, occurredAt, correlationId, data]
+            properties:
+                messageId: { $ref: '#/components/schemas/Uuid' }
+                type: { type: string, const: safety.effect.requested.v1 }
+                occurredAt: { $ref: '#/components/schemas/Timestamp' }
+                correlationId: { $ref: '#/components/schemas/Uuid' }
+                causationId:
+                    oneOf: [{ $ref: '#/components/schemas/Uuid' }, { type: 'null' }]
+                data:
+                    type: object
+                    additionalProperties: false
+                    required: [effectId, category]
+                    properties:
+                        effectId: { $ref: '#/components/schemas/Uuid' }
+                        category: { type: string, enum: [NO_SHOW, SAFETY, CONTENT, VENUE, RESULT] }
         ProfileChangedEnvelope:
             type: object
             additionalProperties: false

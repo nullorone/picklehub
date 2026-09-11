@@ -750,6 +750,78 @@ export namespace ProtocolErrorMessage {
     }
 }
 
+export namespace SafetyCaseStatusChangedMessage {
+    export interface SafetyCaseStatusChangedEnvelope {
+        messageId: string;
+        type: 'safety.case.status.changed.v1';
+        occurredAt: string;
+        correlationId: string;
+        causationId?: string | null;
+        data: Data;
+    }
+
+    export interface Data {
+        caseId: string;
+        category: DataCategory;
+    }
+
+    export type DataCategory = 'NO_SHOW' | 'SAFETY' | 'CONTENT' | 'VENUE' | 'RESULT';
+}
+
+export namespace SafetyDecisionRecordedMessage {
+    export interface SafetyDecisionRecordedEnvelope {
+        messageId: string;
+        type: 'safety.decision.recorded.v1';
+        occurredAt: string;
+        correlationId: string;
+        causationId?: string | null;
+        data: Data;
+    }
+
+    export interface Data {
+        decisionId: string;
+        category: DataCategory;
+    }
+
+    export type DataCategory = 'NO_SHOW' | 'SAFETY' | 'CONTENT' | 'VENUE' | 'RESULT';
+}
+
+export namespace SafetyEffectRequestedMessage {
+    export interface SafetyEffectRequestedEnvelope {
+        messageId: string;
+        type: 'safety.effect.requested.v1';
+        occurredAt: string;
+        correlationId: string;
+        causationId?: string | null;
+        data: Data;
+    }
+
+    export interface Data {
+        effectId: string;
+        category: DataCategory;
+    }
+
+    export type DataCategory = 'NO_SHOW' | 'SAFETY' | 'CONTENT' | 'VENUE' | 'RESULT';
+}
+
+export namespace SafetySignalReceivedMessage {
+    export interface SafetySignalReceivedEnvelope {
+        messageId: string;
+        type: 'safety.signal.received.v1';
+        occurredAt: string;
+        correlationId: string;
+        causationId?: string | null;
+        data: Data;
+    }
+
+    export interface Data {
+        signalId: string;
+        category: DataCategory;
+    }
+
+    export type DataCategory = 'NO_SHOW' | 'SAFETY' | 'CONTENT' | 'VENUE' | 'RESULT';
+}
+
 export namespace SessionsRevokedMessage {
     export interface SessionsRevokedEnvelope {
         messageId: string;
@@ -863,6 +935,10 @@ export type ProfileStatisticsRebuildRequestedEnvelope =
 export type ProfileStatisticsSourceChangedEnvelope =
     ProfileStatisticsSourceChangedMessage.ProfileStatisticsSourceChangedEnvelope;
 export type ProtocolErrorEnvelope = ProtocolErrorMessage.ProtocolErrorEnvelope;
+export type SafetyCaseStatusChangedEnvelope = SafetyCaseStatusChangedMessage.SafetyCaseStatusChangedEnvelope;
+export type SafetyDecisionRecordedEnvelope = SafetyDecisionRecordedMessage.SafetyDecisionRecordedEnvelope;
+export type SafetyEffectRequestedEnvelope = SafetyEffectRequestedMessage.SafetyEffectRequestedEnvelope;
+export type SafetySignalReceivedEnvelope = SafetySignalReceivedMessage.SafetySignalReceivedEnvelope;
 export type SessionsRevokedEnvelope = SessionsRevokedMessage.SessionsRevokedEnvelope;
 export type VenueCandidateCreatedEnvelope = VenueCandidateCreatedMessage.VenueCandidateCreatedEnvelope;
 export type VenueMergedEnvelope = VenueMergedMessage.VenueMergedEnvelope;
@@ -900,6 +976,10 @@ export type WebSocketMessage =
     | ProfileStatisticsRebuildRequestedEnvelope
     | ProfileStatisticsSourceChangedEnvelope
     | ProtocolErrorEnvelope
+    | SafetyCaseStatusChangedEnvelope
+    | SafetyDecisionRecordedEnvelope
+    | SafetyEffectRequestedEnvelope
+    | SafetySignalReceivedEnvelope
     | VenueCandidateCreatedEnvelope
     | VenueMergedEnvelope
     | VenueVerifiedEnvelope;
