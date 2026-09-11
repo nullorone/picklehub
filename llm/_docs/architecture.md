@@ -191,6 +191,28 @@ fresh re-auth, assignment/conflict и target revision независимо от 
 scope. CMS/advertising подключатся позже через собственные ports; резервирование ролей не создаёт сейчас их экраны,
 API или хранилища.
 
+### Граница клубов
+
+Модуль `clubs` владеет клубом, scoped membership/role, заявками, приглашениями, club block, связью с публичными
+площадками и правилами повторения. Он не копирует identity/profile, координаты площадки, roster/result матча или
+будущий tournament bracket. Авторизация сначала получает actor из `identity`, затем проверяет активный scoped role
+по club ID; platform roles не преобразуются в `OWNER`/`ADMIN`, а club roles не проходят administration ports.
+
+`clubs` проверяет публичную canonical площадку через read-port `venues` и хранит только venue ID. Merge/deletion
+приходит минимальным версионированным событием: связь разрешается в survivor либо скрывается, а зависимое правило
+серии приостанавливается. Модуль не меняет venue и не удаляет его при unlink. Клуб может существовать без связей.
+
+Создание клубного или recurring матча вызывает application-port `matches` с реальным user-organizer и club
+attribution. Возвращённый match ID/occurrence key хранится для идемпотентности генерации; membership или шаблон не
+копируются в roster. Lifecycle, вместимость, очередь, чат и результат остаются за `matches`. Подтверждённый outcome
+возвращается событием для метрики клуба. Будущий `tournaments` аналогично принимает club attribution и organizer
+через отдельный port после этапа 10; прямых записей в его таблицы сейчас нет.
+
+Передача ownership, membership transition, решение заявки, принятие приглашения, исключение/block, archive и
+материализация позиции серии сериализуются в PostgreSQL. Domain change, обязательный минимальный audit и outbox
+фиксируются атомарно. Worker генерирует только bounded horizon и не создаёт backlog после pause/archive; Redis/
+BullMQ ускоряет планирование, но не определяет уникальность occurrence или наличие владельца.
+
 ## Общие frontend-пакеты
 
 Разрешены framework-neutral пакеты `api-client`, `domain`, `validation`, `i18n` и `analytics`. Они не импортируют

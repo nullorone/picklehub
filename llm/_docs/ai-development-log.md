@@ -2237,3 +2237,59 @@ backend/test/integration/administration-verification.integration-spec.ts` обн
 - Остаточные риски: production MFA/WebAuthn, bootstrap/independent approval evidence, break-glass notification и
   post-review, on-call alert delivery, backup/restore/retention execution, data residency и legal approval остаются
   эксплуатационными gates. Следующий промпт — `llm/09-clubs/01-requirements.md`; к нему не переходили.
+
+## 2026-09-11 — клубы, этап 01-requirements
+
+- Активный промпт: `llm/09-clubs/01-requirements.md`. Изменения ограничены продуктовыми требованиями, доменной и
+  архитектурной границей, privacy/retention и аналитикой. TypeSpec/AsyncAPI, Prisma, backend, worker и клиенты не
+  менялись и не выдаются за реализованные.
+- Определены 14 пользовательских историй и 14 сценариев «Дано/Когда/Тогда»: создание/изменение/поиск, три пути
+  вступления, заявки и приглашения, выход/исключение/club block, передача ownership и роли, площадки, клубные
+  матчи/будущие турниры, серии и archive/restore. Зафиксированы отдельные lifecycle клуба, membership, request,
+  invitation, block, recurring rule и materialized match.
+- Клуб создаётся атомарно с единственным `OWNER` и может иметь ноль площадок. Transfer одновременно назначает
+  активного target владельцем и понижает прежнего owner до admin; выход, исключение или понижение текущего owner до
+  transfer запрещены. Инвариант ровно одного owner, unique membership и конкурентные переходы должны защищаться БД.
+- Scoped `OWNER`/`ADMIN`/`MEMBER` отделены от `SUPERADMIN`/`MODERATOR`/`EDITOR`/`ADS_MANAGER`: ни platform role, ни
+  organizer другого агрегата не получает club capability. Platform moderation остаётся отдельным аудированным
+  действием без impersonation; club admin не получает venue moderation или platform administration.
+- Политики `OPEN`, `APPROVAL`, `INVITE_ONLY` создают соответственно membership, pending request или требуют
+  адресного invite. Pending intent прав не даёт; accept/reject/cancel/revoke/expire/supersede terminal, replay не
+  создаёт второго membership. Club block закрывает повторные intents, а снятие не восстанавливает старое состояние.
+- `ClubVenue` закреплена как необязательная many-to-many ссылка на public canonical venue без передачи владения.
+  Unlink/merge/deletion не удаляет клуб или готовые события; недоступная обязательная venue приостанавливает только
+  будущую генерацию зависимого правила. Клуб остаётся валидным и доступным в поиске без площадок.
+- Клубный матч принадлежит `matches` и имеет реального user-organizer. Серия — timezone-aware bounded generator:
+  каждая календарная позиция идемпотентно создаёт отдельный match с собственной вместимостью, roster, очередью,
+  гостями, lifecycle и результатом; membership/прошлая встреча не записывает игрока в следующую автоматически.
+  Archive закрывает новые действия и генерацию без backlog или неявной отмены materialized matches.
+- Метрики формализованы: active clubs за rolling 28 days, раздельная membership conversion для open/request/invite,
+  unique confirmed club matches и fill snapshot recurring occurrence на scheduled start. Creator-owner/replay не
+  входят в конверсию, pending/waitlist не входят в fill, recurring match не удваивает общий match count. Behavioral
+  events зависят от consent и не содержат IDs, token, member graph, reason text, координаты или точное расписание.
+- При удалении аккаунта последнего owner identity lifecycle не блокируется: клуб архивируется, credentials и
+  публичная projection отзываются, а минимальная псевдонимизированная ownership-ссылка сохраняет governance history
+  без выдачи platform staff членства. Recovery с согласием нового owner и окончательные retention/legal правила
+  оставлены явным последующим gate, а не выдуманной автоматической передачей.
+- Изменённые файлы: `llm/_docs/product-requirements.md`, `llm/_docs/domain-model.md`, `llm/_docs/architecture.md`,
+  `llm/_docs/security-privacy.md`, `llm/_docs/analytics-plan.md` и этот журнал.
+
+### Проверки этапа clubs 01-requirements
+
+- `npx prettier --write llm/_docs/product-requirements.md llm/_docs/analytics-plan.md
+llm/_docs/architecture.md llm/_docs/domain-model.md llm/_docs/security-privacy.md` — успешно; после уточнения
+  историй и identity deletion повторно отформатированы затронутые requirements/analytics/security документы.
+- `npm run verify` — успешно полностью: восемь workspaces/один root lockfile; TypeSpec compile, Redocly,
+  compatibility/generated drift/typecheck и OpenAPI mock; format/docs; lint, strict typecheck, tests и production
+  build. Contract/data/privacy набор — 84/84 tests; backend — 28/28 suites и 152/152 tests; web — 8/8 suites и
+  38/38 tests; TMA — 6/6 и 21/21; API client — 6/6. Сохраняются прежние неблокирующие bundle warnings web/TMA
+  около 565/578 kB и MapLibre 924 kB.
+- `git diff --check`, `npm ls --depth=0` и read-only Node.js-проверка относительных Markdown-ссылок по списку
+  `rg --files -g '*.md'` — успешно: whitespace errors и unmet/extraneous dependencies отсутствуют, проверено 111
+  ссылок без отсутствующих целей.
+- После записи журнала повторены `npm run format:check`, `npm run docs:check`, проверка Markdown-ссылок,
+  `npm ls --depth=0` и `git diff --check` — успешно: 123 Markdown-файла и 111 относительных ссылок проверены,
+  dependency tree и whitespace чисты.
+- Критерии этапа выполнены на уровне требований: ноль площадок допустимы, клуб не остаётся без owner, club/platform
+  admin разделены, членских платежей нет. Точные enum/TTL, recurring horizon, wire events и SQL guards принадлежат
+  следующему промпту `llm/09-clubs/02-contract-data.md`; к нему не переходили.

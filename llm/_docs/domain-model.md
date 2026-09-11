@@ -291,3 +291,40 @@ receipt и совместимое расширение `AuditEntry` зафикс
 [`admin-backoffice-data-policy.md`](admin-backoffice-data-policy.md). Эффективное ограничение пользователя хранится
 как versioned `user_restrictions`: один active scope на пользователя, исходное moderation decision неизменно,
 отзыв/истечение являются переходом revision, а не удалением строки.
+
+## Клубы
+
+Граница `clubs` владеет сообществом и scoped governance, но не профилями, площадками, матчевым составом или
+турнирной сеткой:
+
+- `clubs` — корень `ACTIVE` / `ARCHIVED`, version, публичная карточка и `OPEN` / `APPROVAL` / `INVITE_ONLY` policy;
+- `club_memberships` — интервалы активного членства с `OWNER` / `ADMIN` / `MEMBER`; ровно один активный owner на
+  клуб и не более одного активного membership пользователя;
+- `club_join_requests` — одна pending заявка пользователя при `APPROVAL` и неизменяемый terminal outcome;
+- `club_invitations` — адресное, ограниченное сроком приглашение с hashed capability/token, revoke/accept/decline/
+  expiry и без хранения raw token;
+- `club_blocks` — scoped запрет повторного membership intent после исключения; снятие создаёт transition и не
+  восстанавливает прошлое;
+- `club_venues` — необязательная many-to-many связь только с public canonical venue ID;
+- `recurring_match_rules` и `recurring_match_occurrences` — timezone-aware шаблон с bounded horizon и уникальной
+  календарной позицией, которая материализуется не более чем в один самостоятельный match ID;
+- `club_operation_receipts` и минимальные governance audit records — идемпотентный ответ и причины чувствительных
+  изменений без публичного текста клуба или персональных данных.
+
+Создание клуба фиксирует корень и owner membership одной транзакцией. Deferred constraint/serialization на корне
+запрещает commit без ровно одного активного owner; transfer одновременно повышает target и понижает прежнего owner.
+Join/approve/invite acceptance создаёт membership один раз и терминализирует конфликтующие intents. Exclusion
+завершает membership и intents, а club block дополнительно запрещает новые; история матча, профиля и сообщений не
+каскадируется.
+
+Archive сохраняет owner, memberships, venue links и историю, но закрывает новые membership/governance/event
+operations и приостанавливает генерацию. Restore не оживляет intents и не создаёт пропущенные occurrences. Удаление
+или merge venue изменяет только club link/projection; rule с обязательной недоступной venue paused, готовый match
+не переписывается.
+
+Правило серии не владеет участниками или общей вместимостью: каждая occurrence получает собственный агрегат
+`matches` и его формат, slots, roster, requests, waitlist, guests, result. Уникальность rule + calendar position и
+operation receipt защищает от повторной генерации. Club attribution match неизменяема после публикации и служит
+для прав/метрик, но club не становится organizer. События границы содержат только opaque IDs, version, closed
+enum/state и occurrence key; name/description, invite token, member graph, venue coordinates, roster и reason text
+в outbox запрещены.

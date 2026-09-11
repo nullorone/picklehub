@@ -271,3 +271,47 @@ Dashboard не ранжирует сотрудников, не показыва�
 историю пользователя. Audit — отдельный security record и не заменяется метрикой. Недоступность metrics/provider
 не блокирует безопасную операцию, а недоступность обязательного audit блокирует мутацию. Будущие CMS/ad product
 events определяются их требованиями; этот этап не собирает просмотры экранов редактора или менеджера рекламы.
+
+## Клубы
+
+Club behavioral analytics использует общий consent envelope `v1` и не влияет на доменную операцию. Запрещены
+название/описание клуба, club/user/invite/request/match/venue IDs, invitation token, состав и его размер на малой
+выборке, role target, причина исключения/блокировки, поисковая строка, точное место и время расписания. Для distinct
+club в защищённом внутреннем расчёте допустим ротируемый keyed pseudonym; он не экспортируется как dimension и не
+позволяет восстановить membership graph.
+
+| Событие                          | Условие и источник                                                       | Дополнительные свойства                                                                                                | Дедупликация                   | Применение                                 |
+| -------------------------------- | ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- | ------------------------------ | ------------------------------------------ |
+| `club_created`                   | Backend после атомарного создания клуба и owner membership               | `initialPolicy`: `OPEN`/`APPROVAL`/`INVITE_ONLY`; `venueBucket`: `ZERO`/`ONE`/`TWO_PLUS`                               | Club creation operation ID     | Создание и стартовая конфигурация.         |
+| `club_search_completed`          | Клиент показал первую успешную страницу или пустое состояние             | `resultBucket`: `ZERO`/`ONE_FIVE`/`SIX_TWENTY`/`GT_TWENTY`; `filter`: `NONE`/`LOCALITY`/`VENUE`; без query и origin    | Search session у producer      | Находимость клубов и пустые выдачи.        |
+| `club_membership_intent_created` | Backend после open join, заявки или выдачи приглашения при consent actor | `path`: `OPEN`/`REQUEST`/`INVITE`; `actor`: `PLAYER`/`MANAGER`; без target, policy reason и delivery identity          | Membership intent operation ID | Знаменатель воронки по механизму.          |
+| `club_membership_activated`      | Backend после первого активного membership, кроме creator-owner          | `path`; `latency`: `IMMEDIATE`/`LT_24H`/`1_7D`/`GT_7D`; без роли target                                                | Club + user activation marker  | Конверсия вступления без повторного счёта. |
+| `club_match_confirmed`           | Backend после уникального confirmed club match metric marker             | `origin`: `ONE_OFF`/`RECURRING`; `format`: `SINGLES`/`DOUBLES`                                                         | Match metric marker            | Завершённые клубные матчи.                 |
+| `club_recurring_fill_captured`   | Backend один раз на scheduled start materialized recurring-встречи       | `format`; `fillBucket`: `EMPTY`/`PARTIAL`/`FULL`; `ratioBucket`: `ZERO`/`LT_HALF`/`HALF_TO_LT_FULL`/`FULL`; без roster | Recurring occurrence marker    | Заполнение встреч серии.                   |
+
+Open conversion = число уникальных membership activations после допустимого open intent / число допустимых open
+intents. Request conversion = принятые и активированные memberships / валидные отправленные requests. Invite
+conversion = принятые и активированные memberships / выданные приглашения, отдельно показывая revoked/expired
+как outcomes, а не удаляя их из знаменателя. Общая конверсия не усредняет эти разные знаменатели; creator-owner,
+идемпотентные replay, blocked/invalid попытки и восстановление прежнего membership исключаются. Срезы строятся по
+когорте создания intent и окнам 24 часа, 7 и 28 суток; незрелая когорта помечается, а не считается отказом.
+
+Активный клуб за скользящие 28 суток — неархивный клуб хотя бы с одним committed human action: новым membership,
+решённой заявкой, принятым приглашением, созданным пользователем клубным матчем либо подтверждённо завершённым
+клубным матчем. Просмотр, поиск, автоматическая материализация серии, системный retry и изменение карточки не
+делают клуб активным. Публикуются daily snapshot distinct count и доля активных среди неархивных клубов без
+рейтинга и exact member count малой когорты.
+
+Завершённый клубный матч считается один раз по confirmed match marker с неизменяемой club attribution; recurring
+встреча входит и в общий club match count, и в recurring cohort, но не удваивает общий count. Fill фиксируется для
+каждой неотменённой materialized встречи в её scheduled start: число активных registered participants и guest
+slots / вместимость формата; pending requests и waitlist не входят. Хранится metric snapshot, поэтому поздний
+выход или изменение roster не переписывает прошлое. Dashboard показывает средний ratio, распределение buckets и
+долю `FULL`, срезы только по format/origin и крупным временным когортам.
+
+Archive/restore, ownership/role change, exclusion, club block, invite revoke и venue detach — обязательные
+domain/security actions, а не behavioral events. Operational counters разрешают только action/outcome enum,
+membership-policy/role class, conflict/duplicate suppression, recurring generation lag/pause reason class и
+orphan-owner invariant violation. IDs, names, member graph, invitation token, reason text, coordinates и exact
+timestamps запрещены как labels; orphan-owner target равен нулю. Analytics outage или отсутствие consent не
+блокирует клуб, membership, серию или матч, а события пропущенного периода не буферизуются и не воспроизводятся.

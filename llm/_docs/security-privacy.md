@@ -602,3 +602,39 @@ metadata очищается после максимального security inves
 а минимальный grant/access audit следует общему трёхлетнему предложению audit retention. Конкретные сроки и
 правовые основания подтверждаются до production. Rate limiter для login/MFA/re-auth, lookup, restricted read,
 mutation, audit search и break-glass имеет разные ненулевые лимиты и fail-closed при недоступном shared state.
+
+## Политика клубов
+
+Публичны только явно опубликованные поля карточки, агрегированный размер и ссылки на разрешённые публичные
+площадки. Membership graph, pending requests/invites, club block, история ролей, причины исключения и governance
+audit restricted соответствующему пользователю и owner/admin по минимальной projection. Invitation raw token
+показывается только в момент выдачи/доставки, хранится как keyed hash и запрещён в URL query, log, analytics,
+generic audit, error/trace и outbox. Его срок и отзыв проверяет сервер; preview не принимает приглашение.
+
+Club capability имеет scope одного club ID и deny-by-default. `OWNER`/`ADMIN` не наследуют platform/venue/tournament
+capabilities; platform staff не получает club membership. Platform moderation использует отдельное действие,
+reason и audit, не impersonation. Owner/admin видит pending identity только через минимальную публичную profile
+projection; email, Telegram subject, session, точные перемещения и чужие blocks не выдаются. Заблокированному
+клубом пользователю direct mutation отвечает безопасно, не раскрывая автора/причину блока.
+
+Ownership/role, exclusion/block, archive/restore и venue link mutations требуют server actor, expected revision,
+idempotency и audit с opaque IDs/closed reason. Инвариант owner и unique active membership защищается constraints и
+transaction locks. Rate limits разделяют создание/поиск, join/request, приглашения, решения и governance; массовые
+приглашения, enumeration состава и перенос token другому account запрещены. Межличностный Block и platform
+restriction проверяются через trust/safety port и не копируются в club records.
+
+Архивация сразу скрывает клуб из поиска и отзывает возможность новых intents/генерации, но не является hard delete.
+Запрос удаления аккаунта не блокируется клубом: публичная profile projection скрывается, pending intents/token
+отзываются, а клуб последнего owner атомарно архивируется. Минимальная псевдонимизированная ownership-ссылка без
+credentials сохраняется как governance/исторический record до утверждённой передачи или retention cleanup, поэтому
+сотрудник платформы не становится club member, а клуб не получает управляемое состояние без owner. Восстановление
+такого клуба требует отдельной последующей policy для согласия нового owner и аудированного recovery; этот этап не
+выдумывает автоматическое назначение невольного участника. Историческая club attribution матчей может сохраняться
+в минимизированном виде, пока нужна целостность результата.
+
+Предлагаемый retention: terminal requests/invitations и operation receipts — 90 суток, revoked/expired token hash —
+не дольше этого окна; завершённые memberships, role/block transitions и governance audit — до трёх лет после
+архивации или удаления последнего связанного аккаунта; публичная карточка скрывается сразу после archive/delete,
+очистка свободного текста online — до 30 суток после утверждённого запроса. Это не юридически утверждённые сроки:
+РФ-residency, основание, legal hold, backup expiry и физическая очистка подтверждаются до production. В логах,
+метриках и analytics запрещены name/description, member pairs, token, reason text, точное расписание и координаты.
