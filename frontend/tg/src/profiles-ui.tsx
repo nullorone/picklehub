@@ -634,14 +634,21 @@ export function ProfileScreen({
     const [loadingMore, setLoadingMore] = useState(false);
     const [error, setError] = useState<string>();
     const trackedViews = useRef(new Set<string>());
+    const loadSequence = useRef(0);
     const load = useCallback(async () => {
+        const sequence = ++loadSequence.current;
+        setLoading(true);
+        setError(undefined);
+        setProfile(undefined);
+        setStatistics(undefined);
+        setHistory(undefined);
+        setCursor(null);
+        setHasMore(false);
         if (ownership === 'OTHER' && !playerId) {
             setError('Профиль недоступен.');
             setLoading(false);
             return;
         }
-        setLoading(true);
-        setError(undefined);
         const requestedPlayerId = playerId ?? '';
         const profileRequest: Promise<OwnProfile | PublicProfile> =
             ownership === 'SELF' ? client.getOwnPlayerProfile() : client.getPublicPlayerProfile(requestedPlayerId);
@@ -660,6 +667,7 @@ export function ProfileScreen({
             historyRequest,
             localitiesRequest,
         ] as const);
+        if (sequence !== loadSequence.current) return;
         if (profileResult.status === 'rejected') {
             setProfile(undefined);
             setError(profileError(profileResult.reason));
@@ -680,6 +688,9 @@ export function ProfileScreen({
     }, [client, ownership, playerId]);
     useEffect(() => {
         void load();
+        return () => {
+            loadSequence.current += 1;
+        };
     }, [load]);
     useEffect(() => {
         if (!profile) return;

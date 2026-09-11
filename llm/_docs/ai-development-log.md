@@ -1596,3 +1596,54 @@ EPERM`). Поэтому все существующие database suites оста
   не заявляются; backend capabilities по умолчанию остаются выключенными.
 - Содержательные критерии клиентского этапа выполнены. Следующий промпт —
   `llm/06-player-profile-stats/05-verification.md`; к нему не переходили.
+
+## 2026-09-11 — профиль и статистика, этап 05-verification
+
+- Активный промпт: `llm/06-player-profile-stats/05-verification.md`. Создана матрица прослеживаемости
+  `llm/_docs/profiles-verification.md`, которая связывает исходы матчей, revision/rebuild, privacy, avatar, логи и
+  UI-гарантии с contract, unit, component и PostgreSQL слоями и не выдаёт наличие теста за фактический runtime
+  результат.
+- Новый PostgreSQL verification-набор проверяет scored и played-without-score outcomes, proposal, dispute,
+  cancellation, несыгравшего участника, guest slot, повтор события и компенсацию ранее подтверждённого результата
+  через `EXCLUDED` tombstones. Отдельные сценарии сравнивают totals после incremental projection, полного rebuild
+  и продолжения существующего `BUILDING` generation с checkpoint; две конкурентные записи одной версии профиля
+  обязаны дать ровно один успех.
+- Public/owner OpenAPI schemas закреплены точными snapshots, а runtime DTO дополнительно проверяются отдельно.
+  Block и `PRIVATE` возвращают одинаковый `PROFILE_NOT_AVAILABLE`; anonymous semantics публичного профиля остаются
+  неизменными. Avatar verification доказывает server-generated owner key, точные policy metadata и отказ stale
+  profile version. Producer окончательного no-show остаётся функции `07-trust-safety`: до неё отмена не считается
+  подтверждённой неявкой, а UI сохраняет `attendanceAvailable=false`.
+- Негативный log test теперь использует canary display name, DUPR URL/ciphertext, self-assessment, score и points;
+  общий structured redactor закрывает эти ключи на любой глубине. Raw значения не добавлены в audit/outbox.
+- В обоих клиентах исправлена найденная аудитом гонка account/player scope: завершившийся поздно запрос прежнего
+  профиля больше не может перезаписать новый экран. Паритетные тесты покрывают эту регрессию, cursor pagination
+  первой страницы из 50 записей, округление `2 / 3` до `66.7%`, доступное имя диаграммы и нейтральные empty/partial
+  состояния.
+- Изменённые файлы: profile verification integration test, profile policy и redaction unit tests, общий logger,
+  Web/TMA profile components и parity tests, `llm/_docs/profiles-verification.md` и этот журнал. REST/AsyncAPI,
+  generated clients, Prisma schema и migrations не менялись.
+
+### Проверки этапа profile/statistics 05-verification
+
+- `npm run verify` — успешно полностью: workspace/lockfile, TypeSpec/Redocly, policy для 87 REST operations и 41
+  messages, 59 contract/data/privacy tests, compatibility/generated drift/typecheck, OpenAPI mock, format/docs,
+  lint/typecheck/unit tests и production build всех восьми workspaces. Backend: 22 suites/57 tests; Web: 6/25;
+  TMA: 5/20. Production Web/PWA manifest/service worker и отсутствие development Telegram mock подтверждены.
+- Целевые profile policy/data tests — 9/9 успешно за 366 мс; log-redaction — 3/3 за 4,625 с. После расширения
+  large-history набора profile component tests повторно успешны: Web 6/6 за 905 мс, TMA 6/6 за 860 мс. Отдельные
+  lint и strict typecheck backend/Web/TMA успешны.
+- Три profile integration suites обнаружили 9 tests и завершились за 2,398 с до assertions: sandbox запретил
+  подключения Prisma/`pg` к `127.0.0.1:5432`. Поэтому матрица исходов, фактическая эквивалентность
+  rebuild/incremental, checkpoint resume, concurrent update и runtime DTO/avatar assertions должны пройти в
+  PostgreSQL CI job; их успех в этой сессии не заявляется.
+- `npm ls --depth=0` и `git diff --check` — успешно; unmet/extraneous dependencies и whitespace errors отсутствуют.
+  Сохраняются внешнее предупреждение `NODE_TLS_REJECT_UNAUTHORIZED=0` и неблокирующие Vite warnings: web/TMA
+  main bundles около 507/554 кБ и MapLibre chunk 924 кБ.
+- После записи матрицы и журнала `npm run format:check`, `npm run docs:check` и `git diff --check` повторно успешны:
+  Prettier/TypeSpec проверили формат, markdownlint проверил 119 Markdown-файлов без ошибок.
+- Реальные object storage, decode/re-encode/malware scanning, размещение медиа в РФ, DUPR provider/legal approval и
+  trust/safety no-show producer не проверялись и не заявляются. Соответствующие production capabilities остаются
+  выключенными.
+- Локально исполнимые критерии и автоматизация этапа выполнены, но runtime-приёмка равенства перестроенной и
+  инкрементальной проекций остаётся environment-blocked до зелёного PostgreSQL-прогона. Следующий промпт —
+  `llm/07-trust-safety/01-requirements.md`; к нему не переходили.

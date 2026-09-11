@@ -8,6 +8,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ProfileScreen } from './profiles-ui';
 
 const playerId = '11111111-1111-4111-8111-111111111111';
+const otherPlayerId = '44444444-4444-4444-8444-444444444444';
 const matchId = '22222222-2222-4222-8222-222222222222';
 const locality = {
     countryCode: 'RU',
@@ -200,5 +201,95 @@ describe('TMA profile parity', () => {
             expect(update).toHaveBeenCalledTimes(2);
         });
         expect(update.mock.calls[0]?.[1]).toBe(update.mock.calls[1]?.[1]);
+    });
+
+    it('paginates a large history and exposes exact rounded statistics to assistive technology', async () => {
+        const baseStatistics = publicStatistics();
+        const all = baseStatistics.totals[0];
+        const historyTemplate = history().items[0];
+        if (!all || !historyTemplate) throw new Error('Profile test fixtures are incomplete');
+        const statistics = {
+            ...baseStatistics,
+            totals: baseStatistics.totals.map((total) =>
+                total.slice === 'ALL'
+                    ? {
+                          ...total,
+                          decided: 3,
+                          losses: 1,
+                          played: 3,
+                          winRateDenominator: 3,
+                          winRateNumerator: 2,
+                          wins: 2,
+                      }
+                    : total
+            ),
+        };
+        const firstPage = {
+            ...history(),
+            items: Array.from({ length: 50 }, (_, index) => ({
+                ...historyTemplate,
+                matchId: `${String(index + 10).padStart(8, '0')}-2222-4222-8222-222222222222`,
+            })),
+            pageInfo: { hasMore: true, nextCursor: 'next-page' },
+        };
+        const secondEntry = { ...historyTemplate, matchId: otherPlayerId, state: 'CONFIRMED_PLAYED' as const };
+        const listHistory = vi
+            .fn()
+            .mockResolvedValueOnce(firstPage)
+            .mockResolvedValueOnce({
+                items: [secondEntry],
+                pageInfo: { hasMore: false, nextCursor: null },
+                snapshotAt: firstPage.snapshotAt,
+            });
+        const client = asClient({
+            getPublicPlayerProfile: vi.fn().mockResolvedValue(publicProfile()),
+            getPublicPlayerStatistics: vi.fn().mockResolvedValue(statistics),
+            listPublicPlayerMatchHistory: listHistory,
+        });
+
+        render(
+            <MemoryRouter>
+                <ProfileScreen client={client} online ownership="OTHER" playerId={playerId} />
+            </MemoryRouter>
+        );
+
+        expect(await screen.findByRole('img', { name: 'Доля побед 66.7%, 2 из 3' })).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: 'Показать ещё' }));
+        expect(await screen.findByText(/Игра подтверждена без счёта/u)).toBeInTheDocument();
+        expect(listHistory).toHaveBeenLastCalledWith(playerId, 'next-page');
+        expect(screen.getAllByRole('link')).toHaveLength(51);
+        expect(screen.getByRole('region', { name: 'Подтверждённая статистика' })).toBeInTheDocument();
+        expect(screen.getByRole('region', { name: 'История матчей' })).toBeInTheDocument();
+    });
+
+    it('discards a late response after the viewed account changes', async () => {
+        let resolveOld: ((profile: components['schemas']['PublicPlayerProfile']) => void) | undefined;
+        const oldProfile = new Promise<components['schemas']['PublicPlayerProfile']>((resolve) => {
+            resolveOld = resolve;
+        });
+        const newerProfile = { ...publicProfile(), displayName: 'Борис Новый', playerId: otherPlayerId };
+        const client = asClient({
+            getPublicPlayerProfile: vi.fn((id: string) =>
+                id === playerId ? oldProfile : Promise.resolve(newerProfile)
+            ),
+            getPublicPlayerStatistics: vi.fn().mockResolvedValue(publicStatistics()),
+            listPublicPlayerMatchHistory: vi.fn().mockResolvedValue({ ...history(), items: [] }),
+        });
+        const view = render(
+            <MemoryRouter>
+                <ProfileScreen client={client} online ownership="OTHER" playerId={playerId} />
+            </MemoryRouter>
+        );
+
+        view.rerender(
+            <MemoryRouter>
+                <ProfileScreen client={client} online ownership="OTHER" playerId={otherPlayerId} />
+            </MemoryRouter>
+        );
+        expect(await screen.findByRole('heading', { name: 'Борис Новый' })).toBeInTheDocument();
+        resolveOld?.(publicProfile());
+        await waitFor(() => {
+            expect(screen.queryByRole('heading', { name: 'Анна Смирнова' })).not.toBeInTheDocument();
+        });
     });
 });

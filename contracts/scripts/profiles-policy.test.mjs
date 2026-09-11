@@ -18,6 +18,49 @@ test('public profile schema cannot acquire private owner fields', () => {
     assert.throws(() => checkProfileContract(changed, asyncApi), /Public profile must not expose timeZone/);
 });
 
+test('owner and public profile schemas keep an explicit privacy snapshot', () => {
+    assert.deepEqual(Object.keys(openApi.components.schemas.PlayerProfile.properties).sort(), [
+        'avatar',
+        'displayName',
+        'externalProfileLink',
+        'gameFormats',
+        'locality',
+        'playerId',
+        'skillSelfAssessment',
+        'statistics',
+        'timeZone',
+        'updatedAt',
+        'version',
+        'visibility',
+    ]);
+    assert.deepEqual(Object.keys(openApi.components.schemas.PublicPlayerProfile.properties).sort(), [
+        'avatarUrl',
+        'displayName',
+        'externalProfileLink',
+        'gameFormats',
+        'locality',
+        'playerId',
+        'skillSelfAssessment',
+        'statistics',
+        'updatedAt',
+    ]);
+    assert.deepEqual(Object.keys(openApi.components.schemas.PlayerStatistics.properties).sort(), [
+        'attendance',
+        'calculatedAt',
+        'reliability',
+        'state',
+        'totals',
+    ]);
+    assert.deepEqual(Object.keys(openApi.components.schemas.PublicPlayerStatistics.properties).sort(), [
+        'attendance',
+        'attendanceAvailable',
+        'calculatedAt',
+        'reliability',
+        'state',
+        'totals',
+    ]);
+});
+
 test('profile events reject personal or score fields', () => {
     const changed = structuredClone(asyncApi);
     const schema = changed.components.schemas.ProfileStatisticsSourceChangedEnvelope;

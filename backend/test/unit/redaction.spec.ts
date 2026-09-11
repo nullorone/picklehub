@@ -39,4 +39,21 @@ describe('redactSensitiveData', () => {
         for (const value of Object.values(canaries)) expect(captured).not.toContain(value);
         expect(captured.match(/\[REDACTED\]/gu)).toHaveLength(Object.keys(canaries).length);
     });
+
+    it('removes profile, DUPR and score canaries from structured logs', () => {
+        const canaries = {
+            displayName: 'PROFILE-NAME-CANARY',
+            duprUrl: 'https://dupr.example/PROFILE-URL-CANARY',
+            pointsAgainst: 987_654_320,
+            pointsFor: 123_456_789,
+            score: 'PROFILE-SCORE-CANARY',
+            skillSelfAssessment: 4.5,
+            urlCiphertext: 'PROFILE-CIPHERTEXT-CANARY',
+        };
+
+        const captured = JSON.stringify(redactSensitiveData({ event: 'profile.test', payload: canaries }));
+
+        for (const value of Object.values(canaries)) expect(captured).not.toContain(String(value));
+        expect(captured.match(/\[REDACTED\]/gu)).toHaveLength(Object.keys(canaries).length);
+    });
 });
