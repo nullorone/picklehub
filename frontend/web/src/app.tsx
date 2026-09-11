@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { Link, Navigate, Route, Routes, useParams } from 'react-router-dom';
 
 import { useOnlineStatus } from './connectivity';
+import { AdminApp } from './admin-ui';
 import { ChatScreen, NotificationBadge, NotificationsScreen } from './communications-ui';
 import { AccountScreen, EmailLogin, MagicConfirmation, OnboardingScreen } from './identity-ui';
 import { CreateMatchScreen, MatchDetailsScreen, MatchesScreen } from './matches-ui';
@@ -76,6 +77,7 @@ export function App({ config }: { readonly config: RuntimeConfig }) {
     const { t } = useTranslation();
     const online = useOnlineStatus();
     const client = useMemo(() => createIdentityClient({ baseUrl: config.apiBaseUrl }, 'WEB'), [config.apiBaseUrl]);
+    const isAdminRoute = window.location.pathname === '/admin' || window.location.pathname.startsWith('/admin/');
     const [session, setSession] = useState<Session>();
     const [magic] = useState(() => {
         const value = readSafeMagicFragment(window.location.hash);
@@ -86,11 +88,13 @@ export function App({ config }: { readonly config: RuntimeConfig }) {
     });
 
     useEffect(() => {
+        if (isAdminRoute) return;
         disabledAnalytics.track({ name: 'platform.shell_viewed.v1', channel: 'web' });
-    }, []);
+    }, [isAdminRoute]);
     useEffect(() => {
+        if (isAdminRoute) return;
         disabledAnalytics.track({ name: 'platform.connectivity_changed.v1', channel: 'web', online });
-    }, [online]);
+    }, [isAdminRoute, online]);
     const acceptSession = useCallback((value: Session) => {
         setSession(value);
     }, []);
@@ -101,6 +105,8 @@ export function App({ config }: { readonly config: RuntimeConfig }) {
         setSession(undefined);
     }, []);
     const requiresOnboarding = session?.user.onboardingStatus !== 'COMPLETED';
+
+    if (isAdminRoute) return <AdminApp config={config} online={online} />;
 
     return (
         <div className="app-shell" data-environment={config.environment}>

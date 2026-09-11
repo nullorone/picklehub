@@ -2126,3 +2126,52 @@ llm/_docs/analytics-plan.md llm/_docs/domain-model.md llm/_docs/architecture.md`
 - Локально исполнимые критерии backend выполнены. Production bootstrap первого superadmin, реальная MFA/re-auth
   ceremony, security notification/post-review для break-glass и on-call delivery alerts остаются эксплуатационными
   gates и не выдаются за проверенные. Следующий промпт — `llm/08-admin-backoffice/04-tma-web.md`; к нему не переходили.
+
+## 2026-09-11 — административная панель, этап 04-tma-web
+
+- Активный промпт: `llm/08-admin-backoffice/04-tma-web.md`. В `frontend/web` добавлена отдельная ветка `/admin` с
+  собственными защищёнными layout, маршрутизацией и визуальным контуром. Обычная player-сессия не используется:
+  сотрудник вводит credential отдельной admin audience, после чего UI получает текущую роль и точный список
+  capabilities из `GET /admin/session`. Credential, bearer и CSRF остаются только в замыканиях памяти вкладки,
+  не попадают в URL/localStorage/sessionStorage и очищаются при 401, `pagehide` и явном выходе.
+- Deep link сохраняется до успешной повторной аутентификации. Все admin fetch используют `cache: no-store`,
+  `credentials: include`, bearer admin credential и для мутаций CSRF/idempotency. Выход размонтирует restricted
+  response state, заменяет текущую history entry на `/admin/access`; возврат страницы из bfcache также теряет
+  credential и требует новый вход. Admin surfaces не отправляют продуктовую аналитику.
+- Реализованы доступные очереди и allowlisted filters обращений и площадок, detail обращения с policy-controlled
+  narrative/responses/appeal, назначение и решение, exact user lookup через POST body, создание ограничения,
+  сравнение venue candidate с nearby canonical IDs, approve/reject/merge и bounded audit search. Таблицы имеют
+  caption, заголовки и горизонтальный fallback; loading/empty/error/offline состояния сообщаются семантически.
+- Все мутации передают server revision, closed reason и policy version. Решение по обращению, venue decision,
+  merge и user restriction имеют отдельный confirmation dialog; merge и sensitive restriction принимают
+  одноразовый server-issued confirmation proof. `REVISION_CONFLICT` не показывает ложный успех и предлагает
+  загрузить свежую версию.
+- `maskedIdentity` показывается только в минимизированной backend projection; raw email/Telegram exact lookup
+  очищается из формы после ответа и никогда не помещается в URL. Editor и Ads manager не получают safety routes
+  или navigation, а visibility controls дополняют, но не заменяют backend authorization.
+- TMA не менялся и не импортирует admin source. Production bundle scan подтвердил отсутствие строк
+  `Вход для сотрудников`, `Операционная панель` и `ADMIN_SESSION_ACCESS` в TMA build; отдельный browser scenario
+  требует 404 на `/admin` в TMA. Изменённые файлы: `frontend/web/src/app.tsx`, `frontend/web/src/admin-client.ts`,
+  `frontend/web/src/admin-ui.tsx`, `frontend/web/src/admin-ui.test.tsx`, `frontend/web/src/styles.css`,
+  `test/e2e/admin.spec.ts` и этот журнал.
+
+### Проверки этапа admin backoffice 04-tma-web
+
+- Targeted `npm run lint --workspace @picklehub/web`, `npm run typecheck --workspace @picklehub/web`,
+  `npm test --workspace @picklehub/web -- --run src/admin-ui.test.tsx` и
+  `npm run build --workspace @picklehub/web` — успешно. Admin component suite: 8/8 tests; полный web regression:
+  8/8 файлов и 38/38 tests. Production PWA manifest/service worker присутствуют; остаётся неблокирующее
+  предупреждение Vite о web main bundle около 565 kB и MapLibre chunk 924 kB.
+- `npm run test:e2e:typecheck` и `npm run test:e2e:build` — успешно для всех browser specs и production web/TMA
+  clients. Read-only scan `/private/tmp/picklehub-e2e-tg` подтвердил отсутствие admin markers; web build содержит
+  ожидаемый admin route.
+- `npx playwright test test/e2e/admin.spec.ts` обнаружил шесть сценариев: capability navigation для всех четырёх
+  ролей, deep-link re-auth/очистка restricted content и отсутствие admin route в TMA. Все шесть остановились до
+  первого test step: sandbox завершил local Chrome с `SIGABRT`, cleanup получил `kill EPERM`. Browser assertions
+  должны пройти в Playwright CI и не заявляются успешными локально.
+- Полный `npm run verify` — успешно: восемь workspaces/один lockfile, TypeSpec/Redocly, 78/78 contract/data/privacy
+  tests, compatibility/generated drift/typecheck, OpenAPI mock, format/docs, lint, strict typecheck, tests и
+  production build. Backend: 27/27 suites и 66/66 tests; Web: 8/38; TMA: 6/21; API client: 1/6.
+- После записи журнала `npm run format:check`, `npm run docs:check`, `npm ls --depth=0` и `git diff --check`
+  повторены успешно; unmet/extraneous dependencies и whitespace errors отсутствуют. Следующий промпт —
+  `llm/08-admin-backoffice/05-verification.md`; к нему не переходили.
