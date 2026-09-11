@@ -3,10 +3,11 @@ import { createIdentityClient, type components } from '@picklehub/api-client';
 import type { RuntimeConfig } from '@picklehub/validation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, Navigate, Route, Routes, useParams } from 'react-router-dom';
+import { Link, Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom';
 
 import { useOnlineStatus } from './connectivity';
 import { ChatScreen, NotificationBadge, NotificationsScreen } from './communications-ui';
+import { ClubDetailsScreen, ClubInvitationScreen, ClubsScreen } from './clubs-ui';
 import { TelegramAccount, TelegramLogin, TelegramOnboarding } from './identity-ui';
 import { CreateMatchScreen, MatchDetailsScreen, MatchesScreen } from './matches-ui';
 import { ProfileScreen } from './profiles-ui';
@@ -74,6 +75,7 @@ function PublicProfileRoute({
 
 export function App({ config, initData }: { readonly config: RuntimeConfig; readonly initData: string | undefined }) {
     const { t } = useTranslation();
+    const routeLocation = useLocation();
     const online = useOnlineStatus();
     const client = useMemo(() => createIdentityClient({ baseUrl: config.apiBaseUrl }, 'TMA'), [config.apiBaseUrl]);
     const [session, setSession] = useState<Session>();
@@ -93,6 +95,8 @@ export function App({ config, initData }: { readonly config: RuntimeConfig; read
         setSession(undefined);
     }, []);
     const onboarding = session?.user.onboardingStatus !== 'COMPLETED';
+    const requestedNext = new URLSearchParams(routeLocation.search).get('next');
+    const nextAfterLogin = requestedNext?.startsWith('/club-invitations/') ? requestedNext : '/';
     return (
         <div className="app-shell" data-environment={config.environment}>
             {!online && (
@@ -109,6 +113,7 @@ export function App({ config, initData }: { readonly config: RuntimeConfig; read
                     <nav aria-label="Личный кабинет">
                         <Link to="/matches">Матчи</Link>
                         <Link to="/venues">Площадки</Link>
+                        <Link to="/clubs">Клубы</Link>
                         <Link to="/notifications">
                             Уведомления
                             <NotificationBadge client={client} />
@@ -124,7 +129,7 @@ export function App({ config, initData }: { readonly config: RuntimeConfig; read
                     path="/login"
                     element={
                         session ? (
-                            <Navigate to={onboarding ? '/onboarding' : '/'} replace />
+                            <Navigate to={onboarding ? '/onboarding' : nextAfterLogin} replace />
                         ) : (
                             <TelegramLogin
                                 client={client}
@@ -142,6 +147,45 @@ export function App({ config, initData }: { readonly config: RuntimeConfig; read
                             <TelegramOnboarding client={client} online={online} onCompleted={complete} />
                         ) : (
                             <Navigate to="/login" replace />
+                        )
+                    }
+                />
+                <Route
+                    path="/clubs"
+                    element={
+                        <ClubsScreen
+                            channel="telegram"
+                            client={client}
+                            online={online}
+                            signedIn={Boolean(session && !onboarding)}
+                        />
+                    }
+                />
+                <Route
+                    path="/clubs/:clubId"
+                    element={
+                        <ClubDetailsScreen
+                            client={client}
+                            online={online}
+                            signedIn={Boolean(session && !onboarding)}
+                            userId={session?.user.id}
+                        />
+                    }
+                />
+                <Route
+                    path="/club-invitations/:invitationToken"
+                    element={
+                        session && !onboarding ? (
+                            <ClubInvitationScreen client={client} online={online} />
+                        ) : (
+                            <Navigate
+                                to={
+                                    session
+                                        ? '/onboarding'
+                                        : `/login?next=${encodeURIComponent(routeLocation.pathname)}`
+                                }
+                                replace
+                            />
                         )
                     }
                 />

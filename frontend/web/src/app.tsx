@@ -3,11 +3,12 @@ import { createIdentityClient, type components } from '@picklehub/api-client';
 import { readSafeMagicFragment, type RuntimeConfig } from '@picklehub/validation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, Navigate, Route, Routes, useParams } from 'react-router-dom';
+import { Link, Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom';
 
 import { useOnlineStatus } from './connectivity';
 import { AdminApp } from './admin-ui';
 import { ChatScreen, NotificationBadge, NotificationsScreen } from './communications-ui';
+import { ClubDetailsScreen, ClubInvitationScreen, ClubsScreen } from './clubs-ui';
 import { AccountScreen, EmailLogin, MagicConfirmation, OnboardingScreen } from './identity-ui';
 import { CreateMatchScreen, MatchDetailsScreen, MatchesScreen } from './matches-ui';
 import { ProfileScreen } from './profiles-ui';
@@ -75,6 +76,7 @@ function PublicProfileRoute({
 
 export function App({ config }: { readonly config: RuntimeConfig }) {
     const { t } = useTranslation();
+    const routeLocation = useLocation();
     const online = useOnlineStatus();
     const client = useMemo(() => createIdentityClient({ baseUrl: config.apiBaseUrl }, 'WEB'), [config.apiBaseUrl]);
     const isAdminRoute = window.location.pathname === '/admin' || window.location.pathname.startsWith('/admin/');
@@ -105,6 +107,8 @@ export function App({ config }: { readonly config: RuntimeConfig }) {
         setSession(undefined);
     }, []);
     const requiresOnboarding = session?.user.onboardingStatus !== 'COMPLETED';
+    const requestedNext = new URLSearchParams(routeLocation.search).get('next');
+    const nextAfterLogin = requestedNext?.startsWith('/club-invitations/') ? requestedNext : '/';
 
     if (isAdminRoute) return <AdminApp config={config} online={online} />;
 
@@ -124,6 +128,7 @@ export function App({ config }: { readonly config: RuntimeConfig }) {
                     <nav aria-label="Личный кабинет">
                         <Link to="/matches">Матчи</Link>
                         <Link to="/venues">Площадки</Link>
+                        <Link to="/clubs">Клубы</Link>
                         <Link to="/notifications">
                             Уведомления
                             <NotificationBadge client={client} />
@@ -153,7 +158,7 @@ export function App({ config }: { readonly config: RuntimeConfig }) {
                     path="/login"
                     element={
                         session ? (
-                            <Navigate to={requiresOnboarding ? '/onboarding' : '/'} replace />
+                            <Navigate to={requiresOnboarding ? '/onboarding' : nextAfterLogin} replace />
                         ) : (
                             <EmailLogin client={client} online={online} onSession={acceptSession} />
                         )
@@ -166,6 +171,45 @@ export function App({ config }: { readonly config: RuntimeConfig }) {
                             <OnboardingScreen client={client} online={online} onCompleted={completed} />
                         ) : (
                             <Navigate to="/login" replace />
+                        )
+                    }
+                />
+                <Route
+                    path="/clubs"
+                    element={
+                        <ClubsScreen
+                            channel="web"
+                            client={client}
+                            online={online}
+                            signedIn={Boolean(session && !requiresOnboarding)}
+                        />
+                    }
+                />
+                <Route
+                    path="/clubs/:clubId"
+                    element={
+                        <ClubDetailsScreen
+                            client={client}
+                            online={online}
+                            signedIn={Boolean(session && !requiresOnboarding)}
+                            userId={session?.user.id}
+                        />
+                    }
+                />
+                <Route
+                    path="/club-invitations/:invitationToken"
+                    element={
+                        session && !requiresOnboarding ? (
+                            <ClubInvitationScreen client={client} online={online} />
+                        ) : (
+                            <Navigate
+                                to={
+                                    session
+                                        ? '/onboarding'
+                                        : `/login?next=${encodeURIComponent(routeLocation.pathname)}`
+                                }
+                                replace
+                            />
                         )
                     }
                 />

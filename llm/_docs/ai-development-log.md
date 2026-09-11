@@ -2411,3 +2411,51 @@ test/integration/clubs-backend.integration-spec.ts` обнаружил три с
   отдельно успешно повторены backend lint/typecheck/targeted tests/build, format/docs и `git diff --check`.
 - Локально исполнимые критерии prompt выполнены; обязательный runtime PostgreSQL integration остаётся
   environment-blocked, а не отмечен успешным. Следующий prompt — `llm/09-clubs/04-tma-web.md`; к нему не переходили.
+
+## 2026-09-12 — клубы, этап 04-tma-web
+
+- Активный промпт: `llm/09-clubs/04-tma-web.md`. В web/PWA и TMA добавлены одинаковые маршруты поиска,
+  создания и публичной карточки клуба, защищённый invitation deep link и отдельный club-scoped контур управления.
+  Публичный поиск фильтрует по названию/городу, показывает пустую выдачу и явно сохраняет валидное состояние клуба
+  без площадок. Успешная первая страница отправляет consent-gated `club_search_completed` только с разрешёнными
+  bucket/filter/channel, без текста запроса, club ID или member graph.
+- Карточка показывает профиль, политику, archive/offline/stale/error/success состояния, связанные canonical venue и
+  доступные материализованные встречи. Встреча из серии явно отделена от шаблона: у неё собственный roster и
+  вместимость, а pause/resume/end серии не обещают изменить уже созданные матчи. Из-за отсутствия в принятом
+  контракте публичной выдачи обычных клубных матчей карточка не синтезирует её на клиенте и даёт ссылку на общий
+  публичный поиск матчей; manager видит occurrence links из авторизованного endpoint.
+- Owner/admin поверхности включают изменение профиля и membership policy, archive/restore, roster и роли,
+  атомарную передачу ownership, leave/exclude/club-block, решения по заявкам, создание/отзыв адресных приглашений,
+  link/unlink площадок, разовую клубную встречу и создание/pause/resume/end повторяющихся правил. Видимость controls
+  остаётся только UX: каждый вызов идёт в защищённый backend route с bearer, CSRF, idempotency и server revision;
+  компонентный тест отдельно подтверждает, что backend 403 показывается пользователю, а 409 требует свежие данные.
+- Invitation capability остаётся только в path и защищённом request, не попадает в текст страницы/analytics;
+  `no-referrer` сохранён. Экран сначала получает адресный invite, затем актуальную public club version, необходимую
+  контракту решения. Неавторизованный deep link сохраняется как allowlisted relative `next` через вход; произвольный
+  redirect не принимается. Мутации выключены offline и не показывают ложный optimistic success.
+- Handwritten API client расширен типизированными club methods поверх generated OpenAPI types; generated source не
+  редактировался. Добавлены по четыре component scenarios для каждого клиента и четыре browser scenarios для
+  публичного/deferred-auth deep link parity. Изменённые файлы: `frontend/packages/analytics/src/index.ts`,
+  `frontend/packages/api-client/src/index.ts`, `frontend/web/src/{app,clubs-ui,clubs-ui.test,styles}.tsx/css`,
+  соответствующие TMA-файлы, `test/e2e/clubs.spec.ts` и этот журнал.
+
+### Проверки этапа clubs 04-tma-web
+
+- Targeted lint/typecheck для `@picklehub/analytics`, `@picklehub/api-client`, `@picklehub/web`, `@picklehub/tg` —
+  успешно. `npm test --workspace @picklehub/web -- --run src/clubs-ui.test.tsx` и аналогичная TMA-команда — по 4/4
+  tests; production builds web/TMA успешны, PWA manifest/service worker присутствуют, TMA development mock
+  отсутствует. Сохраняются неблокирующие bundle warnings: web около 590 kB, TMA около 602 kB и MapLibre 924 kB.
+- Полная доступная регрессия `npm run format:check`, `npm run docs:check`, `npm run lint`, `npm run typecheck`,
+  `npm test`, `npm run build` — успешно для восьми workspaces. Backend — 30/30 suites и 161/161 tests; web — 9/9
+  suites и 42/42 tests; TMA — 7/7 и 25/25; API client — 1/1 и 6/6. После добавления analytics taxonomy отдельно
+  повторены все targeted checks, component tests и production client builds.
+- Contract portion полного `npm run verify` прошёл TypeSpec/Redocly, policy для 151 REST operations и 51 messages,
+  91/91 contract/data/privacy tests, breaking/generated drift и typecheck. `contracts:mock:check` дважды не смог
+  открыть loopback listener: sandbox вернул `listen EPERM 127.0.0.1`; поэтому полный wrapper завершился там, а все
+  последующие format/docs/lint/typecheck/test/build команды были запущены отдельно и успешны.
+- `npm run test:e2e:typecheck` и `npm run test:e2e:build` успешны. `npx playwright test test/e2e/clubs.spec.ts`
+  обнаружил четыре сценария для web/TMA, но каждый остановился до первого test step: local Chrome завершился с
+  `SIGABRT`, cleanup получил `kill EPERM`. Public club/invitation browser assertions должны пройти в Playwright CI
+  и не заявляются успешными локально.
+- `git diff --check` успешен. Локально исполнимые критерии промпта выполнены; следующий промпт —
+  `llm/09-clubs/05-verification.md`, к нему не переходили.

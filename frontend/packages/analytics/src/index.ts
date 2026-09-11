@@ -59,6 +59,12 @@ export type AnalyticsEvent =
           readonly name: 'dupr_link_opened';
           readonly ownership: 'SELF' | 'OTHER';
           readonly surface: 'PROFILE';
+      }
+    | {
+          readonly name: 'club_search_completed';
+          readonly channel: ClientChannel;
+          readonly filter: 'NONE' | 'LOCALITY' | 'VENUE';
+          readonly resultBucket: 'ZERO' | 'ONE_FIVE' | 'SIX_TWENTY' | 'GT_TWENTY';
       };
 
 export interface AnalyticsPort {

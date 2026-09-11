@@ -71,7 +71,7 @@ import type {
     SchemaVenueReport,
     SchemaVenueRevision,
 } from './generated/openapi';
-import type { operations } from './generated/openapi';
+import type { components, operations } from './generated/openapi';
 
 export type { components, operations, paths } from './generated/openapi';
 
@@ -352,6 +352,192 @@ export function createIdentityClient(options: ApiClientOptions, platform: Client
                 idempotent: true,
                 mutation: true,
             }),
+        searchClubs: (parameters: NonNullable<operations['searchClubs']['parameters']['query']>) =>
+            call<components['schemas']['ClubPage']>('/clubs', undefined, { query: query(parameters) }),
+        getClub: (clubId: string) => call<components['schemas']['Club']>(`/clubs/${clubId}`),
+        createClub: (body: components['schemas']['CreateClubInput']) =>
+            call<components['schemas']['Club']>('/clubs', body, {
+                auth: true,
+                idempotent: true,
+                mutation: true,
+            }),
+        updateClub: (clubId: string, body: components['schemas']['UpdateClubInput']) =>
+            call<components['schemas']['Club']>(`/clubs/${clubId}`, body, {
+                auth: true,
+                idempotent: true,
+                method: 'PATCH',
+                mutation: true,
+            }),
+        archiveClub: (clubId: string, body: components['schemas']['ClubReasonedCommand']) =>
+            call<components['schemas']['Club']>(`/clubs/${clubId}/archive`, body, {
+                auth: true,
+                idempotent: true,
+                mutation: true,
+            }),
+        restoreClub: (clubId: string, body: components['schemas']['ClubReasonedCommand']) =>
+            call<components['schemas']['Club']>(`/clubs/${clubId}/restore`, body, {
+                auth: true,
+                idempotent: true,
+                mutation: true,
+            }),
+        joinClub: (clubId: string, expectedVersion: number) =>
+            call<components['schemas']['ClubJoinOutcome']>(
+                `/clubs/${clubId}/join`,
+                { expectedVersion },
+                { auth: true, idempotent: true, mutation: true }
+            ),
+        listClubMembers: (clubId: string) =>
+            call<components['schemas']['ClubMemberPage']>(`/clubs/${clubId}/members`, undefined, { auth: true }),
+        leaveClub: (clubId: string, membershipId: string, expectedClubVersion: number, expectedRevision: number) =>
+            call<components['schemas']['ClubMembership']>(
+                `/clubs/${clubId}/members/${membershipId}/leave`,
+                {
+                    expectedClubVersion,
+                    expectedRevision,
+                },
+                { auth: true, idempotent: true, mutation: true }
+            ),
+        changeClubMemberRole: (
+            clubId: string,
+            membershipId: string,
+            body: components['schemas']['ChangeClubRoleInput']
+        ) =>
+            call<components['schemas']['ClubMembership']>(`/clubs/${clubId}/members/${membershipId}/role`, body, {
+                auth: true,
+                idempotent: true,
+                method: 'PATCH',
+                mutation: true,
+            }),
+        excludeClubMember: (
+            clubId: string,
+            membershipId: string,
+            body: components['schemas']['ClubResourceReasonedCommand']
+        ) =>
+            call<components['schemas']['ClubMembership']>(`/clubs/${clubId}/members/${membershipId}/exclude`, body, {
+                auth: true,
+                idempotent: true,
+                mutation: true,
+            }),
+        blockClubMember: (
+            clubId: string,
+            membershipId: string,
+            body: components['schemas']['ClubResourceReasonedCommand']
+        ) =>
+            call<undefined>(`/clubs/${clubId}/members/${membershipId}/block`, body, {
+                auth: true,
+                idempotent: true,
+                mutation: true,
+            }),
+        transferClubOwnership: (clubId: string, body: components['schemas']['TransferClubOwnershipInput']) =>
+            call<components['schemas']['Club']>(`/clubs/${clubId}/ownership/transfer`, body, {
+                auth: true,
+                idempotent: true,
+                mutation: true,
+            }),
+        listClubJoinRequests: (clubId: string) =>
+            call<components['schemas']['ClubJoinRequestPage']>(`/clubs/${clubId}/join-requests`, undefined, {
+                auth: true,
+            }),
+        decideClubJoinRequest: (
+            clubId: string,
+            requestId: string,
+            decision: 'approve' | 'reject' | 'cancel',
+            expectedClubVersion: number,
+            expectedRevision: number
+        ) =>
+            call<components['schemas']['ClubMembership'] | components['schemas']['ClubJoinRequest']>(
+                `/clubs/${clubId}/join-requests/${requestId}/${decision}`,
+                { expectedClubVersion, expectedRevision },
+                { auth: true, idempotent: true, mutation: true }
+            ),
+        listClubInvitations: (clubId: string) =>
+            call<components['schemas']['ClubInvitationPage']>(`/clubs/${clubId}/invitations`, undefined, {
+                auth: true,
+            }),
+        createClubInvitation: (clubId: string, body: components['schemas']['CreateClubInvitationInput']) =>
+            call<components['schemas']['ClubInvitationDelivery']>(`/clubs/${clubId}/invitations`, body, {
+                auth: true,
+                idempotent: true,
+                mutation: true,
+            }),
+        revokeClubInvitation: (
+            clubId: string,
+            invitationId: string,
+            expectedClubVersion: number,
+            expectedRevision: number
+        ) =>
+            call<components['schemas']['ClubInvitation']>(
+                `/clubs/${clubId}/invitations/${invitationId}/revoke`,
+                {
+                    expectedClubVersion,
+                    expectedRevision,
+                },
+                { auth: true, idempotent: true, mutation: true }
+            ),
+        getClubInvitation: (token: string) =>
+            call<components['schemas']['ClubInvitation']>(`/club-invitations/${encodeURIComponent(token)}`, undefined, {
+                auth: true,
+            }),
+        decideClubInvitation: (
+            token: string,
+            decision: 'accept' | 'decline',
+            expectedClubVersion: number,
+            expectedRevision: number
+        ) =>
+            call<components['schemas']['ClubMembership'] | components['schemas']['ClubInvitation']>(
+                `/club-invitations/${encodeURIComponent(token)}/${decision}`,
+                { expectedClubVersion, expectedRevision },
+                { auth: true, idempotent: true, mutation: true }
+            ),
+        listClubVenues: (clubId: string) =>
+            call<{ readonly items: readonly components['schemas']['ClubVenue'][] }>(`/clubs/${clubId}/venues`),
+        linkClubVenue: (clubId: string, body: components['schemas']['ClubVenueCommand']) =>
+            call<components['schemas']['ClubVenue']>(`/clubs/${clubId}/venues`, body, {
+                auth: true,
+                idempotent: true,
+                mutation: true,
+            }),
+        unlinkClubVenue: (clubId: string, venueId: string, expectedVersion: number) =>
+            call<undefined>(`/clubs/${clubId}/venues/${venueId}`, undefined, {
+                auth: true,
+                idempotent: true,
+                method: 'DELETE',
+                mutation: true,
+                query: query({ expectedVersion }),
+            }),
+        createClubMatch: (clubId: string, body: components['schemas']['CreateClubMatchInput']) =>
+            call<components['schemas']['Match']>(`/clubs/${clubId}/matches`, body, {
+                auth: true,
+                idempotent: true,
+                mutation: true,
+            }),
+        listRecurringMatchRules: (clubId: string) =>
+            call<components['schemas']['RecurringMatchRulePage']>(`/clubs/${clubId}/recurring-match-rules`, undefined, {
+                auth: true,
+            }),
+        createRecurringMatchRule: (clubId: string, body: components['schemas']['CreateRecurringMatchRuleInput']) =>
+            call<components['schemas']['RecurringMatchRule']>(`/clubs/${clubId}/recurring-match-rules`, body, {
+                auth: true,
+                idempotent: true,
+                mutation: true,
+            }),
+        listRecurringMatchOccurrences: (clubId: string, ruleId: string) =>
+            call<components['schemas']['RecurringMatchOccurrencePage']>(
+                `/clubs/${clubId}/recurring-match-rules/${ruleId}/occurrences`,
+                undefined,
+                { auth: true }
+            ),
+        transitionRecurringMatchRule: (
+            clubId: string,
+            ruleId: string,
+            transition: 'pause' | 'resume' | 'end',
+            body: components['schemas']['ClubResourceReasonedCommand']
+        ) =>
+            call<components['schemas']['RecurringMatchRule']>(
+                `/clubs/${clubId}/recurring-match-rules/${ruleId}/${transition}`,
+                body,
+                { auth: true, idempotent: true, mutation: true }
+            ),
         searchMatches: (parameters: NonNullable<operations['searchMatches']['parameters']['query']>) =>
             call<SchemaMatchPage>('/matches', undefined, { query: query(parameters) }),
         recommendMatches: (parameters: NonNullable<operations['recommendMatches']['parameters']['query']>) =>
