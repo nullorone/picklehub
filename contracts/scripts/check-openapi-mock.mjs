@@ -211,8 +211,28 @@ try {
     ) {
         throw new Error(`Unexpected safety receipt mock: ${safetyReceipts.status} ${JSON.stringify(safetyBody)}`);
     }
+
+    const adminCases = await fetch(`http://${host}:${port}/admin/cases?limit=25`, {
+        headers: {
+            'accept-language': 'ru-RU',
+            authorization: `Bearer ${'A'.repeat(43)}`,
+        },
+    });
+    const adminCasesBody = await adminCases.json();
+    requireNoStore(adminCases, 'Administration case queue response');
+    if (
+        adminCases.status !== 200 ||
+        !Array.isArray(adminCasesBody.items) ||
+        !adminCasesBody.pageInfo ||
+        !adminCasesBody.snapshotAt ||
+        adminCasesBody.items.some((item) =>
+            ['reporterId', 'subjectId', 'evidence', 'description', 'appeal', 'response'].some((field) => field in item)
+        )
+    ) {
+        throw new Error(`Unexpected administration queue mock: ${adminCases.status} ${JSON.stringify(adminCasesBody)}`);
+    }
     console.log(
-        'OpenAPI mock passed: health, identity, venue, match, communication, profile and trust/safety examples are valid.'
+        'OpenAPI mock passed: health, identity, venue, match, communication, profile, trust/safety and administration examples are valid.'
     );
 } finally {
     child.kill('SIGTERM');

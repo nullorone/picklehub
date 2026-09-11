@@ -1992,3 +1992,71 @@ llm/_docs/analytics-plan.md llm/_docs/domain-model.md llm/_docs/architecture.md`
 - Критерии этапа выполнены на уровне требований: каждое изменение имеет исполнителя, причину и audit; Editor и Ads
   manager не имеют доступа к описаниям safety cases; гибкого конструктора разрешений нет. Следующий промпт —
   `llm/08-admin-backoffice/02-contract-data.md`; к нему не переходили.
+
+## 2026-09-11 — административная панель, этап 02-contract-data
+
+- Активный промпт: `llm/08-admin-backoffice/02-contract-data.md`. Добавлен TypeSpec source
+  `contracts/rest/administration.tsp` с 17 операциями под `/v1/admin`: отдельный admin session context, fixed role
+  grant/revoke, exact user lookup через POST body, case queue/detail/assignment/decision, versioned user restriction,
+  venue queue/detail/approve/reject/merge, bounded audit search и exact-case break-glass. Export/bulk/print/download
+  endpoints, CMS и advertising API не добавлялись; AsyncAPI не менялся, потому что этап не вводит новый публичный
+  или межмодульный event payload.
+- Все операции требуют bearer admin audience и `no-store`, документируют безопасные 403 и scope-hiding
+  `404 ADMIN_RESOURCE_NOT_FOUND`. Мутации требуют Origin/CSRF, UUIDv4 idempotency key, closed reason,
+  policy/version и expected revision; чувствительные merge/role/break-glass действия имеют одноразовый confirmation
+  token. Case/venue/audit списки используют default 25/maximum 100, закрытые filter enums и opaque cursor; audit
+  interval ограничен 31 UTC сутками. Exact email/Telegram subject существует только во входном union lookup и не
+  появляется в URL, ответе, audit или storage.
+- Каждая операция получила машинно-проверяемые OpenAPI extensions `x-admin-capability`, `x-admin-roles` и, где
+  нужен resource check, `x-admin-resource-policy`. `administrationRoleCapabilities` фиксирует deny-by-default
+  registry для четырёх ролей; policy test не допускает wildcard/custom role, выдачу operation capability чужой
+  роли, unrestricted string filters или admin export route. `EDITOR`/`ADS_MANAGER` имеют на этом этапе только
+  session access; `SUPERADMIN` без exact-case break-glass не получает narrative, а break-glass не даёт decision.
+- Prisma и новая additive migration `20260911230000_admin_backoffice_contract_data` добавляют четыре enum,
+  `platform_role_grants`, отдельные hashed `admin_sessions`, encrypted `break_glass_grants`, encrypted 24-hour
+  `admin_operation_receipts` и versioned `user_restrictions`. SQL защищает independent approval/no self-grant,
+  одну effective роль/scope, admin audience, 15-minute idle/8-hour absolute session bounds, 30-minute exact-case
+  break-glass, immutable scope/expiry, optimistic revision и запрет hard delete. Backend implementation и admin UI
+  не создавались.
+- Существующий `audit_entries` расширен nullable `operation_id`/`policy_version`, поэтому старые append-only строки
+  не переписываются. Для всех новых `source = administration` rows DB требует operation, actor, opaque target,
+  closed action/reason/outcome, policy и единственный allowlisted `changed_fields.names`; generic narrative,
+  evidence и before/after отсутствуют. Старые immutable triggers сохраняются, новый constraint объявлен `NOT VALID`
+  для совместимого добавления и всё равно проверяет новые строки; runtime PUBLIC лишён UPDATE/DELETE/TRUNCATE.
+- Добавлен `llm/_docs/admin-backoffice-data-policy.md`, уточнена административная часть domain model и contract
+  README. OpenAPI и оба generated TypeScript клиента обновлены только через `npm run contracts:generate`. OpenAPI
+  mock расширен безопасной admin case queue без reporter/subject/narrative/evidence.
+
+### Проверки этапа admin backoffice 02-contract-data
+
+- Первый `npm run contracts:typespec:check` обнаружил три ошибки TypeSpec: duplicate `justification` после spread и
+  конфликт query filter names с request headers. Поля исправлены; повторная компиляция успешна. Первый запуск
+  targeted policy tests обнаружил слишком узкое ожидание текста 404 в новом checker; assertion исправлен, после
+  чего admin policy/data tests — 8/8 успешно.
+- Первый полный `npm run contracts:lint` после добавления API остановился на 17 Redocly
+  `operation-summary` errors. Для каждой операции добавлен summary. Финальный `npm run contracts:lint` успешен:
+  TypeSpec и Redocly зелёные, allowlist содержит 115 REST operations и 45 messages, весь набор — 78 contract/data/
+  privacy tests. `npm run contracts:breaking`, `contracts:generated:check`, `contracts:typecheck` также успешны.
+- `npm run contracts:mock:check` успешно проверил health, identity, venue, match, communication, profile,
+  trust/safety и новую administration queue. В двух составных запусках sandbox эпизодически запретил резервирование
+  localhost socket (`listen EPERM 127.0.0.1`) до запуска Prism; оба раза немедленный отдельный повтор той же команды
+  успешно завершился. Это ограничение harness/sandbox, а не ошибка ответа mock.
+- `npm run format:check` и `npm run docs:check` успешны: восемь TypeSpec files и 122 Markdown files. Первый targeted
+  вызов `npx prettier --write` ошибочно включал `.tsp` и остановился с `No parser could be inferred`; TypeSpec затем
+  форматировался штатной `tsp format`, а остальные файлы — Prettier.
+- `npm run lint`, `npm run typecheck`, `npm test` и `npm run build` успешны для восьми workspaces. Backend regression:
+  24/24 suites и 60/60 tests; API client 6/6, web 7 suites/30 tests, TMA 6/21. Production web PWA и отсутствие TMA
+  development mock подтверждены. Сохраняются неблокирующие Vite warnings: web/TMA main bundles около 531/578 kB и
+  MapLibre chunk 924 kB.
+- `npx prisma validate --schema backend/prisma/schema.prisma` не запустил schema engine: локального binary нет, а
+  restricted network не разрешил загрузку checksum с Prisma (`ENOTFOUND claude-fwd.raiffeisen.ru`). Применение SQL к
+  PostgreSQL также недоступно: Docker daemon socket запрещён sandbox (`permission denied`), `pg_isready`/`psql`
+  отсутствуют. Поэтому Prisma engine validation и runtime migration/constraint tests должны пройти в PostgreSQL CI;
+  их успех здесь не заявляется. Статические migration/data-policy tests, contract generation и весь TypeScript
+  regression зелёные.
+- После финальных enum/minimization исправлений `npm run contracts:check` повторно прошёл все этапы до описанного
+  разового localhost bind отказа; отдельный `npm run contracts:mock:check` успешен. Локально исполнимые критерии
+  prompt выполнены. Финальные `npm run contracts:lint` — 78/78 tests, targeted admin tests — 8/8;
+  `npm run format:check`, `npm run docs:check`, `npm ls --depth=0` и `git diff --check` успешны, unmet/extraneous
+  dependencies и whitespace errors отсутствуют. Следующий prompt — `llm/08-admin-backoffice/03-backend.md`; к нему
+  не переходили.

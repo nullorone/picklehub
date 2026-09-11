@@ -22,7 +22,8 @@ npm run contracts:check
 - `contracts:lint` проверяет TypeSpec без записи artifacts, валидирует OpenAPI и AsyncAPI официальными
   parser/linter и применяет PickleHub policy: `/v1`, разрешённые owning-feature paths, уникальные
   operation/message IDs, версионированные envelopes, UTC timestamps, `no-store`, browser CSRF/cookie и безопасный
-  payload внутренних identity/venue/match/communication/profile events и notification jobs. Статические data-policy тесты
+  payload внутренних identity/venue/match/communication/profile events, admin capability registry и notification jobs.
+  Статические data-policy тесты
   дополнительно удерживают
   обязательные migration constraints, GiST-стратегию, provenance, постоянные merge aliases, вместимость/FIFO и
   единственный эффективный результат; они не заменяют применение SQL к PostgreSQL и конкурентные integration tests.
@@ -37,7 +38,8 @@ npm run contracts:check
 - `contracts:mock` запускает локальный Prism на `127.0.0.1:4010`; он предназначен только для разработки и не
   является backend или production fallback.
 - `contracts:mock:check` запускает mock на свободном localhost port, запрашивает representative endpoints health,
-  identity, venues, matches, communications, profiles и trust/safety, проверяет status, JSON shape и `no-store`.
+  identity, venues, matches, communications, profiles, trust/safety и administration, проверяет status, JSON shape и
+  `no-store`.
   AsyncAPI examples проверяются
   parser/linter в `contracts:lint`.
 
@@ -87,6 +89,21 @@ deletion, cryptoshredding и адресный legal hold описаны в
 `trust-safety.events.v1` несёт ровно один opaque aggregate ID и broad category. Reporter, subject, source/revision,
 reason, state, rating, text, evidence, attachment, block direction, outcome и decision detail запрещены; consumer
 перечитывает минимальные данные через авторизованный port и дедуплицирует message ID.
+
+## Административная панель
+
+[`rest/administration.tsp`](rest/administration.tsp) публикует отдельную `/v1/admin`-поверхность для fixed role
+grants, exact user lookup, routing/decision safety cases, user restrictions, venue moderation, audit search и
+exact-case break-glass. Каждая операция имеет машинно-проверяемые `x-admin-capability` и `x-admin-roles`; их
+соответствие deny-by-default registry проверяет `administration-policy.mjs`. Restricted resource использует единый
+404, а безопасно раскрываемое отсутствие capability/assignment/conflict/break-glass — явный 403.
+
+Cursor-списки имеют default 25/maximum 100 и actor/capability/purpose/filter/snapshot binding; audit search ограничен
+31 UTC сутками. Lookup принимает exact key только в POST body. CSV/JSON export, bulk/print, download и signed URL
+routes отсутствуют и запрещены policy-test. Миграция добавляет fixed grants, отдельные hashed admin sessions,
+зашифрованный 30-минутный break-glass, versioned restrictions и encrypted 24-hour operation receipts. Существующий
+`audit_entries` только дополняется operation/policy полями и остаётся append-only. Полные storage/retention правила —
+в [`admin-backoffice-data-policy.md`](../llm/_docs/admin-backoffice-data-policy.md).
 
 ## Профиль и статистика
 

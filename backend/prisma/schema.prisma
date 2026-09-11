@@ -40,6 +40,7 @@ model OutboxEvent {
 
 model AuditEntry {
   id            String   @id @db.Uuid
+  operationId   String?  @unique(map: "audit_entries_operation_key") @map("operation_id") @db.Uuid
   actorType     String   @map("actor_type") @db.VarChar(64)
   actorId       String?  @map("actor_id") @db.Uuid
   action        String   @db.VarChar(160)
@@ -47,6 +48,7 @@ model AuditEntry {
   targetId      String?  @map("target_id") @db.Uuid
   outcome       String   @db.VarChar(48)
   reasonCode    String?  @map("reason_code") @db.VarChar(96)
+  policyVersion String?  @map("policy_version") @db.VarChar(128)
   changedFields Json     @map("changed_fields")
   requestId     String   @map("request_id") @db.Uuid
   correlationId String   @map("correlation_id") @db.Uuid
@@ -56,6 +58,153 @@ model AuditEntry {
   @@index([targetType, targetId, createdAt], map: "audit_entries_target_idx")
   @@index([actorId, createdAt], map: "audit_entries_actor_idx")
   @@map("audit_entries")
+}
+
+// Administration data contract. Capabilities remain code-defined and are intentionally not persisted as grants.
+enum PlatformRole {
+  SUPERADMIN
+  MODERATOR
+  EDITOR
+  ADS_MANAGER
+
+  @@map("platform_role")
+}
+
+enum AdminMfaMethod {
+  WEBAUTHN
+  HARDWARE_KEY
+
+  @@map("admin_mfa_method")
+}
+
+enum AdminRestrictionScope {
+  DIRECT_INTERACTIONS
+  MATCH_CREATION
+  PLATFORM_ACCESS
+
+  @@map("admin_restriction_scope")
+}
+
+enum AdminRestrictionState {
+  ACTIVE
+  REVOKED
+  EXPIRED
+
+  @@map("admin_restriction_state")
+}
+
+model PlatformRoleGrant {
+  id                String       @id @db.Uuid
+  subjectUserId     String       @map("subject_user_id") @db.Uuid
+  role              PlatformRole
+  grantedByUserId   String       @map("granted_by_user_id") @db.Uuid
+  approvedByUserId  String       @map("approved_by_user_id") @db.Uuid
+  reasonCode        String       @map("reason_code") @db.VarChar(96)
+  policyVersion     String       @map("policy_version") @db.VarChar(128)
+  approvalReference String       @map("approval_reference") @db.VarChar(160)
+  revision          Int          @default(0)
+  validFrom         DateTime     @default(now()) @map("valid_from") @db.Timestamptz(3)
+  validUntil        DateTime?    @map("valid_until") @db.Timestamptz(3)
+  reviewAt          DateTime     @map("review_at") @db.Timestamptz(3)
+  revokedAt         DateTime?    @map("revoked_at") @db.Timestamptz(3)
+  revokedByUserId   String?      @map("revoked_by_user_id") @db.Uuid
+  revokeReasonCode  String?      @map("revoke_reason_code") @db.VarChar(96)
+  createdAt         DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime     @default(now()) @map("updated_at") @db.Timestamptz(3)
+  adminSessions     AdminSession[]
+
+  @@index([subjectUserId, role, revokedAt, validUntil], map: "platform_role_grants_access_idx")
+  @@index([reviewAt, revokedAt], map: "platform_role_grants_review_idx")
+  @@map("platform_role_grants")
+}
+
+model AdminSession {
+  id                 String            @id @db.Uuid
+  staffUserId        String            @map("staff_user_id") @db.Uuid
+  roleGrantId        String            @map("role_grant_id") @db.Uuid
+  audience           String            @default("picklehub-admin") @db.VarChar(32)
+  credentialHash     String            @unique(map: "admin_sessions_credential_hash_key") @map("credential_hash") @db.Char(64)
+  mfaMethod          AdminMfaMethod    @map("mfa_method")
+  mfaVerifiedAt      DateTime          @map("mfa_verified_at") @db.Timestamptz(3)
+  reauthenticatedAt  DateTime?         @map("reauthenticated_at") @db.Timestamptz(3)
+  securityEpoch      Int               @map("security_epoch")
+  lastSeenAt         DateTime          @default(now()) @map("last_seen_at") @db.Timestamptz(3)
+  idleExpiresAt      DateTime          @map("idle_expires_at") @db.Timestamptz(3)
+  absoluteExpiresAt  DateTime          @map("absolute_expires_at") @db.Timestamptz(3)
+  revokedAt          DateTime?         @map("revoked_at") @db.Timestamptz(3)
+  revokeReasonCode   String?           @map("revoke_reason_code") @db.VarChar(96)
+  createdAt          DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  roleGrant          PlatformRoleGrant @relation(fields: [roleGrantId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([staffUserId, revokedAt, absoluteExpiresAt], map: "admin_sessions_staff_access_idx")
+  @@index([idleExpiresAt, absoluteExpiresAt], map: "admin_sessions_expiry_idx")
+  @@map("admin_sessions")
+}
+
+model BreakGlassGrant {
+  id                       String   @id @db.Uuid
+  actorUserId              String   @map("actor_user_id") @db.Uuid
+  caseId                   String   @map("case_id") @db.Uuid
+  incidentReference        String   @map("incident_reference") @db.VarChar(160)
+  reasonCode               String   @map("reason_code") @db.VarChar(96)
+  policyVersion            String   @map("policy_version") @db.VarChar(128)
+  justificationCiphertext  Bytes    @map("justification_ciphertext")
+  encryptionKeyVersion     Int      @map("encryption_key_version")
+  revision                 Int      @default(0)
+  createdAt                DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  expiresAt                DateTime @map("expires_at") @db.Timestamptz(3)
+  revokedAt                DateTime? @map("revoked_at") @db.Timestamptz(3)
+  revokedByUserId          String?  @map("revoked_by_user_id") @db.Uuid
+  revokeReasonCode         String?  @map("revoke_reason_code") @db.VarChar(96)
+
+  @@index([actorUserId, caseId, expiresAt, revokedAt], map: "break_glass_grants_access_idx")
+  @@index([expiresAt, revokedAt], map: "break_glass_grants_expiry_idx")
+  @@map("break_glass_grants")
+}
+
+model AdminOperationReceipt {
+  id                   String   @id @db.Uuid
+  actorUserId          String   @map("actor_user_id") @db.Uuid
+  idempotencyKey       String   @map("idempotency_key") @db.Uuid
+  method               String   @db.VarChar(8)
+  canonicalPath        String   @map("canonical_path") @db.VarChar(200)
+  requestFingerprint   String   @map("request_fingerprint") @db.Char(64)
+  targetType           String   @map("target_type") @db.VarChar(96)
+  targetId             String?  @map("target_id") @db.Uuid
+  expectedRevision     Int      @map("expected_revision")
+  responseStatus       Int      @map("response_status") @db.SmallInt
+  responseCiphertext   Bytes    @map("response_ciphertext")
+  encryptionKeyVersion Int      @map("encryption_key_version")
+  auditEntryId         String?  @map("audit_entry_id") @db.Uuid
+  createdAt            DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  expiresAt            DateTime @default(dbgenerated("CURRENT_TIMESTAMP + INTERVAL '24 hours'")) @map("expires_at") @db.Timestamptz(3)
+
+  @@unique([actorUserId, method, canonicalPath, idempotencyKey], map: "admin_operation_receipts_scope_key")
+  @@unique([auditEntryId], map: "admin_operation_receipts_audit_key")
+  @@index([expiresAt], map: "admin_operation_receipts_expiry_idx")
+  @@map("admin_operation_receipts")
+}
+
+model UserRestriction {
+  id                  String                @id @db.Uuid
+  userId              String                @map("user_id") @db.Uuid
+  decisionId          String                @map("decision_id") @db.Uuid
+  scope               AdminRestrictionScope
+  state               AdminRestrictionState @default(ACTIVE)
+  reasonCode          String                @map("reason_code") @db.VarChar(96)
+  policyVersion       String                @map("policy_version") @db.VarChar(128)
+  revision            Int                   @default(0)
+  createdByUserId     String                @map("created_by_user_id") @db.Uuid
+  createdAt           DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
+  expiresAt           DateTime?             @map("expires_at") @db.Timestamptz(3)
+  revokedAt           DateTime?             @map("revoked_at") @db.Timestamptz(3)
+  revokedByUserId     String?               @map("revoked_by_user_id") @db.Uuid
+  revokeReasonCode    String?               @map("revoke_reason_code") @db.VarChar(96)
+  updatedAt           DateTime              @default(now()) @map("updated_at") @db.Timestamptz(3)
+
+  @@unique([decisionId, scope], map: "user_restrictions_decision_scope_key")
+  @@index([userId, state, expiresAt], map: "user_restrictions_effective_idx")
+  @@map("user_restrictions")
 }
 
 // Identity data contract. SQL migration also owns CHECKs, partial indexes and deferred triggers.

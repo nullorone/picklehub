@@ -285,3 +285,9 @@ Cursor списка opaque, подписан и связан с actor, capabilit
 завершается opaque ID. Записи administration и audit подчиняются retention/legal hold, но hard delete и перезапись
 истории через UI отсутствуют. CMS и advertising позже добавят свои агрегаты/capabilities; резервирование ролей не
 создаёт преждевременных admin-таблиц или зависимостей от этих модулей.
+
+Точные поля, SQL CHECK/partial uniqueness/transition guards, сроки admin session и break-glass, encrypted operation
+receipt и совместимое расширение `AuditEntry` зафиксированы в
+[`admin-backoffice-data-policy.md`](admin-backoffice-data-policy.md). Эффективное ограничение пользователя хранится
+как versioned `user_restrictions`: один active scope на пользователя, исходное moderation decision неизменно,
+отзыв/истечение являются переходом revision, а не удалением строки.

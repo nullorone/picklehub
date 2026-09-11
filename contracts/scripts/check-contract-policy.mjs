@@ -12,6 +12,7 @@ import { checkMatchContract, matchOperations, matchEventFields } from './matches
 import { checkProfileContract, profileOperations, profileEventFields } from './profiles-policy.mjs';
 import { checkTrustSafetyContract, trustSafetyEventFields, trustSafetyOperations } from './trust-safety-policy.mjs';
 import { checkVenueContract, venueOperations, venueEventFields } from './venues-policy.mjs';
+import { checkAdministrationContract, administrationOperations } from './administration-policy.mjs';
 
 const allowedPaths = new Set([
     '/health/live',
@@ -22,6 +23,7 @@ const allowedPaths = new Set([
     ...Object.keys(profileOperations),
     ...Object.keys(trustSafetyOperations),
     ...Object.keys(venueOperations),
+    ...Object.keys(administrationOperations),
 ]);
 const allowedProtocolMessages = new Set([
     'session.authenticate.v1',
@@ -149,5 +151,6 @@ checkMatchContract(openApi, asyncApi);
 checkProfileContract(openApi, asyncApi);
 checkTrustSafetyContract(openApi, asyncApi);
 checkVenueContract(openApi, asyncApi);
+checkAdministrationContract(openApi);
 
 console.log(`Contract policy passed: ${operationIds.length} REST operations, ${messageNames.length} messages.`);

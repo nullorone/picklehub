@@ -7,6 +7,7 @@ import "./profiles.tsp";
 import "./trust-safety.tsp";
 import "./venues.tsp";
 import "./communications.tsp";
+import "./administration.tsp";
 
 using TypeSpec.Http;
 using TypeSpec.OpenAPI;
@@ -22,7 +23,11 @@ using TypeSpec.OpenAPI;
     #{ name: "Profiles", description: "Player profiles, privacy, match history and rebuildable statistics." },
     #{ name: "TrustSafety", description: "Private reviews, safety reports, blocks and user-visible case receipts." },
     #{ name: "Venues", description: "Published venue discovery and player venue contributions." },
-    #{ name: "Communications", description: "Authorized match chat, notification inbox and delivery preferences." }
+    #{ name: "Communications", description: "Authorized match chat, notification inbox and delivery preferences." },
+    #{
+        name: "Administration",
+        description: "Least-privilege staff access, moderation coordination and immutable audit search.",
+    }
 ])
 namespace PickleHub;
 
