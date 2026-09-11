@@ -98,6 +98,18 @@ DUPR проверяется только локально по `PROFILE_DUPR_*`:
 Пустая allowlist выключает запись ссылки, а переход отдельно включается только явным `PROFILE_DUPR_OUTBOUND_ENABLED`.
 Аватар использует приватный server-generated object key; до настройки media gateway upload закрыт.
 
+`trust-safety` принимает закрытые отзывы, no-show и категоризированные обращения, хранит свободный текст только
+как AES-256-GCM ciphertext с record-bound AAD и возвращает игроку минимальную квитанцию. Case repository выдаёт
+evidence только назначенному moderator без conflict marker; player endpoints не сериализуют case, assignment,
+встречные ответы или детали решения. `SAFETY_ENCRYPTION_KEY` отделён от ключей identity/communications, а
+`SAFETY_POLICY_VERSION` сохраняется с каждым новым сигналом. Реальные safety-данные запрещены до legal,
+residency и staffing approvals, перечисленных в `llm/_docs/trust-safety-data-policy.md`.
+
+Активный block применяется в обе стороны к профилям, поиску матчей, join/request/waitlist и promotion. Общий уже
+состоявшийся матч и его системные факты сохраняются; снятие блока не восстанавливает истёкшие заявки. Решение
+`NO_SHOW_CONFIRMED` создаёт один idempotent effect, который projection worker применяет к статистике и умеет
+отменить или восстановить при полном rebuild.
+
 ## Проверки
 
 ```sh

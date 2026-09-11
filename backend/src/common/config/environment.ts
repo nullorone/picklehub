@@ -72,6 +72,11 @@ const environmentSchema = z
             .string()
             .regex(/^[a-f0-9]{64}$/u)
             .default('abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789'),
+        SAFETY_ENCRYPTION_KEY: z
+            .string()
+            .regex(/^[a-f0-9]{64}$/u)
+            .default('89abcdef0123456789abcdef0123456789abcdef0123456789abcdef01234567'),
+        SAFETY_POLICY_VERSION: z.string().min(1).max(128).default('trust-safety-v1'),
         NOTIFICATION_EMAIL_PROVIDER_ENDPOINT: httpsUrl.optional(),
         NOTIFICATION_EMAIL_PROVIDER_TOKEN: z.string().min(32).optional(),
         NOTIFICATION_TELEGRAM_ENABLED: z.enum(['true', 'false']).default('false'),
@@ -110,6 +115,13 @@ const environmentSchema = z
                 code: 'custom',
                 path: ['COMMUNICATION_ENCRYPTION_KEY'],
                 message: 'Production communication encryption key must be explicitly configured',
+            });
+        }
+        if (environment.NODE_ENV === 'production' && environment.SAFETY_ENCRYPTION_KEY.startsWith('89abcdef01234567')) {
+            context.addIssue({
+                code: 'custom',
+                path: ['SAFETY_ENCRYPTION_KEY'],
+                message: 'Production safety encryption key must be explicitly configured',
             });
         }
         if (

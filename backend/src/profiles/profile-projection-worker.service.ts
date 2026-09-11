@@ -10,7 +10,7 @@ import type { OutboxJobData } from '../outbox/outbox-queue.service';
 import { ProfileProjectionService } from './profile-projection.service';
 
 interface MatchEventPayload {
-    data?: { matchId?: unknown; aggregateVersion?: unknown };
+    data?: { matchId?: unknown; aggregateVersion?: unknown; effectId?: unknown; category?: unknown };
 }
 
 @Injectable()
@@ -42,9 +42,16 @@ export class ProfileProjectionWorkerService implements OnApplicationBootstrap, O
     }
 
     async process(job: OutboxJobData): Promise<void> {
-        if (!job.type.startsWith('match.') || job.schemaVersion !== 1) return;
+        if (job.schemaVersion !== 1) return;
         const event = await this.prisma.outboxEvent.findUniqueOrThrow({ where: { id: job.eventId } });
         const payload = event.payload as MatchEventPayload;
+        if (job.type === 'safety.effect.requested.v1') {
+            if (typeof payload.data?.effectId === 'string' && payload.data.category === 'NO_SHOW') {
+                await this.projection.consumeSafetyEffect(job.eventId, payload.data.effectId);
+            }
+            return;
+        }
+        if (!job.type.startsWith('match.')) return;
         const matchId = payload.data?.matchId;
         const revision = payload.data?.aggregateVersion;
         if (typeof matchId !== 'string' || (typeof revision !== 'number' && typeof revision !== 'string')) return;

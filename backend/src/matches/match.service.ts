@@ -12,6 +12,7 @@ import {
 
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../common/database/prisma.service';
+import { InteractionPolicyService } from '../common/database/interaction-policy.service';
 import { uuidV7 } from '../common/identifiers/uuid-v7';
 import { RequestContextService } from '../common/request-context/request-context.service';
 import { CursorService } from '../identity/cursor.service';
@@ -75,18 +76,21 @@ export class MatchService {
         private readonly crypto: IdentityCryptoService,
         private readonly outbox: OutboxService,
         private readonly audit: AuditService,
-        private readonly context: RequestContextService
+        private readonly context: RequestContextService,
+        private readonly interactions: InteractionPolicyService
     ) {}
 
     async search(
         query: MatchSearchDto,
-        profile?: { skill: number; preferredFormat: 'SINGLES' | 'DOUBLES' | null }
+        profile?: { skill: number; preferredFormat: 'SINGLES' | 'DOUBLES' | null },
+        viewerId?: string
     ): Promise<object> {
         this.validateSearch(query);
         const recommended = profile !== undefined;
         const bind = this.crypto.hash(
             JSON.stringify({
                 recommended,
+                viewerId,
                 profile,
                 format: query.format,
                 startsFrom: query.startsFrom,
@@ -131,6 +135,15 @@ export class MatchService {
               ${query.format === undefined ? Prisma.empty : Prisma.sql`AND m.format = ${query.format}::match_format`}
               ${effectiveSkill === undefined ? Prisma.empty : Prisma.sql`AND ${effectiveSkill} BETWEEN m.skill_min AND m.skill_max`}
               ${hasLocation ? Prisma.sql`AND ST_DWithin(COALESCE(v.location, vc.location), ${location}, ${query.radiusMeters})` : Prisma.empty}
+              ${
+                  viewerId === undefined
+                      ? Prisma.empty
+                      : Prisma.sql`AND NOT EXISTS (
+                  SELECT 1 FROM communication_blocks b WHERE
+                  (b.blocker_id = ${viewerId}::uuid AND b.blocked_user_id = m.organizer_id) OR
+                  (b.blocker_id = m.organizer_id AND b.blocked_user_id = ${viewerId}::uuid)
+              )`
+              }
               ${pagination}
             GROUP BY m.id, v.location, vc.location ORDER BY m.starts_at, m.id
             ${recommended ? Prisma.empty : Prisma.sql`LIMIT ${query.limit + 1}`}`);
@@ -263,8 +276,14 @@ export class MatchService {
 
     async detail(id: string, userId?: string): Promise<object> {
         const aggregate = await this.prisma.match.findUnique({ where: { id }, include: includeMatch });
+        const sharesMatch = aggregate?.participants.some(
+            (participant) => participant.userId === userId && participant.state !== 'LEFT'
+        );
         if (
             aggregate === null ||
+            (userId !== undefined &&
+                !sharesMatch &&
+                (await this.interactions.blocked(userId, aggregate.organizerId))) ||
             ((aggregate.visibility !== 'PUBLIC' || aggregate.state !== 'PUBLISHED') &&
                 aggregate.organizerId !== userId &&
                 !aggregate.participants.some((p) => p.userId === userId))
@@ -421,6 +440,8 @@ export class MatchService {
         const match = await this.lock(id, tx);
         this.version(match, body.expectedVersion);
         this.assertJoinable(match);
+        if (await this.interactions.blocked(userId, match.organizerId, tx))
+            throw matchError('REQUEST_NOT_ALLOWED', 403);
         const profile = await tx.playerProfileDraft.findUniqueOrThrow({ where: { userId } });
         if (
             Number(profile.skillSelfAssessment) < Number(match.skillMin) ||
@@ -531,6 +552,8 @@ export class MatchService {
         });
         if (decision === 'APPROVED') {
             this.assertJoinable(match);
+            if (await this.interactions.blocked(request.requesterId, match.organizerId, tx))
+                throw matchError('REQUEST_NOT_ALLOWED', 403);
             const team = await this.availableTeam(id, request.teamChoice, tx);
             if (team === null) waitlistId = await this.enqueue(id, request.requesterId, request.teamChoice, tx);
             else {
@@ -605,6 +628,8 @@ export class MatchService {
             throw matchError('WAITLIST_ORDER_CONFLICT', 409);
         if (entry.offerExpiresAt === null || entry.offerExpiresAt <= this.policy.now())
             throw matchError('OFFER_EXPIRED', 409);
+        if (await this.interactions.blocked(entry.playerId, match.organizerId, tx))
+            throw matchError('REQUEST_NOT_ALLOWED', 403);
         const earlier = await tx.waitlistEntry.count({
             where: {
                 matchId: id,
@@ -1138,8 +1163,9 @@ export class MatchService {
                 profile?.skillSelfAssessment !== null &&
                 Number(profile?.skillSelfAssessment) >= Number(match.skillMin) &&
                 Number(profile?.skillSelfAssessment) <= Number(match.skillMax);
+            const blocked = await this.interactions.blocked(entry.playerId, match.organizerId, tx);
             const team = eligible ? await this.availableTeam(matchId, entry.teamChoice, tx) : null;
-            if (!eligible) {
+            if (!eligible || blocked) {
                 await tx.waitlistEntry.update({
                     where: { id: entry.id },
                     data: { state: 'SKIPPED', resolvedAt: this.policy.now() },

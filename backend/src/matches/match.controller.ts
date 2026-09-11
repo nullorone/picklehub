@@ -48,7 +48,10 @@ export class MatchController {
 
     @Get() async search(@Query() query: MatchSearchDto, @Req() request: Request): Promise<object> {
         await this.limits.consume(`match-search:ip:${this.ip(request)}`, 120, 60);
-        return this.matches.search(query);
+        const authorization = request.headers.authorization;
+        const viewerId =
+            authorization === undefined ? undefined : (await this.identity.authenticate(authorization)).session.userId;
+        return this.matches.search(query, undefined, viewerId);
     }
 
     @Get('recommendations') async recommendations(
@@ -59,7 +62,7 @@ export class MatchController {
         const auth = await this.identity.authenticate(authorization);
         await this.limits.consume(`match-recommend:user:${auth.session.userId}`, 60, 60);
         await this.limits.consume(`match-search:ip:${this.ip(request)}`, 120, 60);
-        return this.matches.search(query, await this.matches.profile(auth.session.userId));
+        return this.matches.search(query, await this.matches.profile(auth.session.userId), auth.session.userId);
     }
 
     @Post() @HttpCode(201) async create(

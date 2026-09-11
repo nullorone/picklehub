@@ -55,6 +55,89 @@ export class ProfileProjectionService {
         });
     }
 
+    async consumeSafetyEffect(eventId: string, effectId: string): Promise<void> {
+        await this.withSerializableRetry(() =>
+            this.prisma.$transaction(
+                async (transaction) => {
+                    await transaction.$executeRaw`SELECT pg_advisory_xact_lock(${GLOBAL_PROJECTION_LOCK})`;
+                    const alreadyProcessed = await transaction.profileProjectionEventReceipt.findUnique({
+                        where: { consumerKey_eventId: { consumerKey: 'profile-statistics-v1', eventId } },
+                    });
+                    if (alreadyProcessed !== null) return;
+                    const effect = await transaction.moderationEffect.findUnique({
+                        where: { id: effectId },
+                        include: { decision: true },
+                    });
+                    if (
+                        effect === null ||
+                        effect.kind !== 'NO_SHOW_CONFIRMED' ||
+                        effect.noShowMatchId === null ||
+                        effect.noShowSubjectId === null
+                    ) {
+                        return;
+                    }
+                    const generationId = await this.ensureActiveGeneration(transaction);
+                    if (effect.state === 'RETRACTION_PENDING') {
+                        await transaction.playerReliabilityContribution.deleteMany({
+                            where: {
+                                generationId,
+                                matchId: effect.noShowMatchId,
+                                playerId: effect.noShowSubjectId,
+                                kind: 'CONFIRMED_NO_SHOW',
+                            },
+                        });
+                    } else if (effect.state === 'PENDING') {
+                        await transaction.playerReliabilityContribution.upsert({
+                            where: {
+                                generationId_matchId_playerId_kind: {
+                                    generationId,
+                                    matchId: effect.noShowMatchId,
+                                    playerId: effect.noShowSubjectId,
+                                    kind: 'CONFIRMED_NO_SHOW',
+                                },
+                            },
+                            create: {
+                                generationId,
+                                matchId: effect.noShowMatchId,
+                                playerId: effect.noShowSubjectId,
+                                kind: 'CONFIRMED_NO_SHOW',
+                                eligibilityRevision: effect.sourceRevision,
+                                sourceDecisionId: effect.decisionId,
+                                occurredAt: effect.decision.createdAt,
+                            },
+                            update: {
+                                eligibilityRevision: effect.sourceRevision,
+                                sourceDecisionId: effect.decisionId,
+                                occurredAt: effect.decision.createdAt,
+                                appliedAt: this.clock.now(),
+                            },
+                        });
+                    } else {
+                        return;
+                    }
+                    await this.recalculateReliability(transaction, generationId, effect.noShowSubjectId);
+                    await transaction.moderationEffect.updateMany({
+                        where: { id: effectId, state: effect.state },
+                        data:
+                            effect.state === 'RETRACTION_PENDING'
+                                ? { state: 'RETRACTED', retractedAt: this.clock.now() }
+                                : { state: 'APPLIED', appliedAt: this.clock.now() },
+                    });
+                    await transaction.profileProjectionEventReceipt.create({
+                        data: {
+                            consumerKey: 'profile-statistics-v1',
+                            eventId,
+                            sourceType: 'safety.effect.requested.v1',
+                            sourceId: effectId,
+                            sourceRevision: effect.sourceRevision,
+                        },
+                    });
+                },
+                { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
+            )
+        );
+    }
+
     async rebuild(
         reason: 'MANUAL' | 'RECONCILIATION' | 'SCHEMA_CHANGE' | 'ACCOUNT_DELETION' = 'MANUAL'
     ): Promise<string> {
@@ -114,6 +197,47 @@ export class ProfileProjectionService {
                     });
                     for (const match of changed) {
                         await this.projectMatch(transaction, activeGeneration.id, match.id, BigInt(match.version));
+                    }
+                    const noShows = await transaction.moderationEffect.findMany({
+                        where: {
+                            kind: 'NO_SHOW_CONFIRMED',
+                            state: 'APPLIED',
+                            noShowMatchId: { not: null },
+                            noShowSubjectId: { not: null },
+                        },
+                        include: { decision: true },
+                    });
+                    const affectedReliability = new Set<string>();
+                    for (const effect of noShows) {
+                        if (effect.noShowMatchId === null || effect.noShowSubjectId === null) continue;
+                        await transaction.playerReliabilityContribution.upsert({
+                            where: {
+                                generationId_matchId_playerId_kind: {
+                                    generationId: activeGeneration.id,
+                                    matchId: effect.noShowMatchId,
+                                    playerId: effect.noShowSubjectId,
+                                    kind: 'CONFIRMED_NO_SHOW',
+                                },
+                            },
+                            create: {
+                                generationId: activeGeneration.id,
+                                matchId: effect.noShowMatchId,
+                                playerId: effect.noShowSubjectId,
+                                kind: 'CONFIRMED_NO_SHOW',
+                                eligibilityRevision: effect.sourceRevision,
+                                sourceDecisionId: effect.decisionId,
+                                occurredAt: effect.decision.createdAt,
+                            },
+                            update: {
+                                eligibilityRevision: effect.sourceRevision,
+                                sourceDecisionId: effect.decisionId,
+                                occurredAt: effect.decision.createdAt,
+                            },
+                        });
+                        affectedReliability.add(effect.noShowSubjectId);
+                    }
+                    for (const playerId of affectedReliability) {
+                        await this.recalculateReliability(transaction, activeGeneration.id, playerId);
                     }
                     const checksum = await transaction.$queryRaw<{ count: bigint; checksum: string }[]>(Prisma.sql`
                         SELECT count(*)::bigint AS count,

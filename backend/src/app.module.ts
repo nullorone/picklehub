@@ -15,6 +15,7 @@ import { MatchesModule } from './matches/matches.module';
 import { OutboxModule } from './outbox/outbox.module';
 import { ProfilesModule } from './profiles/profiles.module';
 import { VenuesModule } from './venues/venues.module';
+import { TrustSafetyModule } from './trust-safety/trust-safety.module';
 
 @Module({
     imports: [
@@ -33,6 +34,7 @@ import { VenuesModule } from './venues/venues.module';
         MatchesModule,
         CommunicationsModule,
         ProfilesModule,
+        TrustSafetyModule,
     ],
 })
 export class AppModule {}

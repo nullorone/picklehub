@@ -1760,3 +1760,69 @@ llm/_docs/security-privacy.md llm/_docs/analytics-plan.md` — успешно; �
   Redocly; она не добавлена в репозиторий.
 - Локально исполнимые критерии этапа выполнены. Runtime-критерий миграции остаётся environment-blocked до зелёного
   PostgreSQL-прогона; следующий промпт `llm/07-trust-safety/03-backend.md` не начинался.
+
+## 2026-09-11 — доверие и безопасность, этап 03-backend
+
+- Активный промпт: `llm/07-trust-safety/03-backend.md`. Добавлен NestJS-модуль `trust-safety` с player-facing
+  endpoints опубликованного контракта: create/replace/withdraw review, no-show и категоризированные reports,
+  caller-scoped receipt list/detail, withdrawal intent, response, appeal, active block list и thresholded public
+  reputation. Browser mutations используют Origin/CSRF, отдельный rate-limit budget и зашифрованную 24-часовую
+  идемпотентность с serializable retry.
+- Review разрешён только двум сыгравшим участникам подтверждённого матча в 14-дневном окне. Один
+  `author + subject + match` сериализуется блокировкой match aggregate и append-only revision; rating/tags/text не
+  публикуются. Rebuildable contribution и aggregate учитывают только effective eligible review, withdrawal
+  исключает вклад, а публичная проекция появляется только после пяти источников.
+- No-show проверяет обе стороны состава и окно `startsAt + 30 минут` — семь суток. Остальные reports сначала
+  проходят closed enum taxonomy, затем проверку доступа к точной source revision. Optional evidence, response,
+  appeal и idempotency response используют отдельный `SAFETY_ENCRYPTION_KEY`, AES-256-GCM и record-bound AAD;
+  outbox, audit и notification содержат только opaque ID, broad category или безопасный route без текста.
+- Каждый новый signal атомарно получает case/link и минимальные `safety.signal.received.v1` /
+  `safety.case.status.changed.v1`. Внутренний moderation repository реализует optimistic state machine
+  `OPEN → TRIAGED → ASSIGNED → INVESTIGATING → DECIDED`, assignment/no-conflict evidence gate, аудит разрешённого
+  и запрещённого чтения, безопасный запрос ответа target, семидневное окно, versioned human decision и одну
+  апелляцию. Существенное неэкстренное решение нельзя записать до ответа либо окончания окна; urgent priority не
+  выдаётся за экстренную службу.
+- Decision создаёт только минимальные `decision/effect/case` events. `NO_VIOLATION` не создаёт sanction effect;
+  остальные effects остаются `PENDING` до owning consumer. Подтверждённая human decision неявки защищена
+  существующим partial unique index; profile worker дедуплицированно применяет или отменяет contribution и полный
+  statistics rebuild перечитывает все active applied no-show effects.
+- Общий `InteractionPolicyService` применяет физический block graph в обе стороны. Авторизованный поиск матчей
+  скрывает матчи counterpart, direct detail безопасно недоступен кроме уже общего матча, join/request approval и
+  ручной/автоматический waitlist promotion запрещены. Создание блока в той же транзакции завершает pending
+  requests/waitlist, сохраняет существующий roster/history и пишет audit; unblock старые действия не восстанавливает.
+- Добавлены отдельные production-gated `SAFETY_ENCRYPTION_KEY` и `SAFETY_POLICY_VERSION`, пример окружения и
+  описание backend boundary. Добавлены unit privacy test authenticated encryption/AAD и PostgreSQL integration
+  scenarios для закрытого review, threshold projection, concurrent idempotency, minimized outbox, cross-module
+  block и assignment-only evidence.
+- Изменённые файлы: `backend/src/trust-safety/*`, `backend/src/app.module.ts`,
+  `backend/src/common/config/environment.ts`, `backend/src/common/database/database.module.ts`,
+  `backend/src/common/database/interaction-policy.service.ts`, communications/matches/profile projection services
+  и modules/controllers, `backend/test/unit/trust-safety-crypto.spec.ts`,
+  `backend/test/integration/trust-safety-backend.integration-spec.ts`, `backend/test/unit/overpass.adapter.spec.ts`,
+  `backend/.env.example`, `backend/README.md` и этот журнал. TypeSpec, generated clients и stage-02 migration не
+  редактировались.
+
+### Проверки этапа trust/safety 03-backend
+
+- `npm run verify` — один полный прогон основной реализации успешно проверил workspace/lockfile,
+  TypeSpec/Redocly, policy для 98 REST operations и 45 messages, 66 contract/data/privacy tests, compatibility с
+  `HEAD`, generated drift/typecheck, OpenAPI mock, format/docs, lint/typecheck/unit tests/build всех восьми
+  workspaces. После финального уточнения caller/subject receipt и безопасного notification route повторный verify
+  прошёл до `contracts:typecheck`, но sandbox запретил listener OpenAPI mock на `127.0.0.1` с `EPERM`; контракты при
+  этом не менялись. Оставшаяся цепочка `format:check`, `docs:check`, lint, typecheck, tests и build повторена
+  отдельно и успешно. Backend: 23 suite/58 tests, включая новый AAD privacy test; web: 6/25; TMA: 5/20.
+  Сохранились известные неблокирующие Vite warnings о 924 kB map chunk, web main 507 kB и TMA main 554 kB.
+- `npm run lint --workspace @picklehub/backend`, `npm run typecheck --workspace @picklehub/backend`,
+  `npm test --workspace @picklehub/backend -- --runInBand` и `npm run build --workspace @picklehub/backend` —
+  успешно отдельно перед полным verify; ESLint без warnings, TypeScript strict и build зелёные, 23/23 suite и 58/58
+  unit tests прошли.
+- `npm run test:integration --workspace @picklehub/backend -- --runInBand
+test/integration/trust-safety-backend.integration-spec.ts` — suite обнаружил три сценария и скомпилировался, но
+  все остановились в setup до первого assertion на первой Prisma-записи (`onboardingLocality.create`); локальная
+  PostgreSQL/Redis инфраструктура недоступна из sandbox. Поэтому concurrent signal/case/effect, SQL transition
+  guards, block cross-module runtime и restricted repository должны быть подтверждены CI integration job; их
+  успешность здесь не заявляется.
+- `git diff --check` — успешно до журналирования; whitespace errors отсутствовали. После журналирования повторены
+  `npm run format:check`, `npm run docs:check` и `git diff --check`.
+- Локально исполнимые критерии выполнены. Единственный незакрытый критерий — runtime PostgreSQL integration в CI;
+  следующий промпт остаётся `llm/07-trust-safety/03-backend.md` до зелёного прогона, к `04-tma-web.md` не переходили.

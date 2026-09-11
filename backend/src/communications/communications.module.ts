@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 
+import { AuditModule } from '../audit/audit.module';
 import { IdentityModule } from '../identity/identity.module';
 import { OutboxModule } from '../outbox/outbox.module';
 import { CommunicationController } from './communication.controller';
@@ -23,7 +24,7 @@ import {
 } from './notification-provider';
 
 @Module({
-    imports: [IdentityModule, OutboxModule],
+    imports: [IdentityModule, OutboxModule, AuditModule],
     controllers: [CommunicationController],
     providers: [
         CommunicationService,

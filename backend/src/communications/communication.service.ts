@@ -10,6 +10,7 @@ import {
     Prisma,
 } from '@prisma/client';
 
+import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../common/database/prisma.service';
 import { uuidV7 } from '../common/identifiers/uuid-v7';
 import { RequestContextService } from '../common/request-context/request-context.service';
@@ -56,7 +57,8 @@ export class CommunicationService {
         private readonly cursors: CommunicationCursorService,
         private readonly outbox: OutboxService,
         private readonly context: RequestContextService,
-        private readonly metrics: CommunicationMetricsService
+        private readonly metrics: CommunicationMetricsService,
+        private readonly audit: AuditService
     ) {}
 
     async snapshot(userId: string, matchId: string): Promise<object> {
@@ -244,11 +246,51 @@ export class CommunicationService {
             create: { blockerId: userId, blockedUserId },
             update: {},
         });
+        const now = this.clock.now();
+        await tx.joinRequest.updateMany({
+            where: {
+                state: 'PENDING',
+                OR: [
+                    { requesterId: userId, match: { organizerId: blockedUserId } },
+                    { requesterId: blockedUserId, match: { organizerId: userId } },
+                ],
+            },
+            data: { state: 'EXPIRED', decidedAt: now },
+        });
+        await tx.waitlistEntry.updateMany({
+            where: {
+                state: { in: ['WAITING', 'OFFERED'] },
+                OR: [
+                    { playerId: userId, match: { organizerId: blockedUserId } },
+                    { playerId: blockedUserId, match: { organizerId: userId } },
+                ],
+            },
+            data: { state: 'SKIPPED', resolvedAt: now, offeredTeam: null, offeredAt: null, offerExpiresAt: null },
+        });
+        await this.blockAudit(tx, userId, 'communication.block.created', blockedUserId);
         return { blockedUserId, createdAt: row.createdAt.toISOString() };
     }
 
     async unblock(userId: string, blockedUserId: string, tx: Transaction): Promise<void> {
-        await tx.communicationBlock.deleteMany({ where: { blockerId: userId, blockedUserId } });
+        const removed = await tx.communicationBlock.deleteMany({ where: { blockerId: userId, blockedUserId } });
+        if (removed.count > 0) await this.blockAudit(tx, userId, 'communication.block.revoked', blockedUserId);
+    }
+
+    private async blockAudit(tx: Transaction, actorId: string, action: string, targetId: string): Promise<void> {
+        const context = this.context.get();
+        const requestId = context?.requestId ?? uuidV7();
+        await this.audit.append(tx, {
+            actorType: 'USER',
+            actorId,
+            action,
+            targetType: 'COMMUNICATION_BLOCK',
+            targetId,
+            outcome: 'SUCCEEDED',
+            changedFields: { fields: ['state'] },
+            requestId,
+            correlationId: context?.correlationId ?? requestId,
+            source: 'API',
+        });
     }
 
     async listNotifications(userId: string, cursor: string | undefined, limit: number): Promise<object> {
