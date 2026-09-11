@@ -3,6 +3,8 @@ import { ApiError, type components, type IdentityClient } from '@picklehub/api-c
 import { useCallback, useEffect, useMemo, useRef, useState, type SyntheticEvent } from 'react';
 import { Link } from 'react-router-dom';
 
+import { PlayerSafetyActions } from './safety-ui';
+
 type OwnProfile = components['schemas']['PlayerProfile'];
 type PublicProfile = components['schemas']['PublicPlayerProfile'];
 type Statistics = components['schemas']['PlayerStatistics'] | components['schemas']['PublicPlayerStatistics'];
@@ -798,6 +800,9 @@ export function ProfileScreen({
                     <strong>Самооценка {profile.skillSelfAssessment.toFixed(1)} · не подтверждённый рейтинг</strong>
                 </div>
             </header>
+            {ownership === 'OTHER' && playerId && (
+                <PlayerSafetyActions client={client} online={online} playerId={playerId} />
+            )}
             {ownership === 'SELF' && 'avatar' in profile && (
                 <OwnProfileEditor
                     client={client}

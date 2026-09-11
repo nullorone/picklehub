@@ -1162,3 +1162,112 @@ fieldset {
         flex-wrap: wrap;
     }
 }
+
+/* Trust & safety surfaces never contain advertising slots or third-party embeds. */
+.safety-main {
+    display: grid;
+    gap: 1.25rem;
+    margin: 0 auto;
+    max-width: 64rem;
+    padding: 1.5rem;
+}
+
+.safety-main.narrow {
+    max-width: 46rem;
+}
+
+.safety-section,
+.safety-receipt-card,
+.emergency-notice,
+.restricted-copy {
+    background: var(--surface, #fff);
+    border: 1px solid var(--line, #d9dedb);
+    border-radius: 1rem;
+    padding: 1rem;
+}
+
+.emergency-notice {
+    border-color: #b33a2f;
+    border-width: 2px;
+}
+
+.emergency-notice h2 {
+    color: #8b271f;
+    margin-top: 0;
+}
+
+.safety-form {
+    display: grid;
+    gap: 1rem;
+}
+
+.safety-form label,
+.safety-form fieldset {
+    display: grid;
+    gap: 0.4rem;
+}
+
+.safety-form textarea {
+    min-height: 7rem;
+    resize: vertical;
+}
+
+.field-help {
+    color: var(--muted, #52605a);
+    font-size: 0.9rem;
+    margin-top: -0.5rem;
+}
+
+.section-heading,
+.safety-receipt-card > div {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    justify-content: space-between;
+}
+
+.safety-receipts {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.safety-receipt-card p {
+    overflow-wrap: anywhere;
+}
+
+.safety-status {
+    background: #e7f2ec;
+    border-radius: 999px;
+    padding: 0.25rem 0.6rem;
+}
+
+.success-card {
+    background: #e7f2ec;
+    border: 2px solid #287653;
+    border-radius: 1rem;
+    padding: 1rem;
+}
+
+.danger-link {
+    color: #8b271f;
+    display: inline-block;
+    font-weight: 700;
+    margin-top: 1rem;
+}
+
+.player-safety-actions[data-blocked='true'] {
+    border-color: #8b271f;
+}
+
+.safety-entry-panel .action-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+@media (max-width: 640px) {
+    .safety-main {
+        padding: 1rem;
+    }
+}

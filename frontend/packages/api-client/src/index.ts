@@ -41,14 +41,25 @@ import type {
     SchemaNotificationReadReceipt,
     SchemaAvatarUploadPolicy,
     SchemaAvatarUploadRequest,
+    SchemaAppealSubmission,
+    SchemaBlockPage,
+    SchemaCaseResponseSubmission,
     SchemaMatchHistoryPage,
+    SchemaNoShowReportSubmission,
+    SchemaOwnReview,
+    SchemaOwnSafetyReportDetail,
     SchemaPlayerProfile,
     SchemaPlayerStatistics,
     SchemaProfilePrivacySettings,
+    SchemaPublicReviewAggregate,
     SchemaProposeVenueRevision,
     SchemaPublicPlayerProfile,
     SchemaPublicPlayerStatistics,
     SchemaReportMessageCommand,
+    SchemaReportSubmission,
+    SchemaReviewSubmission,
+    SchemaSafetyReceipt,
+    SchemaSafetyReceiptPage,
     SchemaSendMessageCommand,
     SchemaUpdateNotificationPreference,
     SchemaUpdatePlayerProfile,
@@ -625,6 +636,72 @@ export function createIdentityClient(options: ApiClientOptions, platform: Client
             }),
         getPublicPlayerStatistics: (playerId: string) =>
             call<SchemaPublicPlayerStatistics>(`/players/${playerId}/statistics`, undefined, { auth: true }),
+        submitMatchReview: (
+            matchId: string,
+            subjectPlayerId: string,
+            body: SchemaReviewSubmission,
+            idempotencyKey?: string
+        ) =>
+            call<SchemaOwnReview>(`/matches/${matchId}/reviews/${subjectPlayerId}`, body, {
+                auth: true,
+                idempotent: true,
+                idempotencyKey,
+                method: 'PUT',
+                mutation: true,
+            }),
+        withdrawMatchReview: (matchId: string, subjectPlayerId: string, idempotencyKey?: string) =>
+            call<undefined>(`/matches/${matchId}/reviews/${subjectPlayerId}`, undefined, {
+                auth: true,
+                idempotent: true,
+                idempotencyKey,
+                method: 'DELETE',
+                mutation: true,
+            }),
+        submitNoShowReport: (matchId: string, body: SchemaNoShowReportSubmission, idempotencyKey?: string) =>
+            call<SchemaSafetyReceipt>(`/matches/${matchId}/no-show-reports`, body, {
+                auth: true,
+                idempotent: true,
+                idempotencyKey,
+                mutation: true,
+            }),
+        submitSafetyReport: (body: SchemaReportSubmission, idempotencyKey?: string) =>
+            call<SchemaSafetyReceipt>('/safety-reports', body, {
+                auth: true,
+                idempotent: true,
+                idempotencyKey,
+                mutation: true,
+            }),
+        listOwnSafetyReports: (cursor?: string, limit = 20) =>
+            call<SchemaSafetyReceiptPage>('/me/safety-reports', undefined, {
+                auth: true,
+                query: query({ cursor, limit }),
+            }),
+        getOwnSafetyReport: (receiptId: string) =>
+            call<SchemaOwnSafetyReportDetail>(`/me/safety-reports/${receiptId}`, undefined, { auth: true }),
+        requestSafetyReportWithdrawal: (receiptId: string, idempotencyKey?: string) =>
+            call<SchemaSafetyReceipt>(
+                `/me/safety-reports/${receiptId}/withdrawal`,
+                { requested: true },
+                { auth: true, idempotent: true, idempotencyKey, mutation: true }
+            ),
+        respondToSafetyCase: (receiptId: string, body: SchemaCaseResponseSubmission, idempotencyKey?: string) =>
+            call<SchemaSafetyReceipt>(`/me/safety-reports/${receiptId}/responses`, body, {
+                auth: true,
+                idempotent: true,
+                idempotencyKey,
+                mutation: true,
+            }),
+        appealSafetyDecision: (receiptId: string, body: SchemaAppealSubmission, idempotencyKey?: string) =>
+            call<SchemaSafetyReceipt>(`/me/safety-reports/${receiptId}/appeals`, body, {
+                auth: true,
+                idempotent: true,
+                idempotencyKey,
+                mutation: true,
+            }),
+        listOwnBlocks: (cursor?: string, limit = 20) =>
+            call<SchemaBlockPage>('/me/blocks', undefined, { auth: true, query: query({ cursor, limit }) }),
+        getPublicPlayerReputation: (playerId: string) =>
+            call<SchemaPublicReviewAggregate>(`/players/${playerId}/reputation`, undefined, { auth: true }),
     } as const;
 }
 

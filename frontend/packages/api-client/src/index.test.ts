@@ -204,4 +204,80 @@ describe('createIdentityClient', () => {
         expect(mutationHeaders.get('X-CSRF-Token')).toBe(session.csrfToken);
         expect(mutationHeaders.get('Idempotency-Key')).toMatch(/^[0-9a-f-]{36}$/u);
     });
+
+    it('keeps safety evidence in the protected request body and preserves an explicit retry key', async () => {
+        const session = {
+            accessExpiresAt: '2026-09-11T12:05:00.000Z',
+            accessToken: 'a'.repeat(43),
+            csrfToken: 'c'.repeat(43),
+            session: {
+                absoluteExpiresAt: '2026-10-11T12:00:00.000Z',
+                createdAt: '2026-09-11T12:00:00.000Z',
+                id: crypto.randomUUID(),
+                idleExpiresAt: '2026-09-18T12:00:00.000Z',
+                status: 'ACTIVE',
+            },
+            tokenType: 'Bearer',
+            user: {
+                completedAt: '2026-09-11T12:00:00.000Z',
+                createdAt: '2026-09-10T12:00:00.000Z',
+                id: crypto.randomUUID(),
+                onboardingStatus: 'COMPLETED',
+                requiredConsentsSatisfied: true,
+                status: 'ACTIVE',
+            },
+        } as const;
+        const receipt = {
+            appealDeadline: null,
+            canAppeal: false,
+            canRespond: false,
+            canWithdraw: true,
+            createdAt: '2026-09-11T12:00:00.000Z',
+            kind: 'SAFETY',
+            outcome: null,
+            outcomeReason: null,
+            receiptId: crypto.randomUUID(),
+            status: 'RECEIVED',
+            updatedAt: '2026-09-11T12:00:00.000Z',
+        } as const;
+        const fetch = vi
+            .fn<typeof globalThis.fetch>()
+            .mockResolvedValueOnce(Response.json({ csrfToken: 'b'.repeat(43) }))
+            .mockResolvedValueOnce(Response.json(session))
+            .mockResolvedValue(Response.json(receipt, { status: 201 }));
+        const client = createIdentityClient({ baseUrl: '/v1', fetch }, 'WEB');
+        await client.bootstrap();
+        const key = crypto.randomUUID();
+        const sourceId = crypto.randomUUID();
+        const evidence = 'restricted evidence';
+        await client.submitSafetyReport(
+            {
+                evidence,
+                kind: 'SAFETY',
+                reason: 'PHYSICAL_SAFETY',
+                sourceId,
+                sourceKind: 'MATCH',
+                sourceRevision: 2,
+                timeBucket: 'TODAY',
+            },
+            key
+        );
+
+        expect(fetch.mock.calls[2]?.[0]).toBe('/v1/safety-reports');
+        expect(fetch.mock.calls[2]?.[0]).not.toContain(evidence);
+        expect(fetch.mock.calls[2]?.[1]?.body).toBe(
+            JSON.stringify({
+                evidence,
+                kind: 'SAFETY',
+                reason: 'PHYSICAL_SAFETY',
+                sourceId,
+                sourceKind: 'MATCH',
+                sourceRevision: 2,
+                timeBucket: 'TODAY',
+            })
+        );
+        const headers = new Headers(fetch.mock.calls[2]?.[1]?.headers);
+        expect(headers.get('Idempotency-Key')).toBe(key);
+        expect(headers.get('X-CSRF-Token')).toBe(session.csrfToken);
+    });
 });

@@ -10,6 +10,7 @@ import { ChatScreen, NotificationBadge, NotificationsScreen } from './communicat
 import { TelegramAccount, TelegramLogin, TelegramOnboarding } from './identity-ui';
 import { CreateMatchScreen, MatchDetailsScreen, MatchesScreen } from './matches-ui';
 import { ProfileScreen } from './profiles-ui';
+import { MatchFeedbackScreen, SafetyCenterScreen, SafetyReceiptScreen, SafetyReportScreen } from './safety-ui';
 import { VenuesScreen } from './venues-ui';
 
 type Session = components['schemas']['AuthenticatedSession'];
@@ -113,6 +114,7 @@ export function App({ config, initData }: { readonly config: RuntimeConfig; read
                             <NotificationBadge client={client} />
                         </Link>
                         <Link to="/profile">Профиль</Link>
+                        <Link to="/safety">Безопасность</Link>
                         <Link to="/account">Аккаунт</Link>
                     </nav>
                 )}
@@ -218,6 +220,46 @@ export function App({ config, initData }: { readonly config: RuntimeConfig; read
                     }
                 />
                 <Route path="/players/:playerId" element={<PublicProfileRoute client={client} online={online} />} />
+                <Route
+                    path="/matches/:matchId/feedback/:subjectPlayerId"
+                    element={
+                        session && !onboarding ? (
+                            <MatchFeedbackScreen client={client} online={online} />
+                        ) : (
+                            <Navigate to={session ? '/onboarding' : '/login'} replace />
+                        )
+                    }
+                />
+                <Route
+                    path="/safety"
+                    element={
+                        session && !onboarding ? (
+                            <SafetyCenterScreen client={client} online={online} />
+                        ) : (
+                            <Navigate to={session ? '/onboarding' : '/login'} replace />
+                        )
+                    }
+                />
+                <Route
+                    path="/safety/report"
+                    element={
+                        session && !onboarding ? (
+                            <SafetyReportScreen client={client} online={online} />
+                        ) : (
+                            <Navigate to={session ? '/onboarding' : '/login'} replace />
+                        )
+                    }
+                />
+                <Route
+                    path="/safety/reports/:receiptId"
+                    element={
+                        session && !onboarding ? (
+                            <SafetyReceiptScreen client={client} online={online} />
+                        ) : (
+                            <Navigate to={session ? '/onboarding' : '/login'} replace />
+                        )
+                    }
+                />
                 <Route
                     path="/account"
                     element={

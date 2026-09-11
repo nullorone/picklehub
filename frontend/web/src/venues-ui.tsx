@@ -2,6 +2,7 @@ import { ApiError, type components, type IdentityClient } from '@picklehub/api-c
 import { disabledAnalytics } from '@picklehub/analytics';
 import type { RuntimeConfig } from '@picklehub/validation';
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState, type SyntheticEvent } from 'react';
+import { Link } from 'react-router-dom';
 
 const VenueMap = lazy(async () => ({ default: (await import('./venue-map')).VenueMap }));
 
@@ -191,7 +192,6 @@ function VenueDetails({
     const [venue, setVenue] = useState<Venue>();
     const [message, setMessage] = useState<string>();
     const [revisionName, setRevisionName] = useState(summary.name);
-    const [reportReason, setReportReason] = useState<components['schemas']['VenueReportReason']>('CLOSED');
 
     const load = useCallback(() => {
         void client
@@ -216,24 +216,6 @@ function VenueDetails({
         try {
             await client.proposeVenueRevision(venue.id, { baseVersion: venue.version, name: revisionName.trim() });
             setMessage('Исправление отправлено на проверку. Публичная карточка пока не изменилась.');
-        } catch (error) {
-            setMessage(venueError(error));
-        }
-    }
-
-    async function submitReport(event: SyntheticEvent<HTMLFormElement>) {
-        event.preventDefault();
-        if (!online) {
-            setMessage('Для отправки жалобы нужно подключение к интернету.');
-            return;
-        }
-        try {
-            await client.reportVenue(summary.id, { reason: reportReason });
-            setMessage(
-                reportReason === 'PRIVATE_RESIDENCE'
-                    ? 'Жалоба принята. Адрес скрыт из каталога до проверки.'
-                    : 'Жалоба отправлена на проверку.'
-            );
         } catch (error) {
             setMessage(venueError(error));
         }
@@ -297,27 +279,14 @@ function VenueDetails({
                     </form>
                 </details>
             )}
-            <details>
-                <summary>Пожаловаться</summary>
-                <form onSubmit={(event) => void submitReport(event)}>
-                    <label>
-                        Причина
-                        <select
-                            value={reportReason}
-                            onChange={(event) => {
-                                setReportReason(event.target.value as typeof reportReason);
-                            }}
-                        >
-                            <option value="CLOSED">Площадка закрыта</option>
-                            <option value="DUPLICATE">Дубликат</option>
-                            <option value="PRIVATE_RESIDENCE">Частный дом или домашний адрес</option>
-                        </select>
-                    </label>
-                    <button className="danger-action" disabled={!online} type="submit">
-                        Отправить жалобу
-                    </button>
-                </form>
-            </details>
+            {venue && (
+                <Link
+                    className="danger-link"
+                    to={`/safety/report?sourceKind=VENUE&sourceId=${venue.id}&sourceRevision=${String(venue.version)}`}
+                >
+                    Пожаловаться на площадку
+                </Link>
+            )}
             <Attribution venues={[summary]} />
         </aside>
     );

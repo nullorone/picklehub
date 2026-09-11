@@ -1826,3 +1826,56 @@ test/integration/trust-safety-backend.integration-spec.ts` — suite обнар�
   `npm run format:check`, `npm run docs:check` и `git diff --check`.
 - Локально исполнимые критерии выполнены. Единственный незакрытый критерий — runtime PostgreSQL integration в CI;
   следующий промпт остаётся `llm/07-trust-safety/03-backend.md` до зелёного прогона, к `04-tma-web.md` не переходили.
+
+## 2026-09-11 — доверие и безопасность, этап 04-tma-web
+
+- Активный промпт: `llm/07-trust-safety/04-tma-web.md`. Web/PWA и TMA получили одинаковый player-facing safety
+  workflow: навигацию и центр собственных минимальных квитанций, caller-only detail, запрос отзыва обращения,
+  ответ на запрос и апелляцию. Статус показывает только broad category/state/outcome из backend projection, не
+  обещает решение или срок и не раскрывает case, другого заявителя, evidence другой стороны, назначение или
+  детали санкции.
+- Контекстные входы добавлены из матча, подтверждённого результата, точной revision сообщения и versioned
+  площадки. Старые chat/venue формы, возвращавшие разрозненные receipt, заменены переходами в единый
+  `/safety/report`; форма сначала требует закрытую категорию/причину и только затем предлагает необязательный текст.
+  Публичный профиль не создаёт некорректную жалобу с выдуманной revision: опубликованный profile contract не
+  раскрывает revision, поэтому там реализована только доступная блокировка, а обращение открывается из точного
+  match/chat контекста.
+- После подтверждённого матча участник получает отдельный экран приватного review и possible no-show report.
+  Review text/tags не выдаются за публичные, а no-show прямо сообщает, что сигнал сам по себе не меняет репутацию
+  или статистику. Все mutation используют UUIDv4 idempotency key на логическую попытку, сохраняют его после ошибки,
+  отключены offline и не создают optimistic success.
+- Safety/report, no-show, response и appeal text находятся только в controlled form state и request body; после
+  завершения запроса состояние текста очищается как при успехе, так и при ошибке. Клиент не пишет содержание в
+  URL, console, analytics или error provider. Подсказки требуют минимизировать сведения и не добавлять документы,
+  контакты и точные перемещения; собственная сохранённая копия evidence читается только на caller-owned detail.
+- На форме жалобы постоянно виден явный emergency boundary: при непосредственной угрозе нужно звонить 112 или в
+  местную службу, PickleHub не является экстренной службой и не гарантирует немедленный ответ. Критические экраны
+  и post-match safety panels помечены ad-free и не содержат ad slot или third-party embed.
+- Блокировка из публичного профиля требует модального подтверждения с описанием двухстороннего запрета новых
+  direct interactions, Escape и возвратом фокуса. До загрузки caller-owned block state прямое действие не
+  показывается; после блокировки оно заменяется состоянием и разблокировкой, а факты общих матчей/история
+  сохраняются. В chat перед прежним быстрым block также добавлено подтверждение.
+- Доступность включает label/fieldset, status/alert, фокус на ошибке или success receipt, keyboard dialog и
+  offline/loading/empty/error/success states. Общая workflow-компонента переиспользована осознанно для строгого
+  TMA/web policy parity, тогда как CSS остаётся отдельным platform-owned source.
+- `@picklehub/api-client` получил типизированные методы 11 опубликованных trust/safety routes без изменений
+  TypeSpec или generated client. API test подтверждает CSRF, bearer/idempotency headers и нахождение evidence
+  только в JSON body. Component tests подтверждают emergency copy, отсутствие ad slot, exact source revision,
+  очистку текста после request, offline deny, подтверждение block и раздельные review/no-show flows.
+
+### Проверки этапа trust/safety 04-tma-web
+
+- Целевые `lint`, strict `typecheck`, Vitest и production `build` для `@picklehub/api-client`, `@picklehub/web` и
+  `@picklehub/tg` — успешно. Финальные результаты: web 7 suites/30 tests, TMA 6/21, API client 1/6.
+- `npm run test:e2e:typecheck` и `npm run test:e2e:build` — успешно; production web build содержит manifest и
+  service worker, TMA build не содержит development Telegram mock. Browser e2e для safety workflow не добавлялся:
+  критические состояния покрыты component/API tests, а live backend integration остаётся verification stage/CI.
+- `npm run verify` — успешно полностью на итоговом состоянии: 8 workspaces и один lockfile, TypeSpec/Redocly,
+  policy для 98 REST operations и 45 messages, 66 contract/data/privacy tests, compatibility и generated drift,
+  OpenAPI mock, format/docs, lint/typecheck/tests/build. Backend regression: 23 suites/58 tests; web 7/30; TMA 6/21.
+- Сохранились неблокирующие Vite warnings: MapLibre chunk около 924 kB, основной web bundle около 531 kB и TMA
+  около 578 kB; route-level splitting остаётся performance debt. Внешнее окружение по-прежнему задаёт
+  `NODE_TLS_REJECT_UNAUTHORIZED=0`, это не добавлено в репозиторий.
+- Runtime PostgreSQL integration предыдущего backend-этапа в этом frontend-промпте не повторялась и остаётся
+  обязательной CI-проверкой, как записано выше. Локально исполнимые критерии текущего этапа выполнены. Следующий
+  промпт — `llm/07-trust-safety/05-verification.md`; к нему не переходили.

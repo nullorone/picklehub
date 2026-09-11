@@ -1351,6 +1351,39 @@ export function MatchDetailsScreen({
                     )}
                 </section>
             )}
+            {ownParticipant && result?.state === 'CONFIRMED' && (
+                <section className="match-panel safety-entry-panel" data-ad-free="true">
+                    <h2>После матча</h2>
+                    <p>
+                        Оставьте приватный отзыв или сообщите о возможной неявке. Жалоба сама по себе не является
+                        доказанным нарушением.
+                    </p>
+                    <div className="action-list">
+                        {match.participants
+                            .filter((participant) => participant.userId !== userId && participant.state === 'ACTIVE')
+                            .map((participant) => (
+                                <Link key={participant.id} to={`/matches/${match.id}/feedback/${participant.userId}`}>
+                                    Отзыв об игроке
+                                </Link>
+                            ))}
+                        <Link
+                            to={`/safety/report?sourceKind=MATCH_RESULT&sourceId=${result.id}&sourceRevision=${String(result.version)}`}
+                        >
+                            Пожаловаться на результат
+                        </Link>
+                    </div>
+                </section>
+            )}
+            {ownParticipant && match.state !== 'DRAFT' && (
+                <section className="match-panel safety-entry-panel" data-ad-free="true">
+                    <h2>Проблема безопасности</h2>
+                    <Link
+                        to={`/safety/report?sourceKind=MATCH&sourceId=${match.id}&sourceRevision=${String(match.version)}`}
+                    >
+                        Сообщить о проблеме в этом матче
+                    </Link>
+                </section>
+            )}
             <section className="match-panel">
                 <h2>Уведомления</h2>
                 <p>

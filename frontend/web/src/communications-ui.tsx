@@ -112,8 +112,6 @@ export function ChatScreen({
     const [conversation, setConversation] = useState<components['schemas']['Conversation']>();
     const [connection, setConnection] = useState<'CONNECTING' | 'LIVE' | 'OFFLINE'>('CONNECTING');
     const [notice, setNotice] = useState<string>();
-    const [reported, setReported] = useState<ReadonlySet<string>>(new Set());
-    const [reportReason, setReportReason] = useState<components['schemas']['ChatReportReason']>('SPAM');
     const cursorRef = useRef<string | undefined>(undefined);
     const opened = useRef(false);
 
@@ -316,24 +314,9 @@ export function ChatScreen({
         }
     }
 
-    async function report(message: Message) {
-        if (!online) return;
-        try {
-            await client.reportConversationMessage(
-                matchId,
-                message.id,
-                { reason: reportReason, revision: message.revision },
-                crypto.randomUUID()
-            );
-            setReported((items) => new Set(items).add(message.id));
-            setNotice('Жалоба отправлена.');
-        } catch (error) {
-            setNotice(messageFor(error));
-        }
-    }
-
     async function toggleBlock(message: Message, blocked: boolean) {
         if (!message.authorId || !online) return;
+        if (!blocked && !window.confirm('Заблокировать игрока? Общие матчи и системные факты сохранятся.')) return;
         try {
             if (blocked) await client.unblockCommunicationUser(message.authorId, crypto.randomUUID());
             else await client.blockCommunicationUser(message.authorId, crypto.randomUUID());
@@ -395,14 +378,11 @@ export function ChatScreen({
                                                 </>
                                             ) : (
                                                 <>
-                                                    <button
-                                                        disabled={!online || reported.has(message.id)}
-                                                        onClick={() => void report(message)}
+                                                    <Link
+                                                        to={`/safety/report?sourceKind=CHAT_MESSAGE&sourceId=${message.id}&sourceRevision=${String(message.revision)}&subjectPlayerId=${message.authorId ?? ''}`}
                                                     >
-                                                        {reported.has(message.id)
-                                                            ? 'Жалоба отправлена'
-                                                            : 'Пожаловаться'}
-                                                    </button>
+                                                        Пожаловаться
+                                                    </Link>
                                                     <button
                                                         disabled={!online}
                                                         onClick={() => void toggleBlock(message, false)}
@@ -462,21 +442,6 @@ export function ChatScreen({
                     </button>
                 </form>
             )}
-            <label className="report-reason">
-                Причина жалобы
-                <select
-                    value={reportReason}
-                    onChange={(event) => {
-                        setReportReason(event.target.value as typeof reportReason);
-                    }}
-                >
-                    <option value="SPAM">Спам</option>
-                    <option value="HARASSMENT">Домогательство</option>
-                    <option value="HATE">Ненависть</option>
-                    <option value="THREAT">Угроза</option>
-                    <option value="OTHER">Другое</option>
-                </select>
-            </label>
             <span className="visually-hidden">Курсор синхронизации: {catchUpCursor ? 'получен' : 'ожидается'}</span>
         </main>
     );
