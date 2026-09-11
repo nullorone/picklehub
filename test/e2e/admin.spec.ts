@@ -9,8 +9,23 @@ type Role = 'SUPERADMIN' | 'MODERATOR' | 'EDITOR' | 'ADS_MANAGER';
 const capabilities = {
     ADS_MANAGER: ['ADMIN_SESSION_ACCESS'],
     EDITOR: ['ADMIN_SESSION_ACCESS'],
-    MODERATOR: ['ADMIN_SESSION_ACCESS', 'SAFETY_CASE_ROUTE', 'SAFETY_CASE_DECIDE', 'USER_RESTRICT'],
-    SUPERADMIN: ['ADMIN_SESSION_ACCESS', 'USER_LOOKUP', 'VENUE_MODERATE', 'AUDIT_SEARCH'],
+    MODERATOR: [
+        'ADMIN_SESSION_ACCESS',
+        'USER_LOOKUP',
+        'SAFETY_CASE_ROUTE',
+        'SAFETY_CASE_DECIDE',
+        'USER_RESTRICT',
+        'VENUE_MODERATE',
+        'AUDIT_SEARCH',
+    ],
+    SUPERADMIN: [
+        'ADMIN_SESSION_ACCESS',
+        'ROLE_GRANT_MANAGE',
+        'USER_LOOKUP',
+        'SAFETY_CASE_ROUTE',
+        'AUDIT_SEARCH',
+        'BREAK_GLASS_MANAGE',
+    ],
 } as const;
 
 function json(route: Route, body: unknown, status = 200) {
@@ -74,8 +89,8 @@ async function mockAdminApi(page: Page, role: Role) {
 }
 
 for (const scenario of [
-    { absent: ['Пользователи', 'Аудит'], present: ['Обращения'], role: 'MODERATOR' as const },
-    { absent: ['Обращения'], present: ['Площадки', 'Пользователи', 'Аудит'], role: 'SUPERADMIN' as const },
+    { absent: [], present: ['Обращения', 'Площадки', 'Пользователи', 'Аудит'], role: 'MODERATOR' as const },
+    { absent: ['Площадки'], present: ['Обращения', 'Пользователи', 'Аудит'], role: 'SUPERADMIN' as const },
     { absent: ['Обращения', 'Площадки', 'Пользователи', 'Аудит'], present: [], role: 'EDITOR' as const },
     { absent: ['Обращения', 'Площадки', 'Пользователи', 'Аудит'], present: [], role: 'ADS_MANAGER' as const },
 ]) {
@@ -113,8 +128,30 @@ test('web admin protects a deep case link and clears restricted content on exit'
     await expect(page).toHaveURL(/\/admin\/access$/u);
     await expect(page.getByRole('heading', { name: 'Вход для сотрудников' })).toBeVisible();
     await expect(page.locator('body')).not.toContainText(narrative);
+    await page.goBack();
+    await expect(page.locator('body')).not.toContainText(narrative);
+    await page.goForward();
+    await expect(page.locator('body')).not.toContainText(narrative);
     await page.reload();
     await expect(page.locator('body')).not.toContainText(narrative);
+    await context.close();
+});
+
+test('web admin deep-link authentication is operable from the keyboard', async ({ browser }) => {
+    const context = await browser.newContext({ locale: 'ru-RU', serviceWorkers: 'block' });
+    const page = await context.newPage();
+    await serveProductionBuild(page, 'web.picklehub.test', '/private/tmp/picklehub-e2e-web');
+    await mockAdminApi(page, 'MODERATOR');
+    await page.goto(`http://web.picklehub.test/admin/cases/${caseId}`);
+
+    await page.keyboard.press('Tab');
+    await expect(page.getByLabel('Код административной сессии')).toBeFocused();
+    await page.keyboard.type('moderator'.repeat(3));
+    await page.keyboard.press('Tab');
+    await expect(page.getByRole('button', { name: 'Проверить доступ' })).toBeFocused();
+    await page.keyboard.press('Enter');
+
+    await expect(page.getByText(narrative)).toBeVisible();
     await context.close();
 });
 

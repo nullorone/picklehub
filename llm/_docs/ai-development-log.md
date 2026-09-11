@@ -2175,3 +2175,65 @@ llm/_docs/analytics-plan.md llm/_docs/domain-model.md llm/_docs/architecture.md`
 - После записи журнала `npm run format:check`, `npm run docs:check`, `npm ls --depth=0` и `git diff --check`
   повторены успешно; unmet/extraneous dependencies и whitespace errors отсутствуют. Следующий промпт —
   `llm/08-admin-backoffice/05-verification.md`; к нему не переходили.
+
+## 2026-09-11 — административная панель, этап 05-verification
+
+- Активный промпт: `llm/08-admin-backoffice/05-verification.md`. Добавлен
+  `llm/_docs/admin-backoffice-verification.md` с threat model, точной матрицей 17 admin operations для четырёх
+  platform roles, player bearer и гостя, правилами audit/rollback, браузерными границами, прослеживаемостью тестов и
+  остаточными production gates.
+- Новая controller-boundary suite `administration-authorization.spec.ts` систематически проверяет все операции:
+  guest/player всегда получают session denial, а каждая platform role проходит только capability из fixed registry.
+  Всего 86 scenarios, включая доказательство audit известного admin actor при прямом capability denial. Тест не
+  открывает локальный socket и поэтому воспроизводим в restricted sandbox.
+- Верификация обнаружила, что capability denial для известной admin role ранее создавал только безопасную метрику,
+  хотя требования требуют audit. Controller теперь fail-closed вызывает `auditAuthorizationDenied`; append-only
+  запись использует capability-specific action `*_DENIED`, admin session как opaque target, outcome `DENIED`,
+  request/correlation и пустой changed-field allowlist. Guest/player отклоняются до появления подтверждённого actor.
+- Для конкурентных serializable admin mutations Prisma `P2034` теперь стабильно отображается в
+  `REVISION_CONFLICT`. Unique conflict `P2002` по умолчанию также является stale/revision conflict; только создание
+  активного role grant явно возвращает `CONFLICTING_ACTIVE_GRANT`. Это не позволяет гонке moderator masquerade как
+  audit outage или ошибка grant.
+- Добавлена PostgreSQL/Redis integration suite `administration-verification.integration-spec.ts`: ровно одно из двух
+  конкурентных решений, stale retry без второго audit/receipt/event, минимальный/неизменяемый audit и rejection
+  narrative metadata, создание/снятие restriction как revision, полный rollback venue merge при rejected audit и
+  немедленная инвалидизация session/security epoch после role revoke.
+- Новый `administration-verification-policy.test.mjs` включён в `contracts:lint`: он сравнивает все generated OpenAPI
+  roles с reviewed matrix, проверяет capability boundary и denied audit, единый audited transaction wrapper,
+  serialization mapping, DB guards, `no-store`/отсутствие admin Workbox cache и отсутствие admin implementation в
+  TMA source.
+- Browser suite исправлена по source-of-truth matrix: venue moderation принадлежит `MODERATOR`, а не
+  `SUPERADMIN`; moderator также получает согласованные lookup/audit capabilities. Добавлены Back/Forward/reload
+  assertions после logout и полностью клавиатурный deep-link login. TMA 404 сохранился.
+
+### Проверки этапа admin backoffice 05-verification
+
+- `npm run verify` — успешно полностью: восемь workspaces, TypeSpec/Redocly, compatibility/generated drift,
+  OpenAPI mock, format/docs, lint, strict typecheck, unit/component tests и production builds. Contract/data/privacy
+  набор — 84/84 tests; backend — 28/28 suites и 152/152 tests; web — 8/8 suites и 38/38 tests; TMA — 6/6 и 21/21;
+  API client — 6/6. Сохраняются неблокирующие bundle warnings: web/TMA около 565/578 kB и MapLibre 924 kB.
+- Targeted проверки `node --test contracts/scripts/administration-policy.test.mjs
+contracts/scripts/administration-data-policy.test.mjs
+contracts/scripts/administration-verification-policy.test.mjs` — 14/14; отдельная verification policy — 6/6.
+  `npm test --workspace=@picklehub/backend -- --runInBand
+backend/test/unit/administration-authorization.spec.ts` — 86/86. Backend lint/typecheck и web admin component
+  tests — успешно; `npm run test:e2e:typecheck` и production `npm run test:e2e:build` — успешно.
+- Первый socket-based вариант новой unit matrix запускался через Supertest, но sandbox эпизодически запретил
+  ephemeral listen (`EPERM 0.0.0.0`). Suite переведена на ту же реальную controller/capability boundary без socket;
+  после этого полный unit regression зелёный. Первые targeted lint/static запуски также нашли assertion syntax,
+  enum typing и одну запрещённую non-null assertion; тесты исправлены без ослабления проверок.
+- `npm run test:integration --workspace=@picklehub/backend -- --runInBand
+backend/test/integration/administration-verification.integration-spec.ts` обнаружил все 5 tests, но ни один не
+  дошёл до fixture: sandbox запретил PostgreSQL/Redis loopback (`EPERM`, в том числе `127.0.0.1:6379`). Поэтому
+  конкурентный runtime, DB rollback/immutability и session revoke должны пройти в PostgreSQL/Redis CI; локальный
+  успех не заявляется.
+- `npx playwright test test/e2e/admin.spec.ts` после успешных typecheck/build обнаружил 7 scenarios, включая новый
+  keyboard и history test, но Chrome во всех случаях завершился до первого шага с `SIGABRT`, а cleanup получил
+  `kill EPERM`. Browser assertions должны пройти в Playwright CI и не заявляются успешными локально.
+- Финальный повтор `npm run verify` после записи журнала дошёл до `contracts:mock:check` и один раз остановился на
+  sandbox bind `listen EPERM 127.0.0.1`; отдельный повтор `npm run contracts:mock:check` успешно проверил все mock
+  группы. Оставшаяся финальная цепочка `format:check`, `docs:check`, `lint`, `typecheck`, `test`, `build` повторно
+  прошла для восьми workspaces; backend сохранил 28/28 suites и 152/152 tests.
+- Остаточные риски: production MFA/WebAuthn, bootstrap/independent approval evidence, break-glass notification и
+  post-review, on-call alert delivery, backup/restore/retention execution, data residency и legal approval остаются
+  эксплуатационными gates. Следующий промпт — `llm/09-clubs/01-requirements.md`; к нему не переходили.

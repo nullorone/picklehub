@@ -244,7 +244,12 @@ export class AdministrationController {
         capability: AdminCapability
     ): Promise<AuthenticatedAdmin> {
         const admin = await this.sessions.authenticate(authorization);
-        this.sessions.assertCapability(admin, capability);
+        try {
+            this.sessions.assertCapability(admin, capability);
+        } catch (error) {
+            await this.administration.auditAuthorizationDenied(admin, capability);
+            throw error;
+        }
         return admin;
     }
 

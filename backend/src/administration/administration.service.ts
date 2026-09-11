@@ -40,6 +40,7 @@ import type {
 } from './administration.dto';
 import { administrationError, AdministrationException } from './administration.errors';
 import { AdministrationMetricsService } from './administration-metrics.service';
+import type { AdminCapability } from './administration.policy';
 import type { AuthenticatedAdmin } from './administration-session.service';
 
 type Transaction = Prisma.TransactionClient;
@@ -116,7 +117,8 @@ export class AdministrationService {
                 );
                 return { response: this.roleGrant(grant), auditId };
             },
-            () => this.confirmations.consume(body.confirmationToken, admin.actorId, 'ROLE_GRANT', body.subjectUserId)
+            () => this.confirmations.consume(body.confirmationToken, admin.actorId, 'ROLE_GRANT', body.subjectUserId),
+            'CONFLICTING_ACTIVE_GRANT'
         );
     }
 
@@ -929,6 +931,10 @@ export class AdministrationService {
         );
     }
 
+    async auditAuthorizationDenied(admin: AuthenticatedAdmin, capability: AdminCapability): Promise<void> {
+        await this.readAudit(admin, `${capability}_DENIED`, 'ADMIN_SESSION', admin.sessionId, 'DENIED');
+    }
+
     private async mutate(
         admin: AuthenticatedAdmin,
         key: string,
@@ -937,7 +943,8 @@ export class AdministrationService {
         targetType: string,
         targetId: string,
         callback: (tx: Transaction, operationId: string) => Promise<MutationResult>,
-        beforeFirstAttempt?: () => Promise<void>
+        beforeFirstAttempt?: () => Promise<void>,
+        uniqueConflictCode = 'REVISION_CONFLICT'
     ): Promise<object> {
         const fingerprint = this.crypto.hash(JSON.stringify(body));
         const existing = await this.prisma.adminOperationReceipt.findUnique({
@@ -984,8 +991,10 @@ export class AdministrationService {
             );
         } catch (error) {
             if (error instanceof AdministrationException) throw error;
+            if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2034')
+                throw administrationError('REVISION_CONFLICT', 409);
             if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002')
-                throw administrationError('CONFLICTING_ACTIVE_GRANT', 409);
+                throw administrationError(uniqueConflictCode, 409);
             this.metrics.auditFailed();
             throw administrationError('AUDIT_UNAVAILABLE', 503);
         }
