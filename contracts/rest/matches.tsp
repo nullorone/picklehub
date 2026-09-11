@@ -225,6 +225,7 @@ model MatchVenueReference {
 model Match {
     id: Uuid;
     organizerId: Uuid;
+    clubSource?: ClubMatchSource | null;
 
     @minValue(0)
     version: int32;

@@ -311,6 +311,9 @@ receipt и совместимое расширение `AuditEntry` зафикс
 - `club_operation_receipts` и минимальные governance audit records — идемпотентный ответ и причины чувствительных
   изменений без публичного текста клуба или персональных данных.
 
+Точные wire-поля, TTL, SQL constraints и политика UTC/DST зафиксированы в
+[`clubs-data-policy.md`](clubs-data-policy.md).
+
 Создание клуба фиксирует корень и owner membership одной транзакцией. Deferred constraint/serialization на корне
 запрещает commit без ровно одного активного owner; transfer одновременно повышает target и понижает прежнего owner.
 Join/approve/invite acceptance создаёт membership один раз и терминализирует конфликтующие intents. Exclusion

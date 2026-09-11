@@ -22,7 +22,8 @@ npm run contracts:check
 - `contracts:lint` проверяет TypeSpec без записи artifacts, валидирует OpenAPI и AsyncAPI официальными
   parser/linter и применяет PickleHub policy: `/v1`, разрешённые owning-feature paths, уникальные
   operation/message IDs, версионированные envelopes, UTC timestamps, `no-store`, browser CSRF/cookie и безопасный
-  payload внутренних identity/venue/match/communication/profile events, admin capability registry и notification jobs.
+  payload внутренних identity/venue/match/communication/profile/club events, admin capability registry и
+  notification jobs.
   Статические data-policy тесты
   дополнительно удерживают
   обязательные migration constraints, GiST-стратегию, provenance, постоянные merge aliases, вместимость/FIFO и
@@ -38,7 +39,8 @@ npm run contracts:check
 - `contracts:mock` запускает локальный Prism на `127.0.0.1:4010`; он предназначен только для разработки и не
   является backend или production fallback.
 - `contracts:mock:check` запускает mock на свободном localhost port, запрашивает representative endpoints health,
-  identity, venues, matches, communications, profiles, trust/safety и administration, проверяет status, JSON shape и
+  identity, venues, matches, communications, profiles, trust/safety, administration и clubs, проверяет status,
+  JSON shape и
   `no-store`.
   AsyncAPI examples проверяются
   parser/linter в `contracts:lint`.
@@ -89,6 +91,19 @@ deletion, cryptoshredding и адресный legal hold описаны в
 `trust-safety.events.v1` несёт ровно один opaque aggregate ID и broad category. Reporter, subject, source/revision,
 reason, state, rating, text, evidence, attachment, block direction, outcome и decision detail запрещены; consumer
 перечитывает минимальные данные через авторизованный port и дедуплицирует message ID.
+
+## Клубы
+
+[`rest/clubs.tsp`](rest/clubs.tsp) описывает публичный поиск/карточку, scoped membership governance, адресные
+приглашения, необязательные venue links, клубные матчи и bounded recurring rules. Hard delete клуба отсутствует;
+мутации idempotent и optimistic-versioned. Migration защищает ровно одного active owner deferred constraint,
+terminal intents, hashed invite capability и уникальную календарную позицию серии.
+
+Правило повторения хранит local wall time, IANA timezone, tzdata version и явные DST gap/overlap policy. Occurrence
+фиксирует выбранный UTC instant либо skip marker, а reciprocal source связывает её ровно с одним самостоятельным
+match. `club.events.v1` всегда несёт `clubId`, но не identity участника, token, клубный текст, координаты, roster,
+reason или точное расписание. Полные решения — в
+[`clubs-data-policy.md`](../llm/_docs/clubs-data-policy.md).
 
 ## Административная панель
 

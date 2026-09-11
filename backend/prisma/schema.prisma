@@ -277,6 +277,7 @@ model User {
   notifications                   Notification[]
   notificationDevices             NotificationDevice[]
   communicationIdempotencyRecords CommunicationIdempotencyRecord[]
+  clubMemberships                 ClubMembership[]
 
   @@map("identity_users")
 }
@@ -624,6 +625,7 @@ model Venue {
   previousMerges       VenueMerge[]                          @relation("VenueMergePrevious")
   canonicalMerges      VenueMerge[]                          @relation("VenueMergeCanonical")
   matches              Match[]
+  clubLinks            ClubVenue[]
 
   @@index([publicationState, name, id], map: "venues_catalogue_sort_idx")
   @@index([publicationState, lastVerifiedAt], map: "venues_staleness_idx")
@@ -946,6 +948,10 @@ enum ExternalBookingState {
 model Match {
   id                       String                   @id @db.Uuid
   organizerId              String                   @map("organizer_id") @db.Uuid
+  clubId                   String?                  @map("club_id") @db.Uuid
+  clubOrigin               ClubMatchOrigin?         @map("club_origin")
+  recurringRuleId          String?                  @map("recurring_rule_id") @db.Uuid
+  recurringOccurrenceId    String?                  @map("recurring_occurrence_id") @db.Uuid
   version                  Int                      @default(0)
   state                    MatchState               @default(DRAFT)
   format                   MatchFormat?
@@ -967,6 +973,7 @@ model Match {
   publishedAt              DateTime?                @map("published_at") @db.Timestamptz(3)
   updatedAt                DateTime                 @default(now()) @map("updated_at") @db.Timestamptz(3)
   organizer                User                     @relation("MatchOrganizer", fields: [organizerId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  club                     Club?                    @relation(fields: [clubId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   venue                    Venue?                   @relation(fields: [venueId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   venueCandidate           VenueCandidate?          @relation(fields: [venueCandidateId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   teams                    MatchTeam[]
@@ -982,6 +989,8 @@ model Match {
 
   @@index([visibility, state, startsAt, id], map: "matches_public_search_idx")
   @@index([organizerId, state, updatedAt], map: "matches_organizer_idx")
+  @@index([clubId, state, startsAt], map: "matches_club_idx")
+  @@unique([recurringOccurrenceId], map: "matches_recurring_occurrence_key")
   @@map("matches")
 }
 
@@ -2089,4 +2098,294 @@ model CommunicationIdempotencyRecord {
   @@unique([userId, method, canonicalPath, idempotencyKey], map: "communication_idempotency_scope_key")
   @@index([expiresAt], map: "communication_idempotency_expiry_idx")
   @@map("communication_idempotency_records")
+}
+
+// Clubs data contract. Cross-row ownership, immutable terminal intents and recurring occurrence uniqueness are
+// enforced by the additive SQL migration because Prisma cannot express deferred constraint triggers.
+enum ClubState {
+  ACTIVE
+  ARCHIVED
+
+  @@map("club_state")
+}
+
+enum ClubMembershipPolicy {
+  OPEN
+  APPROVAL
+  INVITE_ONLY
+
+  @@map("club_membership_policy")
+}
+
+enum ClubRole {
+  OWNER
+  ADMIN
+  MEMBER
+
+  @@map("club_role")
+}
+
+enum ClubMembershipState {
+  ACTIVE
+  LEFT
+  EXCLUDED
+  SUPERSEDED
+
+  @@map("club_membership_state")
+}
+
+enum ClubJoinRequestState {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+  SUPERSEDED
+
+  @@map("club_join_request_state")
+}
+
+enum ClubInvitationState {
+  PENDING
+  ACCEPTED
+  DECLINED
+  REVOKED
+  EXPIRED
+  SUPERSEDED
+
+  @@map("club_invitation_state")
+}
+
+enum ClubBlockState {
+  ACTIVE
+  LIFTED
+
+  @@map("club_block_state")
+}
+
+enum RecurringMatchRuleState {
+  ACTIVE
+  PAUSED
+  ENDED
+
+  @@map("recurring_match_rule_state")
+}
+
+enum RecurringMatchFrequency {
+  WEEKLY
+
+  @@map("recurring_match_frequency")
+}
+
+enum RecurringDstGapPolicy {
+  SKIP
+
+  @@map("recurring_dst_gap_policy")
+}
+
+enum RecurringDstOverlapPolicy {
+  EARLIER_OFFSET
+  LATER_OFFSET
+
+  @@map("recurring_dst_overlap_policy")
+}
+
+enum RecurringOccurrenceState {
+  MATERIALIZED
+  SKIPPED_DST_GAP
+  SKIPPED_PAUSE
+
+  @@map("recurring_occurrence_state")
+}
+
+enum ClubMatchOrigin {
+  CLUB
+  RECURRING_RULE
+
+  @@map("club_match_origin")
+}
+
+model Club {
+  id               String               @id @db.Uuid
+  version          Int                  @default(0)
+  state            ClubState            @default(ACTIVE)
+  name             String               @db.VarChar(120)
+  normalizedName   String               @map("normalized_name") @db.VarChar(120)
+  description      String               @db.VarChar(1000)
+  locality         String               @db.VarChar(120)
+  normalizedLocality String             @map("normalized_locality") @db.VarChar(120)
+  membershipPolicy ClubMembershipPolicy @map("membership_policy")
+  createdAt        DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt        DateTime             @default(now()) @map("updated_at") @db.Timestamptz(3)
+  archivedAt       DateTime?            @map("archived_at") @db.Timestamptz(3)
+  memberships      ClubMembership[]
+  venues           ClubVenue[]
+  matches          Match[]
+  recurringRules   RecurringMatchRule[]
+
+  @@index([state, normalizedName, id], map: "clubs_public_search_idx")
+  @@index([state, normalizedLocality, normalizedName, id], map: "clubs_locality_search_idx")
+  @@map("clubs")
+}
+
+model ClubMembership {
+  id        String              @id @db.Uuid
+  clubId    String              @map("club_id") @db.Uuid
+  userId    String              @map("user_id") @db.Uuid
+  role      ClubRole
+  state     ClubMembershipState @default(ACTIVE)
+  revision  Int                 @default(0)
+  joinedAt  DateTime            @default(now()) @map("joined_at") @db.Timestamptz(3)
+  endedAt   DateTime?           @map("ended_at") @db.Timestamptz(3)
+  club      Club                @relation(fields: [clubId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  user      User                @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([clubId, state, role, joinedAt, id], map: "club_memberships_roster_idx")
+  @@index([userId, state, clubId], map: "club_memberships_user_idx")
+  @@map("club_memberships")
+}
+
+model ClubJoinRequest {
+  id         String               @id @db.Uuid
+  clubId     String               @map("club_id") @db.Uuid
+  requesterId String              @map("requester_id") @db.Uuid
+  state      ClubJoinRequestState @default(PENDING)
+  revision   Int                  @default(0)
+  createdAt  DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
+  resolvedAt DateTime?            @map("resolved_at") @db.Timestamptz(3)
+
+  @@index([clubId, state, createdAt, id], map: "club_join_requests_queue_idx")
+  @@map("club_join_requests")
+}
+
+model ClubInvitation {
+  id                   String              @id @db.Uuid
+  clubId               String              @map("club_id") @db.Uuid
+  inviteeId            String              @map("invitee_id") @db.Uuid
+  issuedByUserId       String              @map("issued_by_user_id") @db.Uuid
+  state                ClubInvitationState @default(PENDING)
+  revision             Int                 @default(0)
+  tokenHash            String              @unique(map: "club_invitations_token_hash_key") @map("token_hash") @db.Char(64)
+  keyVersion           Int                 @map("key_version")
+  createdAt            DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
+  expiresAt            DateTime            @default(dbgenerated("CURRENT_TIMESTAMP + INTERVAL '7 days'")) @map("expires_at") @db.Timestamptz(3)
+  resolvedAt           DateTime?           @map("resolved_at") @db.Timestamptz(3)
+
+  @@index([clubId, state, createdAt, id], map: "club_invitations_queue_idx")
+  @@index([inviteeId, state, expiresAt], map: "club_invitations_invitee_idx")
+  @@map("club_invitations")
+}
+
+model ClubBlock {
+  id              String         @id @db.Uuid
+  clubId          String         @map("club_id") @db.Uuid
+  userId          String         @map("user_id") @db.Uuid
+  state           ClubBlockState @default(ACTIVE)
+  revision        Int            @default(0)
+  reasonCode      String         @map("reason_code") @db.VarChar(96)
+  createdByUserId String         @map("created_by_user_id") @db.Uuid
+  createdAt       DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  liftedByUserId  String?        @map("lifted_by_user_id") @db.Uuid
+  liftedAt        DateTime?      @map("lifted_at") @db.Timestamptz(3)
+
+  @@index([clubId, state, userId], map: "club_blocks_access_idx")
+  @@map("club_blocks")
+}
+
+model ClubVenue {
+  clubId     String   @map("club_id") @db.Uuid
+  venueId    String   @map("venue_id") @db.Uuid
+  linkedById String   @map("linked_by_id") @db.Uuid
+  linkedAt   DateTime @default(now()) @map("linked_at") @db.Timestamptz(3)
+  club       Club     @relation(fields: [clubId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  venue      Venue    @relation(fields: [venueId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@id([clubId, venueId])
+  @@index([venueId, clubId], map: "club_venues_venue_idx")
+  @@map("club_venues")
+}
+
+model RecurringMatchRule {
+  id                      String                      @id @db.Uuid
+  clubId                  String                      @map("club_id") @db.Uuid
+  organizerId             String                      @map("organizer_id") @db.Uuid
+  revision                Int                         @default(0)
+  state                   RecurringMatchRuleState     @default(ACTIVE)
+  frequency               RecurringMatchFrequency     @default(WEEKLY)
+  intervalWeeks           Int                         @map("interval_weeks") @db.SmallInt
+  weekdays                Int[]                       @db.SmallInt
+  localStartTime          DateTime                    @map("local_start_time") @db.Time
+  timeZone                String                      @map("time_zone") @db.VarChar(64)
+  tzdataVersion           String                      @map("tzdata_version") @db.VarChar(32)
+  dstGapPolicy            RecurringDstGapPolicy       @default(SKIP) @map("dst_gap_policy")
+  dstOverlapPolicy        RecurringDstOverlapPolicy   @map("dst_overlap_policy")
+  startsOn                DateTime                    @map("starts_on") @db.Date
+  endsOn                  DateTime?                   @map("ends_on") @db.Date
+  generatedThrough        DateTime?                   @map("generated_through") @db.Date
+  generationHorizonDays   Int                         @default(42) @map("generation_horizon_days") @db.SmallInt
+  templateVersion         Int                         @default(1) @map("template_version")
+  matchTemplate           Json                        @map("match_template")
+  pauseReasonCode         String?                     @map("pause_reason_code") @db.VarChar(96)
+  createdAt               DateTime                    @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt               DateTime                    @default(now()) @map("updated_at") @db.Timestamptz(3)
+  endedAt                 DateTime?                   @map("ended_at") @db.Timestamptz(3)
+  club                    Club                        @relation(fields: [clubId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  occurrences             RecurringMatchOccurrence[]
+
+  @@index([state, generatedThrough, id], map: "recurring_match_rules_generation_idx")
+  @@index([clubId, state, createdAt, id], map: "recurring_match_rules_club_idx")
+  @@map("recurring_match_rules")
+}
+
+model RecurringMatchOccurrence {
+  id                 String                   @id @db.Uuid
+  clubId             String                   @map("club_id") @db.Uuid
+  ruleId             String                   @map("rule_id") @db.Uuid
+  templateVersion    Int                      @map("template_version")
+  calendarKey        String                   @map("calendar_key") @db.VarChar(16)
+  localDate          DateTime                 @map("local_date") @db.Date
+  localStartTime     DateTime                 @map("local_start_time") @db.Time
+  state              RecurringOccurrenceState
+  startsAt           DateTime?                @map("starts_at") @db.Timestamptz(3)
+  utcOffsetMinutes   Int?                     @map("utc_offset_minutes") @db.SmallInt
+  matchId            String?                  @unique(map: "recurring_match_occurrences_match_key") @map("match_id") @db.Uuid
+  materializedAt     DateTime                 @default(now()) @map("materialized_at") @db.Timestamptz(3)
+  rule               RecurringMatchRule       @relation(fields: [ruleId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([ruleId, calendarKey], map: "recurring_match_occurrences_calendar_key")
+  @@index([clubId, startsAt, id], map: "recurring_match_occurrences_club_idx")
+  @@map("recurring_match_occurrences")
+}
+
+model ClubOperationReceipt {
+  id                   String   @id @db.Uuid
+  clubId               String?  @map("club_id") @db.Uuid
+  actorUserId           String   @map("actor_user_id") @db.Uuid
+  idempotencyKey       String   @map("idempotency_key") @db.Uuid
+  method               String   @db.VarChar(8)
+  canonicalPath        String   @map("canonical_path") @db.VarChar(200)
+  requestFingerprint   String   @map("request_fingerprint") @db.Char(64)
+  responseStatus       Int      @map("response_status") @db.SmallInt
+  responseCiphertext   Bytes    @map("response_ciphertext")
+  encryptionKeyVersion Int      @map("encryption_key_version")
+  createdAt            DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  expiresAt            DateTime @default(dbgenerated("CURRENT_TIMESTAMP + INTERVAL '24 hours'")) @map("expires_at") @db.Timestamptz(3)
+
+  @@unique([actorUserId, method, canonicalPath, idempotencyKey], map: "club_operation_receipts_scope_key")
+  @@index([expiresAt], map: "club_operation_receipts_expiry_idx")
+  @@map("club_operation_receipts")
+}
+
+model ClubGovernanceAudit {
+  id         String   @id @db.Uuid
+  clubId     String   @map("club_id") @db.Uuid
+  operationId String  @unique(map: "club_governance_audits_operation_key") @map("operation_id") @db.Uuid
+  actorId    String   @map("actor_id") @db.Uuid
+  targetId   String?  @map("target_id") @db.Uuid
+  action     String   @db.VarChar(96)
+  outcome    String   @db.VarChar(32)
+  reasonCode String   @map("reason_code") @db.VarChar(96)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([clubId, createdAt, id], map: "club_governance_audits_club_idx")
+  @@map("club_governance_audits")
 }

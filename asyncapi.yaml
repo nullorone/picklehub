@@ -186,6 +186,21 @@ channels:
             SafetyCaseStatusChanged: { $ref: '#/components/messages/SafetyCaseStatusChanged' }
             SafetyDecisionRecorded: { $ref: '#/components/messages/SafetyDecisionRecorded' }
             SafetyEffectRequested: { $ref: '#/components/messages/SafetyEffectRequested' }
+    clubEvents:
+        address: club.events.v1
+        title: Internal privacy-minimized club events
+        description: Transactional outbox only, ordered by club aggregate version and delivered at least once.
+            Every payload includes clubId and opaque aggregate references with closed states only; member identity,
+            invitation token, club text, member graph, venue coordinates, roster, reason and exact schedule are forbidden.
+        servers:
+            - $ref: '#/servers/outbox'
+        messages:
+            ClubCreated: { $ref: '#/components/messages/ClubCreated' }
+            ClubStateChanged: { $ref: '#/components/messages/ClubStateChanged' }
+            ClubMembershipChanged: { $ref: '#/components/messages/ClubMembershipChanged' }
+            ClubVenueLinkChanged: { $ref: '#/components/messages/ClubVenueLinkChanged' }
+            ClubRecurringRuleChanged: { $ref: '#/components/messages/ClubRecurringRuleChanged' }
+            ClubRecurringOccurrenceRecorded: { $ref: '#/components/messages/ClubRecurringOccurrenceRecorded' }
 operations:
     receiveClientControl:
         action: receive
@@ -329,6 +344,20 @@ operations:
             - $ref: '#/channels/trustSafetyEvents/messages/SafetyCaseStatusChanged'
             - $ref: '#/channels/trustSafetyEvents/messages/SafetyDecisionRecorded'
             - $ref: '#/channels/trustSafetyEvents/messages/SafetyEffectRequested'
+    publishClubEvents:
+        action: send
+        title: Publish committed club lifecycle references
+        summary: Publish club-scoped opaque IDs and closed states through the transactional outbox.
+        description: Mutations commit their event atomically. Consumers deduplicate by messageId and reload any
+            authorized projection; no identity, token, public text, coordinates, roster, reason or local schedule travels.
+        channel: { $ref: '#/channels/clubEvents' }
+        messages:
+            - $ref: '#/channels/clubEvents/messages/ClubCreated'
+            - $ref: '#/channels/clubEvents/messages/ClubStateChanged'
+            - $ref: '#/channels/clubEvents/messages/ClubMembershipChanged'
+            - $ref: '#/channels/clubEvents/messages/ClubVenueLinkChanged'
+            - $ref: '#/channels/clubEvents/messages/ClubRecurringRuleChanged'
+            - $ref: '#/channels/clubEvents/messages/ClubRecurringOccurrenceRecorded'
 components:
     messages:
         Authenticate:
@@ -726,6 +755,48 @@ components:
             contentType: application/json
             correlationId: { location: $message.payload#/correlationId }
             payload: { $ref: '#/components/schemas/SafetyEffectRequestedEnvelope' }
+        ClubCreated:
+            name: club.created.v1
+            title: ClubCreated
+            summary: A club and its sole owner membership were committed atomically.
+            contentType: application/json
+            correlationId: { location: $message.payload#/correlationId }
+            payload: { $ref: '#/components/schemas/ClubCreatedEnvelope' }
+        ClubStateChanged:
+            name: club.state.changed.v1
+            title: ClubStateChanged
+            summary: A club archive or restore transition was committed.
+            contentType: application/json
+            correlationId: { location: $message.payload#/correlationId }
+            payload: { $ref: '#/components/schemas/ClubStateChangedEnvelope' }
+        ClubMembershipChanged:
+            name: club.membership.changed.v1
+            title: ClubMembershipChanged
+            summary: A scoped membership transition was committed without identifying its user.
+            contentType: application/json
+            correlationId: { location: $message.payload#/correlationId }
+            payload: { $ref: '#/components/schemas/ClubMembershipChangedEnvelope' }
+        ClubVenueLinkChanged:
+            name: club.venue.link.changed.v1
+            title: ClubVenueLinkChanged
+            summary: A public canonical venue link changed without coordinates.
+            contentType: application/json
+            correlationId: { location: $message.payload#/correlationId }
+            payload: { $ref: '#/components/schemas/ClubVenueLinkChangedEnvelope' }
+        ClubRecurringRuleChanged:
+            name: club.recurring.rule.changed.v1
+            title: ClubRecurringRuleChanged
+            summary: A recurring rule changed state or future template revision.
+            contentType: application/json
+            correlationId: { location: $message.payload#/correlationId }
+            payload: { $ref: '#/components/schemas/ClubRecurringRuleChangedEnvelope' }
+        ClubRecurringOccurrenceRecorded:
+            name: club.recurring.occurrence.recorded.v1
+            title: ClubRecurringOccurrenceRecorded
+            summary: One idempotent local calendar position was materialized or deliberately skipped.
+            contentType: application/json
+            correlationId: { location: $message.payload#/correlationId }
+            payload: { $ref: '#/components/schemas/ClubRecurringOccurrenceRecordedEnvelope' }
     schemas:
         Uuid:
             type: string
@@ -876,6 +947,132 @@ components:
         EmptyData:
             type: object
             additionalProperties: false
+        ClubCreatedEnvelope:
+            type: object
+            additionalProperties: false
+            required: [messageId, type, occurredAt, correlationId, data]
+            properties:
+                messageId: { $ref: '#/components/schemas/Uuid' }
+                type: { type: string, const: club.created.v1 }
+                occurredAt: { $ref: '#/components/schemas/Timestamp' }
+                correlationId: { $ref: '#/components/schemas/Uuid' }
+                causationId:
+                    oneOf: [{ $ref: '#/components/schemas/Uuid' }, { type: 'null' }]
+                data:
+                    type: object
+                    additionalProperties: false
+                    required: [clubId, clubVersion, state, membershipPolicy]
+                    properties:
+                        clubId: { $ref: '#/components/schemas/Uuid' }
+                        clubVersion: { type: integer, minimum: 0 }
+                        state: { type: string, enum: [ACTIVE] }
+                        membershipPolicy: { type: string, enum: [OPEN, APPROVAL, INVITE_ONLY] }
+        ClubStateChangedEnvelope:
+            type: object
+            additionalProperties: false
+            required: [messageId, type, occurredAt, correlationId, data]
+            properties:
+                messageId: { $ref: '#/components/schemas/Uuid' }
+                type: { type: string, const: club.state.changed.v1 }
+                occurredAt: { $ref: '#/components/schemas/Timestamp' }
+                correlationId: { $ref: '#/components/schemas/Uuid' }
+                causationId:
+                    oneOf: [{ $ref: '#/components/schemas/Uuid' }, { type: 'null' }]
+                data:
+                    type: object
+                    additionalProperties: false
+                    required: [clubId, clubVersion, state]
+                    properties:
+                        clubId: { $ref: '#/components/schemas/Uuid' }
+                        clubVersion: { type: integer, minimum: 1 }
+                        state: { type: string, enum: [ACTIVE, ARCHIVED] }
+        ClubMembershipChangedEnvelope:
+            type: object
+            additionalProperties: false
+            required: [messageId, type, occurredAt, correlationId, data]
+            properties:
+                messageId: { $ref: '#/components/schemas/Uuid' }
+                type: { type: string, const: club.membership.changed.v1 }
+                occurredAt: { $ref: '#/components/schemas/Timestamp' }
+                correlationId: { $ref: '#/components/schemas/Uuid' }
+                causationId:
+                    oneOf: [{ $ref: '#/components/schemas/Uuid' }, { type: 'null' }]
+                data:
+                    type: object
+                    additionalProperties: false
+                    required: [clubId, clubVersion, membershipId, membershipRevision, state, role]
+                    properties:
+                        clubId: { $ref: '#/components/schemas/Uuid' }
+                        clubVersion: { type: integer, minimum: 1 }
+                        membershipId: { $ref: '#/components/schemas/Uuid' }
+                        membershipRevision: { type: integer, minimum: 0 }
+                        state: { type: string, enum: [ACTIVE, LEFT, EXCLUDED, SUPERSEDED] }
+                        role: { type: string, enum: [OWNER, ADMIN, MEMBER] }
+        ClubVenueLinkChangedEnvelope:
+            type: object
+            additionalProperties: false
+            required: [messageId, type, occurredAt, correlationId, data]
+            properties:
+                messageId: { $ref: '#/components/schemas/Uuid' }
+                type: { type: string, const: club.venue.link.changed.v1 }
+                occurredAt: { $ref: '#/components/schemas/Timestamp' }
+                correlationId: { $ref: '#/components/schemas/Uuid' }
+                causationId:
+                    oneOf: [{ $ref: '#/components/schemas/Uuid' }, { type: 'null' }]
+                data:
+                    type: object
+                    additionalProperties: false
+                    required: [clubId, clubVersion, venueId, change]
+                    properties:
+                        clubId: { $ref: '#/components/schemas/Uuid' }
+                        clubVersion: { type: integer, minimum: 1 }
+                        venueId: { $ref: '#/components/schemas/Uuid' }
+                        change: { type: string, enum: [LINKED, UNLINKED, CANONICALIZED, HIDDEN] }
+        ClubRecurringRuleChangedEnvelope:
+            type: object
+            additionalProperties: false
+            required: [messageId, type, occurredAt, correlationId, data]
+            properties:
+                messageId: { $ref: '#/components/schemas/Uuid' }
+                type: { type: string, const: club.recurring.rule.changed.v1 }
+                occurredAt: { $ref: '#/components/schemas/Timestamp' }
+                correlationId: { $ref: '#/components/schemas/Uuid' }
+                causationId:
+                    oneOf: [{ $ref: '#/components/schemas/Uuid' }, { type: 'null' }]
+                data:
+                    type: object
+                    additionalProperties: false
+                    required: [clubId, clubVersion, ruleId, ruleRevision, state]
+                    properties:
+                        clubId: { $ref: '#/components/schemas/Uuid' }
+                        clubVersion: { type: integer, minimum: 1 }
+                        ruleId: { $ref: '#/components/schemas/Uuid' }
+                        ruleRevision: { type: integer, minimum: 0 }
+                        state: { type: string, enum: [ACTIVE, PAUSED, ENDED] }
+        ClubRecurringOccurrenceRecordedEnvelope:
+            type: object
+            additionalProperties: false
+            required: [messageId, type, occurredAt, correlationId, data]
+            properties:
+                messageId: { $ref: '#/components/schemas/Uuid' }
+                type: { type: string, const: club.recurring.occurrence.recorded.v1 }
+                occurredAt: { $ref: '#/components/schemas/Timestamp' }
+                correlationId: { $ref: '#/components/schemas/Uuid' }
+                causationId:
+                    oneOf: [{ $ref: '#/components/schemas/Uuid' }, { type: 'null' }]
+                data:
+                    type: object
+                    additionalProperties: false
+                    required: [clubId, clubVersion, ruleId, occurrenceId, calendarKey, state, matchId]
+                    properties:
+                        clubId: { $ref: '#/components/schemas/Uuid' }
+                        clubVersion: { type: integer, minimum: 1 }
+                        ruleId: { $ref: '#/components/schemas/Uuid' }
+                        occurrenceId: { $ref: '#/components/schemas/Uuid' }
+                        calendarKey: { type: string, pattern: '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$' }
+                        state: { type: string, enum: [MATERIALIZED, SKIPPED_DST_GAP, SKIPPED_PAUSE] }
+                        matchId:
+                            oneOf: [{ $ref: '#/components/schemas/Uuid' }, { type: 'null' }]
         ChatSubscribeEnvelope:
             allOf:
                 - $ref: '#/components/schemas/MessageEnvelope'

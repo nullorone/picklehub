@@ -2293,3 +2293,64 @@ llm/_docs/architecture.md llm/_docs/domain-model.md llm/_docs/security-privacy.m
 - Критерии этапа выполнены на уровне требований: ноль площадок допустимы, клуб не остаётся без owner, club/platform
   admin разделены, членских платежей нет. Точные enum/TTL, recurring horizon, wire events и SQL guards принадлежат
   следующему промпту `llm/09-clubs/02-contract-data.md`; к нему не переходили.
+
+## 2026-09-11 — клубы, этап 02-contract-data
+
+- Активный промпт: `llm/09-clubs/02-contract-data.md`. Добавлен TypeSpec source `contracts/rest/clubs.tsp`: 36
+  операций на 30 paths для публичного поиска/карточки, CRUD через create/read/update и обратимый archive/restore,
+  scoped roster/roles/ownership, join requests, адресных invitations, leave/exclude/block, optional venue links,
+  обычного club-attributed match и recurring rules/occurrences. Tournament API, backend use cases, UI, платежи,
+  членские взносы и club XP не создавались.
+- Поиск и публичная карточка детерминированы и сохраняют клуб без площадок. Остальные reads требуют player bearer,
+  а мутации дополнительно требуют Origin/CSRF, UUIDv4 idempotency key и expected club/resource revision. Platform
+  roles не появляются в club DTO. Hard delete клуба отсутствует; archive/restore, ownership/role, exclusion и block
+  имеют закрытые причины. Invitation адресовано user ID, raw capability не менее 128 бит возвращается один раз,
+  хранится только keyed hash и истекает ровно через семь суток.
+- Prisma schema и additive migration `20260912120000_clubs_contract_data` добавляют `Club`, интервальные
+  `ClubMembership`, `ClubJoinRequest`, `ClubInvitation`, `ClubBlock`, optional `ClubVenue`, `RecurringMatchRule`,
+  immutable `RecurringMatchOccurrence`, encrypted 24-hour operation receipt и append-only governance audit. Все
+  сущности живут в общей PostgreSQL schema; отдельных tenant database/credentials нет.
+- Partial unique indexes запрещают второе active membership и второго active owner. Deferred constraint triggers на
+  корне и membership требуют ровно одного owner на commit, поэтому создание клуба и transfer атомарны, а промежуточные
+  ноль/два владельца не наблюдаемы. Terminal membership intents не переоткрываются, active club block и archive
+  запрещают новые intents, FK используют `RESTRICT`, а venue link принимает только опубликованную canonical venue.
+- `matches` расширен nullable club source: обычная club attribution хранит club ID, recurring attribution — club/rule/
+  occurrence IDs. Reciprocal deferred constraints связывают одну immutable calendar position ровно с одним match;
+  после публикации attribution неизменяема. Rule не хранит roster, участников, очередь или общую вместимость.
+- Стартовая recurring policy: `WEEKLY`, interval 1–12 недель, уникальные ISO weekdays, horizon ровно 42 суток,
+  local wall time, IANA timezone, tzdata version, gap=`SKIP` и явный overlap=`EARLIER_OFFSET`/`LATER_OFFSET`.
+  Уникальный ключ `rule + YYYY-MM-DDTHH:mm` занимает также DST/pause skip marker. SQL resolver перебирает допустимые
+  UTC offsets, детерминированно выбирает overlap и отвергает несогласованный UTC instant; monotonic watermark не
+  позволяет resume/restore достроить backlog.
+- AsyncAPI получил internal transactional-outbox channel `club.events.v1` с шестью событиями. Каждое содержит
+  `clubId`, opaque aggregate IDs, версии и закрытые состояния; user/invitee/organizer ID, capability token, имя,
+  описание/locality, member graph, координаты, roster, reason и exact schedule запрещены policy test. OpenAPI и оба
+  TypeScript-клиента обновлены только через `npm run contracts:generate`; representative Prism smoke включает clubs.
+- Добавлен `llm/_docs/clubs-data-policy.md`, обновлены domain model и contract README. Новые contract/data policy
+  tests проверяют surface/authorization/no-store, privacy событий, обязательные модели, отсутствие hard-delete,
+  owner/membership uniqueness, terminal intents, secret storage, archive/block guards, DST resolver, horizon и
+  reciprocal match source.
+
+### Проверки этапа clubs 02-contract-data
+
+- Первичная TypeSpec-проверка нашла invalid regex escaping, неподдерживаемый `@uniqueItems` и конфликт path
+  `requestId` с request header; исправлено. Первый Redocly lint нашёл 21 operation без description; для каждой
+  добавлено описание. Targeted club policy/data tests после исправления enum dereference — 7/7 успешно.
+- `npm run contracts:check` прошёл TypeSpec, Redocly, allowlists/privacy и 91/91 contract/data tests; compatibility с
+  `HEAD`, reproducible generated artifacts и strict generated typecheck успешны. Завершающий mock один раз получил
+  sandbox `listen EPERM 127.0.0.1`; отдельный `npm run contracts:mock:check` успешен, включая club search.
+- `npm run format:check` и `npm run docs:check` успешны для девяти TypeSpec sources и 124 Markdown files. `npm run
+lint`, `npm run typecheck`, `npm test` и `npm run build` успешны для восьми workspaces. Backend regression — 28/28
+  suites и 152/152 tests; API client — 6/6, web — 8 suites/38 tests, TMA — 6/21. Production PWA и отсутствие TMA
+  development mock подтверждены; остаются прежние неблокирующие warnings о web/TMA bundles около 565/578 kB и
+  MapLibre 924 kB.
+- `npm run workspace:check`, `npm ls --depth=0` и `git diff --check` успешны: восемь workspaces, один root lockfile,
+  unmet/extraneous dependencies и whitespace errors отсутствуют.
+- `npx prisma format` и `npx prisma validate --schema backend/prisma/schema.prisma` не смогли получить schema engine:
+  restricted network завершился `ENOTFOUND claude-fwd.raiffeisen.ru`. Runtime migration/constraint tests также не
+  запускались: sandbox запретил Docker daemon socket (`operation not permitted`), а `psql`/`pg_isready` отсутствуют.
+  Поэтому применение SQL, deferred owner transfer и DST constraints должны пройти в PostgreSQL CI; их локальный
+  runtime-успех не заявляется. Статические data-policy tests и вся доступная contract/TypeScript regression зелёные.
+- Локально исполнимые критерии prompt выполнены: клуб без площадки моделируется без `venue_id`, ownership transfer
+  защищён deferred DB invariant, DST gap/overlap фиксируются явной политикой и уникальной local calendar position,
+  generated client проходит проверки. Следующий prompt — `llm/09-clubs/03-backend.md`; к нему не переходили.

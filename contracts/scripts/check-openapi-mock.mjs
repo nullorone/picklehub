@@ -161,6 +161,15 @@ try {
         throw new Error(`Unexpected match search mock: ${matches.status} ${JSON.stringify(matchesBody)}`);
     }
 
+    const clubs = await fetch(`http://${host}:${port}/clubs?locality=%D0%9C%D0%BE%D1%81%D0%BA%D0%B2%D0%B0&limit=20`, {
+        headers: { 'accept-language': 'ru-RU' },
+    });
+    const clubsBody = await clubs.json();
+    requireNoStore(clubs, 'Club search response');
+    if (clubs.status !== 200 || !Array.isArray(clubsBody.items) || !clubsBody.pageInfo || !clubsBody.snapshotAt) {
+        throw new Error(`Unexpected club search mock: ${clubs.status} ${JSON.stringify(clubsBody)}`);
+    }
+
     const notifications = await fetch(`http://${host}:${port}/notifications?limit=20`, {
         headers: {
             'accept-language': 'ru-RU',
@@ -232,7 +241,7 @@ try {
         throw new Error(`Unexpected administration queue mock: ${adminCases.status} ${JSON.stringify(adminCasesBody)}`);
     }
     console.log(
-        'OpenAPI mock passed: health, identity, venue, match, communication, profile, trust/safety and administration examples are valid.'
+        'OpenAPI mock passed: health, identity, venue, match, communication, profile, trust/safety, administration and club examples are valid.'
     );
 } finally {
     child.kill('SIGTERM');

@@ -265,6 +265,135 @@ export namespace ChatSystemEventMessage {
         | 'RESULT_DISPUTED';
 }
 
+export namespace ClubCreatedMessage {
+    export interface ClubCreatedEnvelope {
+        messageId: string;
+        type: 'club.created.v1';
+        occurredAt: string;
+        correlationId: string;
+        causationId?: string | null;
+        data: Data;
+    }
+
+    export interface Data {
+        clubId: string;
+        clubVersion: number;
+        state: DataState;
+        membershipPolicy: DataMembershipPolicy;
+    }
+
+    export type DataState = 'ACTIVE';
+
+    export type DataMembershipPolicy = 'OPEN' | 'APPROVAL' | 'INVITE_ONLY';
+}
+
+export namespace ClubMembershipChangedMessage {
+    export interface ClubMembershipChangedEnvelope {
+        messageId: string;
+        type: 'club.membership.changed.v1';
+        occurredAt: string;
+        correlationId: string;
+        causationId?: string | null;
+        data: Data;
+    }
+
+    export interface Data {
+        clubId: string;
+        clubVersion: number;
+        membershipId: string;
+        membershipRevision: number;
+        state: DataState;
+        role: DataRole;
+    }
+
+    export type DataState = 'ACTIVE' | 'LEFT' | 'EXCLUDED' | 'SUPERSEDED';
+
+    export type DataRole = 'OWNER' | 'ADMIN' | 'MEMBER';
+}
+
+export namespace ClubRecurringOccurrenceRecordedMessage {
+    export interface ClubRecurringOccurrenceRecordedEnvelope {
+        messageId: string;
+        type: 'club.recurring.occurrence.recorded.v1';
+        occurredAt: string;
+        correlationId: string;
+        causationId?: string | null;
+        data: Data;
+    }
+
+    export interface Data {
+        clubId: string;
+        clubVersion: number;
+        ruleId: string;
+        occurrenceId: string;
+        calendarKey: string;
+        state: DataState;
+        matchId: string | null;
+    }
+
+    export type DataState = 'MATERIALIZED' | 'SKIPPED_DST_GAP' | 'SKIPPED_PAUSE';
+}
+
+export namespace ClubRecurringRuleChangedMessage {
+    export interface ClubRecurringRuleChangedEnvelope {
+        messageId: string;
+        type: 'club.recurring.rule.changed.v1';
+        occurredAt: string;
+        correlationId: string;
+        causationId?: string | null;
+        data: Data;
+    }
+
+    export interface Data {
+        clubId: string;
+        clubVersion: number;
+        ruleId: string;
+        ruleRevision: number;
+        state: DataState;
+    }
+
+    export type DataState = 'ACTIVE' | 'PAUSED' | 'ENDED';
+}
+
+export namespace ClubStateChangedMessage {
+    export interface ClubStateChangedEnvelope {
+        messageId: string;
+        type: 'club.state.changed.v1';
+        occurredAt: string;
+        correlationId: string;
+        causationId?: string | null;
+        data: Data;
+    }
+
+    export interface Data {
+        clubId: string;
+        clubVersion: number;
+        state: DataState;
+    }
+
+    export type DataState = 'ACTIVE' | 'ARCHIVED';
+}
+
+export namespace ClubVenueLinkChangedMessage {
+    export interface ClubVenueLinkChangedEnvelope {
+        messageId: string;
+        type: 'club.venue.link.changed.v1';
+        occurredAt: string;
+        correlationId: string;
+        causationId?: string | null;
+        data: Data;
+    }
+
+    export interface Data {
+        clubId: string;
+        clubVersion: number;
+        venueId: string;
+        change: DataChange;
+    }
+
+    export type DataChange = 'LINKED' | 'UNLINKED' | 'CANONICALIZED' | 'HIDDEN';
+}
+
 export namespace CommunicationErrorMessage {
     export interface CommunicationErrorEnvelope {
         messageId: string;
@@ -906,6 +1035,13 @@ export type ChatStreamChangedEnvelope = ChatStreamChangedMessage.ChatStreamChang
 export type ChatSubscribeEnvelope = ChatSubscribeMessage.ChatSubscribeEnvelope;
 export type ChatSubscribedEnvelope = ChatSubscribedMessage.ChatSubscribedEnvelope;
 export type ChatSystemEventEnvelope = ChatSystemEventMessage.ChatSystemEventEnvelope;
+export type ClubCreatedEnvelope = ClubCreatedMessage.ClubCreatedEnvelope;
+export type ClubMembershipChangedEnvelope = ClubMembershipChangedMessage.ClubMembershipChangedEnvelope;
+export type ClubRecurringOccurrenceRecordedEnvelope =
+    ClubRecurringOccurrenceRecordedMessage.ClubRecurringOccurrenceRecordedEnvelope;
+export type ClubRecurringRuleChangedEnvelope = ClubRecurringRuleChangedMessage.ClubRecurringRuleChangedEnvelope;
+export type ClubStateChangedEnvelope = ClubStateChangedMessage.ClubStateChangedEnvelope;
+export type ClubVenueLinkChangedEnvelope = ClubVenueLinkChangedMessage.ClubVenueLinkChangedEnvelope;
 export type CommunicationErrorEnvelope = CommunicationErrorMessage.CommunicationErrorEnvelope;
 export type ConsentChangedEnvelope = ConsentChangedMessage.ConsentChangedEnvelope;
 export type IdentityLinkedEnvelope = IdentityLinkedMessage.IdentityLinkedEnvelope;
@@ -956,6 +1092,12 @@ export type WebSocketMessage =
     | ChatSubscribeEnvelope
     | ChatSubscribedEnvelope
     | ChatSystemEventEnvelope
+    | ClubCreatedEnvelope
+    | ClubMembershipChangedEnvelope
+    | ClubRecurringOccurrenceRecordedEnvelope
+    | ClubRecurringRuleChangedEnvelope
+    | ClubStateChangedEnvelope
+    | ClubVenueLinkChangedEnvelope
     | CommunicationErrorEnvelope
     | MatchCancelledEnvelope
     | MatchCompletedConfirmedEnvelope
