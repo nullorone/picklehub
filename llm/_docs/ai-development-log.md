@@ -2354,3 +2354,60 @@ lint`, `npm run typecheck`, `npm test` и `npm run build` успешны для 
 - Локально исполнимые критерии prompt выполнены: клуб без площадки моделируется без `venue_id`, ownership transfer
   защищён deferred DB invariant, DST gap/overlap фиксируются явной политикой и уникальной local calendar position,
   generated client проходит проверки. Следующий prompt — `llm/09-clubs/03-backend.md`; к нему не переходили.
+
+## 2026-09-11 — клубы, этап 03-backend
+
+- Активный промпт: `llm/09-clubs/03-backend.md`. Добавлен NestJS-модуль `clubs` и подключён к API/worker. Реализованы
+  все опубликованные club routes: поиск/карточка/изменение/archive/restore, scoped roster, открытое вступление и
+  заявки, адресные приглашения, leave/exclude/block, роли и атомарная передача владения, optional canonical venue
+  links, обычные club-attributed matches и управление recurring rules/occurrences.
+- Каждая защищённая операция повторно читает активное membership именно данного клуба и применяет фиксированную
+  матрицу `OWNER` / `ADMIN` / `MEMBER`; platform role и чужой club membership не используются. Команды проходят
+  Origin/CSRF, rate limit, UUIDv4 idempotency и serializable transaction. Encrypted 24-hour receipts не сохраняют
+  raw invitation capability; HTTP logging маскирует capability как в preview, так и в accept/decline path.
+- Membership/request/invitation переходы сериализуются блокировкой club root и optimistic club/resource revision.
+  Pending intent не выдаёт права, принятие адресного invite атомарно supersede-ит pending request, block завершает
+  membership/intents, а owner не может выйти или быть исключён. Governance audit пишет только разрешённые
+  миграцией закрытые действия и reason codes; outbox payload соответствует минимизированным club event schemas.
+- `MatchService.create` получил необязательный внутренний club source и заранее выбранный match ID. Обычный club
+  match и recurring generator используют этот существующий сценарий, включая onboarding, roster, match audit и
+  outbox; match lifecycle не дублируется в clubs. Club membership не копируется в roster встречи.
+- Worker раз в час обрабатывает bounded набор правил до rolling horizon 42 суток. Calendar key и unique constraint
+  делают retry идемпотентным; watermark монотонный. Локальное время разрешается независимо от server timezone:
+  spring gap записывается `SKIPPED_DST_GAP`, overlap выбирает явно ранний/поздний offset. Pause, archive, отсутствие
+  manager capability или недоступная/unlinked venue дают неизменяемый `SKIPPED_PAUSE`; готовые matches не меняются.
+- Добавлены unit tests role policy и часовых поясов (`Europe/Berlin` gap/overlap, `Europe/Moscow`, fractional
+  `Asia/Kathmandu`) и PostgreSQL integration suite для конкурентного open join, owner transfer/last-owner guard,
+  повторного запуска генератора и запрета materialized matches архивного клуба.
+- Изменённые файлы: новый `backend/src/clubs/`, `backend/src/app.module.ts`, `backend/src/worker.module.ts`,
+  `backend/src/matches/match.service.ts`, HTTP logging middleware/test, два club unit test и
+  `backend/test/integration/clubs-backend.integration-spec.ts`. TypeSpec, AsyncAPI, Prisma schema и contract
+  migration этапа 02 не менялись.
+
+### Проверки этапа clubs 03-backend
+
+- `PRISMA_SCHEMA_ENGINE_BINARY=/usr/bin/true PRISMA_QUERY_ENGINE_LIBRARY=/usr/bin/true npx prisma generate --schema
+backend/prisma/schema.prisma` — успешно, Prisma Client 6.16.2 сгенерирован локально без изменения tracked
+  artifacts.
+- `npm run lint --workspace @picklehub/backend`, `npm run typecheck --workspace @picklehub/backend`, `npm test
+--workspace @picklehub/backend -- --runInBand` и `npm run build --workspace @picklehub/backend` — успешно;
+  backend unit regression: 30/30 suites и 161/161 tests.
+- `npm run verify` — успешно полностью: восемь workspaces/один lockfile; TypeSpec/Redocly, policy для 151 REST
+  operations и 51 messages, 91/91 contract/data/privacy tests, compatibility/generated drift/typecheck, OpenAPI
+  mock, format/docs, lint, strict typecheck, tests и production builds. Backend — 30/161; web — 8/38; TMA — 6/21;
+  API client — 1/6. Сохраняются прежние неблокирующие warnings о web/TMA bundles около 565/578 kB и MapLibre
+  924 kB, а внешнее окружение по-прежнему задаёт `NODE_TLS_REJECT_UNAUTHORIZED=0`.
+- `npm run test:integration --workspace @picklehub/backend -- --runInBand
+test/integration/clubs-backend.integration-spec.ts` обнаружил три сценария, но общий setup не смог создать venue:
+  локальное окружение не предоставило пригодное итоговое состояние PostgreSQL; параллельно sandbox запрещает Redis
+  socket (`connect EPERM 127.0.0.1:6379`). Поэтому runtime assertions конкурентного membership/ownership и
+  recurring idempotency должны пройти после `prisma migrate deploy` в PostgreSQL/Redis CI; их локальный успех не
+  заявляется. Unit timezone assertions и статические SQL constraints зелёные.
+- `npm ls --depth=0`, `git diff --check`, финальные `npm run format:check` и `npm run docs:check` — успешно;
+  unmet/extraneous dependencies и whitespace errors отсутствуют.
+- Повторный `npm run verify` после финальной минимизации invitation path остановился в `contracts:mock:check` на
+  sandbox `listen EPERM 127.0.0.1`; TypeSpec, Redocly, 91 contract tests, compatibility, generated drift и contract
+  typecheck до него прошли. Этот же полный verify ранее в сессии был успешен, а после финальных backend-правок
+  отдельно успешно повторены backend lint/typecheck/targeted tests/build, format/docs и `git diff --check`.
+- Локально исполнимые критерии prompt выполнены; обязательный runtime PostgreSQL integration остаётся
+  environment-blocked, а не отмечен успешным. Следующий prompt — `llm/09-clubs/04-tma-web.md`; к нему не переходили.

@@ -23,4 +23,27 @@ describe('HttpLoggingMiddleware', () => {
         );
         expect(JSON.stringify(logger.log.mock.calls)).not.toContain('secret-capability-value');
     });
+
+    it('redacts raw club invitation capabilities including command paths', () => {
+        const logger = { log: jest.fn() };
+        const middleware = new HttpLoggingMiddleware(logger as never);
+        let finish: (() => void) | undefined;
+        const response = {
+            statusCode: 200,
+            once: jest.fn((_event: string, callback: () => void) => {
+                finish = callback;
+            }),
+        };
+        middleware.use(
+            { method: 'POST', originalUrl: '/v1/club-invitations/club-secret-capability/accept' } as never,
+            response as never,
+            jest.fn()
+        );
+        finish?.();
+        expect(logger.log).toHaveBeenCalledWith(
+            expect.objectContaining({ route: '/v1/club-invitations/:invitationToken/accept' }),
+            HttpLoggingMiddleware.name
+        );
+        expect(JSON.stringify(logger.log.mock.calls)).not.toContain('club-secret-capability');
+    });
 });

@@ -80,6 +80,14 @@ export class MatchService {
         private readonly interactions: InteractionPolicyService
     ) {}
 
+    isWithinPublishWindow(startsAt: Date): boolean {
+        const now = this.policy.now().getTime();
+        return (
+            startsAt.getTime() >= now + this.policy.current.publishMinimumLeadMs &&
+            startsAt.getTime() <= now + this.policy.current.publishHorizonMs
+        );
+    }
+
     async search(
         query: MatchSearchDto,
         profile?: { skill: number; preferredFormat: 'SINGLES' | 'DOUBLES' | null },
@@ -230,7 +238,18 @@ export class MatchService {
         };
     }
 
-    async create(userId: string, body: DraftMatchDto, tx: Prisma.TransactionClient): Promise<object> {
+    async create(
+        userId: string,
+        body: DraftMatchDto,
+        tx: Prisma.TransactionClient,
+        clubSource?: {
+            clubId: string;
+            origin: 'CLUB' | 'RECURRING_RULE';
+            recurringRuleId?: string;
+            recurringOccurrenceId?: string;
+            matchId?: string;
+        }
+    ): Promise<object> {
         await this.assertOnboarded(userId, tx);
         this.validateDraft(body);
         this.assertDraftCapacity(body.format ?? null, body.guests ?? []);
@@ -240,12 +259,20 @@ export class MatchService {
         )
             throw matchError('VALIDATION_FAILED', 400);
         const now = this.policy.now();
-        const id = uuidV7();
+        const id = clubSource?.matchId ?? uuidV7();
         const capacity = body.format === MatchFormatDto.SINGLES ? 1 : 2;
         await tx.match.create({
             data: {
                 id,
                 organizerId: userId,
+                ...(clubSource === undefined
+                    ? {}
+                    : {
+                          clubId: clubSource.clubId,
+                          clubOrigin: clubSource.origin,
+                          recurringRuleId: clubSource.recurringRuleId,
+                          recurringOccurrenceId: clubSource.recurringOccurrenceId,
+                      }),
                 ...this.draftData(body),
                 createdAt: now,
                 updatedAt: now,
@@ -1251,6 +1278,15 @@ export class MatchService {
             description: match.description,
             bookingState: match.bookingState,
             bookingNote: match.bookingNote,
+            clubSource:
+                match.clubId === null
+                    ? null
+                    : {
+                          clubId: match.clubId,
+                          origin: match.clubOrigin,
+                          recurringRuleId: match.recurringRuleId,
+                          recurringOccurrenceId: match.recurringOccurrenceId,
+                      },
             policyVersion: match.policyVersion,
             teams: match.teams.map((team) => ({ code: team.code, capacity: team.capacity, ...counts(team.code) })),
             participants: match.participants.map((participant) => ({

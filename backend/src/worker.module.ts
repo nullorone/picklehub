@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 
 import { AuditModule } from './audit/audit.module';
+import { ClubsModule } from './clubs/clubs.module';
 import { TypedConfigModule } from './common/config/config.module';
 import { DatabaseModule } from './common/database/database.module';
 import { LifecycleModule } from './common/lifecycle/lifecycle.module';
@@ -30,6 +31,7 @@ import { VenuesModule } from './venues/venues.module';
         MatchesModule,
         CommunicationsModule,
         ProfilesModule,
+        ClubsModule,
     ],
     providers: [OutboxWorkerService],
 })

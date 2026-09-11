@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 
 import { AuditModule } from './audit/audit.module';
 import { AdministrationModule } from './administration/administration.module';
+import { ClubsModule } from './clubs/clubs.module';
 import { TypedConfigModule } from './common/config/config.module';
 import { DatabaseModule } from './common/database/database.module';
 import { LifecycleModule } from './common/lifecycle/lifecycle.module';
@@ -37,6 +38,7 @@ import { TrustSafetyModule } from './trust-safety/trust-safety.module';
         ProfilesModule,
         TrustSafetyModule,
         AdministrationModule,
+        ClubsModule,
     ],
 })
 export class AppModule {}
