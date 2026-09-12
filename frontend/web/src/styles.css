@@ -1722,3 +1722,111 @@ fieldset {
         padding: 1rem;
     }
 }
+
+.tournaments-screen,
+.tournament-wizard form,
+.registration-form,
+.organizer-panel,
+.tournament-plan {
+    display: grid;
+    gap: 1rem;
+}
+
+.tournament-wizard summary,
+.match-editor summary,
+.text-bracket summary {
+    min-height: 2.75rem;
+    cursor: pointer;
+    font-weight: 800;
+}
+
+.tournament-wizard textarea {
+    width: 100%;
+    min-height: 7rem;
+    margin-top: 0.45rem;
+    padding: 0.7rem 0.8rem;
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+    color: var(--text);
+    background: var(--background);
+    font: inherit;
+}
+
+.preset-preview,
+.round-card,
+.organizer-panel,
+.match-editor,
+.text-bracket {
+    padding: 1rem;
+    border: 1px solid var(--border);
+    border-radius: 1rem;
+    background: var(--surface);
+}
+
+.tournament-list .result-card,
+.entrant-list li,
+.round-controls,
+.organizer-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.tournament-list .result-card {
+    align-items: flex-start;
+    flex-direction: column;
+}
+
+.entrant-list,
+.round-card ol,
+.text-bracket ol {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.match-editor {
+    margin-top: 0.75rem;
+}
+
+.match-editor form {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.table-scroll {
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+.table-scroll table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table-scroll th,
+.table-scroll td {
+    padding: 0.75rem;
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+    white-space: nowrap;
+}
+
+.tournament-hero {
+    min-height: auto;
+}
+
+@media (max-width: 640px) {
+    .tournament-hero {
+        display: block;
+        padding: 1.25rem;
+    }
+
+    .organizer-actions,
+    .entrant-list li,
+    .round-controls {
+        align-items: stretch;
+        flex-direction: column;
+    }
+}

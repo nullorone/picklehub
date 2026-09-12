@@ -12,6 +12,7 @@ import { TelegramAccount, TelegramLogin, TelegramOnboarding } from './identity-u
 import { CreateMatchScreen, MatchDetailsScreen, MatchesScreen } from './matches-ui';
 import { ProfileScreen } from './profiles-ui';
 import { MatchFeedbackScreen, SafetyCenterScreen, SafetyReceiptScreen, SafetyReportScreen } from './safety-ui';
+import { TournamentDetailsScreen, TournamentsScreen } from './tournaments-ui';
 import { VenuesScreen } from './venues-ui';
 
 type Session = components['schemas']['AuthenticatedSession'];
@@ -114,6 +115,7 @@ export function App({ config, initData }: { readonly config: RuntimeConfig; read
                         <Link to="/matches">Матчи</Link>
                         <Link to="/venues">Площадки</Link>
                         <Link to="/clubs">Клубы</Link>
+                        <Link to="/tournaments">Турниры</Link>
                         <Link to="/notifications">
                             Уведомления
                             <NotificationBadge client={client} />
@@ -165,6 +167,23 @@ export function App({ config, initData }: { readonly config: RuntimeConfig; read
                     path="/clubs/:clubId"
                     element={
                         <ClubDetailsScreen
+                            client={client}
+                            online={online}
+                            signedIn={Boolean(session && !onboarding)}
+                            userId={session?.user.id}
+                        />
+                    }
+                />
+                <Route
+                    path="/tournaments"
+                    element={
+                        <TournamentsScreen client={client} online={online} signedIn={Boolean(session && !onboarding)} />
+                    }
+                />
+                <Route
+                    path="/tournaments/:tournamentId"
+                    element={
+                        <TournamentDetailsScreen
                             client={client}
                             online={online}
                             signedIn={Boolean(session && !onboarding)}

@@ -1325,3 +1325,83 @@ fieldset {
         padding: 1rem;
     }
 }
+
+.tournaments-screen,
+.tma-tournament-wizard form,
+.organizer-panel,
+.tournament-plan {
+    display: grid;
+    gap: 0.85rem;
+}
+
+.tma-tournament-wizard summary,
+.match-editor summary,
+.text-bracket summary {
+    min-height: 2.75rem;
+    cursor: pointer;
+    font-weight: 800;
+}
+
+.tma-tournament-wizard textarea {
+    width: 100%;
+    min-height: 6rem;
+    margin-top: 0.45rem;
+    padding: 0.7rem 0.8rem;
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+    color: var(--text);
+    background: var(--background);
+    font: inherit;
+}
+
+.preset-preview,
+.organizer-panel,
+.round-card,
+.match-editor,
+.text-bracket {
+    padding: 0.85rem;
+    border: 1px solid var(--border);
+    border-radius: 0.9rem;
+    background: var(--surface);
+}
+
+.tournament-list .result-card,
+.entrant-list li,
+.round-controls,
+.organizer-actions {
+    display: flex;
+    align-items: stretch;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.entrant-list,
+.round-card ol,
+.text-bracket ol,
+.match-editor form {
+    display: grid;
+    gap: 0.65rem;
+}
+
+.table-scroll {
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+.table-scroll table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table-scroll th,
+.table-scroll td {
+    padding: 0.6rem;
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+    white-space: nowrap;
+}
+
+.tournament-summary h1 {
+    overflow-wrap: anywhere;
+    font-size: clamp(2rem, 12vw, 3.25rem);
+}

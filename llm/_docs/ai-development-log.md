@@ -2680,3 +2680,50 @@ backend/test/unit/tournament-strategies.spec.ts` и `npm run build --workspace @
 - `npm ls --depth=0`, `git diff --check`, `format:check` и `docs:check` успешны; unmet/extraneous dependencies,
   whitespace и Markdown errors отсутствуют. Следующий промпт — `llm/10-tournaments/04-tma-web.md`; к нему не
   переходили.
+
+## 2026-09-12 — турниры, этап 04-tma-web
+
+- Активный промпт: `llm/10-tournaments/04-tma-web.md`. В web/PWA и TMA добавлены публичные маршруты поиска и
+  карточки турнира, отдельные platform UI и навигация. Поиск фильтрует название/формат; карточка показывает
+  lifecycle, локальное время в IANA timezone, вместимость, версию правил и информационную цену с явным указанием,
+  что расчёт проходит вне PickleHub.
+- Мастер создаёт только восемь allowlisted preset версии `1.0.0`; `CUSTOM_DSL` отсутствует. Для каждого формата
+  показаны только его параметры, а client guard повторно блокирует несовместимые capacity/round/pool/playoff/court
+  сочетания до HTTP. Предпросмотр объясняет scoring, отсутствие ничьих, публичный tie-break lot, внешнюю оплату и
+  то, что корты не бронируются сервисом.
+- Участник может зарегистрироваться один, готовой парой либо с явным opt-in на поиск партнёра, увидеть собственную
+  FIFO-очередь, check-in и ручной payment state, отметить прибытие или сняться. Offline отключает мутации без
+  optimistic success; публичные read-only данные остаются видимыми.
+- Organizer-панель покрывает публикацию, переставляемый порядок посева, старт турнира/раунда, завершение раунда,
+  ручной внешний payment mark, score, walkover, versioned correction, pause, recovery-resume, completion и cancel.
+  Все команды используют generated DTO, CSRF/idempotency client boundary и expected aggregate/resource/result
+  revisions. Version/revision conflict, позднее исправление и projection mismatch показываются отдельно с явной
+  загрузкой свежего состояния.
+- Общая проекция восьми форматов отображается доступными ordered lists и standings table; bracket имеет отдельную
+  текстовую альтернативу. Court rank/batch видны без обещания бронирования. TMA использует собственную вертикальную
+  компоновку, горизонтальный scroll только внутри таблицы и 360 px browser assertion на отсутствие page overflow.
+- Handwritten API client получил типизированные методы всех tournament routes поверх generated OpenAPI types;
+  generated artifacts не редактировались. Добавлены 3 web и 2 TMA component scenarios, а также 2 production-build
+  browser scenarios для публичной сетки, текстовой альтернативы, таблицы и узкого TMA viewport. Изменённые файлы:
+  `frontend/packages/api-client/src/index.ts`, web/TMA `app.tsx`, `styles.css`, новые `tournaments-ui.tsx` и их
+  component tests, `test/e2e/tournaments.spec.ts` и этот журнал.
+
+### Проверки этапа tournaments 04-tma-web
+
+- Targeted lint и strict typecheck для `@picklehub/api-client`, `@picklehub/web`, `@picklehub/tg` — успешно.
+  `npm test --workspace @picklehub/web -- --run src/tournaments-ui.test.tsx` — 3/3; аналогичная TMA-команда — 2/2.
+  Полная client regression успешна: API client 1/1 suite и 6/6 tests, web 10/10 и 45/45, TMA 8/8 и 27/27.
+- Targeted production builds API client, web/PWA и TMA успешны; PWA manifest/service worker присутствуют, TMA
+  development Telegram mock исключён. Неблокирующие bundle warnings выросли до web 622 kB и TMA 630 kB;
+  MapLibre chunk остаётся 924 kB.
+- `npm run verify` — успешно полностью: восемь workspaces/один lockfile; TypeSpec/Redocly; 173 REST operations и
+  56 messages; 103/103 contract/data/privacy tests; breaking/generated drift/contract typecheck; OpenAPI mock;
+  format/docs; lint; strict typecheck; tests и production builds. Backend regression — 34/34 suites и 201/201
+  tests. Окружение по-прежнему задаёт небезопасный `NODE_TLS_REJECT_UNAUTHORIZED=0`; это существующее внешнее
+  предупреждение.
+- `npm run test:e2e:typecheck` и `npm run test:e2e:build` — успешно. `npx playwright test
+test/e2e/tournaments.spec.ts` обнаружил оба web/TMA сценария, но локальный Chrome завершился с `SIGABRT` до
+  первого test step, cleanup получил `kill EPERM`. Поэтому реальные browser/360 px assertions должны пройти в
+  Playwright CI и локально успешными не заявляются; соответствующие component DOM assertions зелёные.
+- `git diff --check` успешен. Локально исполнимые критерии промпта выполнены; следующий промпт —
+  `llm/10-tournaments/05-verification.md`, к нему не переходили.

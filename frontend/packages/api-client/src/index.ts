@@ -538,6 +538,161 @@ export function createIdentityClient(options: ApiClientOptions, platform: Client
                 body,
                 { auth: true, idempotent: true, mutation: true }
             ),
+        searchTournaments: (parameters: NonNullable<operations['searchTournaments']['parameters']['query']>) =>
+            call<components['schemas']['TournamentPage']>('/tournaments', undefined, { query: query(parameters) }),
+        getTournament: (tournamentId: string) =>
+            call<components['schemas']['Tournament']>(`/tournaments/${tournamentId}`),
+        createTournament: (body: components['schemas']['CreateTournamentInput']) =>
+            call<components['schemas']['Tournament']>('/tournaments', body, {
+                auth: true,
+                idempotent: true,
+                mutation: true,
+            }),
+        updateTournament: (tournamentId: string, body: components['schemas']['UpdateTournamentInput']) =>
+            call<components['schemas']['Tournament']>(`/tournaments/${tournamentId}`, body, {
+                auth: true,
+                idempotent: true,
+                method: 'PATCH',
+                mutation: true,
+            }),
+        publishTournament: (tournamentId: string, expectedVersion: number) =>
+            call<components['schemas']['Tournament']>(
+                `/tournaments/${tournamentId}/publish`,
+                { expectedVersion },
+                { auth: true, idempotent: true, mutation: true }
+            ),
+        registerForTournament: (tournamentId: string, body: components['schemas']['RegisterTournamentInput']) =>
+            call<components['schemas']['TournamentRegistrationResult']>(
+                `/tournaments/${tournamentId}/registrations`,
+                body,
+                { auth: true, idempotent: true, mutation: true }
+            ),
+        listTournamentEntrants: (tournamentId: string) =>
+            call<components['schemas']['EntrantPage']>(`/tournaments/${tournamentId}/entrants`, undefined, {
+                auth: true,
+            }),
+        checkInTournamentEntrant: (
+            tournamentId: string,
+            entrantId: string,
+            body: components['schemas']['EntrantCommand']
+        ) =>
+            call<components['schemas']['Entrant']>(
+                `/tournaments/${tournamentId}/entrants/${entrantId}/check-in`,
+                body,
+                {
+                    auth: true,
+                    idempotent: true,
+                    mutation: true,
+                }
+            ),
+        withdrawTournamentEntrant: (
+            tournamentId: string,
+            entrantId: string,
+            body: components['schemas']['EntrantCommand']
+        ) =>
+            call<components['schemas']['Entrant']>(
+                `/tournaments/${tournamentId}/entrants/${entrantId}/withdraw`,
+                body,
+                {
+                    auth: true,
+                    idempotent: true,
+                    mutation: true,
+                }
+            ),
+        markTournamentExternalPayment: (
+            tournamentId: string,
+            entrantId: string,
+            body: components['schemas']['PaymentMarkInput']
+        ) =>
+            call<components['schemas']['PaymentMark']>(
+                `/tournaments/${tournamentId}/entrants/${entrantId}/payment-mark`,
+                body,
+                { auth: true, idempotent: true, method: 'PUT', mutation: true }
+            ),
+        seedTournament: (tournamentId: string, body: components['schemas']['SeedInput']) =>
+            call<components['schemas']['TournamentPlan']>(`/tournaments/${tournamentId}/seed`, body, {
+                auth: true,
+                idempotent: true,
+                mutation: true,
+            }),
+        startTournament: (tournamentId: string, expectedVersion: number) =>
+            call<components['schemas']['Tournament']>(
+                `/tournaments/${tournamentId}/start`,
+                { expectedVersion },
+                { auth: true, idempotent: true, mutation: true }
+            ),
+        getTournamentPlan: (tournamentId: string) =>
+            call<components['schemas']['TournamentPlan']>(`/tournaments/${tournamentId}/plan`),
+        startTournamentRound: (tournamentId: string, roundId: string, body: components['schemas']['StartRoundInput']) =>
+            call<components['schemas']['Round']>(`/tournaments/${tournamentId}/rounds/${roundId}/start`, body, {
+                auth: true,
+                idempotent: true,
+                mutation: true,
+            }),
+        completeTournamentRound: (
+            tournamentId: string,
+            roundId: string,
+            body: components['schemas']['CompleteRoundInput']
+        ) =>
+            call<components['schemas']['TournamentPlan']>(
+                `/tournaments/${tournamentId}/rounds/${roundId}/complete`,
+                body,
+                { auth: true, idempotent: true, mutation: true }
+            ),
+        scoreTournamentMatch: (
+            tournamentId: string,
+            tournamentMatchId: string,
+            body: components['schemas']['ScoreTournamentMatchInput']
+        ) =>
+            call<components['schemas']['TournamentMatch']>(
+                `/tournaments/${tournamentId}/matches/${tournamentMatchId}/score`,
+                body,
+                { auth: true, idempotent: true, method: 'PUT', mutation: true }
+            ),
+        recordTournamentWalkover: (
+            tournamentId: string,
+            tournamentMatchId: string,
+            body: components['schemas']['WalkoverTournamentMatchInput']
+        ) =>
+            call<components['schemas']['TournamentMatch']>(
+                `/tournaments/${tournamentId}/matches/${tournamentMatchId}/walkover`,
+                body,
+                { auth: true, idempotent: true, method: 'PUT', mutation: true }
+            ),
+        correctTournamentMatch: (
+            tournamentId: string,
+            tournamentMatchId: string,
+            body: components['schemas']['CorrectTournamentMatchInput']
+        ) =>
+            call<components['schemas']['TournamentPlan']>(
+                `/tournaments/${tournamentId}/matches/${tournamentMatchId}/corrections`,
+                body,
+                { auth: true, idempotent: true, mutation: true }
+            ),
+        pauseTournament: (tournamentId: string, body: components['schemas']['TournamentReasonedCommand']) =>
+            call<components['schemas']['Tournament']>(`/tournaments/${tournamentId}/pause`, body, {
+                auth: true,
+                idempotent: true,
+                mutation: true,
+            }),
+        resumeTournament: (tournamentId: string, body: components['schemas']['TournamentReasonedCommand']) =>
+            call<components['schemas']['TournamentPlan']>(`/tournaments/${tournamentId}/resume`, body, {
+                auth: true,
+                idempotent: true,
+                mutation: true,
+            }),
+        completeTournament: (tournamentId: string, expectedVersion: number) =>
+            call<components['schemas']['TournamentPlan']>(
+                `/tournaments/${tournamentId}/complete`,
+                { expectedVersion },
+                { auth: true, idempotent: true, mutation: true }
+            ),
+        cancelTournament: (tournamentId: string, body: components['schemas']['TournamentReasonedCommand']) =>
+            call<undefined>(`/tournaments/${tournamentId}/cancel`, body, {
+                auth: true,
+                idempotent: true,
+                mutation: true,
+            }),
         searchMatches: (parameters: NonNullable<operations['searchMatches']['parameters']['query']>) =>
             call<SchemaMatchPage>('/matches', undefined, { query: query(parameters) }),
         recommendMatches: (parameters: NonNullable<operations['recommendMatches']['parameters']['query']>) =>
