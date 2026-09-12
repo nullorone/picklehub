@@ -36,7 +36,12 @@ async function waitForMock(url, child, logs) {
 }
 
 function requireNoStore(response, label) {
-    if (response.headers.get('cache-control') !== 'no-store') {
+    if (
+        !response.headers
+            .get('cache-control')
+            ?.split(',')
+            .some((directive) => directive.trim() === 'no-store')
+    ) {
         throw new Error(`${label} must be no-store.`);
     }
 }
@@ -254,8 +259,27 @@ try {
     ) {
         throw new Error(`Unexpected administration queue mock: ${adminCases.status} ${JSON.stringify(adminCasesBody)}`);
     }
+
+    const gamificationProgress = await fetch(`http://${host}:${port}/gamification/progress`, {
+        headers: {
+            'accept-language': 'ru-RU',
+            authorization: `Bearer ${'A'.repeat(43)}`,
+        },
+    });
+    const gamificationBody = await gamificationProgress.json();
+    requireNoStore(gamificationProgress, 'Gamification progress response');
+    if (
+        gamificationProgress.status !== 200 ||
+        gamificationBody.scope?.kind !== 'GLOBAL' ||
+        !gamificationBody.currentLevel ||
+        gamificationBody.projectionRevision === undefined
+    ) {
+        throw new Error(
+            `Unexpected gamification progress mock: ${gamificationProgress.status} ${JSON.stringify(gamificationBody)}`
+        );
+    }
     console.log(
-        'OpenAPI mock passed: health, identity, venue, match, communication, profile, trust/safety, administration, club and tournament examples are valid.'
+        'OpenAPI mock passed: health, identity, venue, match, communication, profile, trust/safety, administration, club, tournament and gamification examples are valid.'
     );
 } finally {
     child.kill('SIGTERM');

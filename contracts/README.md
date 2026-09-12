@@ -22,7 +22,7 @@ npm run contracts:check
 - `contracts:lint` проверяет TypeSpec без записи artifacts, валидирует OpenAPI и AsyncAPI официальными
   parser/linter и применяет PickleHub policy: `/v1`, разрешённые owning-feature paths, уникальные
   operation/message IDs, версионированные envelopes, UTC timestamps, `no-store`, browser CSRF/cookie и безопасный
-  payload внутренних identity/venue/match/communication/profile/club/tournament events, admin capability registry и
+  payload внутренних identity/venue/match/communication/profile/club/tournament/gamification events, admin capability registry и
   notification jobs.
   Статические data-policy тесты
   дополнительно удерживают
@@ -39,10 +39,11 @@ npm run contracts:check
 - `contracts:mock` запускает локальный Prism на `127.0.0.1:4010`; он предназначен только для разработки и не
   является backend или production fallback.
 - `contracts:mock:check` запускает mock на свободном localhost port, запрашивает representative endpoints health,
-  identity, venues, matches, communications, profiles, trust/safety, administration, clubs и tournaments,
+  identity, venues, matches, communications, profiles, trust/safety, administration, clubs, tournaments и
+  gamification,
   проверяет status,
   JSON shape и
-  `no-store`.
+  `no-store`, включая private progress геймификации.
   AsyncAPI examples проверяются
   parser/linter в `contracts:lint`.
 
@@ -119,6 +120,19 @@ check-in, seeding, раундов, результата/correction, standings и
 revisions/audit и единственный completion marker. `tournament.events.v1` переносит только opaque references,
 версии и закрытые outcomes, без roster, оплаты, счёта, winner, seed/rating, расписания или причин. Полное решение —
 в [`tournaments-data-policy.md`](../llm/_docs/tournaments-data-policy.md).
+
+## Геймификация
+
+[`rest/gamification.tsp`](rest/gamification.tsp) разделяет собственный global progress, progress каждого клуба,
+достижения, сезонный leaderboard с отдельным opt-in и allowlisted configuration views платформы/клуба. Мутации
+consent и club configuration требуют bearer, browser integrity и idempotency; все ответы private/no-store.
+
+Миграция хранит immutable rule/level/season snapshots, append-only XP compensation chains, отдельные scope
+balances, achievement awards, consent revisions, consent-gated leaderboard rows и processed-event receipts.
+Partial/exclusion indexes и triggers защищают source replay, UTC caps, компенсацию, непересекающиеся сезоны,
+current opt-in и competition rank. `gamification.events.v1` передаёт только opaque projection references без
+identity, source activity, XP/rank или anti-fraud detail. Полное решение — в
+[`gamification-data-policy.md`](../llm/_docs/gamification-data-policy.md).
 
 ## Административная панель
 

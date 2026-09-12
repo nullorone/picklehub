@@ -2832,3 +2832,64 @@ llm/_docs/security-privacy.md llm/_docs/analytics-plan.md` — успешно; �
 - Критерии активного этапа выполнены на уровне требований. Точные wire enum/limits, SQL ledger constraints,
   consent/event payloads и anti-fraud policy tests принадлежат `llm/11-gamification/02-contract-data.md`; к нему не
   переходили. Ранее записанная tournament verification блокировка остаётся отдельным незакрытым риском.
+
+## 2026-09-12 — геймификация, этап 02-contract-data
+
+- Активный промпт: `llm/11-gamification/02-contract-data.md`. Добавлен TypeSpec-контракт из восьми операций:
+  собственный global/club progress, achievements, сезонный leaderboard, отдельный opt-in/opt-out и versioned
+  platform/club definition views. Все операции требуют bearer, ответы — `private, no-store`; две мутации требуют
+  Origin, CSRF, UUIDv4 idempotency key и expected revision/version. Admin definitions помечены purpose-bound
+  capability; club configuration принимает только три allowlisted source template, coefficient `0.5..2.0` и 1–20
+  уровней.
+- OpenAPI и оба TypeScript API artifacts перегенерированы только из TypeSpec. После этапа опубликована поверхность
+  из 181 REST operation; generated client вручную не редактировался.
+- Prisma и migration добавляют immutable `XpRuleDefinition`, append-only `XpLedgerEntry`, отдельные `XpBalance`,
+  `LevelDefinition`, `AchievementDefinition/Award`, `LeaderboardSeason/Consent/Entry`, processed-event dedupe и
+  encrypted 24-hour mutation receipts. Global scope и каждый club scope защищены отдельными partial unique keys.
+- `GLOBAL_V1` зафиксирован как `1.0.0`: play 100, ordinary-match organization 40 и eligible structured review 15
+  XP, для каждого 3 события/UTC day и 10/UTC week. Advisory transaction lock сериализует cap; rule snapshot и
+  source occurred time исключают перенос retry в новое окно. `CAPPED` имеет ноль XP и остаётся terminal.
+- История ledger/rules/levels/awards/consents защищена от update/delete. Reversal допустим только для posted award,
+  reinstatement — для reversal; owner/scope/rule/amount сохраняются и partial unique indexes ограничивают каждую
+  компенсацию одной записью. Processed receipt уникален по message ID и owning event/revision.
+- Сезоны одного scope — полуоткрытые непересекающиеся интервалы 28–366 суток через GiST exclusion. Consent revisions
+  contiguous; любая новая revision атомарно удаляет старую projection, closed season отклоняет новый opt-in, а
+  leaderboard row имеет composite FK/trigger на current explicit consent. Deferred trigger проверяет competition
+  rank `1, 2, 2, 4` исключительно по seasonal net XP.
+- AsyncAPI получил четыре внутренних `gamification.events.v1` message и теперь содержит 60 messages. Payload несёт
+  только opaque ledger/award/consent/season record, revision и closed outcome; user/club/source IDs, activity,
+  score/winner, XP/rank, identity и fraud evidence запрещены policy test. Это outbox, не client WebSocket channel.
+- Добавлены contract/data policy tests, общий allowlist и Prism representative progress check. Архитектура хранения,
+  privacy/read/cache границы и residual production gates описаны в `llm/_docs/gamification-data-policy.md` и
+  `contracts/README.md`. Backend handlers/workers и UI не реализовывались, поскольку принадлежат следующим
+  промптам.
+- Изменённые source files: `contracts/rest/gamification.tsp`, `contracts/rest/main.tsp`, `asyncapi.yaml`,
+  `backend/prisma/schema.prisma`, migration `20260913090000_gamification_contract_data`, contract/data policy
+  scripts, `contracts/README.md`, `package.json` и этот журнал. Generated: `openapi.yaml`,
+  `contracts/generated/{openapi,asyncapi}.ts`, `frontend/packages/api-client/src/generated/openapi.ts`.
+
+### Проверки этапа gamification 02-contract-data
+
+- `npm run contracts:typespec:check` — успешно; 11 TypeSpec files компилируются.
+- `npm run contracts:generate` — успешно; OpenAPI и TypeScript artifacts обновлены детерминированно.
+- `npm run contracts:lint` — успешно: Redocly без ошибок, policy report 181 REST operations/60 messages, 114/114
+  contract/data/privacy/verification policy tests зелёные.
+- `npm run contracts:check` — compile/lint, compatibility against `HEAD`, generated drift и strict generated
+  typecheck успешно; финальный `contracts:mock:check` не запустил Prism, потому что sandbox запретил локальный
+  `listen 127.0.0.1` с `EPERM`. Это ограничение среды, не успешный mock result.
+- `npm run format:check`, `npm run docs:check`, `git diff --check`, `npm run workspace:check`,
+  `npm ls --depth=0` — успешно; 129 Markdown files, 0 ошибок, восемь workspaces/один root lockfile, unmet/extraneous
+  dependencies отсутствуют.
+- `npm run lint`, `npm run typecheck`, `npm test`, `npm run build` — успешно для всех восьми workspaces. Backend
+  unit: 35/35 suites и 236/236 tests; web 10/45, TMA 8/27, API client 1/6 и остальные shared suites зелёные. Build
+  сохраняет прежние warnings о web/TMA/MapLibre chunks около 622/631/924 kB.
+- `npm run test:integration` — неуспешно из-за запрета sandbox на подключения к PostgreSQL/Redis (`EPERM` для
+  `127.0.0.1`, включая Redis 6379); существующие backend integration suites не смогли подготовить fixtures. Docker
+  socket также недоступен. Новая migration поэтому не применялась к реальному PostgreSQL в этом окружении.
+- `npx prisma validate --schema backend/prisma/schema.prisma` — не выполнен: отсутствующий local schema-engine
+  Prisma попытался скачать с `binaries.prisma.sh`, но restricted DNS вернул `ENOTFOUND`. Статический schema/data
+  policy, backend strict typecheck и build зелёные, однако это не выдаётся за engine/database validation.
+- Приёмка контракта выполнена: уникальный source/revision предотвращает повторную effective award в каждом scope,
+  global/club partitions независимы, а projection без current explicit opt-in отвергается и удаляется. Остаточный
+  verification risk — применение migration/constraint concurrency к PostgreSQL и Prism mock в среде с разрешённым
+  loopback. Ранее записанная tournament verification блокировка этим этапом не устранена.

@@ -15,6 +15,24 @@ export namespace AccountDeletionRequestedMessage {
     }
 }
 
+export namespace AchievementAwardChangedMessage {
+    export interface AchievementAwardChangedEnvelope {
+        messageId: string;
+        type: 'gamification.achievement-award.changed.v1';
+        occurredAt: string;
+        correlationId: string;
+        causationId?: string | null;
+        data: Data;
+    }
+
+    export interface Data {
+        achievementAwardId: string;
+        state: DataState;
+    }
+
+    export type DataState = 'EARNED' | 'REVOKED' | 'REINSTATED';
+}
+
 export namespace AuthenticateMessage {
     export interface AuthenticateEnvelope {
         messageId: string;
@@ -481,6 +499,44 @@ export namespace IdentityUnlinkedMessage {
     }
 
     export type DataProvider = 'TELEGRAM' | 'EMAIL';
+}
+
+export namespace LeaderboardConsentChangedMessage {
+    export interface LeaderboardConsentChangedEnvelope {
+        messageId: string;
+        type: 'gamification.leaderboard-consent.changed.v1';
+        occurredAt: string;
+        correlationId: string;
+        causationId?: string | null;
+        data: Data;
+    }
+
+    export interface Data {
+        consentId: string;
+        revision: number;
+        action: DataAction;
+    }
+
+    export type DataAction = 'OPTED_IN' | 'OPTED_OUT';
+}
+
+export namespace LeaderboardProjectionChangedMessage {
+    export interface LeaderboardProjectionChangedEnvelope {
+        messageId: string;
+        type: 'gamification.leaderboard-projection.changed.v1';
+        occurredAt: string;
+        correlationId: string;
+        causationId?: string | null;
+        data: Data;
+    }
+
+    export interface Data {
+        seasonId: string;
+        projectionRevision: number;
+        outcome: DataOutcome;
+    }
+
+    export type DataOutcome = 'REBUILT' | 'ROW_REMOVED' | 'INVALIDATED' | 'CLOSED';
 }
 
 export namespace MatchCancelledMessage {
@@ -1130,7 +1186,27 @@ export namespace VenueVerifiedMessage {
     export type DataVerificationState = 'IMPORTED_UNREVIEWED' | 'COMMUNITY_CONFIRMED' | 'MODERATOR_VERIFIED' | 'STALE';
 }
 
+export namespace XpLedgerEntryRecordedMessage {
+    export interface XpLedgerEntryRecordedEnvelope {
+        messageId: string;
+        type: 'gamification.xp-ledger-entry.recorded.v1';
+        occurredAt: string;
+        correlationId: string;
+        causationId?: string | null;
+        data: Data;
+    }
+
+    export interface Data {
+        ledgerEntryId: string;
+        projectionRevision: number;
+        outcome: DataOutcome;
+    }
+
+    export type DataOutcome = 'PENDING' | 'POSTED' | 'CAPPED' | 'REVERSED' | 'REINSTATED';
+}
+
 export type AccountDeletionRequestedEnvelope = AccountDeletionRequestedMessage.AccountDeletionRequestedEnvelope;
+export type AchievementAwardChangedEnvelope = AchievementAwardChangedMessage.AchievementAwardChangedEnvelope;
 export type AuthenticateEnvelope = AuthenticateMessage.AuthenticateEnvelope;
 export type AuthenticatedEnvelope = AuthenticatedMessage.AuthenticatedEnvelope;
 export type ChatMessageCreateCommandEnvelope = ChatMessageCreateCommandMessage.ChatMessageCreateCommandEnvelope;
@@ -1154,6 +1230,9 @@ export type CommunicationErrorEnvelope = CommunicationErrorMessage.Communication
 export type ConsentChangedEnvelope = ConsentChangedMessage.ConsentChangedEnvelope;
 export type IdentityLinkedEnvelope = IdentityLinkedMessage.IdentityLinkedEnvelope;
 export type IdentityUnlinkedEnvelope = IdentityUnlinkedMessage.IdentityUnlinkedEnvelope;
+export type LeaderboardConsentChangedEnvelope = LeaderboardConsentChangedMessage.LeaderboardConsentChangedEnvelope;
+export type LeaderboardProjectionChangedEnvelope =
+    LeaderboardProjectionChangedMessage.LeaderboardProjectionChangedEnvelope;
 export type MatchCancelledEnvelope = MatchCancelledMessage.MatchCancelledEnvelope;
 export type MatchCompletedConfirmedEnvelope = MatchCompletedConfirmedMessage.MatchCompletedConfirmedEnvelope;
 export type MatchCreatedEnvelope = MatchCreatedMessage.MatchCreatedEnvelope;
@@ -1192,7 +1271,9 @@ export type TournamentStateChangedEnvelope = TournamentStateChangedMessage.Tourn
 export type VenueCandidateCreatedEnvelope = VenueCandidateCreatedMessage.VenueCandidateCreatedEnvelope;
 export type VenueMergedEnvelope = VenueMergedMessage.VenueMergedEnvelope;
 export type VenueVerifiedEnvelope = VenueVerifiedMessage.VenueVerifiedEnvelope;
+export type XpLedgerEntryRecordedEnvelope = XpLedgerEntryRecordedMessage.XpLedgerEntryRecordedEnvelope;
 export type WebSocketMessage =
+    | AchievementAwardChangedEnvelope
     | AuthenticateEnvelope
     | AuthenticatedEnvelope
     | ChatMessageCreateCommandEnvelope
@@ -1212,6 +1293,8 @@ export type WebSocketMessage =
     | ClubStateChangedEnvelope
     | ClubVenueLinkChangedEnvelope
     | CommunicationErrorEnvelope
+    | LeaderboardConsentChangedEnvelope
+    | LeaderboardProjectionChangedEnvelope
     | MatchCancelledEnvelope
     | MatchCompletedConfirmedEnvelope
     | MatchCreatedEnvelope
@@ -1242,7 +1325,8 @@ export type WebSocketMessage =
     | TournamentStateChangedEnvelope
     | VenueCandidateCreatedEnvelope
     | VenueMergedEnvelope
-    | VenueVerifiedEnvelope;
+    | VenueVerifiedEnvelope
+    | XpLedgerEntryRecordedEnvelope;
 export type IdentityDomainEvent =
     | AccountDeletionRequestedEnvelope
     | ConsentChangedEnvelope

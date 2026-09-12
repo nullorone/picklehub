@@ -15,6 +15,7 @@ import { checkVenueContract, venueOperations, venueEventFields } from './venues-
 import { checkAdministrationContract, administrationOperations } from './administration-policy.mjs';
 import { checkClubContract, clubEventFields, clubOperations } from './clubs-policy.mjs';
 import { checkTournamentContract, tournamentEventFields, tournamentOperations } from './tournaments-policy.mjs';
+import { checkGamificationContract, gamificationEventFields, gamificationOperations } from './gamification-policy.mjs';
 
 const allowedPaths = new Set([
     '/health/live',
@@ -28,6 +29,7 @@ const allowedPaths = new Set([
     ...Object.keys(administrationOperations),
     ...Object.keys(clubOperations),
     ...Object.keys(tournamentOperations),
+    ...Object.keys(gamificationOperations),
 ]);
 const allowedProtocolMessages = new Set([
     'session.authenticate.v1',
@@ -111,7 +113,8 @@ assert(
             name in trustSafetyEventFields ||
             name in venueEventFields ||
             name in clubEventFields ||
-            name in tournamentEventFields
+            name in tournamentEventFields ||
+            name in gamificationEventFields
     ),
     'AsyncAPI may define only approved protocol and owning-feature messages.'
 );
@@ -129,7 +132,8 @@ assert(
             Object.keys(trustSafetyEventFields).length +
             Object.keys(venueEventFields).length +
             Object.keys(clubEventFields).length +
-            Object.keys(tournamentEventFields).length,
+            Object.keys(tournamentEventFields).length +
+            Object.keys(gamificationEventFields).length,
     'AsyncAPI must define all approved protocol and owning-feature messages.'
 );
 
@@ -162,5 +166,6 @@ checkVenueContract(openApi, asyncApi);
 checkAdministrationContract(openApi);
 checkClubContract(openApi, asyncApi);
 checkTournamentContract(openApi, asyncApi);
+checkGamificationContract(openApi, asyncApi);
 
 console.log(`Contract policy passed: ${operationIds.length} REST operations, ${messageNames.length} messages.`);

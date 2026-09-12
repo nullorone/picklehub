@@ -2838,3 +2838,231 @@ model TournamentCompletionMarker {
 
   @@map("tournament_completion_markers")
 }
+
+// Gamification data contract. SQL owns append-only, scope, source-deduplication and season-overlap constraints.
+enum GamificationScopeKind {
+  GLOBAL
+  CLUB
+
+  @@map("gamification_scope_kind")
+}
+
+enum XpSourceKind {
+  CONFIRMED_PLAY
+  CONFIRMED_MATCH_ORGANIZED
+  ELIGIBLE_STRUCTURED_REVIEW
+
+  @@map("xp_source_kind")
+}
+
+enum XpLedgerEntryKind {
+  AWARD
+  REVERSAL
+  REINSTATEMENT
+
+  @@map("xp_ledger_entry_kind")
+}
+
+enum XpLedgerEntryStatus {
+  PENDING
+  POSTED
+  CAPPED
+
+  @@map("xp_ledger_entry_status")
+}
+
+enum AchievementAwardState {
+  EARNED
+  REVOKED
+  REINSTATED
+
+  @@map("achievement_award_state")
+}
+
+enum LeaderboardSeasonState {
+  SCHEDULED
+  ACTIVE
+  CLOSED
+
+  @@map("leaderboard_season_state")
+}
+
+model XpRuleDefinition {
+  id                 String            @id @db.Uuid
+  scopeKind          GamificationScopeKind @map("scope_kind")
+  clubId             String?           @map("club_id") @db.Uuid
+  sourceKind         XpSourceKind       @map("source_kind")
+  version            String            @db.VarChar(32)
+  enabled            Boolean           @default(true)
+  baseXp             Int               @map("base_xp")
+  coefficientTenths  Int               @map("coefficient_tenths") @db.SmallInt
+  dailyEventCap      Int               @map("daily_event_cap") @db.SmallInt
+  weeklyEventCap     Int               @map("weekly_event_cap") @db.SmallInt
+  effectiveFrom      DateTime          @map("effective_from") @db.Timestamptz(3)
+  effectiveUntil     DateTime?         @map("effective_until") @db.Timestamptz(3)
+  snapshotHash       String            @map("snapshot_hash") @db.Char(64)
+  createdAt          DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([scopeKind, clubId, effectiveFrom], map: "xp_rule_definitions_effective_idx")
+  @@map("xp_rule_definitions")
+}
+
+model XpLedgerEntry {
+  id                    String              @id @db.Uuid
+  userId                String              @map("user_id") @db.Uuid
+  scopeKind             GamificationScopeKind @map("scope_kind")
+  clubId                String?             @map("club_id") @db.Uuid
+  sourceKind            XpSourceKind        @map("source_kind")
+  sourceEventId         String              @map("source_event_id") @db.Uuid
+  sourceOccurredAt      DateTime            @map("source_occurred_at") @db.Timestamptz(3)
+  ruleDefinitionId      String              @map("rule_definition_id") @db.Uuid
+  ruleVersion           String              @map("rule_version") @db.VarChar(32)
+  kind                  XpLedgerEntryKind
+  status                XpLedgerEntryStatus
+  amount                Int
+  compensationOfEntryId String?             @map("compensation_of_entry_id") @db.Uuid
+  reasonCode            String?             @map("reason_code") @db.VarChar(96)
+  createdAt             DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([userId, scopeKind, clubId, createdAt, id], map: "xp_ledger_entries_owner_idx")
+  @@index([compensationOfEntryId], map: "xp_ledger_entries_compensation_idx")
+  @@map("xp_ledger_entries")
+}
+
+model XpBalance {
+  id                 String            @id @db.Uuid
+  userId             String            @map("user_id") @db.Uuid
+  scopeKind          GamificationScopeKind @map("scope_kind")
+  clubId             String?           @map("club_id") @db.Uuid
+  lifetimeNetXp      BigInt            @map("lifetime_net_xp")
+  projectionRevision BigInt            @map("projection_revision")
+  checksum           String            @db.Char(64)
+  frozenAt           DateTime?         @map("frozen_at") @db.Timestamptz(3)
+  updatedAt          DateTime          @default(now()) @map("updated_at") @db.Timestamptz(3)
+
+  @@index([scopeKind, clubId, lifetimeNetXp], map: "xp_balances_scope_idx")
+  @@map("xp_balances")
+}
+
+model LevelDefinition {
+  id            String            @id @db.Uuid
+  scopeKind     GamificationScopeKind @map("scope_kind")
+  clubId        String?           @map("club_id") @db.Uuid
+  version       String            @db.VarChar(32)
+  ordinal       Int               @db.SmallInt
+  name          String            @db.VarChar(30)
+  thresholdXp   BigInt            @map("threshold_xp")
+  effectiveFrom DateTime          @map("effective_from") @db.Timestamptz(3)
+  createdAt     DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@map("level_definitions")
+}
+
+model AchievementDefinition {
+  id             String            @id @db.Uuid
+  scopeKind      GamificationScopeKind @map("scope_kind")
+  code           String            @db.VarChar(96)
+  version        String            @db.VarChar(32)
+  sourceKind     XpSourceKind      @map("source_kind")
+  thresholdCount Int               @map("threshold_count")
+  title          String            @db.VarChar(80)
+  description    String            @db.VarChar(300)
+  createdAt      DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@unique([scopeKind, code, version], map: "achievement_definitions_scope_code_version_key")
+  @@map("achievement_definitions")
+}
+
+model AchievementAward {
+  id                    String                @id @db.Uuid
+  userId                String                @map("user_id") @db.Uuid
+  clubId                String?               @map("club_id") @db.Uuid
+  achievementDefinitionId String              @map("achievement_definition_id") @db.Uuid
+  state                 AchievementAwardState
+  qualifyingCount       Int                   @map("qualifying_count")
+  sourceLedgerEntryId   String                @map("source_ledger_entry_id") @db.Uuid
+  supersedesAwardId     String?               @map("supersedes_award_id") @db.Uuid
+  createdAt             DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([userId, createdAt], map: "achievement_awards_owner_idx")
+  @@map("achievement_awards")
+}
+
+model LeaderboardSeason {
+  id                     String                 @id @db.Uuid
+  scopeKind              GamificationScopeKind @map("scope_kind")
+  clubId                 String?                @map("club_id") @db.Uuid
+  name                   String                 @db.VarChar(80)
+  state                  LeaderboardSeasonState
+  startsAt               DateTime               @map("starts_at") @db.Timestamptz(3)
+  endsAt                 DateTime               @map("ends_at") @db.Timestamptz(3)
+  ruleVersion            String                 @map("rule_version") @db.VarChar(32)
+  definitionSnapshot     Json                   @map("definition_snapshot")
+  definitionSnapshotHash String                 @map("definition_snapshot_hash") @db.Char(64)
+  createdAt              DateTime               @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([scopeKind, clubId, startsAt, endsAt], map: "leaderboard_seasons_scope_window_idx")
+  @@map("leaderboard_seasons")
+}
+
+model LeaderboardConsent {
+  id            String   @id @db.Uuid
+  seasonId      String   @map("season_id") @db.Uuid
+  userId        String   @map("user_id") @db.Uuid
+  revision      Int
+  optedIn       Boolean  @map("opted_in")
+  policyVersion String   @map("policy_version") @db.VarChar(32)
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@unique([seasonId, userId, revision], map: "leaderboard_consents_revision_key")
+  @@index([seasonId, userId, createdAt], map: "leaderboard_consents_current_idx")
+  @@map("leaderboard_consents")
+}
+
+model LeaderboardEntry {
+  seasonId          String   @map("season_id") @db.Uuid
+  userId            String   @map("user_id") @db.Uuid
+  consentRevision   Int      @map("consent_revision")
+  rank              Int
+  seasonalNetXp     BigInt   @map("seasonal_net_xp")
+  levelDefinitionId String   @map("level_definition_id") @db.Uuid
+  projectionRevision BigInt  @map("projection_revision")
+  updatedAt         DateTime @default(now()) @map("updated_at") @db.Timestamptz(3)
+
+  @@id([seasonId, userId])
+  @@index([seasonId, rank, userId], map: "leaderboard_entries_page_idx")
+  @@index([seasonId, seasonalNetXp], map: "leaderboard_entries_xp_idx")
+  @@map("leaderboard_entries")
+}
+
+model ProcessedGamificationEvent {
+  messageId       String   @id @map("message_id") @db.Uuid
+  eventType       String   @map("event_type") @db.VarChar(160)
+  sourceEventId   String   @map("source_event_id") @db.Uuid
+  sourceRevision  Int      @map("source_revision")
+  payloadHash     String   @map("payload_hash") @db.Char(64)
+  outcome         String   @db.VarChar(32)
+  processedAt     DateTime @default(now()) @map("processed_at") @db.Timestamptz(3)
+
+  @@unique([eventType, sourceEventId, sourceRevision], map: "processed_gamification_events_source_key")
+  @@index([processedAt], map: "processed_gamification_events_retention_idx")
+  @@map("processed_gamification_events")
+}
+
+model GamificationOperationReceipt {
+  id                   String   @id @db.Uuid
+  actorUserId          String   @map("actor_user_id") @db.Uuid
+  idempotencyKey       String   @map("idempotency_key") @db.Uuid
+  method               String   @db.VarChar(8)
+  canonicalPath        String   @map("canonical_path") @db.VarChar(200)
+  requestFingerprint   String   @map("request_fingerprint") @db.Char(64)
+  responseStatus       Int      @map("response_status") @db.SmallInt
+  responseCiphertext   Bytes    @map("response_ciphertext")
+  encryptionKeyVersion Int      @map("encryption_key_version")
+  createdAt            DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  expiresAt            DateTime @default(dbgenerated("CURRENT_TIMESTAMP + INTERVAL '24 hours'")) @map("expires_at") @db.Timestamptz(3)
+
+  @@unique([actorUserId, method, canonicalPath, idempotencyKey], map: "gamification_operation_receipts_scope_key")
+  @@index([expiresAt], map: "gamification_operation_receipts_expiry_idx")
+  @@map("gamification_operation_receipts")
+}

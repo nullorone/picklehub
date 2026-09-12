@@ -215,6 +215,19 @@ channels:
             TournamentEntrantChanged: { $ref: '#/components/messages/TournamentEntrantChanged' }
             TournamentPlanChanged: { $ref: '#/components/messages/TournamentPlanChanged' }
             TournamentResultChanged: { $ref: '#/components/messages/TournamentResultChanged' }
+    gamificationEvents:
+        address: gamification.events.v1
+        title: Internal privacy-minimized gamification projection events
+        description: Transactional outbox only, delivered at least once and deduplicated by messageId. Payloads
+            contain opaque projection records and closed states only; user, club, source activity, score, winner,
+            opponent graph, XP amount, rank, display identity, fraud reason and evidence are forbidden.
+        servers:
+            - $ref: '#/servers/outbox'
+        messages:
+            XpLedgerEntryRecorded: { $ref: '#/components/messages/XpLedgerEntryRecorded' }
+            AchievementAwardChanged: { $ref: '#/components/messages/AchievementAwardChanged' }
+            LeaderboardConsentChanged: { $ref: '#/components/messages/LeaderboardConsentChanged' }
+            LeaderboardProjectionChanged: { $ref: '#/components/messages/LeaderboardProjectionChanged' }
 operations:
     receiveClientControl:
         action: receive
@@ -385,6 +398,18 @@ operations:
             - $ref: '#/channels/tournamentEvents/messages/TournamentEntrantChanged'
             - $ref: '#/channels/tournamentEvents/messages/TournamentPlanChanged'
             - $ref: '#/channels/tournamentEvents/messages/TournamentResultChanged'
+    publishGamificationEvents:
+        action: send
+        title: Publish committed gamification projection changes
+        summary: Publish opaque ledger, award, consent and leaderboard references through the outbox.
+        description: Stable messageId and referenced revision make replay safe. Authorized consumers reload the
+            owner-aware projection; no private source activity or public identity is present in the event.
+        channel: { $ref: '#/channels/gamificationEvents' }
+        messages:
+            - $ref: '#/channels/gamificationEvents/messages/XpLedgerEntryRecorded'
+            - $ref: '#/channels/gamificationEvents/messages/AchievementAwardChanged'
+            - $ref: '#/channels/gamificationEvents/messages/LeaderboardConsentChanged'
+            - $ref: '#/channels/gamificationEvents/messages/LeaderboardProjectionChanged'
 components:
     messages:
         Authenticate:
@@ -817,6 +842,34 @@ components:
             contentType: application/json
             correlationId: { location: $message.payload#/correlationId }
             payload: { $ref: '#/components/schemas/TournamentResultChangedEnvelope' }
+        XpLedgerEntryRecorded:
+            name: gamification.xp-ledger-entry.recorded.v1
+            title: XpLedgerEntryRecorded
+            summary: An append-only award or compensation record was committed.
+            contentType: application/json
+            correlationId: { location: $message.payload#/correlationId }
+            payload: { $ref: '#/components/schemas/XpLedgerEntryRecordedEnvelope' }
+        AchievementAwardChanged:
+            name: gamification.achievement-award.changed.v1
+            title: AchievementAwardChanged
+            summary: An append-only achievement award state record was committed.
+            contentType: application/json
+            correlationId: { location: $message.payload#/correlationId }
+            payload: { $ref: '#/components/schemas/AchievementAwardChangedEnvelope' }
+        LeaderboardConsentChanged:
+            name: gamification.leaderboard-consent.changed.v1
+            title: LeaderboardConsentChanged
+            summary: One season-specific consent revision was committed.
+            contentType: application/json
+            correlationId: { location: $message.payload#/correlationId }
+            payload: { $ref: '#/components/schemas/LeaderboardConsentChangedEnvelope' }
+        LeaderboardProjectionChanged:
+            name: gamification.leaderboard-projection.changed.v1
+            title: LeaderboardProjectionChanged
+            summary: One consent-aware seasonal projection revision changed.
+            contentType: application/json
+            correlationId: { location: $message.payload#/correlationId }
+            payload: { $ref: '#/components/schemas/LeaderboardProjectionChangedEnvelope' }
         ClubCreated:
             name: club.created.v1
             title: ClubCreated
@@ -1123,6 +1176,81 @@ components:
                         tournamentMatchId: { $ref: '#/components/schemas/Uuid' }
                         resultRevision: { type: integer, minimum: 1 }
                         outcome: { type: string, enum: [PLAYED, BYE, WALKOVER, DOUBLE_WALKOVER, RESULT_STANDS] }
+        XpLedgerEntryRecordedEnvelope:
+            type: object
+            additionalProperties: false
+            required: [messageId, type, occurredAt, correlationId, data]
+            properties:
+                messageId: { $ref: '#/components/schemas/Uuid' }
+                type: { type: string, const: gamification.xp-ledger-entry.recorded.v1 }
+                occurredAt: { $ref: '#/components/schemas/Timestamp' }
+                correlationId: { $ref: '#/components/schemas/Uuid' }
+                causationId:
+                    oneOf: [{ $ref: '#/components/schemas/Uuid' }, { type: 'null' }]
+                data:
+                    type: object
+                    additionalProperties: false
+                    required: [ledgerEntryId, projectionRevision, outcome]
+                    properties:
+                        ledgerEntryId: { $ref: '#/components/schemas/Uuid' }
+                        projectionRevision: { type: integer, format: int64, minimum: 0 }
+                        outcome: { type: string, enum: [PENDING, POSTED, CAPPED, REVERSED, REINSTATED] }
+        AchievementAwardChangedEnvelope:
+            type: object
+            additionalProperties: false
+            required: [messageId, type, occurredAt, correlationId, data]
+            properties:
+                messageId: { $ref: '#/components/schemas/Uuid' }
+                type: { type: string, const: gamification.achievement-award.changed.v1 }
+                occurredAt: { $ref: '#/components/schemas/Timestamp' }
+                correlationId: { $ref: '#/components/schemas/Uuid' }
+                causationId:
+                    oneOf: [{ $ref: '#/components/schemas/Uuid' }, { type: 'null' }]
+                data:
+                    type: object
+                    additionalProperties: false
+                    required: [achievementAwardId, state]
+                    properties:
+                        achievementAwardId: { $ref: '#/components/schemas/Uuid' }
+                        state: { type: string, enum: [EARNED, REVOKED, REINSTATED] }
+        LeaderboardConsentChangedEnvelope:
+            type: object
+            additionalProperties: false
+            required: [messageId, type, occurredAt, correlationId, data]
+            properties:
+                messageId: { $ref: '#/components/schemas/Uuid' }
+                type: { type: string, const: gamification.leaderboard-consent.changed.v1 }
+                occurredAt: { $ref: '#/components/schemas/Timestamp' }
+                correlationId: { $ref: '#/components/schemas/Uuid' }
+                causationId:
+                    oneOf: [{ $ref: '#/components/schemas/Uuid' }, { type: 'null' }]
+                data:
+                    type: object
+                    additionalProperties: false
+                    required: [consentId, revision, action]
+                    properties:
+                        consentId: { $ref: '#/components/schemas/Uuid' }
+                        revision: { type: integer, minimum: 0 }
+                        action: { type: string, enum: [OPTED_IN, OPTED_OUT] }
+        LeaderboardProjectionChangedEnvelope:
+            type: object
+            additionalProperties: false
+            required: [messageId, type, occurredAt, correlationId, data]
+            properties:
+                messageId: { $ref: '#/components/schemas/Uuid' }
+                type: { type: string, const: gamification.leaderboard-projection.changed.v1 }
+                occurredAt: { $ref: '#/components/schemas/Timestamp' }
+                correlationId: { $ref: '#/components/schemas/Uuid' }
+                causationId:
+                    oneOf: [{ $ref: '#/components/schemas/Uuid' }, { type: 'null' }]
+                data:
+                    type: object
+                    additionalProperties: false
+                    required: [seasonId, projectionRevision, outcome]
+                    properties:
+                        seasonId: { $ref: '#/components/schemas/Uuid' }
+                        projectionRevision: { type: integer, format: int64, minimum: 0 }
+                        outcome: { type: string, enum: [REBUILT, ROW_REMOVED, INVALIDATED, CLOSED] }
         ClubCreatedEnvelope:
             type: object
             additionalProperties: false

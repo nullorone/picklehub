@@ -10,6 +10,7 @@ import "./communications.tsp";
 import "./administration.tsp";
 import "./clubs.tsp";
 import "./tournaments.tsp";
+import "./gamification.tsp";
 
 using TypeSpec.Http;
 using TypeSpec.OpenAPI;
@@ -31,7 +32,8 @@ using TypeSpec.OpenAPI;
         description: "Least-privilege staff access, moderation coordination and immutable audit search.",
     },
     #{ name: "Clubs", description: "Club discovery, scoped membership governance, venues and recurring matches." },
-    #{ name: "Tournaments", description: "Tournament discovery, registration and versioned format execution." }
+    #{ name: "Tournaments", description: "Tournament discovery, registration and versioned format execution." },
+    #{ name: "Gamification", description: "Private XP progress, achievements and consented seasonal leaderboards." }
 ])
 namespace PickleHub;
 
