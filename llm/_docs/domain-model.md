@@ -331,3 +331,42 @@ operation receipt защищает от повторной генерации. C
 для прав/метрик, но club не становится organizer. События границы содержат только opaque IDs, version, closed
 enum/state и occurrence key; name/description, invite token, member graph, venue coordinates, roster и reason text
 в outbox запрещены.
+
+## Турнирный агрегат и стратегии
+
+`Tournament` — aggregate root с одним user-organizer, необязательной неизменяемой club attribution, публичной
+venue reference, lifecycle/revision и `FormatDefinitionSnapshot`. Модуль владеет `TournamentRole`,
+`TournamentEntry`, `PartnerIntent`, `TournamentWaitlistEntry`, `TournamentPaymentStatus`, `TournamentCheckIn`,
+`TournamentSeed`, `Stage`, `Round`, `TournamentMatch`, result revisions, `Standing` и completion marker. Ссылки на
+`User`, `Club` и `Venue` не передают владение и не копируют профиль, membership, координаты или историю расчётов.
+
+`FormatDefinition` — версионируемый код встроенной стратегии; snapshot — неизменяемая после seeding конфигурация
+конкретного турнира. Стратегия получает snapshot, ordered seeds с публичным tie-break lot и terminal result
+revisions, а возвращает детерминированный граф stages/rounds/matches и standings. Она не читает текущее время,
+Redis, профиль, club role или внешнюю оценку и не исполняет пользовательский код. `TournamentMatch` принадлежит
+только турниру: ordinary `Match` не используется как bracket node и не получает tournament queue/guest slot.
+
+Entry — единица сетки: individual player для singles/Americano либо ровно два подтверждённых игрока для fixed-team
+doubles. Один user имеет не более одного active entry/intention в турнире. Partner intent до атомарного pairing не
+является entry; waitlist сохраняет серверный FIFO sequence. Payment status — ручной информационный факт об
+операции вне PickleHub и не содержит provider transaction, реквизитов или денег. Check-in, withdrawal,
+replacement и no-show — версионируемые переходы entry history, а не удаление строки.
+
+Граф встречи хранит ссылки на source slots и ровно один terminal outcome: played result, walkover, double walkover
+или bye. Unique dependency/slot guards не позволяют entrant оказаться в двух одновременных встречах или двум
+победителям занять один downstream slot. Result correction создаёт новую revision; до старта зависимости она
+инвалидирует и пересчитывает только не начатый downstream. После старта зависимости winner-changing revision не
+становится authoritative: агрегат переходит в pause до `RESULT_STANDS` либо cancel.
+
+Общие standings заканчиваются сохранённым при seeding lot; elimination places используют elimination round,
+seed и lot, ladder/court positions уникальны конструктивно. Поэтому ни одна стратегия не оставляет равенство для
+ручного скрытого решения. Double elimination использует полную power-of-two сетку и reset final при первом
+поражении ранее unbeaten finalist. Pool playoff, Swiss matching, Americano partner rounds и одновременные движения
+ladder/King of Court являются выходом точной strategy version и проверяются golden fixtures на контрактном этапе.
+
+Authoritative tournament state, snapshot, audit и outbox коммитятся в PostgreSQL одной транзакцией. Generation
+lease или BullMQ job не является источником уникальности. После сбоя projection полностью воспроизводится из
+snapshot/seeds/results; checksum mismatch, невозможный граф или unresolved tie закрывает новые старты и переводит
+агрегат в operational pause. Completion требует terminal всех обязательных nodes, уникальных мест и ровно одного
+marker. Отдельная downstream projection может идемпотентно добавить подтверждённую статистику игрока, но marker
+турнира не считается marker обычного матча.

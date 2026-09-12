@@ -2516,3 +2516,59 @@ test/integration/clubs-backend.integration-spec.ts` обнаружил 8 сце�
 - `git diff --check` успешен до финальной записи журнала. Локально исполнимые проверки зелёные; блокировки runtime
   integration/browser явно записаны. Подтверждённая club match метрика удовлетворяет критерию source/deduplication;
   membership/active-club/fill dashboard остаётся отдельным production analytics gate, как зафиксировано в матрице.
+
+## 2026-09-12 — турниры, этап 01-requirements
+
+- Активный промпт: `llm/10-tournaments/01-requirements.md`. Изменения ограничены продуктовыми требованиями,
+  доменной/архитектурной границей, privacy/retention и аналитикой. TypeSpec/AsyncAPI, OpenAPI, Prisma, migrations,
+  backend, worker и клиенты не менялись и не выдаются за реализованные.
+- Определены 15 пользовательских историй и 20 сценариев «Дано/Когда/Тогда»: draft/publication, registration,
+  individual/fixed-team/partner entry, FIFO waitlist, ручной внешний payment status, check-in, withdrawal,
+  replacement/no-show, seeding/start/pause/completion/cancel, roles, result/correction, club attribution и recovery.
+- Lifecycle разделяет состояние агрегата и явный registration gate. После seeding strategy snapshot, eligible
+  entrants, seeds и публичные tie-break lots неизменяемы; role/lifecycle/payment/result/correction/recovery
+  mutations versioned, idempotent и аудируются. Последний organizer не исчезает без атомарной передачи.
+- Цена/валюта — только публичная информация об оплате вне платформы. PickleHub не создаёт checkout, invoice,
+  acquiring link, wallet, escrow, refund или provider callback, не собирает реквизиты/evidence и не гарантирует
+  расчёт. Ручной статус может быть условием check-in только по заранее опубликованной policy.
+- Зафиксированы восемь strategy versions и допустимые размеры/play modes: individual doubles Americano; singles
+  или fixed-team doubles для round robin, single/double elimination, pool play, Swiss, ladder и King of Court.
+  Описаны circle/snake/bracket/pairing/movement algorithms, power-of-two guards, byes/walkovers, courts/batches,
+  grand-final reset, scoring и последний публичный lot, исключающий нерешённую ничью.
+- Double walkover передаёт empty slot в elimination graph; невозможность определить чемпиона требует pause/cancel,
+  а не случайного победителя. Winner-changing correction разрешена до старта зависимости; поздняя попытка ставит
+  турнир на паузу и допускает только аудированное `RESULT_STANDS` либо cancel, не переписывая сыгранную историю.
+- Strategy engine задан как чистая детерминированная функция snapshot/seeds/lots/result revisions. PostgreSQL
+  остаётся authoritative для uniqueness/dependencies/audit/outbox, Redis/BullMQ — только ускоритель. Recovery
+  пересчитывает projection/checksum и fail-closed ставит турнир на паузу при невозможном графе, duplicate slot,
+  unresolved tie или расхождении.
+- Аналитика отделяет immutable tournament markers от consented events. Registration eligibility, fill/check-in,
+  partner/waitlist conversion, start/completion, no-show/correction/pause определены без IDs, roster, pair graph,
+  payment/price, score, seed/rating и точного времени/места. Tournament matches не увеличивают KPI подтверждённых
+  обычных матчей.
+- Privacy policy закрепляет tournament-scoped least privilege, минимальную public/organizer projection, explicit
+  partner opt-in, запрет пользовательского JavaScript/DSL и предварительные retention limits. Правовое основание,
+  РФ-residency, legal hold, backup expiry и физическая очистка остаются production gates, а не заявленным
+  соответствием.
+- Изменённые файлы: `llm/_docs/product-requirements.md`, `llm/_docs/domain-model.md`,
+  `llm/_docs/architecture.md`, `llm/_docs/security-privacy.md`, `llm/_docs/analytics-plan.md` и этот журнал.
+
+### Проверки этапа tournaments 01-requirements
+
+- `npx prettier --write llm/_docs/product-requirements.md llm/_docs/domain-model.md llm/_docs/architecture.md
+llm/_docs/analytics-plan.md llm/_docs/security-privacy.md` — успешно; после уточнения double walkover, court,
+  Americano/double-elimination/pool algorithms requirements повторно отформатирован.
+- `npm run format:check` и `npm run docs:check` — успешно до полного прогона: 125 Markdown-файлов, 0 ошибок.
+- Первый `npm run verify` дошёл через workspace/TypeSpec/Redocly, 151 REST operations/51 messages, 96/96 policy
+  tests, compatibility/generated/typecheck и OpenAPI mock, затем ожидаемо обнаружил неотформатированную после
+  последней правки таблицу requirements. Выполнен Prettier; проверки не ослаблялись.
+- Повторный `npm run verify` успешен полностью: восемь workspaces/один root lockfile; TypeSpec и Redocly; 151 REST
+  operations/51 messages; 96/96 contract/data/privacy/verification tests; compatibility, generated drift,
+  contract typecheck и OpenAPI mock; format/docs; lint, strict typecheck, tests и production builds. Backend —
+  32/32 suites и 165/165 tests, web — 9/42, TMA — 7/25, API client — 1/6; остальные четыре package suites также
+  зелёные. Сохраняются прежние неблокирующие bundle warnings: web около 590 kB, TMA около 602 kB, MapLibre 924 kB,
+  а окружение задаёт небезопасный `NODE_TLS_REJECT_UNAUTHORIZED=0`.
+- `npm ls --depth=0` и `git diff --check` успешны: unmet/extraneous dependencies и whitespace errors отсутствуют.
+  Критерии текущего этапа выполнены на уровне требований. Точные wire enum/limits, SQL guards, event payloads и
+  golden strategy fixtures принадлежат следующему промпту `llm/10-tournaments/02-contract-data.md`; к нему не
+  переходили.

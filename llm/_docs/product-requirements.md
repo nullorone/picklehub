@@ -1467,3 +1467,269 @@ Wire contracts, SQL-модели, точные enum/TTL, recurring horizon и с
 `09-clubs/02-contract-data.md`; backend и UI этим этапом не заявлены. Границы владения уточнены в
 [доменной модели](domain-model.md), безопасность — в [безопасности](security-privacy.md), направление зависимостей —
 в [архитектуре](architecture.md), таксономия измерений — в [плане аналитики](analytics-plan.md).
+
+## Турниры
+
+Источник объёма — [обзор функции](../10-tournaments/00-overview.md); правила ниже определены
+[этапом требований](../10-tournaments/01-requirements.md). Это продуктовая спецификация восьми встроенных стратегий,
+а не заявление о готовности tournament API, генератора сетки или клиентов. Встроенной оплаты, бронирования кортов,
+призового фонда, ставок, возрастной проверки, автоматического импорта DUPR и пользовательского кода здесь нет.
+
+### Пользовательские истории
+
+| ID   | История                                                   | Ожидаемый результат                                                                                               |
+| ---- | --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| T-01 | Как игрок, я нахожу и открываю опубликованный турнир      | Вижу формат, правила версии, расписание, вместимость, цену как справку и доступность регистрации.                 |
+| T-02 | Как организатор, я создаю и публикую турнир               | Черновик валидируется целиком; публикация фиксирует публичные правила и не принимает оплату.                      |
+| T-03 | Как игрок, я регистрируюсь один                           | В singles или индивидуальном формате появляется один entrant; replay не занимает второе место.                    |
+| T-04 | Как капитан, я регистрирую готовую пару                   | В doubles team-format появляется одна полная команда из двух разных eligible игроков.                             |
+| T-05 | Как игрок без пары, я прошу подобрать партнёра            | Я явно соглашаюсь с правилом подбора; до формирования пары не считаюсь готовой командой.                          |
+| T-06 | Как ожидающий игрок/команда, я продвигаюсь из очереди     | Освободившееся совместимое место получает первый eligible entry по серверному FIFO.                               |
+| T-07 | Как организатор, я отмечаю внешнюю оплату                 | Меняется только ручной информационный статус с аудитом; деньги и платёжные реквизиты не проходят через PickleHub. |
+| T-08 | Как участник, я отмечаю прибытие или снимаюсь             | Check-in и withdrawal меняют eligibility по опубликованным срокам без удаления истории.                           |
+| T-09 | Как организатор, я заменяю участника или фиксирую неявку  | Замена возможна только до первого затронутого матча; поздняя неявка даёт предписанный bye/walkover.               |
+| T-10 | Как организатор, я выполняю посев и запускаю турнир       | Entrant list, tie-break lots, стратегия и параметры становятся неизменяемым стартовым snapshot.                   |
+| T-11 | Как scorekeeper, я вношу результат турнирной встречи      | Сервер проверяет счёт и полномочие; продвижение и таблица рассчитываются один раз.                                |
+| T-12 | Как организатор, я исправляю ошибочный результат          | Исправление версионируется, аудируется и не переписывает уже начатую зависимую встречу.                           |
+| T-13 | Как организатор, я ставлю проведение на паузу и продолжаю | Новые раунды не запускаются; зафиксированные результаты и сетка сохраняются.                                      |
+| T-14 | Как игрок, я вижу итог турнира                            | После terminal completion опубликованы окончательные места без нерешённых равенств.                               |
+| T-15 | Как club owner/admin, я создаю клубный турнир             | Турнир получает неизменяемую club attribution и реального user-organizer, но остаётся агрегатом tournaments.      |
+
+### Граница, роли и публичность
+
+`Tournament` владеет конфигурацией, entrants, посевом, раундами, `TournamentMatch`, таблицами и окончательными
+местами. Он хранит ссылки на пользователей, клуб и публичную canonical площадку, но не копирует identity, профиль,
+club membership или координаты. Турнирная встреча не является обычным `Match`: у неё нет публичного join, общей
+очереди матчей, гостевых мест или самостоятельного организатора. Подтверждённые турнирные результаты могут позднее
+попасть в профиль через идемпотентную проекцию, но не входят в главную метрику обычных опубликованных матчей.
+
+У турнира ровно один активный `ORGANIZER` — реальный пользователь. Он может назначить scoped `CO_ORGANIZER` и
+`SCOREKEEPER`: первый управляет проведением, кроме передачи ownership и отмены; второй только вносит результат
+назначенной встречи. Club `OWNER`/`ADMIN` может создать club-attributed tournament, но club role после создания не
+даёт tournament capability. Platform roles, match organizer и роли другого турнира также не дают доступ. Передача
+organizer атомарно назначает eligible co-organizer и оставляет прежнего организатора co-organizer; удалить или
+понизить последнего organizer без передачи нельзя. Все role, lifecycle, payment-status, seed, result/correction и
+cancel actions имеют actor, expected revision, закрытый reason и append-only audit.
+
+Публичная карточка после публикации содержит название, описание, format/play mode, venue projection, локальное
+расписание с IANA timezone, окна регистрации/check-in, capacity/fill buckets, версию правил, scoring summary,
+организатора, club attribution и информационную цену/валюту. Не публикуются состав
+очереди и pairing pool, payment status отдельного игрока, отметка неявки до итогов, audit или внутренние причины.
+Участник видит свои entry/team/check-in/payment состояния; organizer видит минимальные данные, необходимые для
+проведения. Search индексирует только опубликованные незавершённые/недавно завершённые турниры и использует
+детерминированную cursor-пагинацию без private draft enumeration.
+
+### Жизненный цикл и неизменяемость правил
+
+Состояние агрегата и независимый registration gate образуют следующую машину. Любая команда идемпотентна и
+проверяет ожидаемую revision; пропущенное или повторное состояние не выводится из времени молча.
+
+| Состояние     | Разрешённый следующий переход      | Основные условия                                                                                             |
+| ------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `DRAFT`       | `PUBLISHED`, `CANCELLED`           | Все поля изменяемы; публикация требует валидного preset, окон, capacity и хотя бы одного разрешённого корта. |
+| `PUBLISHED`   | `CHECK_IN`, `SEEDED`, `CANCELLED`  | Registration gate явно `OPEN`/`CLOSED`; повторное открытие допустимо только до check-in и аудируется.        |
+| `CHECK_IN`    | `SEEDED`, `CANCELLED`              | Регистрация закрыта; отмечаются прибытие, withdrawal и promotion до объявленного cutoff.                     |
+| `SEEDED`      | `IN_PROGRESS`, `CANCELLED`         | Eligible entrants, lot, bracket/schedule и strategy snapshot зафиксированы; обычное редактирование закрыто.  |
+| `IN_PROGRESS` | `PAUSED`, `COMPLETED`, `CANCELLED` | Генерируются только следующие допустимые встречи; все зависимости предыдущего раунда terminal.               |
+| `PAUSED`      | `IN_PROGRESS`, `CANCELLED`         | Новые старты запрещены; текущая встреча только завершается/исправляется по recovery policy.                  |
+| `COMPLETED`   | —                                  | Все обязательные встречи terminal, standings разрешены до уникальных мест, completion marker записан.        |
+| `CANCELLED`   | —                                  | Новые встречи и результаты запрещены; committed history остаётся, внешние возвраты лишь сообщаются.          |
+
+`registrationOpensAt` и `registrationClosesAt` управляют только gate; worker может закрыть его одной
+идемпотентной командой, но не переводит турнир дальше без явно настроенного auto-advance. `CHECK_IN` можно
+пропустить preset-политикой `NOT_REQUIRED`; тогда `PUBLISHED → SEEDED` всё равно требует закрытой регистрации и
+eligible minimum. Пауза не продлевает сроки автоматически. Cancel terminal в любом незавершённом состоянии,
+требует объяснения последствий и не удаляет результаты уже сыгранных встреч.
+
+При публикации создаётся `FormatDefinitionSnapshot` с `formatCode`, `strategyVersion`, play mode, scoring,
+capacity, rounds, court policy, seeding, advancement, tie-break и correction policy. После первой регистрации
+нельзя менять цену, entry kind, capacity вниз ниже занятых мест или условия eligibility без отмены/нового турнира.
+После `SEEDED` snapshot, entrant identities, seed/lot и расписание неизменяемы, кроме описанных withdrawal/no-show,
+result correction и court/time reschedule, которые не меняют соперников уже начатой встречи. Пользовательский DSL,
+скрипт, expression evaluator и `eval` не являются preset и запрещены.
+
+### Регистрация, партнёр, очередь и внешняя оплата
+
+Единица capacity — entrant: один игрок в singles/индивидуальном формате либо готовая пара в fixed-team doubles.
+Один пользователь не может одновременно состоять в двух active entries одного турнира; два члена пары различны,
+eligible и явно подтверждают состав. `TEAM` entrant имеет капитана только для команд регистрации, но капитан не
+получает tournament role. Americano принимает только individual entrants; остальные разрешённые doubles-форматы —
+только fixed teams. Guest placeholder, неполная пара после cutoff и пользователь без завершённого onboarding не
+являются eligible entrant.
+
+Игрок doubles может выбрать `LOOKING_FOR_PARTNER`, явно согласившись на опубликованную автоматическую политику.
+Такой intent резервирует одно player-place, но не team entrant и не место в сетке. При закрытии pairing window
+кандидаты сортируются по seed score по убыванию, затем registration time и предварительно сохранённому lot;
+первый соединяется с последним, второй — с предпоследним. Block/restriction и уже выбранный партнёр исключают пару.
+Сформированная пара становится entrant атомарно. Нечётный остаток и несовместимый кандидат переходят в FIFO
+partner waitlist; organizer не может принудительно подобрать игрока, не включившего opt-in. Ручная пара до cutoff
+имеет приоритет над ещё не исполненным auto-pair intent, но не вытесняет подтверждённого entrant.
+
+При заполненной capacity новый готовый entrant или individual Americano попадает в FIFO waitlist с серверным
+sequence. Освобождение до seeding предлагает место первой compatible записи; предложение имеет срок, а отказ/
+expiry передаёт место следующей. Для team slot продвигается только полная пара, для individual slot — один игрок.
+Promotion после seeding запрещён, кроме адресной replacement до первого затронутого старта. Replay join/accept/
+promotion не создаёт второй entry и не меняет FIFO.
+
+Цена — одна неотрицательная сумма и ISO 4217 currency на entrant, только текстовая информация о внешней оплате.
+PickleHub не создаёт checkout, invoice, acquiring link, wallet, escrow, refund или provider callback и не гарантирует
+факт расчёта. Organizer вручную меняет `NOT_REQUIRED`/`PENDING_EXTERNAL`/`MARKED_PAID`/`WAIVED`/
+`REFUND_REPORTED` с actor/time/audit без реквизитов и комментария о платеже. Если опубликована политика
+`PAID_OR_WAIVED_FOR_CHECK_IN`, только `MARKED_PAID` или `WAIVED` допускает check-in; спор решается вне платформы,
+а смена статуса не переводит деньги. Exact price и participant payment state запрещены в behavioral analytics.
+
+Withdrawal до seeding делает entry terminal и запускает FIFO promotion. До начала первой затронутой встречи
+organizer может заменить одного игрока fixed team либо весь entrant на совместимого waitlist candidate: новый
+участник явно принимает правила, наследует seed/slot, но не identity, payment state или историю снятого. После
+первого старта entrant roster неизменяем. Не отметившийся к cutoff entrant исключается до seeding; после seeding
+неявка фиксируется как `NO_SHOW`, а встреча становится `WALKOVER` в пользу присутствующего соперника. Двойная
+неявка — `DOUBLE_WALKOVER`: никто не получает победу. В standings оба получают 0 match points; ladder сохраняет
+позиции, King of Court сохраняет эту пару на её корте. В elimination-граф передаётся пустой slot: entrant против
+пустого slot получает bye, два пустых source дают пустой downstream slot. Если из-за пустых slots невозможно
+определить чемпиона, турнир переходит в `PAUSED` и может быть только отменён с аудитом, а не завершён случайным
+winner.
+
+### Общие правила встреч, кортов, посева и исправлений
+
+Preset выбирает один из закрытых scoring profiles: `ONE_GAME_11_WIN_BY_2_CAP_15`,
+`BEST_OF_3_11_WIN_BY_2_CAP_15` либо `TIMED_GOLDEN_POINT`. Первые два не допускают ничью; при 14:14 партия
+заканчивается следующим очком. В timed-профиле после сигнала завершается текущий розыгрыш, а при равном счёте
+разыгрывается одно решающее очко. Форматы со standings начисляют 3 match points за игровую победу, 0 за поражение,
+3/0 за walkover и 0/0 за double walkover; bye даёт 3 match points, но не добавляет game/point statistics. Draw как
+результат встречи не поддерживается, поэтому knockout и продвижение всегда имеют одного победителя.
+
+Начальный seed задаётся политикой `MANUAL`, `RANDOM`, `REGISTRATION_ORDER` или `RATING_SNAPSHOT`. Rating использует
+только разрешённый внутренний snapshot/self-assessment и не собирает DUPR. Во всех политиках до публикации сетки
+сервер создаёт криптографически случайный уникальный `tieBreakLot` для каждого entrant; lot публикуется вместе с
+seed и является последним спортивным tie-break, поэтому равенство никогда не решается временем записи, UUID или
+скрытым ручным выбором. Общий порядок standings: match points, число побед, head-to-head только для двух сыгравших
+равных entrants, game differential, point differential, points scored и lot; формат может добавить явно указанный
+критерий перед lot.
+
+Раунд состоит из ordered matches. Один entrant не играет параллельно; доступные корты назначаются по rank и ID,
+а если их меньше числа встреч, раунд идёт последовательными batches. Потеря корта переносит только не начатые
+встречи с audit; она не создаёт техническое поражение. Court — логический слот на выбранной публичной площадке:
+его наличие не означает бронирование или оплату через PickleHub. Следующий зависимый раунд не стартует, пока все
+его источники не terminal. Scorekeeper вносит result только своей встречи; organizer/co-organizer подтверждает
+walkover, double-walkover и correction.
+
+До старта любой зависимой встречи result можно заменить новой revision: прежняя остаётся в audit, standings и все
+не начатые downstream matches детерминированно пересчитываются. После старта зависимости разрешено исправить лишь
+счёт без смены победителя. Winner-changing correction переводит турнир в `PAUSED`; обычный API её не применяет,
+уже сыгранная зависимость не переписывается. Director фиксирует `RESULT_STANDS` с причиной либо отменяет турнир;
+будущий независимый dispute workflow может расширить политику, но скрытого выбора победителя нет. Completion после
+исправления пересчитывает весь strategy state из immutable entrant/seed/result revisions и сверяет projection.
+
+### Встроенные стратегии форматов
+
+`N` ниже — число eligible entrants после check-in, `C` — число кортов. Все верхние пределы — продуктовые guardrails
+одного турнира, а не обещание инфраструктурной ёмкости.
+
+| Формат               | Режим и размер                                    | Генерация и продвижение                                                                                                                  | Итог и специальный tie-break                                                  |
+| -------------------- | ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| `AMERICANO`          | Только individual doubles; `N` = 4..64 и кратно 4 | 3..`N-1` раундов; в каждом новый partner, встречи группируют пары; очки команды получает каждый её игрок.                                | Match points, wins, game/point diff, points, strength of schedule, lot.       |
+| `ROUND_ROBIN`        | Singles или fixed-team doubles; `N` = 3..64       | Circle schedule, один или два legs; нечётный `N` даёт по одному bye каждому за leg; все играют со всеми.                                 | Общий standings и общий tie-break.                                            |
+| `SINGLE_ELIMINATION` | Singles/teams; `N` = 2..128                       | Сетка до следующей степени двойки, верхние seeds получают byes; проигравший выбывает; optional bronze match не влияет на финал.          | Финал определяет 1–2; bronze либо semifinal order по seed/lot.                |
+| `DOUBLE_ELIMINATION` | Singles/teams; `N` = 4..64, степень двойки        | Winners bracket + consolidation losers bracket; второе поражение исключает; grand-final reset играется, если unbeaten finalist проиграл. | Reset даёт единственного чемпиона; остальные по elimination round/seed/lot.   |
+| `POOL_PLAY`          | Singles/teams; `N` = 6..64                        | Snake seeding в pools по 3–6, один round robin; фиксированное число лучших и опубликованные wildcards выходят в single elimination.      | В pool общий порядок; wildcards сравниваются нормированно, затем lot.         |
+| `SWISS`              | Singles/teams; `N` = 4..128                       | 3..9 раундов, не больше `N-1`; пары близких scores, rematch минимизируется; при нечётном `N` один неповторный bye.                       | Match points, Buchholz, Sonneborn–Berger, wins, game/point diff, lot.         |
+| `LADDER`             | Singles/teams; `N` = 4..64                        | 3..20 challenge rounds; challenger вызывает entrant на 1..5 позиций выше; победа challenger меняет их местами.                           | Позиции лестницы уникальны; первый после последнего committed round — winner. |
+| `KING_OF_COURT`      | Singles/teams; чётный `N` = 4..64                 | Ровно `N/2` игровых мест на ranked courts; победитель движется вверх, проигравший вниз, границы остаются на месте.                       | Winner последней встречи court 1 — king; далее loser court 1, пары court 2+.  |
+
+Americano использует circle partner schedule. Для чётного `N` слот 1 фиксирован, остальные циклически сдвигаются;
+в раунде позиции `i` и `N+1-i` образуют partner pair, поэтому партнёр не повторяется в первых `N-1` раундах. Пары
+сортируются по меньшему seed, затем объединяются по две соседние пары во встречи; если `C < N/4`, они исполняются
+batches без смены round. Личный strength of schedule — сумма итоговых match points всех соперников, с которыми
+игрок встретился, по одному вкладу за встречу. Пример: 8 игроков, 3 раунда, 2 корта — каждый проводит три игры с
+тремя разными партнёрами; места определяются личной суммой match/point statistics, а не результатом последней пары.
+
+Round robin применяет circle method: при нечётном `N` добавляется пустой слот, первый слот фиксирован, остальные
+сдвигаются, противоположные позиции встречаются. Второй leg повторяет пары с обратным номинальным порядком после
+завершения первого. Пример: 5 singles entrants дают 5 раундов и 10 сыгранных встреч за leg, у каждого один bye.
+
+Single elimination размещает seeds рекурсивной последовательностью `S(1)=[1]`, а `S(2m)` получает из каждого
+элемента `x` списка `S(m)` пару `[x, 2m+1-x]`. Пустые позиции bracket размера `2^ceil(log2 N)` дают автоматический
+проход; две пустые позиции невозможны. Пример: `N=6` даёт bracket 8, seeds 1 и 2 проходят первый раунд, затем
+четвертьфиналы/полуфиналы/финал без reseeding.
+
+Double elimination принимает только полную power-of-two capacity. Winners bracket строится как single elimination
+без byes. После первого winners round его проигравшие попарно играют первый losers consolidation round. После
+каждого следующего winners round его проигравшие встречаются с survivors losers bracket; incoming losers идут в
+обратном порядке индексов winners matches, чтобы исключить немедленный rematch. Между такими injection rounds,
+кроме последнего, survivors сортируются по source match index/seed/lot и попарно консолидируются первый с последним,
+второй с предпоследним. Если rematch всё же возможен, движок перебирает перестановки лексикографически по seed/lot
+и выбирает первую с минимальным числом rematches, затем минимальной суммой seed gaps. Пример: 8 entrants дают 7
+winners matches, 6 losers matches, одну grand final и reset только при первой победе finalist из losers.
+
+Pool play распределяет seeds змейкой: pool A→последний pool, затем в обратную сторону, пока все не размещены;
+размеры pools отличаются не более чем на один. Из каждого выходит одинаковое опубликованное число `Q`, допустимое
+для самого малого pool. Число pools, `Q` и wildcards валидны только когда playoff size — степень двойки 2..32,
+`Q × pools` не превышает этот size, а wildcards хватает среди оставшихся entrants; иначе draft не публикуется.
+Между pools сравниваются match points / возможные match points, win percentage, game и point differential на
+сыгранную встречу, points scored на встречу и lot. First playoff round перебирает seed-valid permutations и
+выбирает первую с минимумом same-pool пар, затем seed gaps; дальше reseeding нет. Пример: 12 teams, 3 pools по 4,
+top-2 плюс два wildcards дают playoff 8.
+
+Swiss перед каждым раундом сортирует entrants по текущему tie-break. Для нечётного состава bye получает
+низший entrant без прежнего bye, иначе низший по lot. Для остальных сервер выбирает perfect matching с
+лексикографически минимальной стоимостью: число rematches, суммарный разрыв match points, число пар из разных
+score groups, суммарный seed gap, ordered pair lots. Поэтому rematch используется только когда без него полного
+matching нет. Последний раунд завершает standings, отдельного playoff нет. Пример: 16 teams и 4 rounds дают каждой
+команде четыре результата и итог с Buchholz по match points всех реально сыгранных соперников; bye в Buchholz не
+входит.
+
+Ladder в начале раунда принимает challenges только снизу вверх в пределах `challengeSpan`. Команды сортируются по
+server accepted time, затем challenger position и lot; заявка назначается, если оба entrants ещё свободны, прочие
+получают conflict и могут выбрать другого соперника до cutoff. Не назначенные entrants пропускают раунд без очков.
+При победе challenger участники меняются позициями, иначе порядок сохраняется; double walkover также сохраняет
+порядок. Все изменения применяются одновременно после terminal всех встреч раунда. Пример: entrant с позиции 6
+побеждает позицию 3 при span 3 и занимает 3, бывший третий — 6; другие позиции не сдвигаются.
+
+King of Court перед первым раундом размещает позиции 1–2 на court 1, 3–4 на court 2 и далее. После каждого раунда
+winner court 1 остаётся и принимает winner court 2; loser последнего корта остаётся и принимает loser предыдущего;
+каждый промежуточный court получает loser сверху и winner снизу. Все перемещения применяются одновременно. В
+последнем раунде итог: winner/loser court 1, затем winner/loser court 2 и далее. Пример: 8 fixed teams, 4 courts и
+5 раундов всегда дают восемь уникальных итоговых мест; timed golden point исключает ничью.
+
+### Метрики, восстановление и критерии приёмки
+
+Определения измерений находятся в [плане аналитики](analytics-plan.md). Основные продуктовые показатели: доля
+опубликованных турниров, набравших eligible minimum; registration→eligible conversion; fill/check-in/waitlist
+promotion; start/completion; no-show/withdrawal; correction и operational pause; завершение по format/version.
+Tournament completion и match result считаются только по immutable markers и не увеличивают KPI обычных матчей.
+
+Strategy engine — детерминированная чистая функция versioned snapshot, seeds/lots и committed result revisions.
+PostgreSQL хранит authoritative state, уникальность entrant/slot/match dependency, audit и outbox; Redis/BullMQ
+только ускоряет generation. После падения worker перечитывает snapshot, берёт aggregate lock, пересчитывает
+projection и создаёт отсутствующие раунды идемпотентно. Несовпадение checksum, невозможный bracket, два победителя
+одного slot или неразрешённая ничья автоматически ставят турнир на паузу и поднимают alert без выбора исхода.
+Recovery использует backup/restore runbook, replay по event ID, сверку всех completed tournaments и ручное
+аудированное продолжение; недоступный корт/аналитика/уведомление не меняет спортивный результат.
+
+| ID     | Дано                                                          | Когда                                                | Тогда                                                                                                      |
+| ------ | ------------------------------------------------------------- | ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| T-AC1  | Валидный draft и organizer                                    | Публикация повторяется                               | Один tournament и один rules snapshot; checkout/provider payment не появляется.                            |
+| T-AC2  | Capacity заполнена                                            | Два compatible waitlist entries принимают одно место | Продвигается только первый FIFO; entrant count не превышает capacity.                                      |
+| T-AC3  | Игрок зарегистрирован или состоит в паре                      | Повторно вступает другим entry                       | Операция отклонена/повторена идемпотентно; один пользователь имеет один active entry.                      |
+| T-AC4  | Doubles игрок включил partner matching                        | Pairing window закрывается                           | Детерминированная совместимая пара создана с opt-in; нечётный остаток не становится неполной team.         |
+| T-AC5  | Есть информационная цена                                      | Organizer отмечает оплату                            | Только manual status и audit меняются; PickleHub не принимает деньги, реквизиты или refund obligation.     |
+| T-AC6  | Registration закрыта и check-in завершён                      | Выполняется seeding                                  | В snapshot входят только eligible entrants; seed/lot/strategy immutable, minimum и формат проверены.       |
+| T-AC7  | Entrant снят до seeding                                       | Место освобождено                                    | Первый compatible waitlist entry получает offer; прошлый payment status и identity не наследуются.         |
+| T-AC8  | Entrant не явился после seeding                               | Его встреча должна завершиться                       | Single no-show даёт walkover; double no-show передаёт empty slot, а невозможный чемпион требует cancel.    |
+| T-AC9  | Кортов меньше одновременных встреч                            | Раунд запускается                                    | Встречи идут ordered batches; entrant не назначен параллельно, продвижение ждёт terminal dependencies.     |
+| T-AC10 | Любой из восьми presets                                       | Два entrants равны по спортивным показателям         | Форматный tie-break заканчивается опубликованным lot; нерешённой ничьей нет.                               |
+| T-AC11 | Double-elimination finalist из losers побеждает unbeaten      | Первая grand final подтверждена                      | Создаётся ровно один reset final; чемпион определяется вторым поражением, преждевременного completion нет. |
+| T-AC12 | Swiss pairing без rematch существует                          | Генерируется следующий раунд                         | Выбран matching без rematch; одинаковый snapshot всегда создаёт те же пары.                                |
+| T-AC13 | Americano/King of Court/ladder round завершён                 | Рассчитывается следующее состояние                   | Все partner/court/position изменения применяются атомарно и ни один entrant не дублируется.                |
+| T-AC14 | Ошибочный result не имеет начатой зависимости                 | Organizer исправляет winner                          | Новая revision пересчитывает unstarted downstream; старый result и audit сохранены.                        |
+| T-AC15 | Зависимая встреча уже началась                                | Запрошено winner-changing correction                 | Турнир paused, спортивная история не переписана; разрешены `RESULT_STANDS` либо cancel.                    |
+| T-AC16 | Worker падает после commit или получает duplicate job         | Generation/recovery повторяется                      | Не возникает второго раунда/match/promotion/completion marker; checksum сходится с authoritative snapshot. |
+| T-AC17 | Последняя обязательная встреча terminal                       | Запрошено completion                                 | Все места уникальны, projection пересчитана; один completion marker и отдельная tournament metric.         |
+| T-AC18 | Analytics consent отсутствует/provider недоступен             | Выполняется registration, result или completion      | Доменная операция, audit и recovery работают; behavioral событие не буферизуется и не воспроизводится.     |
+| T-AC19 | Club-attributed tournament создан и клуб позднее архивирован  | Проведение продолжается                              | Real organizer и immutable attribution сохранены; club role не подменяет tournament authorization.         |
+| T-AC20 | Пользователь пытается передать JavaScript/DSL как format rule | Draft валидируется                                   | Значение отклонено; исполняется только allowlisted preset точной strategy version.                         |
+
+Wire enum, TypeSpec/AsyncAPI, SQL constraints, точные request limits и strategy fixtures принадлежат
+`10-tournaments/02-contract-data.md`; backend, generator и UI этим этапом не заявлены. Владение уточнено в
+[доменной модели](domain-model.md), доступ и минимизация — в [безопасности](security-privacy.md), зависимости — в
+[архитектуре](architecture.md), измерения — в [плане аналитики](analytics-plan.md).

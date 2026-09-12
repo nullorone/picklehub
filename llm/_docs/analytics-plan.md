@@ -315,3 +315,44 @@ membership-policy/role class, conflict/duplicate suppression, recurring generati
 orphan-owner invariant violation. IDs, names, member graph, invitation token, reason text, coordinates и exact
 timestamps запрещены как labels; orphan-owner target равен нулю. Analytics outage или отсутствие consent не
 блокирует клуб, membership, серию или матч, а события пропущенного периода не буферизуются и не воспроизводятся.
+
+## Турниры
+
+Tournament behavioral analytics использует общий consent envelope `v1` и не является источником bracket,
+standings или completion. Запрещены tournament/club/venue/user/entry/team/match IDs, название/описание, roster и
+pairing graph, waitlist position, payment state/price, score, seed/rating, no-show identity, exact schedule/location,
+challenge pair и correction reason. Формат, strategy major version, play mode, закрытые count/time buckets и
+безопасный outcome разрешены; малые когорты подавляются. Внутренний operational marker может содержать opaque ID
+для дедупликации, но он не экспортируется как analytics dimension.
+
+| Событие                           | Источник после commit                                   | Разрешённые свойства                                                                                          | Дедупликация                          |
+| --------------------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| `tournament_published`            | Backend после первого перехода в `PUBLISHED`            | `format`, strategy major, `playMode`, `capacityBucket`, `clubAttributed`, `priceMode`: free/informational     | Tournament publication marker         |
+| `tournament_registration_started` | Backend после первого eligible intent при consent actor | `format`, `entryKind`: individual/team/partner, `source`: direct/waitlist                                     | Registration operation ID             |
+| `tournament_entry_eligible`       | Backend после готового entry до seeding                 | `format`, `entryKind`, `path`: direct/paired/promoted, `latencyBucket`                                        | Tournament + entry eligibility marker |
+| `tournament_check_in_completed`   | Backend после terminal check-in entry                   | `format`, `outcome`: arrived/withdrawn/no-show, `leadTimeBucket`                                              | Entry check-in transition             |
+| `tournament_started`              | Единственный переход в `IN_PROGRESS`                    | `format`, strategy major, `entrantBucket`, `fillBucket`, `courtBucket`                                        | Tournament start marker               |
+| `tournament_completed`            | Immutable tournament completion marker                  | `format`, strategy major, `entrantBucket`, `roundBucket`, `durationBucket`, `correctionBucket`, `pauseBucket` | Tournament completion marker          |
+
+Registration conversion считается по когорте первого допустимого intent: число уникальных eligible entries до
+seeding / уникальные direct/team/partner intents, отдельно по entry path и окнам 24 часа, 7 дней и до registration
+close. Idempotent replay, invalid/blocked request и organizer-created test draft исключаются. Один paired entrant
+не считается как два entrants, но player-level partner funnel отдельно показывает долю opt-in игроков, вошедших в
+полную пару. Waitlist promotion rate — принятые offers / выданные offers; expiry и decline остаются outcomes.
+
+Fill snapshot фиксируется один раз перед seeding: eligible entrants / preset capacity. Check-in rate использует
+только eligible registered players или полные teams и не включает waitlist/pairing pool. Started rate — доля
+published tournaments, достигших `IN_PROGRESS`; completion rate — доля started с immutable completion marker.
+Completion режется по format/strategy major и крупным entrant/round buckets, но не по venue, club или organizer.
+Tournament completion, отдельный tournament match и bye не увеличивают основную метрику confirmed ordinary matches.
+
+Product dashboard показывает published → first intent → eligible minimum → seeded → started → completed,
+withdrawal/no-show, partner formation, FIFO promotion, completion duration, operational pause и result correction
+rate. Цена и ручная payment отметка не измеряются поведенчески. Форматные guardrails: unresolved tie, duplicate
+entrant/slot, impossible dependency, standings checksum mismatch и duplicate completion marker имеют target zero.
+
+Operational metrics не требуют consent: command outcome, active tournaments by lifecycle bucket, generation lag,
+strategy duration, round/match counts in buckets, court scheduling backlog, idempotency/version conflict, waitlist
+race suppression, correction type, pause reason enum, projection checksum mismatch, outbox retry/quarantine и
+recovery outcome. Labels не содержат IDs, score, roster, payment, exact time/place или free-text reason. Analytics
+outage не блокирует регистрацию/проведение; пропущенные behavioral events не восстанавливаются из domain history.

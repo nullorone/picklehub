@@ -638,3 +638,44 @@ credentials сохраняется как governance/исторический re
 очистка свободного текста online — до 30 суток после утверждённого запроса. Это не юридически утверждённые сроки:
 РФ-residency, основание, legal hold, backup expiry и физическая очистка подтверждаются до production. В логах,
 метриках и analytics запрещены name/description, member pairs, token, reason text, точное расписание и координаты.
+
+## Политика турниров
+
+Публичны только опубликованная карточка, rules/version, format, capacity bucket, расписание, venue projection,
+информационная цена и итоговые bracket/standings с разрешённой public profile projection. Draft, waitlist/pairing
+pool, check-in до публикации итогов, individual payment status, role history, audit и correction reason restricted.
+Organizer/scorekeeper получает минимальную projection по tournament scope; email, Telegram subject, sessions,
+межличностные blocks, точные перемещения и club-private данные не выдаются.
+
+Tournament capability deny-by-default и связана с одним tournament ID. Club role разрешает только создание через
+club port и не переживает его как tournament role; platform staff, match organizer и organizer другого турнира
+прав не получают. Scorekeeper ограничен назначенными встречами и не меняет entry, payment, seed или lifecycle.
+Ownership transfer, role, cancellation, manual payment status, seeding, no-show/walkover, result/correction,
+`RESULT_STANDS` и recovery resume требуют server actor, expected revision, idempotency и append-only audit.
+
+Partner matching требует явного opt-in и проверяет active platform restriction и межличностный block через
+trust/safety port до показа/создания пары. Публичная сетка не раскрывает waitlist, отклонённые pairing attempts или
+payment status. Organizer не вводит платёжные реквизиты, provider transaction, receipt image или свободный
+комментарий об оплате. Цена не является offer/checkout от PickleHub; клиент явно сообщает, что расчёт и возврат
+происходят вне платформы. Raw payment evidence, банковские данные и webhooks этим этапом не собираются.
+
+Registration, partner intent, waitlist/promotion, role, result и correction сериализуются и rate-limit разделяется
+для public search, registration, organizer mutations, score entry и recovery. Enumeration draft/roster/waitlist,
+bulk invitation/score import, подмена entrant и перенос idempotency receipt между actor запрещены. Strategy code
+allowlisted по версии: пользовательский JavaScript, DSL, template expression, serialized function и dynamic module
+не принимаются ни в draft, ни в admin recovery.
+
+Tournament cancellation скрывает будущие direct actions, но не удаляет audit и сыгранные results. Удаление
+аккаунта отзывает pending intent/check-in capability и public profile projection; исторический entrant/result
+псевдонимизируется настолько, насколько допускают целостность standings и утверждённое основание. Последний
+organizer не блокирует identity deletion: незавершённый tournament безопасно paused/cancelled по утверждённому
+runbook, а platform employee не становится organizer автоматически. Club archive не удаляет уже созданный
+tournament и не расширяет права бывшего club manager.
+
+Предлагаемый retention: terminal partner/waitlist/payment operation receipts — 90 суток после tournament
+completion/cancel; ручные payment-status transitions — не дольше срока урегулирования внешнего события, максимум
+один год без отдельного основания; entrant/check-in/result/standings и governance audit — до трёх лет; публичная
+карточка скрывается по product policy, свободный текст удаляется до 30 суток после утверждённого запроса. Это
+неутверждённые production limits: правовое основание, РФ-residency, legal hold, backup expiry и физическая очистка
+должны пройти legal/security review до сбора. В logs/traces/analytics запрещены roster/pair graph, payment/price,
+score, rating/seed, exact schedule/location и correction reason; operational labels используют только enum/buckets.

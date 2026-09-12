@@ -213,6 +213,31 @@ attribution. Возвращённый match ID/occurrence key хранится �
 фиксируются атомарно. Worker генерирует только bounded horizon и не создаёт backlog после pause/archive; Redis/
 BullMQ ускоряет планирование, но не определяет уникальность occurrence или наличие владельца.
 
+### Граница турниров
+
+Модуль `tournaments` владеет lifecycle турнира, scoped roles, entry/waitlist/check-in/payment-status, immutable
+strategy snapshot, seed/lot, stages, rounds, tournament matches, standings и corrections. Он получает actor из
+`identity`, public profile projection через read-port, canonical venue через `venues` и необязательную club
+attribution через авторизованный `clubs` command-port. Club/platform/match roles не преобразуются в tournament
+role; после создания только собственная scoped role и ownership определяют управление.
+
+Обычный `matches` не является storage для bracket nodes: tournament match не наследует public join, match queue,
+guest placeholder, chat lifecycle или organizer. После tournament completion минимальное versioned событие может
+передать подтверждённый outcome в `profiles` через идемпотентный consumer, но не создаёт `CONFIRMED_MATCH` marker
+обычного матча. Notifications получают только opaque tournament/recipient reference и template variables; состав,
+payment state и точный результат не копируются в общий notification log.
+
+Восемь strategy implementations — чистые allowlisted функции точной версии. Они читают только immutable snapshot,
+ordered seed/lot и authoritative result revisions, а создаваемый граф защищён unique dependency/slot constraints.
+PostgreSQL aggregate lock сериализует registration/promotion, seeding, result, correction и generation. Aggregate
+change, обязательный audit, outbox и idempotent receipt коммитятся одной транзакцией; BullMQ lease не определяет
+победителя или уникальность раунда.
+
+Recovery worker воспроизводит projection и checksum из authoritative inputs. Расхождение, невозможный bracket,
+неразрешённая ничья или winner-changing correction после старта зависимости переводят турнир в `PAUSED`; никакой
+consumer не выбирает исход автоматически. Resume требует устранённой причины, повторной сверки и аудированного
+решения organizer. Пользовательский DSL остаётся будущей отдельной границей и не подключается к runtime presets.
+
 ## Общие frontend-пакеты
 
 Разрешены framework-neutral пакеты `api-client`, `domain`, `validation`, `i18n` и `analytics`. Они не импортируют
