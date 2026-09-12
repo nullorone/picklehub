@@ -201,6 +201,20 @@ channels:
             ClubVenueLinkChanged: { $ref: '#/components/messages/ClubVenueLinkChanged' }
             ClubRecurringRuleChanged: { $ref: '#/components/messages/ClubRecurringRuleChanged' }
             ClubRecurringOccurrenceRecorded: { $ref: '#/components/messages/ClubRecurringOccurrenceRecorded' }
+    tournamentEvents:
+        address: tournament.events.v1
+        title: Internal privacy-minimized tournament events
+        description: Transactional outbox only, delivered at least once and deduplicated by messageId. Payloads
+            carry aggregate/resource revisions and closed states, never roster, payment, score, seed, exact schedule,
+            location, public text, actor identity or correction reason. Consumers reload an authorized projection.
+        servers:
+            - $ref: '#/servers/outbox'
+        messages:
+            TournamentCreated: { $ref: '#/components/messages/TournamentCreated' }
+            TournamentStateChanged: { $ref: '#/components/messages/TournamentStateChanged' }
+            TournamentEntrantChanged: { $ref: '#/components/messages/TournamentEntrantChanged' }
+            TournamentPlanChanged: { $ref: '#/components/messages/TournamentPlanChanged' }
+            TournamentResultChanged: { $ref: '#/components/messages/TournamentResultChanged' }
 operations:
     receiveClientControl:
         action: receive
@@ -358,6 +372,19 @@ operations:
             - $ref: '#/channels/clubEvents/messages/ClubVenueLinkChanged'
             - $ref: '#/channels/clubEvents/messages/ClubRecurringRuleChanged'
             - $ref: '#/channels/clubEvents/messages/ClubRecurringOccurrenceRecorded'
+    publishTournamentEvents:
+        action: send
+        title: Publish committed tournament aggregate changes
+        summary: Publish only opaque references, monotonic revisions and closed states through the outbox.
+        description: Each message is committed with its audit and aggregate mutation. Replay is safe by messageId,
+            aggregate version and resource revision; bracket consumers rebuild from the authorized source snapshot.
+        channel: { $ref: '#/channels/tournamentEvents' }
+        messages:
+            - $ref: '#/channels/tournamentEvents/messages/TournamentCreated'
+            - $ref: '#/channels/tournamentEvents/messages/TournamentStateChanged'
+            - $ref: '#/channels/tournamentEvents/messages/TournamentEntrantChanged'
+            - $ref: '#/channels/tournamentEvents/messages/TournamentPlanChanged'
+            - $ref: '#/channels/tournamentEvents/messages/TournamentResultChanged'
 components:
     messages:
         Authenticate:
@@ -755,6 +782,41 @@ components:
             contentType: application/json
             correlationId: { location: $message.payload#/correlationId }
             payload: { $ref: '#/components/schemas/SafetyEffectRequestedEnvelope' }
+        TournamentCreated:
+            name: tournament.created.v1
+            title: TournamentCreated
+            summary: A shared tournament aggregate was created from an allowlisted preset.
+            contentType: application/json
+            correlationId: { location: $message.payload#/correlationId }
+            payload: { $ref: '#/components/schemas/TournamentCreatedEnvelope' }
+        TournamentStateChanged:
+            name: tournament.state.changed.v1
+            title: TournamentStateChanged
+            summary: The tournament entered a new explicit lifecycle state.
+            contentType: application/json
+            correlationId: { location: $message.payload#/correlationId }
+            payload: { $ref: '#/components/schemas/TournamentStateChangedEnvelope' }
+        TournamentEntrantChanged:
+            name: tournament.entrant.changed.v1
+            title: TournamentEntrantChanged
+            summary: One opaque entrant revision changed without exposing its members.
+            contentType: application/json
+            correlationId: { location: $message.payload#/correlationId }
+            payload: { $ref: '#/components/schemas/TournamentEntrantChangedEnvelope' }
+        TournamentPlanChanged:
+            name: tournament.plan.changed.v1
+            title: TournamentPlanChanged
+            summary: A deterministic plan projection revision was committed.
+            contentType: application/json
+            correlationId: { location: $message.payload#/correlationId }
+            payload: { $ref: '#/components/schemas/TournamentPlanChangedEnvelope' }
+        TournamentResultChanged:
+            name: tournament.result.changed.v1
+            title: TournamentResultChanged
+            summary: One result revision changed without exposing score or winner identity.
+            contentType: application/json
+            correlationId: { location: $message.payload#/correlationId }
+            payload: { $ref: '#/components/schemas/TournamentResultChangedEnvelope' }
         ClubCreated:
             name: club.created.v1
             title: ClubCreated
@@ -947,6 +1009,120 @@ components:
         EmptyData:
             type: object
             additionalProperties: false
+        TournamentCreatedEnvelope:
+            type: object
+            additionalProperties: false
+            required: [messageId, type, occurredAt, correlationId, data]
+            properties:
+                messageId: { $ref: '#/components/schemas/Uuid' }
+                type: { type: string, const: tournament.created.v1 }
+                occurredAt: { $ref: '#/components/schemas/Timestamp' }
+                correlationId: { $ref: '#/components/schemas/Uuid' }
+                causationId:
+                    oneOf: [{ $ref: '#/components/schemas/Uuid' }, { type: 'null' }]
+                data:
+                    type: object
+                    additionalProperties: false
+                    required: [tournamentId, aggregateVersion, formatCode]
+                    properties:
+                        tournamentId: { $ref: '#/components/schemas/Uuid' }
+                        aggregateVersion: { type: integer, minimum: 0 }
+                        formatCode:
+                            type: string
+                            enum:
+                                [
+                                    AMERICANO,
+                                    ROUND_ROBIN,
+                                    SINGLE_ELIMINATION,
+                                    DOUBLE_ELIMINATION,
+                                    POOL_PLAY,
+                                    SWISS,
+                                    LADDER,
+                                    KING_OF_COURT,
+                                ]
+        TournamentStateChangedEnvelope:
+            type: object
+            additionalProperties: false
+            required: [messageId, type, occurredAt, correlationId, data]
+            properties:
+                messageId: { $ref: '#/components/schemas/Uuid' }
+                type: { type: string, const: tournament.state.changed.v1 }
+                occurredAt: { $ref: '#/components/schemas/Timestamp' }
+                correlationId: { $ref: '#/components/schemas/Uuid' }
+                causationId:
+                    oneOf: [{ $ref: '#/components/schemas/Uuid' }, { type: 'null' }]
+                data:
+                    type: object
+                    additionalProperties: false
+                    required: [tournamentId, aggregateVersion, state]
+                    properties:
+                        tournamentId: { $ref: '#/components/schemas/Uuid' }
+                        aggregateVersion: { type: integer, minimum: 1 }
+                        state:
+                            type: string
+                            enum: [PUBLISHED, CHECK_IN, SEEDED, IN_PROGRESS, PAUSED, COMPLETED, CANCELLED]
+        TournamentEntrantChangedEnvelope:
+            type: object
+            additionalProperties: false
+            required: [messageId, type, occurredAt, correlationId, data]
+            properties:
+                messageId: { $ref: '#/components/schemas/Uuid' }
+                type: { type: string, const: tournament.entrant.changed.v1 }
+                occurredAt: { $ref: '#/components/schemas/Timestamp' }
+                correlationId: { $ref: '#/components/schemas/Uuid' }
+                causationId:
+                    oneOf: [{ $ref: '#/components/schemas/Uuid' }, { type: 'null' }]
+                data:
+                    type: object
+                    additionalProperties: false
+                    required: [tournamentId, aggregateVersion, entrantId, entrantRevision, state]
+                    properties:
+                        tournamentId: { $ref: '#/components/schemas/Uuid' }
+                        aggregateVersion: { type: integer, minimum: 1 }
+                        entrantId: { $ref: '#/components/schemas/Uuid' }
+                        entrantRevision: { type: integer, minimum: 0 }
+                        state: { type: string, enum: [ELIGIBLE, WAITLISTED, WITHDRAWN, REPLACED, NO_SHOW] }
+        TournamentPlanChangedEnvelope:
+            type: object
+            additionalProperties: false
+            required: [messageId, type, occurredAt, correlationId, data]
+            properties:
+                messageId: { $ref: '#/components/schemas/Uuid' }
+                type: { type: string, const: tournament.plan.changed.v1 }
+                occurredAt: { $ref: '#/components/schemas/Timestamp' }
+                correlationId: { $ref: '#/components/schemas/Uuid' }
+                causationId:
+                    oneOf: [{ $ref: '#/components/schemas/Uuid' }, { type: 'null' }]
+                data:
+                    type: object
+                    additionalProperties: false
+                    required: [tournamentId, aggregateVersion, projectionRevision, outcome]
+                    properties:
+                        tournamentId: { $ref: '#/components/schemas/Uuid' }
+                        aggregateVersion: { type: integer, minimum: 1 }
+                        projectionRevision: { type: integer, format: int64, minimum: 1 }
+                        outcome: { type: string, enum: [SEEDED, ROUND_GENERATED, REBUILT, COMPLETED, PAUSED_MISMATCH] }
+        TournamentResultChangedEnvelope:
+            type: object
+            additionalProperties: false
+            required: [messageId, type, occurredAt, correlationId, data]
+            properties:
+                messageId: { $ref: '#/components/schemas/Uuid' }
+                type: { type: string, const: tournament.result.changed.v1 }
+                occurredAt: { $ref: '#/components/schemas/Timestamp' }
+                correlationId: { $ref: '#/components/schemas/Uuid' }
+                causationId:
+                    oneOf: [{ $ref: '#/components/schemas/Uuid' }, { type: 'null' }]
+                data:
+                    type: object
+                    additionalProperties: false
+                    required: [tournamentId, aggregateVersion, tournamentMatchId, resultRevision, outcome]
+                    properties:
+                        tournamentId: { $ref: '#/components/schemas/Uuid' }
+                        aggregateVersion: { type: integer, minimum: 1 }
+                        tournamentMatchId: { $ref: '#/components/schemas/Uuid' }
+                        resultRevision: { type: integer, minimum: 1 }
+                        outcome: { type: string, enum: [PLAYED, BYE, WALKOVER, DOUBLE_WALKOVER, RESULT_STANDS] }
         ClubCreatedEnvelope:
             type: object
             additionalProperties: false

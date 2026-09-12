@@ -9,6 +9,7 @@ import "./venues.tsp";
 import "./communications.tsp";
 import "./administration.tsp";
 import "./clubs.tsp";
+import "./tournaments.tsp";
 
 using TypeSpec.Http;
 using TypeSpec.OpenAPI;
@@ -29,7 +30,8 @@ using TypeSpec.OpenAPI;
         name: "Administration",
         description: "Least-privilege staff access, moderation coordination and immutable audit search.",
     },
-    #{ name: "Clubs", description: "Club discovery, scoped membership governance, venues and recurring matches." }
+    #{ name: "Clubs", description: "Club discovery, scoped membership governance, venues and recurring matches." },
+    #{ name: "Tournaments", description: "Tournament discovery, registration and versioned format execution." }
 ])
 namespace PickleHub;
 

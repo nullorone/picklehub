@@ -1,0 +1,62 @@
+{
+    "roundRobinOdd": {
+        "formatCode": "ROUND_ROBIN",
+        "entrantCount": 5,
+        "rounds": [
+            {
+                "sequence": 1,
+                "pairs": [
+                    [2, 5],
+                    [3, 4]
+                ],
+                "byeEntrantId": 1
+            },
+            {
+                "sequence": 2,
+                "pairs": [
+                    [1, 5],
+                    [2, 3]
+                ],
+                "byeEntrantId": 4
+            },
+            {
+                "sequence": 3,
+                "pairs": [
+                    [1, 4],
+                    [3, 5]
+                ],
+                "byeEntrantId": 2
+            },
+            {
+                "sequence": 4,
+                "pairs": [
+                    [1, 3],
+                    [2, 4]
+                ],
+                "byeEntrantId": 5
+            },
+            {
+                "sequence": 5,
+                "pairs": [
+                    [1, 2],
+                    [4, 5]
+                ],
+                "byeEntrantId": 3
+            }
+        ]
+    },
+    "singleEliminationByes": {
+        "formatCode": "SINGLE_ELIMINATION",
+        "entrantCount": 6,
+        "bracketSize": 8,
+        "firstRoundSeedSlots": [1, 8, 4, 5, 2, 7, 3, 6],
+        "automaticByeSeeds": [1, 2]
+    },
+    "resolvedTie": {
+        "formatCode": "ROUND_ROBIN",
+        "equalThrough": "pointsScored",
+        "lots": { "entrant-a": 9002, "entrant-b": 117 },
+        "finalOrder": ["entrant-b", "entrant-a"],
+        "decidingCriterion": "tieBreakLot"
+    }
+}

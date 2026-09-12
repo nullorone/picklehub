@@ -972,6 +972,114 @@ export namespace SessionsRevokedMessage {
     export type DataReason = 'LOGOUT' | 'REPLAY' | 'IDENTITY_CHANGED' | 'DELETION';
 }
 
+export namespace TournamentCreatedMessage {
+    export interface TournamentCreatedEnvelope {
+        messageId: string;
+        type: 'tournament.created.v1';
+        occurredAt: string;
+        correlationId: string;
+        causationId?: string | null;
+        data: Data;
+    }
+
+    export interface Data {
+        tournamentId: string;
+        aggregateVersion: number;
+        formatCode: DataFormatCode;
+    }
+
+    export type DataFormatCode =
+        | 'AMERICANO'
+        | 'ROUND_ROBIN'
+        | 'SINGLE_ELIMINATION'
+        | 'DOUBLE_ELIMINATION'
+        | 'POOL_PLAY'
+        | 'SWISS'
+        | 'LADDER'
+        | 'KING_OF_COURT';
+}
+
+export namespace TournamentEntrantChangedMessage {
+    export interface TournamentEntrantChangedEnvelope {
+        messageId: string;
+        type: 'tournament.entrant.changed.v1';
+        occurredAt: string;
+        correlationId: string;
+        causationId?: string | null;
+        data: Data;
+    }
+
+    export interface Data {
+        tournamentId: string;
+        aggregateVersion: number;
+        entrantId: string;
+        entrantRevision: number;
+        state: DataState;
+    }
+
+    export type DataState = 'ELIGIBLE' | 'WAITLISTED' | 'WITHDRAWN' | 'REPLACED' | 'NO_SHOW';
+}
+
+export namespace TournamentPlanChangedMessage {
+    export interface TournamentPlanChangedEnvelope {
+        messageId: string;
+        type: 'tournament.plan.changed.v1';
+        occurredAt: string;
+        correlationId: string;
+        causationId?: string | null;
+        data: Data;
+    }
+
+    export interface Data {
+        tournamentId: string;
+        aggregateVersion: number;
+        projectionRevision: number;
+        outcome: DataOutcome;
+    }
+
+    export type DataOutcome = 'SEEDED' | 'ROUND_GENERATED' | 'REBUILT' | 'COMPLETED' | 'PAUSED_MISMATCH';
+}
+
+export namespace TournamentResultChangedMessage {
+    export interface TournamentResultChangedEnvelope {
+        messageId: string;
+        type: 'tournament.result.changed.v1';
+        occurredAt: string;
+        correlationId: string;
+        causationId?: string | null;
+        data: Data;
+    }
+
+    export interface Data {
+        tournamentId: string;
+        aggregateVersion: number;
+        tournamentMatchId: string;
+        resultRevision: number;
+        outcome: DataOutcome;
+    }
+
+    export type DataOutcome = 'PLAYED' | 'BYE' | 'WALKOVER' | 'DOUBLE_WALKOVER' | 'RESULT_STANDS';
+}
+
+export namespace TournamentStateChangedMessage {
+    export interface TournamentStateChangedEnvelope {
+        messageId: string;
+        type: 'tournament.state.changed.v1';
+        occurredAt: string;
+        correlationId: string;
+        causationId?: string | null;
+        data: Data;
+    }
+
+    export interface Data {
+        tournamentId: string;
+        aggregateVersion: number;
+        state: DataState;
+    }
+
+    export type DataState = 'PUBLISHED' | 'CHECK_IN' | 'SEEDED' | 'IN_PROGRESS' | 'PAUSED' | 'COMPLETED' | 'CANCELLED';
+}
+
 export namespace VenueCandidateCreatedMessage {
     export interface VenueCandidateCreatedEnvelope {
         messageId: string;
@@ -1076,6 +1184,11 @@ export type SafetyDecisionRecordedEnvelope = SafetyDecisionRecordedMessage.Safet
 export type SafetyEffectRequestedEnvelope = SafetyEffectRequestedMessage.SafetyEffectRequestedEnvelope;
 export type SafetySignalReceivedEnvelope = SafetySignalReceivedMessage.SafetySignalReceivedEnvelope;
 export type SessionsRevokedEnvelope = SessionsRevokedMessage.SessionsRevokedEnvelope;
+export type TournamentCreatedEnvelope = TournamentCreatedMessage.TournamentCreatedEnvelope;
+export type TournamentEntrantChangedEnvelope = TournamentEntrantChangedMessage.TournamentEntrantChangedEnvelope;
+export type TournamentPlanChangedEnvelope = TournamentPlanChangedMessage.TournamentPlanChangedEnvelope;
+export type TournamentResultChangedEnvelope = TournamentResultChangedMessage.TournamentResultChangedEnvelope;
+export type TournamentStateChangedEnvelope = TournamentStateChangedMessage.TournamentStateChangedEnvelope;
 export type VenueCandidateCreatedEnvelope = VenueCandidateCreatedMessage.VenueCandidateCreatedEnvelope;
 export type VenueMergedEnvelope = VenueMergedMessage.VenueMergedEnvelope;
 export type VenueVerifiedEnvelope = VenueVerifiedMessage.VenueVerifiedEnvelope;
@@ -1122,6 +1235,11 @@ export type WebSocketMessage =
     | SafetyDecisionRecordedEnvelope
     | SafetyEffectRequestedEnvelope
     | SafetySignalReceivedEnvelope
+    | TournamentCreatedEnvelope
+    | TournamentEntrantChangedEnvelope
+    | TournamentPlanChangedEnvelope
+    | TournamentResultChangedEnvelope
+    | TournamentStateChangedEnvelope
     | VenueCandidateCreatedEnvelope
     | VenueMergedEnvelope
     | VenueVerifiedEnvelope;

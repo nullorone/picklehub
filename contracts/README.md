@@ -22,7 +22,7 @@ npm run contracts:check
 - `contracts:lint` проверяет TypeSpec без записи artifacts, валидирует OpenAPI и AsyncAPI официальными
   parser/linter и применяет PickleHub policy: `/v1`, разрешённые owning-feature paths, уникальные
   operation/message IDs, версионированные envelopes, UTC timestamps, `no-store`, browser CSRF/cookie и безопасный
-  payload внутренних identity/venue/match/communication/profile/club events, admin capability registry и
+  payload внутренних identity/venue/match/communication/profile/club/tournament events, admin capability registry и
   notification jobs.
   Статические data-policy тесты
   дополнительно удерживают
@@ -39,7 +39,8 @@ npm run contracts:check
 - `contracts:mock` запускает локальный Prism на `127.0.0.1:4010`; он предназначен только для разработки и не
   является backend или production fallback.
 - `contracts:mock:check` запускает mock на свободном localhost port, запрашивает representative endpoints health,
-  identity, venues, matches, communications, profiles, trust/safety, administration и clubs, проверяет status,
+  identity, venues, matches, communications, profiles, trust/safety, administration, clubs и tournaments,
+  проверяет status,
   JSON shape и
   `no-store`.
   AsyncAPI examples проверяются
@@ -104,6 +105,20 @@ terminal intents, hashed invite capability и уникальную календ�
 match. `club.events.v1` всегда несёт `clubId`, но не identity участника, token, клубный текст, координаты, roster,
 reason или точное расписание. Полные решения — в
 [`clubs-data-policy.md`](../llm/_docs/clubs-data-policy.md).
+
+## Турниры
+
+[`rest/tournaments.tsp`](rest/tournaments.tsp) задаёт единые DTO и операции поиска, lifecycle, registration,
+check-in, seeding, раундов, результата/correction, standings и cancel для всех восьми встроенных форматов.
+`CUSTOM_DSL` зарезервирован, но не активируется. Versioned JSON Schema preset находится в
+[`schemas/tournament-presets.v1.schema.json`](schemas/tournament-presets.v1.schema.json), а contract-level golden
+примеры нечётного round robin, elimination byes и разрешённой lot ничьей — в
+[`fixtures/tournament-strategy-examples.v1.json`](fixtures/tournament-strategy-examples.v1.json).
+
+Миграция хранит общий aggregate graph, version/checksum, уникальные FIFO/seed/lot/source slots, append-only result
+revisions/audit и единственный completion marker. `tournament.events.v1` переносит только opaque references,
+версии и закрытые outcomes, без roster, оплаты, счёта, winner, seed/rating, расписания или причин. Полное решение —
+в [`tournaments-data-policy.md`](../llm/_docs/tournaments-data-policy.md).
 
 ## Административная панель
 

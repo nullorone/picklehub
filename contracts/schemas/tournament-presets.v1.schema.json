@@ -1,0 +1,117 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://contracts.picklehub.example/schemas/tournament-presets.v1.schema.json",
+    "title": "PickleHub built-in tournament presets v1",
+    "oneOf": [
+        { "$ref": "#/$defs/americano" },
+        { "$ref": "#/$defs/roundRobin" },
+        { "$ref": "#/$defs/singleElimination" },
+        { "$ref": "#/$defs/doubleElimination" },
+        { "$ref": "#/$defs/poolPlay" },
+        { "$ref": "#/$defs/swiss" },
+        { "$ref": "#/$defs/ladder" },
+        { "$ref": "#/$defs/kingOfCourt" }
+    ],
+    "$defs": {
+        "americano": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["schemaVersion", "formatCode", "courtCount", "rounds"],
+            "properties": {
+                "schemaVersion": { "const": "1.0.0" },
+                "formatCode": { "const": "AMERICANO" },
+                "courtCount": { "type": "integer", "minimum": 1, "maximum": 16 },
+                "rounds": { "type": "integer", "minimum": 3, "maximum": 63 }
+            }
+        },
+        "roundRobin": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["schemaVersion", "formatCode", "courtCount", "legs"],
+            "properties": {
+                "schemaVersion": { "const": "1.0.0" },
+                "formatCode": { "const": "ROUND_ROBIN" },
+                "courtCount": { "type": "integer", "minimum": 1, "maximum": 32 },
+                "legs": { "type": "integer", "minimum": 1, "maximum": 2 }
+            }
+        },
+        "singleElimination": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["schemaVersion", "formatCode", "courtCount", "bronzeMatch"],
+            "properties": {
+                "schemaVersion": { "const": "1.0.0" },
+                "formatCode": { "const": "SINGLE_ELIMINATION" },
+                "courtCount": { "type": "integer", "minimum": 1, "maximum": 64 },
+                "bronzeMatch": { "type": "boolean" }
+            }
+        },
+        "doubleElimination": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["schemaVersion", "formatCode", "courtCount", "grandFinalReset"],
+            "properties": {
+                "schemaVersion": { "const": "1.0.0" },
+                "formatCode": { "const": "DOUBLE_ELIMINATION" },
+                "courtCount": { "type": "integer", "minimum": 1, "maximum": 32 },
+                "grandFinalReset": { "const": true }
+            }
+        },
+        "poolPlay": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+                "schemaVersion",
+                "formatCode",
+                "courtCount",
+                "poolCount",
+                "qualifiersPerPool",
+                "wildcardCount",
+                "playoffSize"
+            ],
+            "properties": {
+                "schemaVersion": { "const": "1.0.0" },
+                "formatCode": { "const": "POOL_PLAY" },
+                "courtCount": { "type": "integer", "minimum": 1, "maximum": 32 },
+                "poolCount": { "type": "integer", "minimum": 2, "maximum": 16 },
+                "qualifiersPerPool": { "type": "integer", "minimum": 1, "maximum": 5 },
+                "wildcardCount": { "type": "integer", "minimum": 0, "maximum": 31 },
+                "playoffSize": { "enum": [2, 4, 8, 16, 32] }
+            }
+        },
+        "swiss": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["schemaVersion", "formatCode", "courtCount", "rounds"],
+            "properties": {
+                "schemaVersion": { "const": "1.0.0" },
+                "formatCode": { "const": "SWISS" },
+                "courtCount": { "type": "integer", "minimum": 1, "maximum": 64 },
+                "rounds": { "type": "integer", "minimum": 3, "maximum": 9 }
+            }
+        },
+        "ladder": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["schemaVersion", "formatCode", "courtCount", "rounds", "challengeSpan"],
+            "properties": {
+                "schemaVersion": { "const": "1.0.0" },
+                "formatCode": { "const": "LADDER" },
+                "courtCount": { "type": "integer", "minimum": 1, "maximum": 32 },
+                "rounds": { "type": "integer", "minimum": 3, "maximum": 20 },
+                "challengeSpan": { "type": "integer", "minimum": 1, "maximum": 5 }
+            }
+        },
+        "kingOfCourt": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["schemaVersion", "formatCode", "courtCount", "rounds"],
+            "properties": {
+                "schemaVersion": { "const": "1.0.0" },
+                "formatCode": { "const": "KING_OF_COURT" },
+                "courtCount": { "type": "integer", "minimum": 2, "maximum": 32 },
+                "rounds": { "type": "integer", "minimum": 1, "maximum": 20 }
+            }
+        }
+    }
+}

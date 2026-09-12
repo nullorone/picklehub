@@ -2572,3 +2572,62 @@ llm/_docs/analytics-plan.md llm/_docs/security-privacy.md` — успешно; �
   Критерии текущего этапа выполнены на уровне требований. Точные wire enum/limits, SQL guards, event payloads и
   golden strategy fixtures принадлежат следующему промпту `llm/10-tournaments/02-contract-data.md`; к нему не
   переходили.
+
+## 2026-09-12 — турниры, этап 02-contract-data
+
+- Активный промпт: `llm/10-tournaments/02-contract-data.md`. Добавлен TypeSpec-контракт из 22 tournament routes:
+  публичный поиск/card/plan, draft update/publication, registration и scoped entrants, check-in/withdrawal,
+  информационная внешняя payment mark, seed/start, start/complete round, score/walkover/correction,
+  pause/resume/completion/cancel. Все ответы `no-store`; приватные reads требуют bearer, а мутации дополнительно
+  требуют Origin/CSRF, UUIDv4 idempotency и expected aggregate/resource revisions. Hard delete отсутствует.
+- Общие wire models покрывают `Tournament`, `Entrant`, `EntrantMember`, partner intent, `Stage`, `Round`,
+  `TournamentMatch`, `CourtAssignment`, `Standing`, `FormatDefinition` и `PaymentMark`. Восемь встроенных форматов
+  используют один discriminated preset union и semantic strategy version. `TournamentFormatStrategyInput/Output`
+  и data-policy фиксируют чистоту, детерминизм, stable keys, dependency/slot/terminal/tie invariants и atomic
+  persistence boundary. `CUSTOM_DSL` присутствует в enum, но API/SQL всегда отклоняют активацию.
+- Добавлена versioned JSON Schema `contracts/schemas/tournament-presets.v1.schema.json` с восемью закрытыми `$defs`.
+  Registry `format_definitions` хранит immutable format/strategy/schema version, `$id`, JSON Schema и hash;
+  изменяемая конфигурация находится только в tournament snapshot. SQL сверяет snapshot с registry, format/play-mode
+  и size/round/pool/court guardrails. Golden fixtures покрывают round robin с пятью entrants и bye, elimination
+  bracket 8 для шести entrants с автопроходами seeds 1/2 и равенство, разрешённое последним публичным lot.
+- Prisma и additive migration получили один aggregate family, scoped roles и ровно одного organizer, отдельный
+  opt-in partner intent, FIFO/seed/lot uniqueness, immutable snapshot, shared stage/round/match graph, composite
+  aggregate-scope FK, unique source outcomes, court batches, append-only result revisions/payment history/audit,
+  reciprocal authoritative result guard, late winner-change rejection, unique standing ranks и единственный
+  append-only completion marker. Root `version + projectionRevision + projectionChecksum` и generation keys
+  обеспечивают replay/recovery без зависимости от BullMQ lease.
+- AsyncAPI получил internal transactional-outbox channel `tournament.events.v1` и пять сообщений. Payload содержит
+  только opaque tournament/entrant/tournament-match references, aggregate/resource/projection versions и закрытые
+  format/state/outcome. Policy test запрещает roster/member/user, payment/price, score/winner, seed/rating,
+  club/venue, schedule, public text, actor и reason; consumer обязан перечитать авторизованную projection и
+  дедуплицировать `messageId`/revision.
+- Обновлены contract allowlists, generated root/API-client TypeScript, representative Prism smoke, contract README
+  и `llm/_docs/tournaments-data-policy.md` с migration/index/recovery/privacy решениями. Новые policy/data tests
+  довели общий набор до 103 tests. Backend use cases, strategy algorithms, worker и UI не создавались; это объём
+  следующего prompt.
+
+### Проверки этапа tournaments 02-contract-data
+
+- `npm run contracts:generate` — успешно; OpenAPI и оба generated TypeScript artifacts обновлены только из
+  TypeSpec/AsyncAPI. `npm run contracts:lint` — успешно: TypeSpec, Redocly, allowlists/privacy, 173 REST operations,
+  56 messages и 103/103 contract/data tests. `npm run contracts:breaking`, `npm run contracts:generated:check` и
+  `npm run contracts:typecheck` — успешно; compatibility с `HEAD`, byte-reproducibility и strict generated
+  typecheck подтверждены.
+- `npm run contracts:mock:check` после добавления tournament search и валидных currency/checksum examples —
+  успешно: representative tournament response имеет корректную форму и `no-store`. Два промежуточных повтора и
+  финальный `npm run verify` один раз получили sandbox `listen EPERM 127.0.0.1`; немедленный отдельный retry mock
+  после итоговых изменений успешен. Проверка не ослаблялась.
+- Один полный `npm run verify` до финального уточнения registry успешно прошёл все восемь workspaces; после
+  уточнения повторно успешно выполнены contract compile/lint/breaking/generated/typecheck, затем отдельно
+  `format:check`, `docs:check`, lint, strict typecheck, tests и production builds. Backend regression — 32/32 suites
+  и 165/165 tests; API client — 1/6, web — 9/42, TMA — 7/25. PWA manifest/service worker и отсутствие TMA dev mock
+  подтверждены. Сохраняются прежние неблокирующие bundle warnings около 590/602 kB и MapLibre 924 kB, а окружение
+  задаёт небезопасный `NODE_TLS_REJECT_UNAUTHORIZED=0`.
+- `npx prisma validate --schema backend/prisma/schema.prisma` и предварительный `prisma format` не получили schema
+  engine из-за restricted network: `ENOTFOUND claude-fwd.raiffeisen.ru`. PostgreSQL runtime migration/constraint
+  tests также недоступны: `psql`/`pg_isready` отсутствуют, Docker daemon socket запрещён (`operation not permitted`).
+  Поэтому применение DDL и runtime-успех deferred triggers должны быть подтверждены в PostgreSQL CI и здесь не
+  заявляются. Статические migration policy tests успешны.
+- `npm ls --depth=0`, `git diff --check`, `format:check` и `docs:check` успешны; unmet/extraneous dependencies,
+  whitespace и Markdown errors отсутствуют. Локально исполнимые критерии prompt выполнены. Следующий prompt —
+  `llm/10-tournaments/03-backend.md`; к нему не переходили.

@@ -14,6 +14,7 @@ import { checkTrustSafetyContract, trustSafetyEventFields, trustSafetyOperations
 import { checkVenueContract, venueOperations, venueEventFields } from './venues-policy.mjs';
 import { checkAdministrationContract, administrationOperations } from './administration-policy.mjs';
 import { checkClubContract, clubEventFields, clubOperations } from './clubs-policy.mjs';
+import { checkTournamentContract, tournamentEventFields, tournamentOperations } from './tournaments-policy.mjs';
 
 const allowedPaths = new Set([
     '/health/live',
@@ -26,6 +27,7 @@ const allowedPaths = new Set([
     ...Object.keys(venueOperations),
     ...Object.keys(administrationOperations),
     ...Object.keys(clubOperations),
+    ...Object.keys(tournamentOperations),
 ]);
 const allowedProtocolMessages = new Set([
     'session.authenticate.v1',
@@ -108,7 +110,8 @@ assert(
             name in profileEventFields ||
             name in trustSafetyEventFields ||
             name in venueEventFields ||
-            name in clubEventFields
+            name in clubEventFields ||
+            name in tournamentEventFields
     ),
     'AsyncAPI may define only approved protocol and owning-feature messages.'
 );
@@ -125,7 +128,8 @@ assert(
             Object.keys(profileEventFields).length +
             Object.keys(trustSafetyEventFields).length +
             Object.keys(venueEventFields).length +
-            Object.keys(clubEventFields).length,
+            Object.keys(clubEventFields).length +
+            Object.keys(tournamentEventFields).length,
     'AsyncAPI must define all approved protocol and owning-feature messages.'
 );
 
@@ -157,5 +161,6 @@ checkTrustSafetyContract(openApi, asyncApi);
 checkVenueContract(openApi, asyncApi);
 checkAdministrationContract(openApi);
 checkClubContract(openApi, asyncApi);
+checkTournamentContract(openApi, asyncApi);
 
 console.log(`Contract policy passed: ${operationIds.length} REST operations, ${messageNames.length} messages.`);

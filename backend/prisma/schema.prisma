@@ -2389,3 +2389,452 @@ model ClubGovernanceAudit {
   @@index([clubId, createdAt, id], map: "club_governance_audits_club_idx")
   @@map("club_governance_audits")
 }
+
+// Tournaments use one aggregate family for every allowlisted format. Cross-row slot, active-member, ownership,
+// immutable snapshot and projection invariants are enforced by the additive SQL migration.
+enum TournamentFormatCode {
+  AMERICANO
+  ROUND_ROBIN
+  SINGLE_ELIMINATION
+  DOUBLE_ELIMINATION
+  POOL_PLAY
+  SWISS
+  LADDER
+  KING_OF_COURT
+  CUSTOM_DSL
+
+  @@map("tournament_format_code")
+}
+
+enum TournamentState {
+  DRAFT
+  PUBLISHED
+  CHECK_IN
+  SEEDED
+  IN_PROGRESS
+  PAUSED
+  COMPLETED
+  CANCELLED
+
+  @@map("tournament_state")
+}
+
+enum TournamentRegistrationGate {
+  OPEN
+  CLOSED
+
+  @@map("tournament_registration_gate")
+}
+
+enum TournamentPlayMode {
+  INDIVIDUAL_DOUBLES
+  SINGLES
+  FIXED_TEAM_DOUBLES
+
+  @@map("tournament_play_mode")
+}
+
+enum TournamentEntrantState {
+  ELIGIBLE
+  WAITLISTED
+  WITHDRAWN
+  REPLACED
+  NO_SHOW
+
+  @@map("tournament_entrant_state")
+}
+
+enum TournamentMemberState {
+  PENDING_CONFIRMATION
+  CONFIRMED
+  WITHDRAWN
+  REPLACED
+  NO_SHOW
+
+  @@map("tournament_member_state")
+}
+
+enum TournamentStageKind {
+  LEAGUE
+  POOL
+  WINNERS
+  LOSERS
+  PLAYOFF
+  FINAL
+  BRONZE
+  LADDER
+  COURT
+
+  @@map("tournament_stage_kind")
+}
+
+enum TournamentRoundState {
+  PLANNED
+  READY
+  IN_PROGRESS
+  COMPLETED
+
+  @@map("tournament_round_state")
+}
+
+enum TournamentMatchState {
+  PLANNED
+  READY
+  IN_PROGRESS
+  COMPLETED
+  BYE
+  WALKOVER
+  DOUBLE_WALKOVER
+  VOID
+
+  @@map("tournament_match_state")
+}
+
+enum TournamentSlotSourceOutcome {
+  WINNER
+  LOSER
+
+  @@map("tournament_slot_source_outcome")
+}
+
+enum TournamentPaymentState {
+  NOT_REQUIRED
+  PENDING_EXTERNAL
+  MARKED_PAID
+  WAIVED
+  REFUND_REPORTED
+
+  @@map("tournament_payment_state")
+}
+
+enum TournamentPartnerIntentState {
+  PENDING
+  PAIRED
+  WAITLISTED
+  WITHDRAWN
+  EXPIRED
+
+  @@map("tournament_partner_intent_state")
+}
+
+enum TournamentScopedRole {
+  ORGANIZER
+  CO_ORGANIZER
+  SCOREKEEPER
+
+  @@map("tournament_scoped_role")
+}
+
+model FormatDefinition {
+  id              String               @id @db.Uuid
+  formatCode      TournamentFormatCode @map("format_code")
+  strategyVersion String               @map("strategy_version") @db.VarChar(24)
+  schemaVersion   String               @map("schema_version") @db.VarChar(24)
+  schemaId        String               @map("schema_id") @db.VarChar(200)
+  schema          Json
+  schemaHash      String               @map("schema_hash") @db.Char(64)
+  active          Boolean              @default(true)
+  createdAt       DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
+  tournaments     Tournament[]
+
+  @@unique([formatCode, strategyVersion, schemaVersion], map: "format_definitions_version_key")
+  @@map("format_definitions")
+}
+
+model Tournament {
+  id                    String                     @id @db.Uuid
+  version               Int                        @default(0)
+  projectionRevision    BigInt                     @default(0) @map("projection_revision")
+  projectionChecksum    String?                    @map("projection_checksum") @db.Char(64)
+  state                 TournamentState            @default(DRAFT)
+  registrationGate      TournamentRegistrationGate @default(CLOSED) @map("registration_gate")
+  organizerId           String                     @map("organizer_id") @db.Uuid
+  clubId                String?                    @map("club_id") @db.Uuid
+  venueId               String                     @map("venue_id") @db.Uuid
+  formatDefinitionId    String                     @map("format_definition_id") @db.Uuid
+  formatSnapshot        Json                       @map("format_snapshot")
+  formatSnapshotHash    String                     @map("format_snapshot_hash") @db.Char(64)
+  name                  String                     @db.VarChar(120)
+  description           String                     @db.VarChar(2000)
+  timeZone              String                     @map("time_zone") @db.VarChar(64)
+  startsAt              DateTime                   @map("starts_at") @db.Timestamptz(3)
+  registrationOpensAt   DateTime                   @map("registration_opens_at") @db.Timestamptz(3)
+  registrationClosesAt  DateTime                   @map("registration_closes_at") @db.Timestamptz(3)
+  checkInClosesAt       DateTime?                  @map("check_in_closes_at") @db.Timestamptz(3)
+  capacity              Int                        @db.SmallInt
+  priceMinor            BigInt?                    @map("price_minor")
+  currency              String?                    @db.Char(3)
+  createdAt             DateTime                   @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt             DateTime                   @default(now()) @map("updated_at") @db.Timestamptz(3)
+  completedAt           DateTime?                  @map("completed_at") @db.Timestamptz(3)
+  cancelledAt           DateTime?                  @map("cancelled_at") @db.Timestamptz(3)
+  formatDefinition      FormatDefinition           @relation(fields: [formatDefinitionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  entrants              Entrant[]
+  stages                Stage[]
+  matches               TournamentMatch[]
+  standings             Standing[]
+  partnerIntents        TournamentPartnerIntent[]
+  roles                 TournamentRole[]
+
+  @@index([state, startsAt, id], map: "tournaments_public_search_idx")
+  @@index([organizerId, state, updatedAt], map: "tournaments_organizer_idx")
+  @@index([clubId, state, startsAt], map: "tournaments_club_idx")
+  @@map("tournaments")
+}
+
+model Entrant {
+  id             String                  @id @db.Uuid
+  tournamentId   String                  @map("tournament_id") @db.Uuid
+  state          TournamentEntrantState  @default(ELIGIBLE)
+  revision       Int                     @default(0)
+  kind           String                  @db.VarChar(16)
+  captainUserId  String?                 @map("captain_user_id") @db.Uuid
+  fifoSequence   BigInt?                 @map("fifo_sequence")
+  seed           Int?                    @db.SmallInt
+  tieBreakLot    BigInt?                 @map("tie_break_lot")
+  checkInState   String                  @map("check_in_state") @db.VarChar(24)
+  registeredAt   DateTime                @default(now()) @map("registered_at") @db.Timestamptz(3)
+  terminalAt     DateTime?               @map("terminal_at") @db.Timestamptz(3)
+  tournament     Tournament              @relation(fields: [tournamentId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  members        EntrantMember[]
+  paymentMarks   PaymentMark[]
+  standings      Standing[]
+
+  @@index([tournamentId, state, registeredAt, id], map: "entrants_roster_idx")
+  @@index([tournamentId, state, fifoSequence], map: "entrants_fifo_idx")
+  @@map("tournament_entrants")
+}
+
+model EntrantMember {
+  id           String                @id @db.Uuid
+  tournamentId String                @map("tournament_id") @db.Uuid
+  entrantId    String                @map("entrant_id") @db.Uuid
+  userId       String                @map("user_id") @db.Uuid
+  state        TournamentMemberState @default(PENDING_CONFIRMATION)
+  revision     Int                   @default(0)
+  confirmedAt  DateTime?             @map("confirmed_at") @db.Timestamptz(3)
+  terminalAt   DateTime?             @map("terminal_at") @db.Timestamptz(3)
+  entrant      Entrant               @relation(fields: [entrantId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([entrantId, state], map: "entrant_members_entry_idx")
+  @@index([tournamentId, userId, state], map: "entrant_members_user_idx")
+  @@map("tournament_entrant_members")
+}
+
+model TournamentPartnerIntent {
+  id             String                       @id @db.Uuid
+  tournamentId   String                       @map("tournament_id") @db.Uuid
+  userId         String                       @map("user_id") @db.Uuid
+  revision       Int                          @default(0)
+  state          TournamentPartnerIntentState @default(PENDING)
+  matchingOptIn  Boolean                      @default(true) @map("matching_opt_in")
+  fifoSequence   BigInt                       @map("fifo_sequence")
+  registeredAt   DateTime                     @default(now()) @map("registered_at") @db.Timestamptz(3)
+  terminalAt     DateTime?                    @map("terminal_at") @db.Timestamptz(3)
+  tournament     Tournament                   @relation(fields: [tournamentId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([tournamentId, fifoSequence], map: "tournament_partner_intents_fifo_key")
+  @@index([tournamentId, state, fifoSequence], map: "tournament_partner_intents_queue_idx")
+  @@map("tournament_partner_intents")
+}
+
+model TournamentRole {
+  id           String               @id @db.Uuid
+  tournamentId String               @map("tournament_id") @db.Uuid
+  userId       String               @map("user_id") @db.Uuid
+  role         TournamentScopedRole
+  active       Boolean              @default(true)
+  revision     Int                  @default(0)
+  assignedAt   DateTime             @default(now()) @map("assigned_at") @db.Timestamptz(3)
+  endedAt      DateTime?            @map("ended_at") @db.Timestamptz(3)
+  tournament   Tournament           @relation(fields: [tournamentId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([tournamentId, active, role, userId], map: "tournament_roles_access_idx")
+  @@map("tournament_roles")
+}
+
+model Stage {
+  id           String              @id @db.Uuid
+  tournamentId String              @map("tournament_id") @db.Uuid
+  sequence     Int                 @db.SmallInt
+  kind         TournamentStageKind
+  strategyKey  String              @map("strategy_key") @db.VarChar(80)
+  tournament   Tournament          @relation(fields: [tournamentId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  rounds       Round[]
+
+  @@unique([tournamentId, sequence], map: "tournament_stages_sequence_key")
+  @@unique([tournamentId, strategyKey], map: "tournament_stages_strategy_key")
+  @@map("tournament_stages")
+}
+
+model Round {
+  id         String               @id @db.Uuid
+  stageId    String               @map("stage_id") @db.Uuid
+  sequence   Int                  @db.SmallInt
+  generation Int                 @default(1)
+  revision   Int                 @default(0)
+  state      TournamentRoundState @default(PLANNED)
+  startedAt  DateTime?            @map("started_at") @db.Timestamptz(3)
+  completedAt DateTime?           @map("completed_at") @db.Timestamptz(3)
+  stage      Stage                @relation(fields: [stageId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  matches    TournamentMatch[]
+
+  @@unique([stageId, sequence, generation], map: "tournament_rounds_generation_key")
+  @@index([stageId, state, sequence], map: "tournament_rounds_stage_idx")
+  @@map("tournament_rounds")
+}
+
+model TournamentMatch {
+  id                 String               @id @db.Uuid
+  tournamentId       String               @map("tournament_id") @db.Uuid
+  stageId            String               @map("stage_id") @db.Uuid
+  roundId            String               @map("round_id") @db.Uuid
+  strategyKey        String               @map("strategy_key") @db.VarChar(120)
+  sequence           Int                  @db.SmallInt
+  revision           Int                  @default(0)
+  resultRevision     Int                  @default(0) @map("result_revision")
+  state              TournamentMatchState @default(PLANNED)
+  winnerEntrantId    String?              @map("winner_entrant_id") @db.Uuid
+  authoritativeResultId String?           @map("authoritative_result_id") @db.Uuid
+  startedAt          DateTime?            @map("started_at") @db.Timestamptz(3)
+  terminalAt         DateTime?            @map("terminal_at") @db.Timestamptz(3)
+  tournament         Tournament           @relation(fields: [tournamentId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  round              Round                @relation(fields: [roundId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  slots              TournamentMatchSlot[]
+  courtAssignments   CourtAssignment[]
+  results            TournamentMatchResult[]
+
+  @@unique([tournamentId, strategyKey], map: "tournament_matches_strategy_key")
+  @@unique([roundId, sequence], map: "tournament_matches_round_sequence_key")
+  @@index([tournamentId, state, roundId], map: "tournament_matches_execution_idx")
+  @@map("tournament_matches")
+}
+
+model TournamentMatchSlot {
+  tournamentMatchId String                       @map("tournament_match_id") @db.Uuid
+  position          Int                          @db.SmallInt
+  entrantId         String?                      @map("entrant_id") @db.Uuid
+  sourceMatchId     String?                      @map("source_match_id") @db.Uuid
+  sourceOutcome     TournamentSlotSourceOutcome? @map("source_outcome")
+  match             TournamentMatch              @relation(fields: [tournamentMatchId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@id([tournamentMatchId, position])
+  @@index([sourceMatchId, sourceOutcome], map: "tournament_match_slots_source_idx")
+  @@index([entrantId, tournamentMatchId], map: "tournament_match_slots_entrant_idx")
+  @@map("tournament_match_slots")
+}
+
+model CourtAssignment {
+  id                String          @id @db.Uuid
+  tournamentMatchId String          @map("tournament_match_id") @db.Uuid
+  revision          Int             @default(0)
+  courtRank         Int             @map("court_rank") @db.SmallInt
+  batch             Int             @db.SmallInt
+  startsAt          DateTime?       @map("starts_at") @db.Timestamptz(3)
+  assignedAt        DateTime        @default(now()) @map("assigned_at") @db.Timestamptz(3)
+  releasedAt        DateTime?       @map("released_at") @db.Timestamptz(3)
+  match             TournamentMatch @relation(fields: [tournamentMatchId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([courtRank, startsAt], map: "court_assignments_schedule_idx")
+  @@map("tournament_court_assignments")
+}
+
+model TournamentMatchResult {
+  id                String          @id @db.Uuid
+  tournamentMatchId String          @map("tournament_match_id") @db.Uuid
+  revision          Int
+  outcome           String          @db.VarChar(24)
+  winnerEntrantId   String?         @map("winner_entrant_id") @db.Uuid
+  score             Json
+  supersedesId      String?         @map("supersedes_id") @db.Uuid
+  reasonCode        String?         @map("reason_code") @db.VarChar(96)
+  recordedByUserId  String          @map("recorded_by_user_id") @db.Uuid
+  recordedAt        DateTime        @default(now()) @map("recorded_at") @db.Timestamptz(3)
+  match             TournamentMatch @relation(fields: [tournamentMatchId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([tournamentMatchId, revision], map: "tournament_match_results_revision_key")
+  @@map("tournament_match_results")
+}
+
+model Standing {
+  tournamentId     String     @map("tournament_id") @db.Uuid
+  stageId          String?    @map("stage_id") @db.Uuid
+  entrantId        String     @map("entrant_id") @db.Uuid
+  revision         Int
+  rank             Int        @db.SmallInt
+  matchPoints      Int        @map("match_points")
+  wins             Int
+  gameDifferential Int        @map("game_differential")
+  pointDifferential Int       @map("point_differential")
+  pointsScored     Int        @map("points_scored")
+  tieBreakLot      BigInt     @map("tie_break_lot")
+  detail           Json
+  tournament       Tournament @relation(fields: [tournamentId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  entrant          Entrant    @relation(fields: [entrantId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@id([tournamentId, entrantId, revision])
+  @@unique([tournamentId, revision, rank], map: "tournament_standings_rank_key")
+  @@index([tournamentId, revision, rank], map: "tournament_standings_projection_idx")
+  @@map("tournament_standings")
+}
+
+model PaymentMark {
+  id                String                 @id @db.Uuid
+  tournamentId      String                 @map("tournament_id") @db.Uuid
+  entrantId         String                 @map("entrant_id") @db.Uuid
+  revision          Int
+  state             TournamentPaymentState
+  reasonCode        String                 @map("reason_code") @db.VarChar(96)
+  markedByUserId    String                 @map("marked_by_user_id") @db.Uuid
+  markedAt          DateTime               @default(now()) @map("marked_at") @db.Timestamptz(3)
+  entrant           Entrant                @relation(fields: [entrantId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([entrantId, revision], map: "tournament_payment_marks_revision_key")
+  @@index([tournamentId, entrantId, markedAt], map: "tournament_payment_marks_entry_idx")
+  @@map("tournament_payment_marks")
+}
+
+model TournamentOperationReceipt {
+  id                   String   @id @db.Uuid
+  tournamentId         String?  @map("tournament_id") @db.Uuid
+  actorUserId          String   @map("actor_user_id") @db.Uuid
+  idempotencyKey       String   @map("idempotency_key") @db.Uuid
+  method               String   @db.VarChar(8)
+  canonicalPath        String   @map("canonical_path") @db.VarChar(200)
+  requestFingerprint   String   @map("request_fingerprint") @db.Char(64)
+  responseStatus       Int      @map("response_status") @db.SmallInt
+  responseCiphertext   Bytes    @map("response_ciphertext")
+  encryptionKeyVersion Int      @map("encryption_key_version")
+  createdAt            DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  expiresAt            DateTime @default(dbgenerated("CURRENT_TIMESTAMP + INTERVAL '24 hours'")) @map("expires_at") @db.Timestamptz(3)
+
+  @@unique([actorUserId, method, canonicalPath, idempotencyKey], map: "tournament_operation_receipts_scope_key")
+  @@index([expiresAt], map: "tournament_operation_receipts_expiry_idx")
+  @@map("tournament_operation_receipts")
+}
+
+model TournamentAudit {
+  id           String   @id @db.Uuid
+  tournamentId String   @map("tournament_id") @db.Uuid
+  operationId  String   @unique(map: "tournament_audits_operation_key") @map("operation_id") @db.Uuid
+  actorId      String   @map("actor_id") @db.Uuid
+  targetId     String?  @map("target_id") @db.Uuid
+  action       String   @db.VarChar(96)
+  outcome      String   @db.VarChar(32)
+  reasonCode   String?  @map("reason_code") @db.VarChar(96)
+  fromRevision Int?     @map("from_revision")
+  toRevision   Int?     @map("to_revision")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([tournamentId, createdAt, id], map: "tournament_audits_tournament_idx")
+  @@map("tournament_audits")
+}
+
+model TournamentCompletionMarker {
+  tournamentId      String   @id @map("tournament_id") @db.Uuid
+  projectionRevision BigInt  @map("projection_revision")
+  projectionChecksum String  @map("projection_checksum") @db.Char(64)
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@map("tournament_completion_markers")
+}
