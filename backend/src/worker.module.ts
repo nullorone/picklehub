@@ -15,6 +15,7 @@ import { OutboxModule } from './outbox/outbox.module';
 import { OutboxWorkerService } from './outbox/outbox-worker.service';
 import { ProfilesModule } from './profiles/profiles.module';
 import { VenuesModule } from './venues/venues.module';
+import { TournamentsModule } from './tournaments/tournaments.module';
 
 @Module({
     imports: [
@@ -32,6 +33,7 @@ import { VenuesModule } from './venues/venues.module';
         CommunicationsModule,
         ProfilesModule,
         ClubsModule,
+        TournamentsModule,
     ],
     providers: [OutboxWorkerService],
 })

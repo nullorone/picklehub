@@ -2631,3 +2631,52 @@ llm/_docs/analytics-plan.md llm/_docs/security-privacy.md` — успешно; �
 - `npm ls --depth=0`, `git diff --check`, `format:check` и `docs:check` успешны; unmet/extraneous dependencies,
   whitespace и Markdown errors отсутствуют. Локально исполнимые критерии prompt выполнены. Следующий prompt —
   `llm/10-tournaments/03-backend.md`; к нему не переходили.
+
+## 2026-09-12 — турниры, этап 03-backend
+
+- Активный промпт: `llm/10-tournaments/03-backend.md`. Добавлен backend-модуль `tournaments` с закрытым registry
+  восьми встроенных стратегий версии `1.0.0`; неизвестная версия и `CUSTOM_DSL` fail closed. Стратегии не читают
+  clock, БД, Redis, сеть, environment или профиль и получают только preset, ordered seed/public lot и append-only
+  result revisions. Stable strategy keys и canonical JSON/SHA-256 дают byte-deterministic projection checksum.
+- Реализованы Americano circle partners, odd/double-leg round robin, recursive seeded single elimination с bye,
+  winners/losers graph и conditional reset double elimination, snake pools с delayed playoff, Swiss matching с
+  поиском полного matching без rematch и детерминированным fallback, bounded ladder challenges и simultaneous
+  King of Court movement. Court rank/batch вычисляются детерминированно; dependent dynamic formats останавливаются
+  на первой незавершённой волне.
+- Общая проверка projection запрещает duplicate entrant в одной волне, duplicate match key, cycle/unknown source,
+  result неизвестной встречи и winner вне resolved slots. Standings завершаются уникальным публичным lot; scoring
+  profiles запрещают draw, проверяют completed series, win-by-two и cap 15. Инициализированная случайность
+  материализуется до strategy через SHA-256 seed/entrant/collision counter и воспроизводит те же уникальные lots.
+- `TournamentOrchestrator` реализует versioned registration/FIFO promotion, check-in/withdrawal, seed, start
+  tournament/round/match, court assignment, score, correction, recovery, pause/resume, completion и cancellation.
+  Winner-changing correction до старта зависимости перестраивает projection; после зависимого старта revision не
+  добавляется, tournament становится `PAUSED`. Completion требует resolved champion, terminal required matches,
+  уникальные ranks и единственный checksum marker.
+- `TournamentIdempotencyService` выполняет application callback в Prisma `SERIALIZABLE` transaction, блокирует
+  actor, scope-ит receipt по actor/method/path/key, шифрует replay response и bounded повторяет `P2034`.
+  `TournamentTransactionPort` фиксирует обязательную root-lock/atomic persistence boundary для worker; duplicate
+  operation ID возвращает committed state без второго audit/round/result. Модуль подключён к application и worker
+  composition roots; Redis lease не является источником истины.
+- Добавлены `tournament-strategies.spec.ts` и `tournament-orchestrator.spec.ts`: golden odd round robin/bracket seed,
+  Americano partner uniqueness, double-elimination graph/reset, Swiss no-rematch, pool gate, ladder/court
+  permutation, score validation, полные симуляции всех восьми форматов, FIFO/replay/rollback, seeded lots/recovery
+  и late correction pause. Решения и runtime boundaries записаны в `llm/_docs/tournaments-backend.md`.
+
+### Проверки этапа tournaments 03-backend
+
+- Targeted `npm run lint --workspace @picklehub/backend`, `npm run typecheck --workspace @picklehub/backend`,
+  `npm test --workspace @picklehub/backend -- --runInBand backend/test/unit/tournament-orchestrator.spec.ts
+backend/test/unit/tournament-strategies.spec.ts` и `npm run build --workspace @picklehub/backend` — успешно;
+  tournament suite 2/2 файлов и 36/36 tests, включая 16 min/max boundary cases.
+- Полный backend regression `npm test --workspace @picklehub/backend -- --runInBand` — успешно: 34/34 suites и
+  201/201 tests. Финальный `npm run verify` — успешно: восемь workspaces/один lockfile, TypeSpec/Redocly, 173 REST
+  operations/56 messages, 103/103 contract/data/privacy tests, compatibility/generated drift/typecheck, OpenAPI
+  mock, format/docs, lint, strict typecheck, tests и production builds. Web — 9/42, TMA — 7/25, API client — 1/6;
+  прежние bundle warnings около 590/602 kB и MapLibre 924 kB остаются неблокирующими.
+- `npx prisma generate --no-engine --schema backend/prisma/schema.prisma` не выполнился: restricted network не
+  разрешил получить schema-engine checksum (`ENOTFOUND claude-fwd.raiffeisen.ru`). PostgreSQL socket/daemon в
+  окружении также отсутствует, поэтому runtime применение миграции, deferred triggers и реальная конкурентная
+  интеграция должны пройти в PostgreSQL CI и здесь не заявляются успешными.
+- `npm ls --depth=0`, `git diff --check`, `format:check` и `docs:check` успешны; unmet/extraneous dependencies,
+  whitespace и Markdown errors отсутствуют. Следующий промпт — `llm/10-tournaments/04-tma-web.md`; к нему не
+  переходили.

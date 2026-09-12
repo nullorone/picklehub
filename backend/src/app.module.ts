@@ -18,6 +18,7 @@ import { OutboxModule } from './outbox/outbox.module';
 import { ProfilesModule } from './profiles/profiles.module';
 import { VenuesModule } from './venues/venues.module';
 import { TrustSafetyModule } from './trust-safety/trust-safety.module';
+import { TournamentsModule } from './tournaments/tournaments.module';
 
 @Module({
     imports: [
@@ -39,6 +40,7 @@ import { TrustSafetyModule } from './trust-safety/trust-safety.module';
         TrustSafetyModule,
         AdministrationModule,
         ClubsModule,
+        TournamentsModule,
     ],
 })
 export class AppModule {}
