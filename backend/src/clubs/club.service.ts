@@ -50,6 +50,16 @@ const memberSelect = {
     endedAt: true,
 } satisfies Prisma.ClubMembershipSelect;
 
+interface ClubVenueProjection {
+    readonly clubId: string;
+    readonly venueId: string;
+    readonly linkedAt: Date;
+    readonly venue: {
+        readonly publicationState: VenuePublicationState;
+        readonly canonicalVenue: { readonly id: string; readonly publicationState: VenuePublicationState } | null;
+    };
+}
+
 @Injectable()
 export class ClubService {
     constructor(
@@ -74,7 +84,15 @@ export class ClubService {
                 createdAt: { lte: new Date(snapshotAt) },
                 ...(normalizedQuery === undefined ? {} : { normalizedName: { contains: normalizedQuery } }),
                 ...(normalizedLocality === undefined ? {} : { normalizedLocality }),
-                ...(query.venueId === undefined ? {} : { venues: { some: { venueId: query.venueId } } }),
+                ...(query.venueId === undefined
+                    ? {}
+                    : {
+                          venues: {
+                              some: {
+                                  OR: [{ venueId: query.venueId }, { venue: { canonicalVenueId: query.venueId } }],
+                              },
+                          },
+                      }),
                 ...(cursor === undefined
                     ? {}
                     : {
@@ -84,7 +102,10 @@ export class ClubService {
                           ],
                       }),
             },
-            include: { venues: true, memberships: { where: { state: ClubMembershipState.ACTIVE } } },
+            include: {
+                venues: { include: { venue: { include: { canonicalVenue: true } } } },
+                memberships: { where: { state: ClubMembershipState.ACTIVE } },
+            },
             orderBy: [{ normalizedName: 'asc' }, { id: 'asc' }],
             take: query.limit + 1,
         });
@@ -114,7 +135,10 @@ export class ClubService {
     async detail(clubId: string, tx: Prisma.TransactionClient = this.prisma): Promise<object> {
         const club = await tx.club.findUnique({
             where: { id: clubId },
-            include: { venues: true, memberships: { where: { state: ClubMembershipState.ACTIVE } } },
+            include: {
+                venues: { include: { venue: { include: { canonicalVenue: true } } } },
+                memberships: { where: { state: ClubMembershipState.ACTIVE } },
+            },
         });
         if (club === null) throw clubError('CLUB_NOT_FOUND', 404);
         return this.projectClub(club);
@@ -522,7 +546,12 @@ export class ClubService {
     async venues(clubId: string): Promise<object> {
         const club = await this.prisma.club.findUnique({ where: { id: clubId } });
         if (club === null) throw clubError('CLUB_NOT_FOUND', 404);
-        return { items: await this.prisma.clubVenue.findMany({ where: { clubId }, orderBy: { linkedAt: 'asc' } }) };
+        const links = await this.prisma.clubVenue.findMany({
+            where: { clubId },
+            include: { venue: { include: { canonicalVenue: true } } },
+            orderBy: { linkedAt: 'asc' },
+        });
+        return { items: this.publicVenueLinks(links) };
     }
 
     async linkVenue(
@@ -966,7 +995,7 @@ export class ClubService {
             locality: club.locality,
             membershipPolicy: club.membershipPolicy,
             memberCount: club.memberships.length,
-            venueIds: club.venues.map((venue) => venue.venueId),
+            venueIds: this.publicVenueLinks(club.venues).map((venue) => venue.venueId),
         };
     }
 
@@ -980,7 +1009,7 @@ export class ClubService {
         membershipPolicy: ClubMembershipPolicy;
         createdAt: Date;
         updatedAt: Date;
-        venues: { clubId: string; venueId: string; linkedAt: Date }[];
+        venues: ClubVenueProjection[];
         memberships: unknown[];
     }): object {
         return {
@@ -992,14 +1021,25 @@ export class ClubService {
             locality: club.locality,
             membershipPolicy: club.membershipPolicy,
             memberCount: club.memberships.length,
-            venues: club.venues.map((venue) => ({
-                clubId: venue.clubId,
-                venueId: venue.venueId,
-                linkedAt: venue.linkedAt.toISOString(),
-            })),
+            venues: this.publicVenueLinks(club.venues),
             createdAt: club.createdAt.toISOString(),
             updatedAt: club.updatedAt.toISOString(),
         };
+    }
+
+    private publicVenueLinks(links: ClubVenueProjection[]): { clubId: string; venueId: string; linkedAt: string }[] {
+        const visible = new Map<string, { clubId: string; venueId: string; linkedAt: string }>();
+        for (const link of links) {
+            const venueId =
+                link.venue.publicationState === VenuePublicationState.PUBLISHED
+                    ? link.venueId
+                    : link.venue.canonicalVenue?.publicationState === VenuePublicationState.PUBLISHED
+                      ? link.venue.canonicalVenue.id
+                      : null;
+            if (venueId !== null && !visible.has(venueId))
+                visible.set(venueId, { clubId: link.clubId, venueId, linkedAt: link.linkedAt.toISOString() });
+        }
+        return [...visible.values()];
     }
 
     private projectMembership(row: {

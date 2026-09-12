@@ -8,6 +8,7 @@ import { MatchesModule } from '../matches/matches.module';
 import { OutboxModule } from '../outbox/outbox.module';
 import { ClubController } from './club.controller';
 import { ClubIdempotencyService } from './club-idempotency.service';
+import { ClubMetricsService } from './club-metrics.service';
 import { ClubPolicyService } from './club.policy';
 import { ClubService } from './club.service';
 import { RecurringMatchGeneratorService } from './recurring-match-generator.service';
@@ -15,7 +16,13 @@ import { RecurringMatchGeneratorService } from './recurring-match-generator.serv
 @Module({
     imports: [DatabaseModule, LoggingModule, RequestContextModule, IdentityModule, MatchesModule, OutboxModule],
     controllers: [ClubController],
-    providers: [ClubService, ClubPolicyService, ClubIdempotencyService, RecurringMatchGeneratorService],
-    exports: [ClubService, RecurringMatchGeneratorService],
+    providers: [
+        ClubService,
+        ClubPolicyService,
+        ClubIdempotencyService,
+        ClubMetricsService,
+        RecurringMatchGeneratorService,
+    ],
+    exports: [ClubService, ClubMetricsService, RecurringMatchGeneratorService],
 })
 export class ClubsModule {}

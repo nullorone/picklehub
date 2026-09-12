@@ -27,6 +27,16 @@ describe('club scoped authorization', () => {
         await expect(policy.manager(transaction(null), 'club-id', 'user-id')).rejects.toBeInstanceOf(ClubException);
     });
 
+    it('always scopes the membership lookup to the requested club', async () => {
+        const findFirst = jest.fn().mockResolvedValue({ id: 'membership-id', role: ClubRole.OWNER, revision: 0 });
+        const tx = { clubMembership: { findFirst } } as unknown as Prisma.TransactionClient;
+        await policy.manager(tx, 'club-b', 'same-user');
+        expect(findFirst).toHaveBeenCalledWith({
+            where: { clubId: 'club-b', userId: 'same-user', state: 'ACTIVE' },
+            select: { id: true, role: true, revision: true },
+        });
+    });
+
     it('reserves ownership commands for the scoped owner and closes archived writes', async () => {
         await expect(policy.owner(transaction(ClubRole.ADMIN), 'club-id', 'user-id')).rejects.toMatchObject({
             code: 'CLUB_ACTION_FORBIDDEN',

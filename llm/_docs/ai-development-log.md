@@ -2459,3 +2459,60 @@ test/integration/clubs-backend.integration-spec.ts` обнаружил три с
   и не заявляются успешными локально.
 - `git diff --check` успешен. Локально исполнимые критерии промпта выполнены; следующий промпт —
   `llm/09-clubs/05-verification.md`, к нему не переходили.
+
+## 2026-09-12 — клубы, этап 05-verification
+
+- Активный промпт: `llm/09-clubs/05-verification.md`. Добавлен `llm/_docs/clubs-verification.md` с моделью угроз,
+  матрицей membership/authorization/recurrence/venue/end-to-end сценариев, привязкой к исполняемым тестам и
+  честными production gates. Следующий feature prompt не начинался.
+- Unit authorization усилена точной проверкой `clubId + userId + ACTIVE`; source policy запрещает platform-role
+  shortcuts в club boundary и проверяет owner/admin matrix, root locking, SQL uniqueness/deferred owner constraint,
+  terminal intents, DST/calendar key и immutable club attribution.
+- PostgreSQL integration suite расширена с 3 до 8 сценариев: все три membership policy; гонка approval против
+  invitation acceptance; pending intent без roster access; межклубный отказ; leave/block и сохранение истории;
+  last-owner/transfer; duplicate recurring run, archive и независимая отмена встречи; canonical venue merge без
+  переписывания исторического match; сквозной путь `join club → recurring match → join/start → result → confirm`.
+- Исправлена public venue projection: merged link разрешается в опубликованный canonical survivor, совпавшие ссылки
+  дедуплицируются, CLOSED/непубличная ссылка без survivor скрывается. Search по survivor находит клуб через alias;
+  исходная `ClubVenue` и `Match.venueId` не переписываются и venue не удаляется. Добавлена socket-free unit проверка.
+- Добавлен внутренний `ClubMetricsService`: total и закрытые `origin/format` buckets считаются только из уникальных
+  `MatchMetricMarker(CONFIRMED_MATCH)` с club attribution. Proposal, dispute, mutable match state, analytics consent
+  и provider delivery не являются источником; recurring match входит в общий total один раз.
+- Изменённые файлы: `backend/src/clubs/{club.service,clubs.module,club-metrics.service}.ts`, club unit/integration
+  tests, `contracts/scripts/clubs-verification-policy.test.mjs`, root `package.json`,
+  `llm/_docs/clubs-verification.md` и этот журнал. TypeSpec, OpenAPI/AsyncAPI, generated clients, Prisma schema и
+  migrations не менялись.
+
+### Проверки этапа clubs 05-verification
+
+- Первый targeted backend lint завершился одной новой ошибкой `@typescript-eslint/unbound-method` в assertion;
+  тест переписан с локальным spy. Повторные `npm run lint --workspace @picklehub/backend`, `npm run typecheck
+--workspace @picklehub/backend`, unit tests и backend build успешны.
+- Backend unit regression до финального venue unit: 31/31 suites и 164/164 tests. После его добавления targeted
+  `club-policy`, `club-timezone`, `club-metrics`, `club-venue-projection` — 4/4 suites и 12/12 tests; lint и strict
+  typecheck повторно успешны.
+- Первый targeted club policy запуск: 11/12 успешно, один verifier assertion ошибочно находил слово `analytics` в
+  комментарии production service. Проверка уточнена до запрета `match.state`; повторный club contract/data/
+  verification набор — 12/12 успешно. В полном contract lint новый verifier вошёл в общие 96/96 tests.
+- `npm run verify` успешно полностью: 8 workspaces/один lockfile; TypeSpec и Redocly; policy для 151 REST operations
+  и 51 messages; 96/96 contract/data/privacy/verification tests; breaking/generated drift/typecheck; OpenAPI mock;
+  format/docs; lint; strict typecheck; tests и production builds. На момент полного запуска backend — 31/164,
+  web — 9/42, TMA — 7/25, API client — 1/6. Сохраняются неблокирующие bundle warnings: web около 590 kB, TMA
+  около 602 kB, MapLibre 924 kB; окружение по-прежнему задаёт небезопасный `NODE_TLS_REJECT_UNAUTHORIZED=0`.
+- `npm run test:e2e:typecheck` и `npm run test:e2e:build` успешны; production PWA и TMA bundles собраны. `npx
+playwright test test/e2e/clubs.spec.ts` обнаружил 4 сценария, но Chrome завершился с `SIGABRT` до первого шага,
+  cleanup получил `kill EPERM`; browser assertions не заявляются успешными и должны пройти в browser CI.
+- `npm run test:integration --workspace @picklehub/backend -- --runInBand
+test/integration/clubs-backend.integration-spec.ts` обнаружил 8 сценариев, но общий setup не смог создать venue в
+  локальном несмигрированном PostgreSQL; Redis socket также запрещён (`connect EPERM 127.0.0.1:6379`), а BullMQ
+  завершил cleanup с closed connection. Ни один runtime assertion не выполнялся; suite должен пройти после
+  `prisma migrate deploy` в PostgreSQL/Redis CI, и его успех здесь не заявляется.
+- Финальный повтор `npm run verify` после добавления venue projection unit прошёл workspace, TypeSpec/Redocly,
+  96/96 policy tests, breaking/generated/typecheck и остановился только на повторном sandbox
+  `listen EPERM 127.0.0.1` в OpenAPI mock. Отдельный немедленный retry mock получил тот же запрет. Все последующие
+  `format:check`, `docs:check`, lint, typecheck, tests и builds запущены отдельно и успешны для восьми workspaces;
+  итоговая backend unit regression — 32/32 suites и 165/165 tests. `npm ls --depth=0` успешен, unmet/extraneous
+  dependencies отсутствуют.
+- `git diff --check` успешен до финальной записи журнала. Локально исполнимые проверки зелёные; блокировки runtime
+  integration/browser явно записаны. Подтверждённая club match метрика удовлетворяет критерию source/deduplication;
+  membership/active-club/fill dashboard остаётся отдельным production analytics gate, как зафиксировано в матрице.
