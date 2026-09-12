@@ -2727,3 +2727,53 @@ test/e2e/tournaments.spec.ts` обнаружил оба web/TMA сценария
   Playwright CI и локально успешными не заявляются; соответствующие component DOM assertions зелёные.
 - `git diff --check` успешен. Локально исполнимые критерии промпта выполнены; следующий промпт —
   `llm/10-tournaments/05-verification.md`, к нему не переходили.
+
+## 2026-09-12 — турниры, этап 05-verification
+
+- Активный промпт: `llm/10-tournaments/05-verification.md`. Добавлен
+  `backend/test/unit/tournament-verification.spec.ts`: восемь прямых resumable simulations и восемь полных
+  application command flows `REGISTER → SEED → START → SCORE → COMPLETE`, odd round-robin property matrix 3..15,
+  walkover/double-walkover standings, repeatable initialized lots, отсутствие потери/дубликата entrant и maximum
+  plans всех форматов с консервативным CPU budget 2 секунды на вызов.
+- Расширен `tournament-orchestrator.spec.ts`: конкурентные score submissions сходятся к одному result/version,
+  checkpoint failure перед commit не сохраняет state/audit/receipt, а retry и повтор operation ID создают один
+  entrant и один audit. Существующий withdrawal/FIFO scenario связывает replacement до seeding, а late
+  winner-changing correction сохраняет прежний result и переводит tournament в `PAUSED`.
+- Полный command flow обнаружил regression для single elimination на шесть entrants: automatic bye был terminal,
+  но `TournamentOrchestrator.resolveSlot` искал победителя только в result revision. Исправление использует
+  сохранённый `automaticWinnerEntrantId`; отдельный assertion также не позволяет завершить турнир до terminal
+  optional bronze.
+- Добавлен `contracts/scripts/tournaments-verification-policy.test.mjs` и включён в `contracts:lint`. Пять policy
+  tests проверяют Bearer/Origin/CSRF/UUIDv4 idempotency на всех 18 mutations, tournament-scoped roles и ровно одного
+  organizer, `SERIALIZABLE` encrypted receipt replay, append-only recovery/generation guards и отсутствие
+  исполняемого `CUSTOM_DSL`, `eval`, `Function` или `node:vm`.
+- Матрица rule-to-test, модель корректности, performance boundary и остаточные gates записаны в
+  `llm/_docs/tournaments-verification.md`. Проверка не объявляет статический контракт настоящим runtime API:
+  tournament controller/application service routes в backend отсутствуют, поэтому HTTP authorization/idempotency,
+  PostgreSQL transaction integration, roster/member replacement и полный browser organizer/participant E2E для
+  восьми форматов остаются блокировкой приёмки. К `11-gamification` не переходили.
+
+### Проверки этапа tournaments 05-verification
+
+- `node --test contracts/scripts/tournaments-verification-policy.test.mjs` — успешно, 5/5. Targeted
+  `npm test --workspace @picklehub/backend -- --runInBand backend/test/unit/tournament-orchestrator.spec.ts
+backend/test/unit/tournament-strategies.spec.ts backend/test/unit/tournament-verification.spec.ts` — успешно,
+  3/3 suites и 71/71 tests после исправления automatic bye.
+- `npm run format:check`, `npm run docs:check`, backend lint/typecheck/build и `npm run contracts:lint` — успешно;
+  TypeSpec/Redocly и 108/108 contract/data/privacy/verification tests зелёные. Один промежуточный format check и
+  один lint корректно обнаружили новый Markdown/лишнюю nullable-проверку; форматирование и тип были исправлены без
+  ослабления правил.
+- `npm run verify` — успешно полностью: восемь workspaces/один lockfile; 173 REST operations/56 messages;
+  108/108 contract tests; compatibility/generated drift/contract typecheck/OpenAPI mock; format/docs; lint; strict
+  typecheck; tests и production builds. Backend — 35/35 suites и 236/236 tests, web — 10/45, TMA — 8/27,
+  API client — 1/6. Сохраняются известные bundle warnings около 622/631 kB и MapLibre 924 kB, а окружение задаёт
+  небезопасный `NODE_TLS_REJECT_UNAUTHORIZED=0`.
+- `npm run test:e2e:typecheck` и `npm run test:e2e:build` — успешно. `npx playwright test
+test/e2e/tournaments.spec.ts` обнаружил 2 tests, но оба не начали первый step: локальный Chrome завершился с
+  `SIGABRT`, cleanup получил `kill EPERM`. Browser success не заявляется.
+- Прямой PostgreSQL probe через `pg` завершился `EPERM: connect EPERM 127.0.0.1:5432`; runtime migration,
+  constraints, конкурентные transactions и encrypted receipt replay локально не исполнены. `npm ls --depth=0` и
+  `git diff --check` успешны.
+- Статические, unit, property/simulation и сборочные проверки доступны и зелёные, но критерий полного HTTP/database
+  end-to-end не выполнен из-за отсутствующих tournament routes и недоступного PostgreSQL. Этап зафиксирован как
+  заблокированный, следующий prompt запускать нельзя.

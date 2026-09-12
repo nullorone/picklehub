@@ -36,8 +36,13 @@ function state(preset: TournamentPreset, capacity: number): TournamentExecutionS
 class MemoryTransactions implements TournamentTransactionPort {
     readonly isolationLevel = 'SERIALIZABLE' as const;
     private readonly receipts = new Map<string, { fingerprint: string; value: unknown }>();
+    private failBeforeCommit = false;
 
     constructor(readonly states: Map<string, TournamentExecutionState>) {}
+
+    injectFailureBeforeCommit(): void {
+        this.failBeforeCommit = true;
+    }
 
     transact<T>(
         tournamentId: string,
@@ -54,6 +59,10 @@ class MemoryTransactions implements TournamentTransactionPort {
             const current = this.states.get(tournamentId);
             if (current === undefined) throw new Error('TOURNAMENT_NOT_FOUND');
             const value = operation(structuredClone(current));
+            if (this.failBeforeCommit) {
+                this.failBeforeCommit = false;
+                throw new Error('INJECTED_BEFORE_COMMIT');
+            }
             this.states.set(tournamentId, structuredClone(value as TournamentExecutionState));
             this.receipts.set(operationId, { fingerprint: requestFingerprint, value: structuredClone(value) });
             return { value, replayed: false };
@@ -182,5 +191,66 @@ describe('tournament transactional orchestration', () => {
         expect(current.state).toBe('PAUSED');
         expect(current.closedReason).toBe('WINNER_CHANGE_AFTER_DEPENDENCY_START');
         expect(current.results.filter(({ matchKey }) => matchKey === first.key)).toEqual([old]);
+    });
+
+    test('a failure before commit is resumable and replay commits exactly one audit record', async () => {
+        const initial = state({ schemaVersion: '1.0.0', formatCode: 'ROUND_ROBIN', courtCount: 2, legs: 1 }, 3);
+        const states = new Map([[initial.id, initial]]);
+        const transactions = new MemoryTransactions(states);
+        const orchestrator = new TournamentOrchestrator(new TournamentStrategyRegistry());
+        const commands = new TournamentTransactionalCommands(transactions, orchestrator.apply.bind(orchestrator));
+        const command: TournamentCommand = { kind: 'REGISTER', entrantId: 'entrant-1', expectedVersion: 0 };
+        transactions.injectFailureBeforeCommit();
+
+        await expect(commands.execute(initial.id, 'register-1', fingerprint(command), command)).rejects.toThrow(
+            'INJECTED_BEFORE_COMMIT'
+        );
+        expect(states.get(initial.id)).toEqual(initial);
+
+        const committed = await commands.execute(initial.id, 'register-1', fingerprint(command), command);
+        const replay = await commands.execute(initial.id, 'register-1', fingerprint(command), command);
+        expect(committed.replayed).toBe(false);
+        expect(replay.replayed).toBe(true);
+        expect(states.get(initial.id)?.entrants).toHaveLength(1);
+        expect(states.get(initial.id)?.audit).toHaveLength(1);
+    });
+
+    test('concurrent score submissions serialize to one result and one version conflict', async () => {
+        const orchestrator = new TournamentOrchestrator(new TournamentStrategyRegistry());
+        let current = state({ schemaVersion: '1.0.0', formatCode: 'ROUND_ROBIN', courtCount: 2, legs: 1 }, 3);
+        for (let index = 0; index < 3; index += 1)
+            current = orchestrator.apply(current, `register-${String(index)}`, {
+                kind: 'REGISTER',
+                entrantId: `entrant-${String(index + 1)}`,
+                expectedVersion: current.version,
+            });
+        current = orchestrator.apply(current, 'seed', {
+            kind: 'SEED',
+            orderedEntrantIds: current.entrants.map(({ id }) => id),
+            initializedRandomness: 'concurrency-seed',
+            expectedVersion: current.version,
+        });
+        current = orchestrator.apply(current, 'start', { kind: 'START', expectedVersion: current.version });
+        const playable = current.projection?.stages[0]?.rounds[0]?.matches.find(
+            ({ automaticOutcome }) => automaticOutcome === undefined
+        );
+        if (playable === undefined) throw new Error('Playable match missing');
+        const states = new Map([[current.id, current]]);
+        const transactions = new MemoryTransactions(states);
+        const commands = new TournamentTransactionalCommands(transactions, orchestrator.apply.bind(orchestrator));
+        const command: TournamentCommand = {
+            kind: 'SCORE',
+            result: result(playable),
+            expectedVersion: current.version,
+        };
+
+        const attempts = await Promise.allSettled([
+            commands.execute(current.id, 'score-a', fingerprint(command), command),
+            commands.execute(current.id, 'score-b', fingerprint(command), command),
+        ]);
+
+        expect(attempts.filter(({ status }) => status === 'fulfilled')).toHaveLength(1);
+        expect(attempts.filter(({ status }) => status === 'rejected')).toHaveLength(1);
+        expect(states.get(current.id)?.results).toHaveLength(1);
     });
 });

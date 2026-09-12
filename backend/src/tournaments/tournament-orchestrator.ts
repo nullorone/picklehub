@@ -486,14 +486,14 @@ export class TournamentOrchestrator {
     ): string | undefined {
         if (slot.entrantId !== undefined) return slot.entrantId;
         if (slot.sourceMatchKey === undefined) return undefined;
-        const result = latestResults(state.results).get(slot.sourceMatchKey);
-        if (result === undefined) return undefined;
-        if (slot.sourceOutcome !== 'LOSER') return result.winnerEntrantId ?? undefined;
         const source = state.projection?.stages
             .flatMap(({ rounds }) => rounds.flatMap(({ matches }) => matches))
             .find(({ key }) => key === slot.sourceMatchKey);
+        const result = latestResults(state.results).get(slot.sourceMatchKey);
+        const winnerEntrantId = result?.winnerEntrantId ?? source?.automaticWinnerEntrantId;
+        if (slot.sourceOutcome !== 'LOSER') return winnerEntrantId;
         const entrants = source?.slots.flatMap((candidate) => this.resolveSlot(state, candidate) ?? []) ?? [];
-        return entrants.find((id) => id !== result.winnerEntrantId);
+        return entrants.find((id) => id !== winnerEntrantId);
     }
 
     private bump(
