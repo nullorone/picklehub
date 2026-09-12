@@ -411,3 +411,26 @@ Timeout, retry и circuit breaker не складываются бесконтр
 должен воспроизводиться из контрактов, PWA shell — открываться без сети, а readiness — различать исправные и
 неисправные обязательные зависимости. Это проверяется только на этапе `05-verification`, а не считается
 выполненным данным архитектурным документом.
+
+## Направление зависимостей геймификации
+
+`gamification` — downstream consumer подтверждённых фактов `matches`, `tournaments`, `profiles`, `clubs` и
+`trust-safety`. Owning-модули не зависят от XP и не вызывают его синхронно для успешного результата. После commit
+они публикуют минимальный versioned event через outbox; gamification идемпотентно применяет rule snapshot, cap и
+append-only ledger. Сбой consumer оставляет награду отстающей/`PENDING`, но не откатывает игру, отзыв, membership
+или opt-out.
+
+Global и каждый club scope используют отдельные ledger/balance/season partitions. Club configuration обращается к
+clubs только через port проверки active club role и lifecycle; она не копирует membership graph. Eligibility
+source fact проверяется по club attribution и membership interval на occurredAt. Профиль предоставляет разрешённую
+публичную projection только на чтении leaderboard; leaderboard consent не подменяется analytics consent.
+
+PostgreSQL — источник ledger chain, caps, rule/season snapshots, consent revisions, review decisions, receipts и
+outbox. Redis допустим для короткого projection cache и распределённого задания, но cache key включает scope,
+season, viewer consent/block/restriction revision; общий публичный CDN cache запрещён. Worker пересчитывает balance,
+achievement и leaderboard из ledger и fail-closed не публикует projection при checksum/invariant mismatch.
+
+Антифрод получает минимальные server facts через отдельный port, возвращая hold/reason class, а human-impacting
+решение остаётся в scoped moderation workflow с audit и appeal. Behavioral analytics получает только события
+после отдельного consent и не служит источником XP, recovery или расследования. Точные TypeSpec/AsyncAPI, SQL
+границы, payload allowlist и consumer retry определяются этапом `11-gamification/02-contract-data.md`.

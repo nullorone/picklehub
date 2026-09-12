@@ -2777,3 +2777,58 @@ test/e2e/tournaments.spec.ts` обнаружил 2 tests, но оба не на�
 - Статические, unit, property/simulation и сборочные проверки доступны и зелёные, но критерий полного HTTP/database
   end-to-end не выполнен из-за отсутствующих tournament routes и недоступного PostgreSQL. Этап зафиксирован как
   заблокированный, следующий prompt запускать нельзя.
+
+## 2026-09-12 — геймификация, этап 01-requirements
+
+- Активный промпт: `llm/11-gamification/01-requirements.md`, запущенный по прямому запросу владельца несмотря на
+  записанную в tournaments verification блокировку перехода. Этот документационный этап не устраняет и не выдаёт
+  за устранённую блокировку tournament HTTP/database/browser acceptance. Изменения ограничены требованиями,
+  доменной/архитектурной границей, privacy/retention и аналитикой; TypeSpec/AsyncAPI, OpenAPI, Prisma, migrations,
+  backend, worker и клиенты не менялись.
+- Определены 10 пользовательских историй и 15 сценариев «Дано/Когда/Тогда». `GLOBAL_V1` содержит только три
+  source-backed награды: фактическое участие в подтверждённой игре — 100 XP, организация подтверждённого обычного
+  матча — 40 XP, допустимый структурированный отзыв — 15 XP; у каждой не более 3 событий/сутки и 10/неделю.
+- Каждый award привязан к committed owning-domain event и ключу scope/user/source/rule version. Replay не создаёт
+  вторую запись, превышение cap terminal `CAPPED`, а invalidation/withdrawal и восстановление создают ограниченную
+  append-only reversal/reinstatement chain. Спорный факт остаётся `PENDING`; client analytics не является source.
+- Явно запрещены XP за победу, место/счёт, login/streak, неподтверждённый результат, создание/вступление/сообщение,
+  жалобу, позитивность отзыва, платёж, покупку или рекламу. XP не меняет DUPR, win/loss, games played, посев,
+  sporting/trust score либо доступ и не покупается/передаётся/тратится.
+- Заданы пять глобальных уровней и достижения только за net-valid игры, организацию и отзывы. Reversal объяснимо
+  отзывает порог, а reinstatement не повторяет celebration. Публичный achievement opt-in; streak loss, countdown,
+  shame notification, наказание за перерыв и платное восстановление отсутствуют.
+- Клуб выбирает только три allowlisted templates: off либо coefficient `0.5..2.0` с шагом `0.1`, округлением вниз
+  и неизменным event cap. Version/effectiveFrom не действуют назад; 1–20 декоративных уровней имеют возрастающие
+  thresholds и безопасные названия 1–30 символов. Формулы, ручной/negative XP, JavaScript и DSL запрещены.
+- Выход/исключение/block замораживает club progress и убирает строку; повторное вступление продолжает тот же ledger
+  без backfill/duplicate и требует новый seasonal opt-in. Archive/restore не создаёт backlog, deletion не меняет
+  global/other-club XP и скрывает club projections с ограниченным integrity/appeal retention.
+- Сезоны одного scope — непересекающиеся UTC-интервалы 28–366 суток с immutable snapshot. Leaderboard opt-in
+  отдельный для scope/season и выключен по умолчанию; opt-out немедленно скрывает строку без потери XP. Равный net
+  XP даёт общий competition rank; block показывает «Скрытый игрок», restriction скрывает строку без публикации
+  причины, viewer-aware cache не может быть общим CDN snapshot.
+- Антифрод ограничен серверными частотными/связевыми признаками без текста и точной географии. Автоматика может
+  только удержать `PENDING`; санкция/reversal требует moderator policy/reason/evidence/audit и appeal. Недоступность
+  XP/fraud не блокирует игру, отзыв, membership или opt-out; восстановление идёт из domain event/outbox.
+- Аналитика сравнивает 28-day retained confirmed players с теми же cohort/window для complaints, no-show,
+  held/reversed XP, confirmed manipulation, repeat-pair/group concentration и opt-out. Рост XP/views/rank не
+  является успехом; guardrail degradation или малая/незрелая выборка дают harmful/inconclusive результат.
+- Изменённые файлы: `llm/_docs/product-requirements.md`, `llm/_docs/domain-model.md`,
+  `llm/_docs/architecture.md`, `llm/_docs/security-privacy.md`, `llm/_docs/analytics-plan.md` и этот журнал.
+
+### Проверки этапа gamification 01-requirements
+
+- `npx prettier --write llm/_docs/product-requirements.md llm/_docs/domain-model.md llm/_docs/architecture.md
+llm/_docs/security-privacy.md llm/_docs/analytics-plan.md` — успешно; пять документов отформатированы.
+- `npm run format:check` — успешно, включая 10 TypeSpec files; `npm run docs:check` — успешно, 128 Markdown-файлов,
+  0 ошибок; `git diff --check` — успешно до записи журнала.
+- `npm run verify` — успешно полностью: восемь workspaces/один root lockfile; TypeSpec/Redocly; 173 REST
+  operations/56 messages; 108/108 contract/data/privacy/verification policy tests; compatibility, generated drift,
+  contract typecheck и OpenAPI mock; format/docs; lint, strict typecheck, unit tests и production builds. Backend —
+  35/35 suites и 236/236 tests, web — 10/45, TMA — 8/27, API client — 1/6; остальные shared suites зелёные.
+- `npm ls --depth=0` — успешно, unmet/extraneous dependencies отсутствуют. Сохраняются прежние неблокирующие build
+  warnings: web около 622 kB, TMA около 631 kB, MapLibre 924 kB; окружение задаёт небезопасный
+  `NODE_TLS_REJECT_UNAUTHORIZED=0`.
+- Критерии активного этапа выполнены на уровне требований. Точные wire enum/limits, SQL ledger constraints,
+  consent/event payloads и anti-fraud policy tests принадлежат `llm/11-gamification/02-contract-data.md`; к нему не
+  переходили. Ранее записанная tournament verification блокировка остаётся отдельным незакрытым риском.

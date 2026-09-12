@@ -679,3 +679,46 @@ completion/cancel; ручные payment-status transitions — не дольше
 неутверждённые production limits: правовое основание, РФ-residency, legal hold, backup expiry и физическая очистка
 должны пройти legal/security review до сбора. В logs/traces/analytics запрещены roster/pair graph, payment/price,
 score, rating/seed, exact schedule/location и correction reason; operational labels используют только enum/buckets.
+
+## Политика геймификации
+
+Личный ledger, balance, source explanation, holds, review case и club progress доступны только владельцу и
+минимально уполномоченному moderator по purpose-bound capability. Публичен только сезонный leaderboard после
+отдельного явного opt-in: display name, разрешённый avatar, декоративный level, seasonal net XP и rank. Согласие
+имеет scope/season/policy version/time, выключено по умолчанию, не связывается с analytics/Terms/club membership и
+может быть отозвано немедленно без потери XP или игровых функций.
+
+Leaderboard read применяет profile visibility, межличностный block, club membership/block, platform restriction и
+удаление аккаунта на сервере. Заблокированная сторона становится неинтерактивной строкой без идентификаторов, но
+rank не пересчитывается персонально. Opt-out удаляет projection и инвалидирует cache; после закрытия сезона новое
+согласие не принимается. Нельзя экспортировать leaderboard, ledger, граф совместной игры или anti-fraud cohort.
+
+XP source хранит opaque owning ID/type, occurredAt, scope, rule version, amount/status и связь compensation; он не
+копирует winner/score, DUPR, review/chat text, точные координаты, email, Telegram identity или payment. Fraud review
+использует только минимальные серверные связи/частотные признаки. Device, IP и advertising ID не становятся
+источником без отдельного DPIA/legal-security решения; advertising ID запрещён в любом случае. Порог, чужие данные
+и граф не выдаются пользователю, но собственные source, сумма, status и общий reason class объяснимы.
+
+Автоматический сигнал может только удержать XP и создать ограниченный review intent. Reversal, exclusion из
+leaderboard или account restriction требует полномочного actor, approved policy/version, reason code, evidence
+references, expected revision, идемпотентность и append-only audit; пользователю доступно уведомление и appeal.
+Жалоба, общий клуб, повторный соперник или высокий объём сами по себе не являются санкцией. Недоступность audit
+откатывает human decision; недоступность fraud dependency оставляет награду `PENDING`, не блокируя исходную игру.
+
+Club owner/admin меняет только allowlisted templates, coefficient и display names своего клуба. Он не видит
+anti-fraud signals, чужой private ledger, source match graph или identity, не может назначить XP вручную, сделать
+negative award, снять hold либо выполнить код/DSL. Изменение rules, season, level names и досрочное закрытие
+аудируется. Названия проходят text policy и rate limit; mass enumeration, scraping и подбор opt-in запрещены.
+
+Предлагаемый retention: operation receipts и terminal `CAPPED`/технические holds — 90 суток; source-linked ledger,
+compensations и appeal/audit — до трёх лет либо пока нужен связанный спортивный integrity record; закрытый
+leaderboard projection — до 30 суток после сезона, но opt-out/profile deletion скрывает его сразу; fraud features
+и отклонённые сигналы — не более 90 суток без открытого case. При удалении аккаунта публичные projections исчезают,
+а минимальный ledger псевдонимизируется либо удаляется после integrity/appeal срока. Для club deletion club
+projection удаляется независимо от global ledger. Сроки требуют правового основания, РФ-residency, legal hold,
+backup expiry и проверки физической очистки до production.
+
+Logs/traces/analytics не содержат source/user/club/season IDs, display name/avatar, opponent pairs, точное время,
+баланс малой когорты, reason/evidence, score, review text, location или device/network identifiers. Operational
+metrics используют allowlisted enum/buckets; audit отделён от telemetry. XP нельзя использовать для рекламы,
+чувствительного профилирования, цены, доступа, спортивного рейтинга или решения trust/safety.

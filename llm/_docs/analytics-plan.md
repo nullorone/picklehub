@@ -356,3 +356,45 @@ strategy duration, round/match counts in buckets, court scheduling backlog, idem
 race suppression, correction type, pause reason enum, projection checksum mismatch, outbox retry/quarantine и
 recovery outcome. Labels не содержат IDs, score, roster, payment, exact time/place или free-text reason. Analytics
 outage не блокирует регистрацию/проведение; пропущенные behavioral events не восстанавливаются из domain history.
+
+## Геймификация
+
+XP ledger и leaderboard consent — доменные records, а не behavioral analytics. Расчёт XP, cap, reversal,
+achievement и rank работает при отсутствии analytics consent/provider и никогда не восстанавливается из
+клиентской телеметрии. Behavioral события используют общий consent envelope `v1`; запрещены user/club/season/
+source/match/review/case IDs, display name/avatar, XP exact value, opponent graph, score/outcome, DUPR, reason,
+текст, точное время/место и device/advertising identifiers.
+
+| Событие                        | Условие после факта                                             | Разрешённые свойства                                                              | Дедупликация                    |
+| ------------------------------ | --------------------------------------------------------------- | --------------------------------------------------------------------------------- | ------------------------------- |
+| `gamification_progress_viewed` | Клиент показал свой согласованный progress                      | `scope`: global/club; `state`: active/frozen; `levelBucket`; без balance          | View session у producer         |
+| `achievement_presented`        | Владелец впервые увидел posted/reinstated achievement           | `family`: play/organize/review; `thresholdBucket`; `state`: earned/reinstated     | Achievement presentation marker |
+| `leaderboard_consent_changed`  | Backend committed explicit opt-in/opt-out при analytics consent | `scope`; `action`: opt_in/opt_out; `seasonPhase`: active/closed                   | Consent revision                |
+| `leaderboard_viewed`           | Клиент показал первую согласованную страницу                    | `scope`; `seasonPhase`; `resultBucket`; `viewerState`: participant/nonparticipant | View session у producer         |
+
+Primary evaluation cohort — зарегистрированные игроки с первым confirmed participation, которым функция была
+доступна, против сопоставимой временной/экспериментальной когорты без неё. 28-day retained confirmed player — тот,
+у кого есть другой confirmed фактический матч на 22–35-й день после первого; login/view/XP retry не считается.
+Показываются absolute cohort sizes, доверительный интервал, зрелость окна и доля consented coverage. Rollout не
+рандомизирует safety/XP eligibility между игроками одного матча и не скрывает уже заработанный прогресс.
+
+Каждый retention срез обязан иметь тот же период и cohort definition для guardrails:
+
+- safety reports на 100 уникальных confirmed участников и доля substantiated outcomes отдельно;
+- no-show participants / всех ожидаемых зарегистрированных participants;
+- доля award chains с hold, reversal и moderator-confirmed manipulation;
+- concentration: доля posted play XP из повторяющейся пары и замкнутой группы в coarse buckets;
+- leaderboard opt-in/opt-out rate и privacy/block cache violations с target zero.
+
+Рост views, opt-in, XP volume или leaderboard rank не является success metric. Запуск успешен только при заранее
+заданном minimum sample, положительном/неотрицательном доверительном интервале retention и отсутствии статистически
+значимого ухудшения любого safety guardrail; иначе результат inconclusive/harmful. Жалобы не трактуются как
+доказанные нарушения, а малые когорты подавляются. Срезы разрешены по global/club scope, rule major, крупной
+activity cohort и rollout arm, но не по конкретному клубу, сезону, игроку или паре.
+
+Operational metrics не требуют behavioral consent: source outcome class, award status/reason enum, processing lag,
+cap/duplicate/reversal/reinstatement count, projection checksum mismatch, pending age, review/appeal age/outcome,
+leaderboard cache invalidation и blocked-row leak. Labels не содержат IDs, точный XP/time, pair graph или evidence.
+Targets: duplicate net award, over-cap post, compensation over original, XP-to-DUPR/stat mutation, opt-out leak,
+blocked identity leak и unreviewed automatic sanction — ноль. Analytics outage не блокирует source workflow/XP;
+metrics outage не разрешает invariant violation, а пропущенные behavioral events не replay из ledger.

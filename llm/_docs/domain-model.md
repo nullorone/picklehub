@@ -370,3 +370,38 @@ snapshot/seeds/results; checksum mismatch, невозможный граф ил�
 агрегат в operational pause. Completion требует terminal всех обязательных nodes, уникальных мест и ровно одного
 marker. Отдельная downstream projection может идемпотентно добавить подтверждённую статистику игрока, но marker
 турнира не считается marker обычного матча.
+
+## Геймификация
+
+Граница `gamification` владеет только мотивационной проекцией и не является владельцем матчей, результатов,
+отзывов, club membership, профиля, DUPR, спортивной статистики или moderation restriction:
+
+- `XpRuleSet` — versioned глобальный либо club-scoped набор из allowlisted источников, caps и коэффициентов;
+- `XpLedgerEntry` — append-only `PENDING` / `POSTED` / `CAPPED` award либо связанная reversal/reinstatement;
+- `XpBalance` и `AchievementProgress` — воспроизводимые проекции ledger, но не authoritative факты;
+- `GamificationSeason` — непересекающийся UTC-интервал и immutable rule snapshot одного scope;
+- `LeaderboardConsent` — отдельный versioned opt-in/opt-out пользователя для конкретного сезона;
+- `LeaderboardProjection` — consent/block/restriction-aware read model с общим rank при равном net XP;
+- `GamificationReviewCase` — hold, закрытый сигнал, решение и appeal references без копирования текста/географии;
+- `GamificationOperationReceipt` — идемпотентный результат command/replay.
+
+Owning-модули публикуют после commit минимальный source fact: opaque source ID/type, user IDs фактических
+участников, occurredAt, club attribution и revision/status. Они не принимают XP как команду и не читают его для
+результата, DUPR, статистики, посева или authorization. Consumer фиксирует уникальность
+scope + user + source + rule version; PostgreSQL constraint и транзакция создают ledger, projection и outbox
+согласованно. BullMQ/Redis ускоряет обработку, но не определяет уникальность, cap или баланс.
+
+Reversal и reinstatement — отдельные строки одной цепочки; исходная запись неизменяема, а сумма компенсаций
+ограничена исходной наградой. Balance, level, achievement и seasonal projection полностью пересчитываются из
+ledger/rule snapshot. Событие сверх cap сохраняет terminal `CAPPED`, поэтому поздний retry не переносит его в
+другое окно. Ошибка projection/checksum закрывает публикацию баланса, но не меняет owning domain fact.
+
+Club ledger разделён ключом клуба. Eligibility использует membership interval и immutable club attribution на
+occurredAt; выход/архивация закрывает будущие award, не удаляя историю и не создавая backlog при восстановлении.
+Season и leaderboard не владеют XP: consent лишь добавляет/убирает read projection. Block меняет viewer projection,
+restriction/решение — eligibility публикации, но ни одно из них скрыто не переписывает ledger.
+
+Domain events геймификации содержат только opaque IDs, scope kind, closed source/status/reason enum, rule version,
+amount и coarse timestamp. Display name/avatar подтягиваются через profile projection только при действующем
+leaderboard consent. Score, outcome/winner, review/chat text, координаты, email/Telegram identity, device/network
+signals и пары игроков запрещены в generic outbox/analytics payload.
