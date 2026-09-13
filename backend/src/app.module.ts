@@ -20,6 +20,7 @@ import { VenuesModule } from './venues/venues.module';
 import { TrustSafetyModule } from './trust-safety/trust-safety.module';
 import { TournamentsModule } from './tournaments/tournaments.module';
 import { GamificationModule } from './gamification/gamification.module';
+import { ContentModule } from './content/content.module';
 
 @Module({
     imports: [
@@ -43,6 +44,7 @@ import { GamificationModule } from './gamification/gamification.module';
         ClubsModule,
         TournamentsModule,
         GamificationModule,
+        ContentModule,
     ],
 })
 export class AppModule {}

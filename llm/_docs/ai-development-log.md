@@ -3183,3 +3183,56 @@ backend/prisma/schema.prisma` не выполнены: отсутствующи�
 - Контрактная приёмка выполнена: исполняемый текст не представлен в DTO и отвергается SQL allowlist, bookmark
   идемпотентен уникальным composite key, а public API/projection допускают только exact committed `PUBLISHED`
   revision. К `12-content-news/03-backend.md` не переходили.
+
+## 2026-09-13 — новости и контент, этап 03-backend
+
+- Активный промпт: `llm/12-content-news/03-backend.md`. Реализован `ContentModule` для API и worker: все 23
+  reader/bookmark/admin operation из контракта, published-only feed/article/search, self-only bookmarks, source и
+  candidate workflows, immutable article revisions/origins, preview, checklist decisions, schedule/publish,
+  emergency unpublish и retention maintenance. К `12-content-news/04-tma-web.md` не переходили.
+- PostgreSQL full-text search читает только public projection; публикация или снятие projection и минимального
+  body-free outbox event выполняются в одной транзакции. Планировщик повторно использует точную revision и
+  versioned checklist из committed `SCHEDULE` decision и детерминированный operation UUID. Отзыв source сначала
+  удаляет затронутые public projections в той же транзакции. Idempotency receipts scoped, зашифрованы и имеют TTL
+  24 часа; конфликтующие операции выполняются в serializable transactions.
+- `SAFE_RICH_TEXT_V1` проверяется закрытым allowlist узлов, marks, ключей, типов, размеров и HTTPS links; неизвестная
+  или исполняемая форма отклоняется. Media допускается только через verified-media boundary; реальное object
+  storage не подключено и порт по умолчанию закрыт.
+- Source adapter разрешает только HTTPS RSS/API metadata, вручную проверяет каждый redirect и DNS-адрес, запрещает
+  private/loopback/link-local destinations, ограничивает размер ответа и поддерживает ETag/Last-Modified. Crawling,
+  scraping, generic URL fetch и хранение полного внешнего текста отсутствуют. Ingestion опрашивает только
+  `ENABLED` source с действующими правами, хранит Redis checkpoint/backoff, создаёт immutable private candidate
+  revisions и лишь сигналы дедупликации. BullMQ job payload пуст и не раскрывает source/content IDs.
+- CMS capabilities добавлены в общий administration policy: `EDITOR` получает только editorial operations,
+  `SUPERADMIN` — source governance/read и emergency unpublish, `MODERATOR` и `ADS_MANAGER` остаются без CMS-доступа.
+  Ни один реальный source/provider/license/media-storage этим этапом не одобрен; production integrations остаются
+  fail-closed.
+- Изменены registration/configuration и administration policy, добавлен каталог `backend/src/content/`, unit tests
+  rich-text/source adapter, contract backend policy и его включение в обязательный `contracts:lint`. Prisma
+  schema/migration не менялись: backend использует структуру этапа `02-contract-data`.
+
+### Проверки этапа content-news 03-backend
+
+- Targeted backend lint, strict typecheck и build — успешно. `npm test --workspace @picklehub/backend --
+--runInBand backend/test/unit/content-rich-text.spec.ts backend/test/unit/content-source-adapter.spec.ts` — успешно,
+  2/2 suites и 8/8 tests. `node --test contracts/scripts/content-backend-policy.test.mjs` — успешно, 3/3 tests.
+- `PRISMA_SCHEMA_ENGINE_BINARY=/usr/bin/true PRISMA_QUERY_ENGINE_LIBRARY=/usr/bin/true
+PRISMA_GENERATE_NO_ENGINE=1 npx prisma generate --schema backend/prisma/schema.prisma` — успешно с generated
+  no-engine client; изменились только игнорируемые файлы `node_modules`. Обычная загрузка engine недоступна:
+  `npx prisma validate --schema backend/prisma/schema.prisma` завершился с `ENOTFOUND` для restricted proxy host при
+  запросе `binaries.prisma.sh`.
+- Один промежуточный полный `npm run verify` получил sandbox `listen EPERM` в OpenAPI mock. Немедленный отдельный
+  `npm run contracts:mock:check` прошёл, после чего финальный полный `npm run verify` также прошёл: восемь
+  workspaces/один lockfile, 205 REST operations/63 messages, 134/134 contract policy tests, compatibility,
+  generated drift/typecheck, OpenAPI mock, format/docs, lint, strict typecheck, tests и production builds. Backend —
+  40/40 suites и 258/258 tests; web — 11/48, TMA — 9/30. Сохраняются прежние warnings о bundles около
+  642/651/924 kB и внешняя небезопасная настройка `NODE_TLS_REJECT_UNAUTHORIZED=0`.
+- `npm run test:integration --workspace @picklehub/backend` не завершил runtime-приёмку: generated no-engine Prisma
+  client несовместим с `@prisma/adapter-pg`, а sandbox запретил Redis loopback с `connect EPERM 127.0.0.1:6379`.
+  После подтверждения повторяющихся BullMQ retries процесс остановлен с `SIGINT` (exit 130). Поэтому применение
+  PostgreSQL migration, database constraints/concurrency, BullMQ redelivery, scheduler races и атомарность runtime
+  projection/outbox не выдаются за проверенные.
+- `npm ls --depth=0` и `git diff --check` — успешно; unmet/extraneous dependencies и whitespace errors отсутствуют.
+  Unit, contract, static и build evidence зелёные, но полная приёмка остаётся заблокированной database/queue runtime
+  gate. По правилам репозитория к следующему промпту `llm/12-content-news/04-tma-web.md` переходить нельзя до
+  успешного прогона в среде с PostgreSQL, Redis и штатным Prisma engine.

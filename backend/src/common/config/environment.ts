@@ -86,6 +86,15 @@ const environmentSchema = z
         PROFILE_DUPR_ALLOWED_PATH_PATTERN: z.string().max(500).default('^/player/[^/]+/?$'),
         PROFILE_DUPR_OUTBOUND_ENABLED: z.enum(['true', 'false']).default('false'),
         PROFILE_AVATAR_STORAGE_BASE_URL: httpsUrl.optional(),
+        CONTENT_PUBLIC_BASE_URL: httpsUrl.optional(),
+        CONTENT_MEDIA_BASE_URL: httpsUrl.optional(),
+        CONTENT_FETCH_TIMEOUT_MS: z.coerce.number().int().min(500).max(30_000).optional(),
+        CONTENT_FETCH_INTERVAL_MS: z.coerce.number().int().min(60_000).max(86_400_000).optional(),
+        CONTENT_SOURCE_MIN_INTERVAL_MS: z.coerce.number().int().min(1000).max(3_600_000).optional(),
+        CONTENT_CHECKLIST_VERSION: z
+            .string()
+            .regex(/^[1-9][0-9]*\.[0-9]+\.[0-9]+$/u)
+            .optional(),
     })
     .superRefine((environment, context) => {
         if (environment.NODE_ENV === 'production' && environment.REDIS_NAMESPACE === 'local') {
