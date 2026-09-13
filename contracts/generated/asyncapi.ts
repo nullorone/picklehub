@@ -935,6 +935,22 @@ export namespace ProtocolErrorMessage {
     }
 }
 
+export namespace ReviewEligibilityChangedMessage {
+    export interface ReviewEligibilityChangedEnvelope {
+        messageId: string;
+        type: 'review.eligibility.changed.v1';
+        occurredAt: string;
+        correlationId: string;
+        causationId?: string | null;
+        data: Data;
+    }
+
+    export interface Data {
+        reviewId: string;
+        reviewRevision: number;
+    }
+}
+
 export namespace SafetyCaseStatusChangedMessage {
     export interface SafetyCaseStatusChangedEnvelope {
         messageId: string;
@@ -1258,6 +1274,7 @@ export type ProfileStatisticsRebuildRequestedEnvelope =
 export type ProfileStatisticsSourceChangedEnvelope =
     ProfileStatisticsSourceChangedMessage.ProfileStatisticsSourceChangedEnvelope;
 export type ProtocolErrorEnvelope = ProtocolErrorMessage.ProtocolErrorEnvelope;
+export type ReviewEligibilityChangedEnvelope = ReviewEligibilityChangedMessage.ReviewEligibilityChangedEnvelope;
 export type SafetyCaseStatusChangedEnvelope = SafetyCaseStatusChangedMessage.SafetyCaseStatusChangedEnvelope;
 export type SafetyDecisionRecordedEnvelope = SafetyDecisionRecordedMessage.SafetyDecisionRecordedEnvelope;
 export type SafetyEffectRequestedEnvelope = SafetyEffectRequestedMessage.SafetyEffectRequestedEnvelope;
@@ -1314,6 +1331,7 @@ export type WebSocketMessage =
     | ProfileStatisticsRebuildRequestedEnvelope
     | ProfileStatisticsSourceChangedEnvelope
     | ProtocolErrorEnvelope
+    | ReviewEligibilityChangedEnvelope
     | SafetyCaseStatusChangedEnvelope
     | SafetyDecisionRecordedEnvelope
     | SafetyEffectRequestedEnvelope

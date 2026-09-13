@@ -2893,3 +2893,61 @@ llm/_docs/security-privacy.md llm/_docs/analytics-plan.md` — успешно; �
   global/club partitions независимы, а projection без current explicit opt-in отвергается и удаляется. Остаточный
   verification risk — применение migration/constraint concurrency к PostgreSQL и Prism mock в среде с разрешённым
   loopback. Ранее записанная tournament verification блокировка этим этапом не устранена.
+
+## 2026-09-13 — геймификация, этап 03-backend
+
+- Активный промпт: `llm/11-gamification/03-backend.md`. Добавлен NestJS `GamificationModule` с восемью ранее
+  определёнными REST operations: private global/club progress, собственные achievements, consent-aware leaderboard,
+  immutable definition catalogue и versioned club configuration. Player routes требуют завершённого onboarding;
+  мутации используют browser integrity, rate limit, UUIDv4 idempotency receipt и serializable transaction. Platform
+  catalogue использует новую фиксированную capability `GAMIFICATION_DEFINITION_READ`, доступную только superadmin.
+- `GamificationEventWorkerService` получает match/review/club references из отдельной BullMQ queue. Consumer под
+  advisory transaction lock дедуплицирует message и source revision, отклоняет late stale delivery и перечитывает
+  authoritative confirmed marker, PLAYED participants, review head и membership interval. Подтверждённая игра даёт
+  одинаковый XP независимо от winner/score; structured review учитывается один раз на author/match независимо от
+  rating, tags и optional text. Архивация клуба и завершение membership не создают backlog.
+- Движок выбирает immutable rule по source occurred time, округляет club coefficient вниз и оставляет over-cap award
+  terminal `CAPPED`. Отмена и восстановление используют append-only reversal/reinstatement. Mutable balance,
+  achievement state и season leaderboard полностью воспроизводятся из ledger; pure tests фиксируют одинаковый
+  checksum для любого delivery order, shared competition rank и поведение duplicate/stale revisions.
+- Club configuration допускает только три allowlisted sources, коэффициент `0.5..2.0`, неизменные caps/base XP и
+  1–20 строго возрастающих уровней. NFC/text policy запрещает staff impersonation, азартные, денежные и призовые
+  названия. Авторизация привязана к owner/admin данного клуба; global и другой club scope не передаются в mutation.
+- Season service сохраняет immutable rule/level snapshot и audit, а worker раз в минуту выполняет monotonic rollover
+  и полную consent-aware projection. Opt-out удаляет row в той же транзакции; rebuild исключает deleted/restricted,
+  club-blocked и inactive members. Viewer read скрывает взаимно заблокированную строку без identity/avatar, сохраняя
+  rank. Добавлен операторский `gamification:rebuild`, который не начисляет XP и не читает analytics.
+- Последующая migration `20260913120000_gamification_backend` исправляет award key: `source_kind` теперь позволяет
+  одному организатору получить независимые PLAY и ORGANIZE awards за один match, не смешивая scope. Та же migration
+  публикует immutable global/club achievement catalogues. Прямого update/delete ledger backend не содержит.
+- Для authoritative review source добавлен privacy-minimized `review.events.v1` / `review.eligibility.changed.v1` в
+  AsyncAPI: только opaque review ID и revision. Generated AsyncAPI artifact обновлён из source; policy allowlist и
+  отдельные backend static policy tests обновлены. REST contract не менялся: 181 operation.
+- Основные изменённые файлы: `backend/src/gamification/*`, `backend/src/{app,worker}.module.ts`, outbox queue,
+  trust/safety review producer, administration capability, backend scripts, новая migration, AsyncAPI source/artifact,
+  gamification backend policy/unit tests, `llm/_docs/gamification-data-policy.md` и этот журнал.
+- Финальная ревизия согласовала runtime с историческими правилами: cap query теперь использует точные полуоткрытые
+  UTC day/week windows без зависимости итогового net XP от хронологии доставки; recurring-материализация исключена
+  из organizer XP; архивный клуб не получает поздний review award; membership freeze и leaderboard removal стали
+  одной транзакцией; активный level set выбирается по `effectiveFrom`, а не лексикографическому semver.
+
+### Проверки этапа gamification 03-backend
+
+- `npm run contracts:generate` — успешно; OpenAPI не дрейфовал, AsyncAPI TypeScript artifact получил новый review
+  event. `npm run contracts:lint` — успешно: TypeSpec/Redocly/policy report 181 REST operations/61 messages и 117/117
+  contract/data/privacy/backend policy tests зелёные.
+- `npm run contracts:check` — успешно полностью: lint, compatibility against `HEAD`, generated drift, strict
+  generated typecheck и OpenAPI mock с representative gamification example прошли.
+- `npm run lint --workspace @picklehub/backend`, `npm run typecheck --workspace @picklehub/backend`,
+  `npm run build --workspace @picklehub/backend` — успешно.
+- `npm test --workspace @picklehub/backend -- --runInBand` — успешно: 36/36 suites, 242/242 tests; новый domain suite
+  покрывает deterministic rebuild, compensation, caps/holds, duplicate/stale order, competition rank и club bounds.
+- `npm run test:integration --workspace @picklehub/backend` — неуспешно и затем остановлено: sandbox запрещает
+  подключения к Redis/PostgreSQL на `127.0.0.1` (`EPERM`). Первый запуск также увидел временный `--no-engine` Prisma
+  Client, созданный для type generation без сети; client после этого штатно перегенерирован в adapter-compatible
+  режиме через локальный generator. Migration, trigger concurrency и end-to-end worker delivery поэтому не выдаются
+  за проверенные на реальной БД.
+- Остаточный gate текущего этапа: применить обе gamification migrations к PostgreSQL, запустить concurrent duplicate /
+  out-of-order / cap / reversal / opt-out / rebuild integration fixtures с Redis и сравнить sequential/rebuild
+  checksum. Ранее записанная tournament verification блокировка остаётся отдельным риском; к
+  `11-gamification/04-tma-web.md` не переходили.

@@ -13,6 +13,7 @@ export const ADMIN_CAPABILITIES = [
     'VENUE_MODERATE',
     'AUDIT_SEARCH',
     'BREAK_GLASS_MANAGE',
+    'GAMIFICATION_DEFINITION_READ',
 ] as const;
 
 export type AdminCapability = (typeof ADMIN_CAPABILITIES)[number];
@@ -25,6 +26,7 @@ const ROLE_CAPABILITIES = {
         'SAFETY_CASE_ROUTE',
         'AUDIT_SEARCH',
         'BREAK_GLASS_MANAGE',
+        'GAMIFICATION_DEFINITION_READ',
     ],
     MODERATOR: [
         'ADMIN_SESSION_ACCESS',

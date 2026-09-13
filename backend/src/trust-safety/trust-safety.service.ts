@@ -138,6 +138,7 @@ export class TrustSafetyService {
             reviewId,
             ['state', 'revision']
         );
+        await this.reviewEvent(tx, reviewId, revision);
         return this.ownReview(
             reviewId,
             matchId,
@@ -180,6 +181,7 @@ export class TrustSafetyService {
         });
         await this.rebuildReputation(tx, subjectId);
         await this.auditEntry(tx, authorId, 'safety.review.withdrawn', 'REVIEW', review.id, ['state', 'revision']);
+        await this.reviewEvent(tx, review.id, revision);
     }
 
     async submitNoShow(
@@ -844,6 +846,26 @@ export class TrustSafetyService {
                 data: { [idField]: id, category },
             },
             correlationId: context?.correlationId ?? uuidV7(),
+            occurredAt: now,
+        });
+    }
+
+    private async reviewEvent(tx: Transaction, reviewId: string, reviewRevision: number): Promise<void> {
+        const now = this.clock.now();
+        const context = this.context.get();
+        const correlationId = context?.correlationId ?? uuidV7();
+        await this.outbox.enqueue(tx, {
+            type: 'review.eligibility.changed.v1',
+            schemaVersion: 1,
+            payload: {
+                messageId: uuidV7(),
+                type: 'review.eligibility.changed.v1',
+                occurredAt: now.toISOString(),
+                correlationId,
+                causationId: null,
+                data: { reviewId, reviewRevision },
+            },
+            correlationId,
             occurredAt: now,
         });
     }

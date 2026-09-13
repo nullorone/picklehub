@@ -186,6 +186,15 @@ channels:
             SafetyCaseStatusChanged: { $ref: '#/components/messages/SafetyCaseStatusChanged' }
             SafetyDecisionRecorded: { $ref: '#/components/messages/SafetyDecisionRecorded' }
             SafetyEffectRequested: { $ref: '#/components/messages/SafetyEffectRequested' }
+    reviewEvents:
+        address: review.events.v1
+        title: Internal review eligibility events
+        description: Transactional outbox only. Carries an opaque review ID and monotonic revision; rating, tags,
+            text, author, subject and match identity remain in owning storage and are reloaded by an authorized worker.
+        servers:
+            - $ref: '#/servers/outbox'
+        messages:
+            ReviewEligibilityChanged: { $ref: '#/components/messages/ReviewEligibilityChanged' }
     clubEvents:
         address: club.events.v1
         title: Internal privacy-minimized club events
@@ -371,6 +380,15 @@ operations:
             - $ref: '#/channels/trustSafetyEvents/messages/SafetyCaseStatusChanged'
             - $ref: '#/channels/trustSafetyEvents/messages/SafetyDecisionRecorded'
             - $ref: '#/channels/trustSafetyEvents/messages/SafetyEffectRequested'
+    publishReviewEvents:
+        action: send
+        title: Publish review eligibility changes
+        summary: Reconcile structured-review rewards from an opaque authoritative reference.
+        description: The owning review mutation commits this reference atomically; consumers deduplicate by
+            messageId and revision and never copy review content or identities into the event.
+        channel: { $ref: '#/channels/reviewEvents' }
+        messages:
+            - $ref: '#/channels/reviewEvents/messages/ReviewEligibilityChanged'
     publishClubEvents:
         action: send
         title: Publish committed club lifecycle references
@@ -849,6 +867,13 @@ components:
             contentType: application/json
             correlationId: { location: $message.payload#/correlationId }
             payload: { $ref: '#/components/schemas/XpLedgerEntryRecordedEnvelope' }
+        ReviewEligibilityChanged:
+            name: review.eligibility.changed.v1
+            title: ReviewEligibilityChanged
+            summary: An opaque review revision may have changed XP eligibility.
+            contentType: application/json
+            correlationId: { location: $message.payload#/correlationId }
+            payload: { $ref: '#/components/schemas/ReviewEligibilityChangedEnvelope' }
         AchievementAwardChanged:
             name: gamification.achievement-award.changed.v1
             title: AchievementAwardChanged
@@ -1195,6 +1220,24 @@ components:
                         ledgerEntryId: { $ref: '#/components/schemas/Uuid' }
                         projectionRevision: { type: integer, format: int64, minimum: 0 }
                         outcome: { type: string, enum: [PENDING, POSTED, CAPPED, REVERSED, REINSTATED] }
+        ReviewEligibilityChangedEnvelope:
+            type: object
+            additionalProperties: false
+            required: [messageId, type, occurredAt, correlationId, data]
+            properties:
+                messageId: { $ref: '#/components/schemas/Uuid' }
+                type: { type: string, const: review.eligibility.changed.v1 }
+                occurredAt: { $ref: '#/components/schemas/Timestamp' }
+                correlationId: { $ref: '#/components/schemas/Uuid' }
+                causationId:
+                    oneOf: [{ $ref: '#/components/schemas/Uuid' }, { type: 'null' }]
+                data:
+                    type: object
+                    additionalProperties: false
+                    required: [reviewId, reviewRevision]
+                    properties:
+                        reviewId: { $ref: '#/components/schemas/Uuid' }
+                        reviewRevision: { type: integer, minimum: 1 }
         AchievementAwardChangedEnvelope:
             type: object
             additionalProperties: false

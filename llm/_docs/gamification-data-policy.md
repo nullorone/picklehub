@@ -25,7 +25,9 @@ daily/weekly caps, effective interval и hash. Global scope требует `club
 `ProcessedGamificationEvent` дедуплицирует at-least-once message по `message_id` и по owning event/revision.
 `PENDING` и `POSTED` содержат вычисленную сумму, а окончательный `CAPPED` — ноль. PostgreSQL advisory transaction
 lock сериализует cap одного user/scope/source; сутки и неделя (с понедельника) считаются в UTC по исходному факту.
-Global и каждый club имеют собственные lock/key/balance partitions.
+При поздней доставке consumer считает все уже принятые факты ровно в том же UTC-окне, что и SQL trigger: конкретный
+`CAPPED` source может зависеть от порядка получения, но число `POSTED` событий, net XP и все публичные проекции
+сходятся к одному результату. Global и каждый club имеют собственные lock/key/balance partitions.
 
 История не обновляется: reversal ссылается только на posted award и сохраняет owner, scope, rule и сумму;
 reinstatement ссылается только на reversal. Partial unique indexes допускают по одной записи каждого типа, поэтому
@@ -41,8 +43,9 @@ reinstatement ссылается только на reversal. Partial unique inde
 
 Club definition выбирает те же три source types, enabled/off и coefficient `5..20` десятых, то есть `0.5..2.0` с
 шагом `0.1`; XP округляется вниз. Caps неизменны. Level set содержит 1–20 записей, имя 1–30 символов и строго
-возрастающие ordinal/threshold. Text policy и проверка полномочий остаются обязанностью backend prompt; SQL не
-пытается заменить moderation текста.
+возрастающие ordinal/threshold. Backend пропускает имя через NFC/trim и запрещает имитацию staff capability,
+денежные, призовые и азартные обещания; owner/admin проверяется внутри конкретного клуба. SQL не пытается заменить
+moderation текста.
 
 ## Сезоны, consent и ранг
 
@@ -64,6 +67,21 @@ revisions; общий CDN snapshot запрещён.
 только opaque ledger/award/consent/season record IDs, projection revision и закрытый outcome. В payload запрещены
 user/club/source IDs, матч или отзыв, score/winner, XP amount/rank, display identity, fraud reason/evidence и граф
 совместной игры. Consumer дедуплицирует `messageId`, затем перечитывает разрешённую projection через owning port.
+
+## Runtime backend
+
+Worker получает `match.*`, `club.*` и минимальное `review.eligibility.changed.v1` через отдельную BullMQ queue.
+Review-событие содержит только opaque review ID и revision; рейтинг, теги, текст, автор, адресат и match ID остаются
+в owning storage. Consumer берёт advisory lock исходного aggregate, сравнивает message/source revision и каждый раз
+перечитывает authoritative marker, review head и membership interval. Позднее старое событие становится `STALE`,
+повтор той же revision — no-op, а отмена создаёт append-only reversal. Системная recurring-материализация не получает
+награду организатора; archive клуба запрещает отложенный club award, а membership freeze и удаление строки текущего
+leaderboard выполняются атомарно.
+
+`GamificationProjectionService` пересобирает balance и achievements из упорядоченного ledger, а периодическая worker
+задача переключает состояния сезонов и полностью перестраивает consent/restriction-aware leaderboard. Тот же путь
+доступен оператору как `npm run gamification:rebuild --workspace @picklehub/backend`; rebuild не создаёт XP и не
+читает behavioral analytics. Все изменения club definitions, season и consent имеют audit/outbox след.
 
 Личный ledger/source explanation и holds доступны только владельцу и purpose-bound moderator. Рекомендуемые сроки,
 псевдонимизация account/club deletion, appeal/legal hold и РФ-residency остаются gates из

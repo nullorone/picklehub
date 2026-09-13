@@ -18,6 +18,7 @@ export const trustSafetyEventFields = {
     'safety.case.status.changed.v1': ['caseId', 'category'],
     'safety.decision.recorded.v1': ['decisionId', 'category'],
     'safety.effect.requested.v1': ['effectId', 'category'],
+    'review.eligibility.changed.v1': ['reviewId', 'reviewRevision'],
 };
 
 function dereference(document, value) {
@@ -154,8 +155,8 @@ export function checkTrustSafetyContract(openApi, asyncApi) {
         );
     }
 
-    const messages = Object.values(asyncApi.components.messages).filter((message) =>
-        message.name.startsWith('safety.')
+    const messages = Object.values(asyncApi.components.messages).filter(
+        (message) => message.name.startsWith('safety.') || message.name.startsWith('review.')
     );
     assert.deepEqual(messages.map((message) => message.name).sort(), Object.keys(trustSafetyEventFields).sort());
     for (const message of messages) {
