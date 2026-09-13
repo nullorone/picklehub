@@ -3006,3 +3006,52 @@ llm/_docs/security-privacy.md llm/_docs/analytics-plan.md` — успешно; �
   loopback к этим сервисам. Новая migration не нужна; owner predicate и response mapping покрыты unit test, contract
   privacy — policy suite. Ранее записанные runtime gates gamification backend/tournaments остаются без изменений.
   Следующий промпт — `llm/11-gamification/05-verification.md`; к нему не переходили.
+
+## 2026-09-13 — геймификация, этап 05-verification
+
+- Активный промпт: `llm/11-gamification/05-verification.md`. Добавлена verification-модель ledger с permutation
+  tests для duplicate/late/out-of-order revisions, независимой signed-суммой отображаемого XP, append-only
+  reversal/reinstatement, UTC caps, смены rule version, global/club isolation, leave/rejoin и закрытого allowlist.
+- Новый contract/runtime policy связывает unit-модель с SQL и исполняемым кодом: processed-event uniqueness,
+  serializable/advisory locks, immutable ledger/rules/consent, compensation guards, source-time caps, membership
+  interval, exact club authorization, explicit current consent, shared competition rank, restriction/block privacy и
+  отсутствие guest/complaint/payment/victory/score sources.
+- Добавлен production-build Playwright-сценарий для web и TMA. Он проверяет semantic progress, отделение от DUPR и
+  спортивной статистики, объяснённую отмену, explicit per-season consent, скрытую identity при block, отсутствие
+  горизонтального переполнения на 360 px и computed reduced motion.
+- Модель корректности, abuse matrix, traceability rule-to-test и остаточные runtime-gates записаны в
+  `llm/_docs/gamification-verification.md`. Product code, TypeSpec, OpenAPI, Prisma schema/migrations и generated
+  clients не менялись. Новый policy test включён в обязательный `contracts:lint`.
+
+### Проверки этапа gamification 05-verification
+
+- `npm test --workspace @picklehub/backend -- --runInBand backend/test/unit/gamification-domain.spec.ts
+backend/test/unit/gamification-verification.spec.ts` — успешно, 2/2 suites и 13/13 tests. После добавления отдельной
+  проверки checksum targeted `gamification-verification.spec.ts` — успешно, 7/7. Один промежуточный targeted запуск
+  корректно обнаружил неподдерживаемый Jest matcher `toHaveSize`; заменён на проверку `Set.size`, правила не
+  ослаблялись.
+- `node --test contracts/scripts/gamification-verification-policy.test.mjs` — успешно, 6/6. Первый запуск обнаружил,
+  что generated OpenAPI задаёт `private, no-store` через единственное значение `enum`, а не `example`; assertion
+  исправлен на точную generated форму. `npm run contracts:lint` — успешно, 182 REST operations/61 messages и
+  123/123 policy/data/backend/verification tests.
+- Targeted web/TMA `gamification-ui.test.tsx` — успешно по 3/3; backend lint/typecheck, E2E strict typecheck,
+  format/docs и `git diff --check` — успешно. `npm run test:e2e:build` — успешно для production web/TMA с прежними
+  warnings о chunks около 642/651/924 kB.
+- Один полный `npm run verify` — успешно: восемь workspaces/один lockfile, TypeSpec/Redocly, 123 contract tests,
+  compatibility/generated drift/typecheck/OpenAPI mock, format/docs, lint, strict typecheck, tests и production
+  builds. Backend — 38/38 suites и 250/250 tests; web — 11/48, TMA — 9/30, API client — 1/6. После усиления одного
+  checksum assertion повторный verify дошёл до `contracts:mock:check`, но sandbox запретил `listen 127.0.0.1` с
+  `EPERM`; предшествующие 123 tests и generated checks снова были зелёными. Окружение также сохраняет небезопасный
+  `NODE_TLS_REJECT_UNAUTHORIZED=0`. Отдельный повтор `contracts:mock:check`, а затем финальный полный `npm run
+verify` после checksum-изменения прошли успешно с теми же итогами 123/123 и 38/250.
+- `npx playwright test test/e2e/gamification.spec.ts` обнаружил два tests, однако оба не начали первый step:
+  локальный Chrome завершился с `SIGABRT`, cleanup получил `kill EPERM`. Browser runtime success не заявляется;
+  production builds и `npm run test:e2e:typecheck` зелёные.
+- `npm run test:integration --workspace @picklehub/backend` — неуспешно: sandbox запретил PostgreSQL/Redis loopback,
+  включая `connect EPERM 127.0.0.1:6379`; suites не смогли подготовить fixtures. Поэтому применение gamification
+  migrations, advisory-lock concurrency, BullMQ redelivery и реальное сравнение sequential/rebuild projection не
+  выдаются за проверенные.
+- Доступные статические, unit, component, contract и build evidence подтверждают отсутствие второго начисления и
+  скрытого winner bonus в проверяемой модели, а суммы прослеживаются до ledger. Полная приёмка остаётся
+  заблокированной database/queue и browser runtime gates; к следующему prompt переходить нельзя. `npm ls
+--depth=0` и финальный `git diff --check` успешны, unmet/extraneous dependencies отсутствуют.
