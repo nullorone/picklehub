@@ -22,7 +22,8 @@ npm run contracts:check
 - `contracts:lint` проверяет TypeSpec без записи artifacts, валидирует OpenAPI и AsyncAPI официальными
   parser/linter и применяет PickleHub policy: `/v1`, разрешённые owning-feature paths, уникальные
   operation/message IDs, версионированные envelopes, UTC timestamps, `no-store`, browser CSRF/cookie и безопасный
-  payload внутренних identity/venue/match/communication/profile/club/tournament/gamification events, admin capability registry и
+  payload внутренних identity/venue/match/communication/profile/club/tournament/gamification/content events,
+  admin capability registry и
   notification jobs.
   Статические data-policy тесты
   дополнительно удерживают
@@ -39,8 +40,8 @@ npm run contracts:check
 - `contracts:mock` запускает локальный Prism на `127.0.0.1:4010`; он предназначен только для разработки и не
   является backend или production fallback.
 - `contracts:mock:check` запускает mock на свободном localhost port, запрашивает representative endpoints health,
-  identity, venues, matches, communications, profiles, trust/safety, administration, clubs, tournaments и
-  gamification,
+  identity, venues, matches, communications, profiles, trust/safety, administration, clubs, tournaments,
+  gamification и content,
   проверяет status,
   JSON shape и
   `no-store`, включая private progress геймификации.
@@ -133,6 +134,20 @@ Partial/exclusion indexes и triggers защищают source replay, UTC caps, 
 current opt-in и competition rank. `gamification.events.v1` передаёт только opaque projection references без
 identity, source activity, XP/rank или anti-fraud detail. Полное решение — в
 [`gamification-data-policy.md`](../llm/_docs/gamification-data-policy.md).
+
+## Контент и новости
+
+[`rest/content.tsp`](rest/content.tsp) разделяет публичные published-only feed/article/search, self-only закладки и
+capability-bound `/admin/content` для source registry, candidates, immutable revisions, preview и publication
+decisions. Search query передаётся в POST body; draft/preview/unpublished DTO и bookmark graph не попадают в
+публичные ответы. `SAFE_RICH_TEXT_V1` — закрытый typed AST без HTML/script/embed; тот же allowlist проверяет SQL.
+
+Миграция хранит versioned source rights, candidate revisions/dedupe signals, article/revision/origin graph,
+canonical slugs, checklist decisions, exact published projection, media rights и уникальную пару bookmark. State,
+pointer и deferred projection guards не позволяют candidate или неутверждённой revision стать публичными.
+`content.events.v1` переносит только opaque article/revision IDs, aggregate version и closed outcome, без текста,
+URL, provenance/evidence или identity. Полные решения — в
+[`content-news-data-policy.md`](../llm/_docs/content-news-data-policy.md).
 
 ## Административная панель
 

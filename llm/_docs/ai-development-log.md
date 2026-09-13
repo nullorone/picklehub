@@ -3120,3 +3120,66 @@ llm/_docs/security-privacy.md llm/_docs/analytics-plan.md` — успешно; �
   immutable origin. Реальные source permissions и licenses не проверялись и не заявлены. Точные DTO/state enum,
   SQL constraints, sanitizer/adapter protocol, event allowlist и TTL принадлежат `12-content-news/02-contract-data.md`.
   Ранее записанные runtime-gates геймификации остаются отдельным незакрытым риском.
+
+## 2026-09-13 — новости и контент, этап 02-contract-data
+
+- Активный промпт: `llm/12-content-news/02-contract-data.md`, запущенный по прямому запросу владельца несмотря на
+  ранее записанные database/queue/browser runtime-gates геймификации. К backend/UI следующим этапам не переходили;
+  реальные источники, RSS/API adapters, sanitizer renderer, scheduler и CMS runtime не реализовывались.
+- REST: добавлен TypeSpec source `contracts/rest/content.tsp` с 23 content operations: published-only feed/article,
+  POST-body search, self-only bookmark list/add/remove и `/admin/content` для source registry/pause/governance,
+  candidate review, article/revision history, staff preview, checklist approval/schedule/publish и emergency
+  unpublish. Reader DTO явно содержат SEO, attribution и HTTPS media links; search, bookmark, preview и admin ответы
+  имеют `private, no-store`, public feed/article — bounded public cache. Все admin mutations требуют bearer,
+  browser integrity, UUIDv4 idempotency и fixed capability/role marker; редактор может fail-closed pause, но только
+  superadmin с re-auth может enable/revoke или emergency-unpublish.
+- Формат текста: `SAFE_RICH_TEXT_V1` — закрытый JSON AST только из paragraph/heading/list/quote, text,
+  `STRONG`/`EMPHASIS`/`CODE` и HTTPS links. HTML/script/style/embed/event attributes отсутствуют в wire model;
+  PostgreSQL повторно проверяет exact keys/types, глубину структуры, длины, общий размер и URL scheme.
+- Данные: Prisma и migration добавляют `ContentSource` с append-only policy/evidence, `IngestCandidate` и входные
+  revisions, `Article`, immutable `ArticleRevision`/`ArticleOrigin`, category/tag/media, canonical slug registry,
+  append-only publication decisions, published/search projection, unique `(user_id, article_id)` bookmark и
+  encrypted 24-hour operation receipts. Candidate dedupe использует URL hash/provider ID/fingerprint без удаления
+  provenance; source hash уникален внутри candidate revision history.
+- SQL guards закрепляют source/article state machines, current approved rights и full-text/media license evidence,
+  reciprocity source-policy-origin, exact revision pointers, checklist, derived-origin requirement и атомарность
+  `PUBLISHED`/public projection. `REVOKED` source нельзя commit вместе с зависимой public projection. Никакой source
+  не seed-ится в `ENABLED`.
+- AsyncAPI: добавлены только `content.article.published.v1` и `content.article.unpublished.v1`. Они несут opaque
+  article/revision IDs, aggregate version и closed outcome; title/body/excerpt/slug/URL, author/source evidence,
+  staff/user identity и bookmark graph запрещены policy allowlist. OpenAPI/AsyncAPI TypeScript и api-client types
+  перегенерированы из source.
+- Полные access, retention, dedupe, publication, sanitizer, media, SEO/i18n и event решения записаны в
+  `llm/_docs/content-news-data-policy.md`; contract README и общий admin capability registry синхронизированы.
+
+### Проверки этапа content-news 02-contract-data
+
+- `npm run contracts:generate` — успешно; OpenAPI, оба contract TypeScript artifacts и api-client copy
+  детерминированно обновлены.
+- `npm run contracts:lint` — успешно: TypeSpec compile, Redocly, общий policy report 205 REST operations/63
+  messages и 131/131 contract/data/backend/verification policy tests зелёные. Новые content policy tests отдельно
+  проверяют 23 operations, published/private access, safe AST, rights/license gates, immutable provenance,
+  publication pointer, bookmark/source-hash/slug uniqueness и event allowlist.
+- `npm run contracts:breaking`, `npm run contracts:generated:check`, `npm run contracts:typecheck` — успешно;
+  compatibility с `HEAD`, generated drift и strict TypeScript отсутствуют.
+- Первый полный `npm run verify` дошёл до Prism и корректно обнаружил, что автосгенерированный content example не
+  удовлетворял HTTPS/media/hash patterns. В TypeSpec добавлены валидные synthetic examples; следующий локальный
+  запуск один раз получил sandbox `listen EPERM`, затем отдельный `npm run contracts:mock:check` и финальный полный
+  `npm run verify` успешно проверили health, все прежние области, content feed и self-only bookmarks.
+- Финальный `npm run verify` — успешно полностью: восемь workspaces/один lockfile, contracts lint/compatibility/
+  drift/typecheck/mock, format/docs, lint, strict typecheck, tests и production builds. Backend — 38/38 suites и
+  250/250 tests; web — 11/48, TMA — 9/30, API client — 1/6, остальные shared suites зелёные. Остались прежние
+  неблокирующие bundle warnings около 642/651/924 kB и внешняя небезопасная настройка
+  `NODE_TLS_REJECT_UNAUTHORIZED=0`.
+- `npx prisma format --schema backend/prisma/schema.prisma` и `npx prisma validate --schema
+backend/prisma/schema.prisma` не выполнены: отсутствующий schema engine попытался обратиться к
+  `binaries.prisma.sh`, restricted DNS вернул `ENOTFOUND`. `docker ps` также заблокирован sandbox на Docker socket
+  с `operation not permitted`, поэтому migration не применялась к PostgreSQL и SQL triggers не выдаются за runtime-
+  проверенные. Prisma shape, SQL и acceptance invariants покрыты статическими policy tests; engine validation,
+  clean migration apply, concurrent publication/schedule/bookmark/source-revoke fixtures и search/cache purge
+  остаются обязательным gate следующей доступной CI/database среды.
+- После записи журнала `npm run format:check`, `npm run docs:check`, `npm ls --depth=0` и `git diff --check` —
+  успешно; 131 Markdown-файл без ошибок, unmet/extraneous dependencies и whitespace errors отсутствуют.
+- Контрактная приёмка выполнена: исполняемый текст не представлен в DTO и отвергается SQL allowlist, bookmark
+  идемпотентен уникальным composite key, а public API/projection допускают только exact committed `PUBLISHED`
+  revision. К `12-content-news/03-backend.md` не переходили.

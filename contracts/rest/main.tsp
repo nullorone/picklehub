@@ -11,6 +11,7 @@ import "./administration.tsp";
 import "./clubs.tsp";
 import "./tournaments.tsp";
 import "./gamification.tsp";
+import "./content.tsp";
 
 using TypeSpec.Http;
 using TypeSpec.OpenAPI;
@@ -33,7 +34,8 @@ using TypeSpec.OpenAPI;
     },
     #{ name: "Clubs", description: "Club discovery, scoped membership governance, venues and recurring matches." },
     #{ name: "Tournaments", description: "Tournament discovery, registration and versioned format execution." },
-    #{ name: "Gamification", description: "Private XP progress, achievements and consented seasonal leaderboards." }
+    #{ name: "Gamification", description: "Private XP progress, achievements and consented seasonal leaderboards." },
+    #{ name: "Content", description: "Published editorial articles, self-only bookmarks and staff CMS workflows." }
 ])
 namespace PickleHub;
 

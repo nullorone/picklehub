@@ -237,6 +237,17 @@ channels:
             AchievementAwardChanged: { $ref: '#/components/messages/AchievementAwardChanged' }
             LeaderboardConsentChanged: { $ref: '#/components/messages/LeaderboardConsentChanged' }
             LeaderboardProjectionChanged: { $ref: '#/components/messages/LeaderboardProjectionChanged' }
+    contentEvents:
+        address: content.events.v1
+        title: Internal privacy-minimized content publication events
+        description: Transactional outbox only, delivered at least once and deduplicated by messageId. Payloads
+            contain opaque article/revision references, aggregate version and a closed outcome only; title, body,
+            excerpt, slug, URL, author, source evidence, staff identity and bookmark graph are forbidden.
+        servers:
+            - $ref: '#/servers/outbox'
+        messages:
+            ContentArticlePublished: { $ref: '#/components/messages/ContentArticlePublished' }
+            ContentArticleUnpublished: { $ref: '#/components/messages/ContentArticleUnpublished' }
 operations:
     receiveClientControl:
         action: receive
@@ -428,6 +439,16 @@ operations:
             - $ref: '#/channels/gamificationEvents/messages/AchievementAwardChanged'
             - $ref: '#/channels/gamificationEvents/messages/LeaderboardConsentChanged'
             - $ref: '#/channels/gamificationEvents/messages/LeaderboardProjectionChanged'
+    publishContentEvents:
+        action: send
+        title: Publish committed article visibility changes
+        summary: Publish only opaque publication references and closed outcomes through the outbox.
+        description: The event is committed with the publication pointer. Consumers deduplicate by messageId and
+            reload an authorized published projection; the event never transports article content or provenance.
+        channel: { $ref: '#/channels/contentEvents' }
+        messages:
+            - $ref: '#/channels/contentEvents/messages/ContentArticlePublished'
+            - $ref: '#/channels/contentEvents/messages/ContentArticleUnpublished'
 components:
     messages:
         Authenticate:
@@ -895,6 +916,44 @@ components:
             contentType: application/json
             correlationId: { location: $message.payload#/correlationId }
             payload: { $ref: '#/components/schemas/LeaderboardProjectionChangedEnvelope' }
+        ContentArticlePublished:
+            name: content.article.published.v1
+            title: ContentArticlePublished
+            summary: One exact approved revision became publicly visible.
+            contentType: application/json
+            correlationId: { location: $message.payload#/correlationId }
+            payload: { $ref: '#/components/schemas/ContentArticlePublishedEnvelope' }
+            examples:
+                - name: articlePublished
+                  payload:
+                      messageId: 0181f32c-7b4a-4f35-8f30-c358f278d101
+                      type: content.article.published.v1
+                      occurredAt: 2026-09-13T16:00:00.000Z
+                      correlationId: 142f1089-c4e5-4594-8b8d-208d861ba762
+                      data:
+                          articleId: 3181f32c-7b4a-4f35-8f30-c358f278d102
+                          revisionId: 4181f32c-7b4a-4f35-8f30-c358f278d103
+                          articleVersion: 4
+                          outcome: PUBLISHED
+        ContentArticleUnpublished:
+            name: content.article.unpublished.v1
+            title: ContentArticleUnpublished
+            summary: A published article was removed from every public projection.
+            contentType: application/json
+            correlationId: { location: $message.payload#/correlationId }
+            payload: { $ref: '#/components/schemas/ContentArticleUnpublishedEnvelope' }
+            examples:
+                - name: articleUnpublished
+                  payload:
+                      messageId: 5181f32c-7b4a-4f35-8f30-c358f278d104
+                      type: content.article.unpublished.v1
+                      occurredAt: 2026-09-13T16:05:00.000Z
+                      correlationId: 142f1089-c4e5-4594-8b8d-208d861ba762
+                      data:
+                          articleId: 3181f32c-7b4a-4f35-8f30-c358f278d102
+                          revisionId: 4181f32c-7b4a-4f35-8f30-c358f278d103
+                          articleVersion: 5
+                          outcome: RIGHTS_REVOKED
         ClubCreated:
             name: club.created.v1
             title: ClubCreated
@@ -1294,6 +1353,48 @@ components:
                         seasonId: { $ref: '#/components/schemas/Uuid' }
                         projectionRevision: { type: integer, format: int64, minimum: 0 }
                         outcome: { type: string, enum: [REBUILT, ROW_REMOVED, INVALIDATED, CLOSED] }
+        ContentArticlePublishedEnvelope:
+            type: object
+            additionalProperties: false
+            required: [messageId, type, occurredAt, correlationId, data]
+            properties:
+                messageId: { $ref: '#/components/schemas/Uuid' }
+                type: { type: string, const: content.article.published.v1 }
+                occurredAt: { $ref: '#/components/schemas/Timestamp' }
+                correlationId: { $ref: '#/components/schemas/Uuid' }
+                causationId:
+                    oneOf: [{ $ref: '#/components/schemas/Uuid' }, { type: 'null' }]
+                data:
+                    type: object
+                    additionalProperties: false
+                    required: [articleId, revisionId, articleVersion, outcome]
+                    properties:
+                        articleId: { $ref: '#/components/schemas/Uuid' }
+                        revisionId: { $ref: '#/components/schemas/Uuid' }
+                        articleVersion: { type: integer, format: int64, minimum: 1 }
+                        outcome: { type: string, enum: [PUBLISHED] }
+        ContentArticleUnpublishedEnvelope:
+            type: object
+            additionalProperties: false
+            required: [messageId, type, occurredAt, correlationId, data]
+            properties:
+                messageId: { $ref: '#/components/schemas/Uuid' }
+                type: { type: string, const: content.article.unpublished.v1 }
+                occurredAt: { $ref: '#/components/schemas/Timestamp' }
+                correlationId: { $ref: '#/components/schemas/Uuid' }
+                causationId:
+                    oneOf: [{ $ref: '#/components/schemas/Uuid' }, { type: 'null' }]
+                data:
+                    type: object
+                    additionalProperties: false
+                    required: [articleId, revisionId, articleVersion, outcome]
+                    properties:
+                        articleId: { $ref: '#/components/schemas/Uuid' }
+                        revisionId: { $ref: '#/components/schemas/Uuid' }
+                        articleVersion: { type: integer, format: int64, minimum: 1 }
+                        outcome:
+                            type: string
+                            enum: [EDITORIAL, CORRECTION, RIGHTS_REVOKED, LEGAL_TAKEDOWN, SAFETY_REQUEST]
         ClubCreatedEnvelope:
             type: object
             additionalProperties: false

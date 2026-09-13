@@ -3066,3 +3066,428 @@ model GamificationOperationReceipt {
   @@index([expiresAt], map: "gamification_operation_receipts_expiry_idx")
   @@map("gamification_operation_receipts")
 }
+
+// Content/news data contract. SQL owns immutable revisions/origins, publication pointers and bookmark uniqueness.
+enum ContentSourceState {
+  PROPOSED
+  ENABLED
+  PAUSED
+  REVOKED
+
+  @@map("content_source_state")
+}
+
+enum ContentIntegrationKind {
+  RSS
+  API
+
+  @@map("content_integration_kind")
+}
+
+enum ContentReviewState {
+  PENDING
+  APPROVED
+  REJECTED
+  EXPIRED
+
+  @@map("content_review_state")
+}
+
+enum IngestCandidateState {
+  NEW
+  DUPLICATE
+  DISMISSED
+  SELECTED
+  RIGHTS_HOLD
+
+  @@map("ingest_candidate_state")
+}
+
+enum ContentDuplicateKind {
+  CANONICAL_URL
+  PROVIDER_ID
+  FINGERPRINT
+  CROSS_SOURCE_SIMILARITY
+
+  @@map("content_duplicate_kind")
+}
+
+enum ContentArticleState {
+  DRAFT
+  IN_REVIEW
+  APPROVED
+  SCHEDULED
+  PUBLISHED
+  UNPUBLISHED
+  ARCHIVED
+
+  @@map("content_article_state")
+}
+
+enum ContentOriginKind {
+  ORIGINAL
+  DERIVED
+
+  @@map("content_origin_kind")
+}
+
+enum ContentTransformationKind {
+  ORIGINAL_EDITORIAL
+  RESEARCH_SUMMARY
+  TRANSLATION
+  ADAPTATION
+
+  @@map("content_transformation_kind")
+}
+
+enum ContentDecisionKind {
+  SUBMIT_REVIEW
+  RETURN_TO_DRAFT
+  APPROVE
+  SCHEDULE
+  CANCEL_SCHEDULE
+  PUBLISH
+  UNPUBLISH
+  ARCHIVE
+
+  @@map("content_decision_kind")
+}
+
+model ContentSource {
+  id                    String                 @id @db.Uuid
+  version               BigInt                 @default(0)
+  state                 ContentSourceState     @default(PROPOSED)
+  integrationKind       ContentIntegrationKind @map("integration_kind")
+  legalName             String                 @map("legal_name") @db.VarChar(200)
+  displayName           String                 @map("display_name") @db.VarChar(120)
+  canonicalOrigin       String                 @unique(map: "content_sources_canonical_origin_key") @map("canonical_origin") @db.VarChar(2048)
+  endpoint              String                 @unique(map: "content_sources_endpoint_key") @db.VarChar(2048)
+  currentPolicyId       String?                @unique(map: "content_sources_current_policy_key") @map("current_policy_id") @db.Uuid
+  reviewedByUserId      String?                @map("reviewed_by_user_id") @db.Uuid
+  createdAt             DateTime               @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt             DateTime               @default(now()) @map("updated_at") @db.Timestamptz(3)
+  policies              ContentSourcePolicy[]  @relation("ContentSourcePolicies")
+  currentPolicy         ContentSourcePolicy?   @relation("CurrentContentSourcePolicy", fields: [currentPolicyId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  candidates            IngestCandidate[]
+  origins               ArticleOrigin[]
+
+  @@map("content_sources")
+}
+
+model ContentSourcePolicy {
+  id                          String             @id @db.Uuid
+  sourceId                    String             @map("source_id") @db.Uuid
+  version                     String             @db.VarChar(32)
+  useClasses                  String[]           @map("use_classes") @db.VarChar(40)
+  maximumExcerptCharacters   Int                @map("maximum_excerpt_characters") @db.SmallInt
+  fullTextLicenseEvidenceId  String?            @map("full_text_license_evidence_id") @db.Uuid
+  mediaLicenseEvidenceId     String?            @map("media_license_evidence_id") @db.Uuid
+  termsUrl                    String             @map("terms_url") @db.VarChar(2048)
+  termsVersion                String             @map("terms_version") @db.VarChar(120)
+  rightsBasis                 String             @map("rights_basis") @db.VarChar(500)
+  attributionTemplate        String             @map("attribution_template") @db.VarChar(500)
+  licenseNotice              String?            @map("license_notice") @db.VarChar(500)
+  territory                  String             @db.VarChar(120)
+  languages                  String[]           @db.VarChar(35)
+  validFrom                   DateTime           @map("valid_from") @db.Timestamptz(3)
+  validUntil                  DateTime?          @map("valid_until") @db.Timestamptz(3)
+  reviewedAt                 DateTime?          @map("reviewed_at") @db.Timestamptz(3)
+  reviewDueAt                DateTime            @map("review_due_at") @db.Timestamptz(3)
+  legalReview                ContentReviewState @map("legal_review")
+  securityReview             ContentReviewState @map("security_review")
+  privacyReview              ContentReviewState @map("privacy_review")
+  commercialReview           ContentReviewState @map("commercial_review")
+  evidenceCiphertext         Bytes              @map("evidence_ciphertext")
+  encryptionKeyVersion       Int                @map("encryption_key_version")
+  createdByUserId            String             @map("created_by_user_id") @db.Uuid
+  createdAt                   DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  source                      ContentSource      @relation("ContentSourcePolicies", fields: [sourceId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  currentFor                  ContentSource?     @relation("CurrentContentSourcePolicy")
+  candidateRevisions         IngestCandidateRevision[]
+  origins                     ArticleOrigin[]
+
+  @@unique([sourceId, version], map: "content_source_policies_version_key")
+  @@index([sourceId, validFrom, validUntil], map: "content_source_policies_validity_idx")
+  @@map("content_source_policies")
+}
+
+model IngestCandidate {
+  id                 String                @id @db.Uuid
+  sourceId           String                @map("source_id") @db.Uuid
+  state              IngestCandidateState  @default(NEW)
+  version            BigInt                @default(0)
+  currentRevisionId  String?               @unique(map: "ingest_candidates_current_revision_key") @map("current_revision_id") @db.Uuid
+  duplicateGroupId   String?               @map("duplicate_group_id") @db.Uuid
+  duplicateKind      ContentDuplicateKind? @map("duplicate_kind")
+  selectedArticleId  String?               @map("selected_article_id") @db.Uuid
+  createdAt          DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime              @default(now()) @map("updated_at") @db.Timestamptz(3)
+  source             ContentSource         @relation(fields: [sourceId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  revisions          IngestCandidateRevision[] @relation("CandidateRevisions")
+  currentRevision    IngestCandidateRevision?  @relation("CurrentCandidateRevision", fields: [currentRevisionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  selectedArticle    Article?              @relation(fields: [selectedArticleId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([sourceId, state, createdAt, id], map: "ingest_candidates_queue_idx")
+  @@index([duplicateGroupId], map: "ingest_candidates_duplicate_group_idx")
+  @@map("ingest_candidates")
+}
+
+model IngestCandidateRevision {
+  id                    String              @id @db.Uuid
+  candidateId           String              @map("candidate_id") @db.Uuid
+  revision              BigInt
+  sourcePolicyId        String              @map("source_policy_id") @db.Uuid
+  providerId            String?             @map("provider_id") @db.VarChar(500)
+  canonicalUrl          String              @map("canonical_url") @db.VarChar(2048)
+  canonicalUrlHash      String              @map("canonical_url_hash") @db.Char(64)
+  title                 String              @db.VarChar(300)
+  author                String?             @db.VarChar(200)
+  publisher             String?             @db.VarChar(200)
+  excerpt               String?             @db.VarChar(2000)
+  originallyPublishedAt DateTime?           @map("originally_published_at") @db.Timestamptz(3)
+  receivedAt            DateTime            @map("received_at") @db.Timestamptz(3)
+  fingerprint           String              @db.Char(64)
+  sourceHash            String              @map("source_hash") @db.Char(64)
+  createdAt             DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
+  candidate             IngestCandidate     @relation("CandidateRevisions", fields: [candidateId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  currentFor            IngestCandidate?    @relation("CurrentCandidateRevision")
+  sourcePolicy          ContentSourcePolicy @relation(fields: [sourcePolicyId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  origins               ArticleOrigin[]
+
+  @@unique([candidateId, revision], map: "ingest_candidate_revisions_revision_key")
+  @@unique([candidateId, sourceHash], map: "ingest_candidate_revisions_source_hash_key")
+  @@index([canonicalUrlHash], map: "ingest_candidate_revisions_url_hash_idx")
+  @@index([providerId], map: "ingest_candidate_revisions_provider_idx")
+  @@index([fingerprint], map: "ingest_candidate_revisions_fingerprint_idx")
+  @@map("ingest_candidate_revisions")
+}
+
+model Article {
+  id                       String              @id @db.Uuid
+  version                  BigInt              @default(0)
+  state                    ContentArticleState @default(DRAFT)
+  originKind               ContentOriginKind  @map("origin_kind")
+  currentDraftRevisionId   String?             @unique(map: "articles_current_draft_revision_key") @map("current_draft_revision_id") @db.Uuid
+  approvedRevisionId       String?             @unique(map: "articles_approved_revision_key") @map("approved_revision_id") @db.Uuid
+  publishedRevisionId      String?             @unique(map: "articles_published_revision_key") @map("published_revision_id") @db.Uuid
+  scheduledRevisionId      String?             @unique(map: "articles_scheduled_revision_key") @map("scheduled_revision_id") @db.Uuid
+  scheduledFor             DateTime?           @map("scheduled_for") @db.Timestamptz(3)
+  firstPublishedAt         DateTime?           @map("first_published_at") @db.Timestamptz(3)
+  createdByUserId          String               @map("created_by_user_id") @db.Uuid
+  createdAt                DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt                DateTime             @default(now()) @map("updated_at") @db.Timestamptz(3)
+  revisions                ArticleRevision[]    @relation("ArticleRevisions")
+  currentDraftRevision     ArticleRevision?     @relation("CurrentDraftRevision", fields: [currentDraftRevisionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  approvedRevision         ArticleRevision?     @relation("ApprovedRevision", fields: [approvedRevisionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  publishedRevision        ArticleRevision?     @relation("PublishedRevision", fields: [publishedRevisionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  scheduledRevision        ArticleRevision?     @relation("ScheduledRevision", fields: [scheduledRevisionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  selectedCandidates       IngestCandidate[]
+  decisions                ContentPublicationDecision[]
+  bookmarks                Bookmark[]
+  canonicalSlugs           ContentCanonicalSlug[]
+  publicProjection         ContentPublicProjection?
+
+  @@index([state, firstPublishedAt, id], map: "articles_public_order_idx")
+  @@map("content_articles")
+}
+
+model ArticleRevision {
+  id                       String            @id @db.Uuid
+  articleId                String            @map("article_id") @db.Uuid
+  revision                 BigInt
+  locale                   String            @db.VarChar(35)
+  slug                     String            @db.VarChar(96)
+  title                    String            @db.VarChar(300)
+  subtitle                 String?           @db.VarChar(300)
+  summary                  String            @db.VarChar(600)
+  body                     Json
+  bodyHash                 String            @map("body_hash") @db.Char(64)
+  categoryId               String            @map("category_id") @db.Uuid
+  originKind               ContentOriginKind @map("origin_kind")
+  seoTitle                 String            @map("seo_title") @db.VarChar(70)
+  seoDescription           String            @map("seo_description") @db.VarChar(170)
+  canonicalUrl             String            @map("canonical_url") @db.VarChar(2048)
+  correctionNote           String?           @map("correction_note") @db.VarChar(1000)
+  translationOfRevisionId  String?           @map("translation_of_revision_id") @db.Uuid
+  changedFields            String[]          @map("changed_fields") @db.VarChar(40)
+  createdByUserId          String            @map("created_by_user_id") @db.Uuid
+  createdAt                DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  article                  Article           @relation("ArticleRevisions", fields: [articleId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  currentDraftFor          Article?          @relation("CurrentDraftRevision")
+  approvedFor              Article?          @relation("ApprovedRevision")
+  publishedFor             Article?          @relation("PublishedRevision")
+  scheduledFor             Article?          @relation("ScheduledRevision")
+  category                 ContentCategory   @relation(fields: [categoryId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  translationOf            ArticleRevision?  @relation("ArticleTranslations", fields: [translationOfRevisionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  translations             ArticleRevision[] @relation("ArticleTranslations")
+  origins                  ArticleOrigin[]
+  tags                     ArticleRevisionTag[]
+  media                    ContentMedia[]
+  decisions                ContentPublicationDecision[]
+  publicProjection         ContentPublicProjection?
+
+  @@unique([articleId, revision], map: "article_revisions_revision_key")
+  @@index([locale, slug], map: "article_revisions_slug_idx")
+  @@map("article_revisions")
+}
+
+model ArticleOrigin {
+  id                    String                    @id @db.Uuid
+  articleRevisionId     String                    @map("article_revision_id") @db.Uuid
+  sourceId              String                    @map("source_id") @db.Uuid
+  sourcePolicyId        String                    @map("source_policy_id") @db.Uuid
+  candidateRevisionId   String?                   @map("candidate_revision_id") @db.Uuid
+  originalTitle         String                    @map("original_title") @db.VarChar(300)
+  originalAuthor        String?                   @map("original_author") @db.VarChar(200)
+  originalPublisher     String?                   @map("original_publisher") @db.VarChar(200)
+  canonicalUrl          String                    @map("canonical_url") @db.VarChar(2048)
+  canonicalUrlHash      String                    @map("canonical_url_hash") @db.Char(64)
+  originallyPublishedAt DateTime?                 @map("originally_published_at") @db.Timestamptz(3)
+  receivedAt            DateTime                  @map("received_at") @db.Timestamptz(3)
+  transformationKind    ContentTransformationKind @map("transformation_kind")
+  rightsBasis           String                    @map("rights_basis") @db.VarChar(500)
+  attributionText       String                    @map("attribution_text") @db.VarChar(500)
+  licenseNotice         String?                   @map("license_notice") @db.VarChar(500)
+  createdAt             DateTime                  @default(now()) @map("created_at") @db.Timestamptz(3)
+  articleRevision       ArticleRevision           @relation(fields: [articleRevisionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  source                ContentSource             @relation(fields: [sourceId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  sourcePolicy          ContentSourcePolicy       @relation(fields: [sourcePolicyId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  candidateRevision     IngestCandidateRevision?  @relation(fields: [candidateRevisionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([articleRevisionId, sourceId, canonicalUrlHash], map: "article_origins_revision_source_url_key")
+  @@map("article_origins")
+}
+
+model ContentCategory {
+  id        String            @id @db.Uuid
+  slug      String            @db.VarChar(64)
+  locale    String            @db.VarChar(35)
+  name      String            @db.VarChar(80)
+  visible   Boolean           @default(false)
+  revisions ArticleRevision[]
+
+  @@unique([locale, slug], map: "content_categories_locale_slug_key")
+  @@map("content_categories")
+}
+
+model ContentTag {
+  id        String               @id @db.Uuid
+  slug      String               @db.VarChar(64)
+  locale    String               @db.VarChar(35)
+  name      String               @db.VarChar(50)
+  visible   Boolean              @default(false)
+  revisions ArticleRevisionTag[]
+
+  @@unique([locale, slug], map: "content_tags_locale_slug_key")
+  @@map("content_tags")
+}
+
+model ArticleRevisionTag {
+  articleRevisionId String          @map("article_revision_id") @db.Uuid
+  tagId             String          @map("tag_id") @db.Uuid
+  articleRevision   ArticleRevision @relation(fields: [articleRevisionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  tag               ContentTag      @relation(fields: [tagId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@id([articleRevisionId, tagId])
+  @@map("article_revision_tags")
+}
+
+model ContentMedia {
+  id                     String          @id @db.Uuid
+  articleRevisionId      String          @map("article_revision_id") @db.Uuid
+  objectKey              String          @unique(map: "content_media_object_key") @map("object_key") @db.VarChar(240)
+  mediaType              String          @map("media_type") @db.VarChar(40)
+  byteLength             BigInt          @map("byte_length")
+  sha256                 String          @db.Char(64)
+  rightsPolicyVersion    String          @map("rights_policy_version") @db.VarChar(32)
+  rightsEvidenceId       String          @map("rights_evidence_id") @db.Uuid
+  altText                String          @map("alt_text") @db.VarChar(500)
+  approvedAt             DateTime        @map("approved_at") @db.Timestamptz(3)
+  createdAt              DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  articleRevision        ArticleRevision @relation(fields: [articleRevisionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@map("content_media")
+}
+
+model ContentCanonicalSlug {
+  id         String   @id @db.Uuid
+  articleId  String   @map("article_id") @db.Uuid
+  locale     String   @db.VarChar(35)
+  slug       String   @db.VarChar(96)
+  active     Boolean  @default(true)
+  replacedById String? @map("replaced_by_id") @db.Uuid
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  article    Article  @relation(fields: [articleId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([locale, slug], map: "content_canonical_slugs_locale_slug_key")
+  @@index([articleId, locale, active], map: "content_canonical_slugs_article_idx")
+  @@map("content_canonical_slugs")
+}
+
+model ContentPublicationDecision {
+  id                String              @id @db.Uuid
+  articleId         String              @map("article_id") @db.Uuid
+  articleRevisionId String              @map("article_revision_id") @db.Uuid
+  articleVersion    BigInt              @map("article_version")
+  decision          ContentDecisionKind
+  reasonCode        String              @map("reason_code") @db.VarChar(96)
+  checklistVersion  String?             @map("checklist_version") @db.VarChar(32)
+  checklist         Json?
+  actorUserId       String              @map("actor_user_id") @db.Uuid
+  reviewerUserId    String?             @map("reviewer_user_id") @db.Uuid
+  selfReview        Boolean             @default(false) @map("self_review")
+  scheduledFor      DateTime?           @map("scheduled_for") @db.Timestamptz(3)
+  operationId       String              @unique(map: "content_publication_decisions_operation_key") @map("operation_id") @db.Uuid
+  committedAt       DateTime            @default(now()) @map("committed_at") @db.Timestamptz(3)
+  article           Article             @relation(fields: [articleId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  articleRevision   ArticleRevision     @relation(fields: [articleRevisionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([articleId, committedAt, id], map: "content_publication_decisions_history_idx")
+  @@map("content_publication_decisions")
+}
+
+model ContentPublicProjection {
+  articleId         String          @id @map("article_id") @db.Uuid
+  articleRevisionId String          @unique(map: "content_public_projections_revision_key") @map("article_revision_id") @db.Uuid
+  publicationDecisionId String      @unique(map: "content_public_projections_decision_key") @map("publication_decision_id") @db.Uuid
+  locale            String          @db.VarChar(35)
+  slug              String          @db.VarChar(96)
+  publishedAt       DateTime        @map("published_at") @db.Timestamptz(3)
+  updatedAt         DateTime        @default(now()) @map("updated_at") @db.Timestamptz(3)
+  searchDocument    Unsupported("tsvector") @map("search_document")
+  article           Article         @relation(fields: [articleId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  articleRevision   ArticleRevision @relation(fields: [articleRevisionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([locale, slug], map: "content_public_projections_locale_slug_key")
+  @@index([publishedAt, articleId], map: "content_public_projections_feed_idx")
+  @@map("content_public_projections")
+}
+
+model Bookmark {
+  userId    String   @map("user_id") @db.Uuid
+  articleId String   @map("article_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  article   Article  @relation(fields: [articleId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@id([userId, articleId], map: "bookmarks_owner_article_key")
+  @@index([userId, createdAt, articleId], map: "bookmarks_owner_page_idx")
+  @@map("content_bookmarks")
+}
+
+model ContentOperationReceipt {
+  id                   String   @id @db.Uuid
+  actorUserId          String   @map("actor_user_id") @db.Uuid
+  idempotencyKey       String   @map("idempotency_key") @db.Uuid
+  method               String   @db.VarChar(8)
+  canonicalPath        String   @map("canonical_path") @db.VarChar(240)
+  requestFingerprint   String   @map("request_fingerprint") @db.Char(64)
+  responseStatus       Int      @map("response_status") @db.SmallInt
+  responseCiphertext   Bytes    @map("response_ciphertext")
+  encryptionKeyVersion Int      @map("encryption_key_version")
+  createdAt            DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  expiresAt            DateTime @default(dbgenerated("CURRENT_TIMESTAMP + INTERVAL '24 hours'")) @map("expires_at") @db.Timestamptz(3)
+
+  @@unique([actorUserId, method, canonicalPath, idempotencyKey], map: "content_operation_receipts_scope_key")
+  @@index([expiresAt], map: "content_operation_receipts_expiry_idx")
+  @@map("content_operation_receipts")
+}

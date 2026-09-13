@@ -278,8 +278,42 @@ try {
             `Unexpected gamification progress mock: ${gamificationProgress.status} ${JSON.stringify(gamificationBody)}`
         );
     }
+    const contentFeed = await fetch(`http://${host}:${port}/content/articles?locale=ru-RU&limit=20`, {
+        headers: { 'accept-language': 'ru-RU' },
+    });
+    const contentFeedBody = await contentFeed.json();
+    if (
+        contentFeed.status !== 200 ||
+        !Array.isArray(contentFeedBody.items) ||
+        !contentFeedBody.pageInfo ||
+        !contentFeedBody.snapshotAt ||
+        contentFeedBody.items.some((item) => 'body' in item)
+    ) {
+        throw new Error(`Unexpected content feed mock: ${contentFeed.status} ${JSON.stringify(contentFeedBody)}`);
+    }
+    if (!contentFeed.headers.get('cache-control')?.includes('public')) {
+        throw new Error('Published content feed must use the bounded public cache policy.');
+    }
+
+    const contentBookmarks = await fetch(`http://${host}:${port}/content/bookmarks?limit=20`, {
+        headers: {
+            'accept-language': 'ru-RU',
+            authorization: `Bearer ${'A'.repeat(43)}`,
+        },
+    });
+    const contentBookmarksBody = await contentBookmarks.json();
+    requireNoStore(contentBookmarks, 'Content bookmark response');
+    if (
+        contentBookmarks.status !== 200 ||
+        !Array.isArray(contentBookmarksBody.items) ||
+        !contentBookmarksBody.pageInfo
+    ) {
+        throw new Error(
+            `Unexpected content bookmark mock: ${contentBookmarks.status} ${JSON.stringify(contentBookmarksBody)}`
+        );
+    }
     console.log(
-        'OpenAPI mock passed: health, identity, venue, match, communication, profile, trust/safety, administration, club, tournament and gamification examples are valid.'
+        'OpenAPI mock passed: health, identity, venue, match, communication, profile, trust/safety, administration, club, tournament, gamification and content examples are valid.'
     );
 } finally {
     child.kill('SIGTERM');

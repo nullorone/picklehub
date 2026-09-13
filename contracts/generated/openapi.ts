@@ -144,6 +144,298 @@ export type paths = {
         readonly patch?: never;
         readonly trace?: never;
     };
+    readonly '/admin/content/articles': {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        /**
+         * List editorial articles
+         * @description Returns private lifecycle summaries in stable updated-time order for the editorial workspace.
+         */
+        readonly get: operations['listAdminContentArticles'];
+        readonly put?: never;
+        /**
+         * Create an editorial article draft
+         * @description Creates only a stable DRAFT identity, optionally linked to a selected candidate; no revision becomes public.
+         */
+        readonly post: operations['createAdminContentArticle'];
+        readonly delete?: never;
+        readonly options?: never;
+        readonly head?: never;
+        readonly patch?: never;
+        readonly trace?: never;
+    };
+    readonly '/admin/content/articles/{articleId}': {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        /**
+         * Read editorial article state
+         * @description Returns private lifecycle and exact revision pointers to an authorized editor without granting public visibility.
+         */
+        readonly get: operations['getAdminContentArticle'];
+        readonly put?: never;
+        readonly post?: never;
+        readonly delete?: never;
+        readonly options?: never;
+        readonly head?: never;
+        readonly patch?: never;
+        readonly trace?: never;
+    };
+    readonly '/admin/content/articles/{articleId}/decisions': {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        readonly get?: never;
+        readonly put?: never;
+        /**
+         * Apply an editorial lifecycle decision
+         * @description Applies an explicit transition to the exact revision. Approval/publish require the versioned checklist and current origin rights; scheduler retries the committed SCHEDULE decision only.
+         */
+        readonly post: operations['decideAdminContentArticle'];
+        readonly delete?: never;
+        readonly options?: never;
+        readonly head?: never;
+        readonly patch?: never;
+        readonly trace?: never;
+    };
+    readonly '/admin/content/articles/{articleId}/emergency-unpublish': {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        readonly get?: never;
+        readonly put?: never;
+        /**
+         * Emergency-unpublish an article
+         * @description Superadmin may only unpublish with re-authentication and a closed reason; this operation cannot edit a revision body.
+         */
+        readonly post: operations['emergencyUnpublishAdminContentArticle'];
+        readonly delete?: never;
+        readonly options?: never;
+        readonly head?: never;
+        readonly patch?: never;
+        readonly trace?: never;
+    };
+    readonly '/admin/content/articles/{articleId}/revisions': {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        /**
+         * List immutable article revisions
+         * @description Returns append-only revision summaries in stable revision order for editorial history.
+         */
+        readonly get: operations['listAdminContentArticleRevisions'];
+        readonly put?: never;
+        /**
+         * Append an article revision
+         * @description Validates SAFE_RICH_TEXT_V1 and appends a new immutable revision under optimistic article version control.
+         */
+        readonly post: operations['createAdminContentArticleRevision'];
+        readonly delete?: never;
+        readonly options?: never;
+        readonly head?: never;
+        readonly patch?: never;
+        readonly trace?: never;
+    };
+    readonly '/admin/content/articles/{articleId}/revisions/{revisionId}': {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        /**
+         * Read one immutable article revision
+         * @description Returns one exact staff-only revision including safe rich text, origins, media, taxonomy and SEO fields.
+         */
+        readonly get: operations['getAdminContentArticleRevision'];
+        readonly put?: never;
+        readonly post?: never;
+        readonly delete?: never;
+        readonly options?: never;
+        readonly head?: never;
+        readonly patch?: never;
+        readonly trace?: never;
+    };
+    readonly '/admin/content/articles/{articleId}/revisions/{revisionId}/preview': {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        /**
+         * Preview one article revision
+         * @description Staff-bound preview of one exact revision. The response is private, no-store and must be rendered with noindex; it is never a public capability URL.
+         */
+        readonly get: operations['previewAdminContentArticleRevision'];
+        readonly put?: never;
+        readonly post?: never;
+        readonly delete?: never;
+        readonly options?: never;
+        readonly head?: never;
+        readonly patch?: never;
+        readonly trace?: never;
+    };
+    readonly '/admin/content/candidates': {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        /**
+         * List private ingest candidates
+         * @description Returns only allowlisted candidate metadata to an editor; candidates and duplicate groups are never public content.
+         */
+        readonly get: operations['listAdminContentCandidates'];
+        readonly put?: never;
+        readonly post?: never;
+        readonly delete?: never;
+        readonly options?: never;
+        readonly head?: never;
+        readonly patch?: never;
+        readonly trace?: never;
+    };
+    readonly '/admin/content/candidates/{candidateId}': {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        /**
+         * Read a private ingest candidate
+         * @description Returns one candidate with its current allowed snapshot and deduplication hint to an authorized editor only.
+         */
+        readonly get: operations['getAdminContentCandidate'];
+        readonly put?: never;
+        readonly post?: never;
+        readonly delete?: never;
+        readonly options?: never;
+        readonly head?: never;
+        readonly patch?: never;
+        readonly trace?: never;
+    };
+    readonly '/admin/content/candidates/{candidateId}/decision': {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        readonly get?: never;
+        readonly put?: never;
+        /**
+         * Record a candidate decision
+         * @description Records a manual terminal or selection decision. Duplicate detection may suggest a group but cannot publish or merge provenance.
+         */
+        readonly post: operations['decideAdminContentCandidate'];
+        readonly delete?: never;
+        readonly options?: never;
+        readonly head?: never;
+        readonly patch?: never;
+        readonly trace?: never;
+    };
+    readonly '/admin/content/sources': {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        /**
+         * List governed content sources
+         * @description Returns the deny-by-default source registry and current rights policy to authorized editorial staff only.
+         */
+        readonly get: operations['listAdminContentSources'];
+        readonly put?: never;
+        /**
+         * Propose a content source
+         * @description Creates a PROPOSED source and policy; it cannot fetch candidates until separately governed and enabled.
+         */
+        readonly post: operations['createAdminContentSource'];
+        readonly delete?: never;
+        readonly options?: never;
+        readonly head?: never;
+        readonly patch?: never;
+        readonly trace?: never;
+    };
+    readonly '/admin/content/sources/{sourceId}': {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        readonly get?: never;
+        /**
+         * Version a proposed source policy
+         * @description Appends a policy revision under optimistic concurrency; an editor cannot enable or revoke the source.
+         */
+        readonly put: operations['updateAdminContentSource'];
+        readonly post?: never;
+        readonly delete?: never;
+        readonly options?: never;
+        readonly head?: never;
+        readonly patch?: never;
+        readonly trace?: never;
+    };
+    readonly '/admin/content/sources/{sourceId}/pause': {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        readonly get?: never;
+        readonly put?: never;
+        /**
+         * Pause content source ingestion
+         * @description Allows an editor to fail closed by pausing new fetches. Only superadmin governance can enable or revoke a source.
+         */
+        readonly post: operations['pauseAdminContentSource'];
+        readonly delete?: never;
+        readonly options?: never;
+        readonly head?: never;
+        readonly patch?: never;
+        readonly trace?: never;
+    };
+    readonly '/admin/content/sources/{sourceId}/state': {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        readonly get?: never;
+        readonly put?: never;
+        /**
+         * Govern content source state
+         * @description Requires superadmin re-authentication and current evidence. Enabling fails closed unless every required review is approved.
+         */
+        readonly post: operations['changeAdminContentSourceState'];
+        readonly delete?: never;
+        readonly options?: never;
+        readonly head?: never;
+        readonly patch?: never;
+        readonly trace?: never;
+    };
     readonly '/admin/role-grants': {
         readonly parameters: {
             readonly query?: never;
@@ -1171,6 +1463,110 @@ export type paths = {
          * @description Allows only future direct interactions when no reciprocal block or moderation restriction exists. It never restores removed requests, promotions or content and does not reveal another party's block.
          */
         readonly delete: operations['unblockCommunicationUser'];
+        readonly options?: never;
+        readonly head?: never;
+        readonly patch?: never;
+        readonly trace?: never;
+    };
+    readonly '/content/articles': {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        /**
+         * List published articles
+         * @description Returns only the committed published revision in publishedAt DESC, articleId DESC order. Draft, preview, scheduled, unpublished and archived metadata are indistinguishable from absence.
+         */
+        readonly get: operations['listPublishedArticles'];
+        readonly put?: never;
+        readonly post?: never;
+        readonly delete?: never;
+        readonly options?: never;
+        readonly head?: never;
+        readonly patch?: never;
+        readonly trace?: never;
+    };
+    readonly '/content/articles/{locale}/{slug}': {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        /**
+         * Read one published article
+         * @description Resolves only an active committed publication pointer. Every non-public lifecycle state returns the same ARTICLE_NOT_AVAILABLE response and no title or body.
+         */
+        readonly get: operations['getPublishedArticle'];
+        readonly put?: never;
+        readonly post?: never;
+        readonly delete?: never;
+        readonly options?: never;
+        readonly head?: never;
+        readonly patch?: never;
+        readonly trace?: never;
+    };
+    readonly '/content/bookmarks': {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        /**
+         * List own bookmarks
+         * @description Returns bookmarks of the authenticated user only. An unavailable article has a null article projection, so a bookmark cannot preserve or leak its title or body.
+         */
+        readonly get: operations['listOwnContentBookmarks'];
+        readonly put?: never;
+        readonly post?: never;
+        readonly delete?: never;
+        readonly options?: never;
+        readonly head?: never;
+        readonly patch?: never;
+        readonly trace?: never;
+    };
+    readonly '/content/bookmarks/{articleId}': {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        readonly get?: never;
+        /**
+         * Idempotently add a bookmark
+         * @description Creates the authenticated user's unique bookmark for a currently published article, or returns its existing state on retry.
+         */
+        readonly put: operations['putOwnContentBookmark'];
+        readonly post?: never;
+        /**
+         * Idempotently remove a bookmark
+         * @description Removes only the authenticated user's bookmark. Repeating the operation succeeds without changing the article.
+         */
+        readonly delete: operations['deleteOwnContentBookmark'];
+        readonly options?: never;
+        readonly head?: never;
+        readonly patch?: never;
+        readonly trace?: never;
+    };
+    readonly '/content/search': {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        readonly get?: never;
+        readonly put?: never;
+        /**
+         * Search published articles
+         * @description The query is accepted in the body so it is not placed in URLs or access logs. Search covers only the current published revision in the requested locale.
+         */
+        readonly post: operations['searchPublishedArticles'];
+        readonly delete?: never;
         readonly options?: never;
         readonly head?: never;
         readonly patch?: never;
@@ -3326,6 +3722,23 @@ export type components = {
         readonly AdminActionCode: string;
         /** @enum {string} */
         readonly AdminAgeBucket: 'LT_1_HOUR' | 'H1_24' | 'D1_7' | 'D8_30' | 'GT_30_DAYS';
+        readonly AdminArticle: {
+            readonly approvedRevisionId: components['schemas']['Uuid'] | null;
+            readonly currentDraftRevisionId: components['schemas']['Uuid'] | null;
+            readonly firstPublishedAt: components['schemas']['Timestamp'] | null;
+            readonly id: components['schemas']['Uuid'];
+            readonly publishedRevisionId: components['schemas']['Uuid'] | null;
+            readonly scheduledFor: components['schemas']['Timestamp'] | null;
+            readonly scheduledRevisionId: components['schemas']['Uuid'] | null;
+            readonly state: components['schemas']['ArticleState'];
+            readonly updatedAt: components['schemas']['Timestamp'];
+            /** Format: int64 */
+            readonly version: number;
+        };
+        readonly AdminArticlePage: {
+            readonly items: readonly components['schemas']['AdminArticle'][];
+            readonly pageInfo: components['schemas']['PageInfo'];
+        };
         /** @enum {string} */
         readonly AdminAssignmentState: 'UNASSIGNED' | 'ASSIGNED_TO_ME' | 'ASSIGNED_TO_OTHER';
         /** @enum {string} */
@@ -3338,7 +3751,16 @@ export type components = {
             | 'USER_RESTRICT'
             | 'VENUE_MODERATE'
             | 'AUDIT_SEARCH'
-            | 'BREAK_GLASS_MANAGE';
+            | 'BREAK_GLASS_MANAGE'
+            | 'CONTENT_SOURCE_READ'
+            | 'CONTENT_SOURCE_PROPOSE'
+            | 'CONTENT_SOURCE_PAUSE'
+            | 'CONTENT_SOURCE_GOVERN'
+            | 'CONTENT_CANDIDATE_REVIEW'
+            | 'CONTENT_EDIT'
+            | 'CONTENT_PREVIEW'
+            | 'CONTENT_PUBLISH'
+            | 'CONTENT_EMERGENCY_UNPUBLISH';
         readonly AdminCaseDetail: {
             readonly policyVersion: components['schemas']['PolicyVersion'];
             readonly restrictedAppeal: components['schemas']['SafetyEvidenceText'] | null;
@@ -3500,6 +3922,94 @@ export type components = {
             readonly reason: 'FACTUAL_ERROR' | 'POLICY_MISAPPLIED' | 'NEW_INFORMATION' | 'OTHER';
             readonly text?: components['schemas']['SafetyEvidenceText'];
         };
+        readonly ArticleOrigin: {
+            readonly candidateRevisionId: components['schemas']['Uuid'] | null;
+            readonly canonicalUrl: components['schemas']['ContentHttpsUrl'];
+            readonly id: components['schemas']['Uuid'];
+            readonly licenseNotice: string | null;
+            readonly originalAuthor: string | null;
+            readonly originallyPublishedAt: components['schemas']['Timestamp'] | null;
+            readonly originalPublisher: string | null;
+            readonly originalTitle: string;
+            readonly receivedAt: components['schemas']['Timestamp'];
+            readonly rightsBasis: string;
+            readonly sourceId: components['schemas']['Uuid'];
+            readonly sourcePolicyVersion: components['schemas']['ContentPolicyVersion'];
+            readonly transformationKind: components['schemas']['ContentTransformationKind'];
+        };
+        /** @enum {string} */
+        readonly ArticleOriginKind: 'ORIGINAL' | 'DERIVED';
+        readonly ArticleRevision: {
+            readonly articleId: components['schemas']['Uuid'];
+            readonly body: components['schemas']['SafeRichTextDocument'];
+            readonly categoryId: components['schemas']['Uuid'];
+            readonly changedFields: readonly string[];
+            readonly correctionNote: string | null;
+            readonly createdAt: components['schemas']['Timestamp'];
+            readonly createdByUserId: components['schemas']['Uuid'];
+            readonly id: components['schemas']['Uuid'];
+            readonly locale: components['schemas']['Locale'];
+            readonly media: readonly components['schemas']['ContentMediaReference'][];
+            readonly originKind: components['schemas']['ArticleOriginKind'];
+            readonly origins: readonly components['schemas']['ArticleOrigin'][];
+            /** Format: int64 */
+            readonly revision: number;
+            readonly seo: components['schemas']['ArticleSeoMetadata'];
+            readonly slug: components['schemas']['ContentSlug'];
+            readonly subtitle: string | null;
+            readonly summary: string;
+            readonly tagIds: readonly components['schemas']['Uuid'][];
+            readonly title: string;
+            readonly translationOfRevisionId: components['schemas']['Uuid'] | null;
+        };
+        readonly ArticleRevisionInput: {
+            readonly body: components['schemas']['SafeRichTextDocument'];
+            readonly categoryId: components['schemas']['Uuid'];
+            readonly correctionNote?: string;
+            /** Format: int64 */
+            readonly expectedArticleVersion: number;
+            readonly locale: components['schemas']['Locale'];
+            readonly media: readonly components['schemas']['ContentMediaReference'][];
+            readonly originKind: components['schemas']['ArticleOriginKind'];
+            readonly origins: readonly components['schemas']['ArticleOrigin'][];
+            readonly seo: components['schemas']['ArticleSeoMetadata'];
+            readonly slug: components['schemas']['ContentSlug'];
+            readonly subtitle?: string;
+            readonly summary: string;
+            readonly tagIds: readonly components['schemas']['Uuid'][];
+            readonly title: string;
+            readonly translationOfRevisionId?: components['schemas']['Uuid'];
+        };
+        readonly ArticleRevisionPage: {
+            readonly items: readonly components['schemas']['ArticleRevisionSummary'][];
+            readonly pageInfo: components['schemas']['PageInfo'];
+        };
+        readonly ArticleRevisionSummary: {
+            readonly changedFields: readonly string[];
+            readonly createdAt: components['schemas']['Timestamp'];
+            readonly createdByUserId: components['schemas']['Uuid'];
+            readonly id: components['schemas']['Uuid'];
+            readonly locale: components['schemas']['Locale'];
+            /** Format: int64 */
+            readonly revision: number;
+            readonly slug: components['schemas']['ContentSlug'];
+        };
+        readonly ArticleSeoMetadata: {
+            readonly canonicalUrl: components['schemas']['ContentHttpsUrl'];
+            readonly description: string;
+            readonly indexable: boolean;
+            readonly openGraphImageUrl: components['schemas']['ContentHttpsUrl'] | null;
+            readonly title: string;
+        };
+        /** @enum {string} */
+        readonly ArticleState:
+            | 'DRAFT'
+            | 'IN_REVIEW'
+            | 'APPROVED'
+            | 'SCHEDULED'
+            | 'PUBLISHED'
+            | 'UNPUBLISHED'
+            | 'ARCHIVED';
         readonly AssignAdminCase: {
             readonly assigneeUserId: components['schemas']['Uuid'];
             readonly confirmationToken?: components['schemas']['AdminConfirmationToken'];
@@ -3578,6 +4088,21 @@ export type components = {
             readonly pageInfo: components['schemas']['PageInfo'];
             readonly snapshotAt: components['schemas']['Timestamp'];
         };
+        readonly BookmarkItem: {
+            readonly article: components['schemas']['PublicArticleCard'] | null;
+            readonly articleId: components['schemas']['Uuid'];
+            readonly available: boolean;
+            readonly createdAt: components['schemas']['Timestamp'];
+        };
+        readonly BookmarkPage: {
+            readonly items: readonly components['schemas']['BookmarkItem'][];
+            readonly pageInfo: components['schemas']['PageInfo'];
+        };
+        readonly BookmarkState: {
+            readonly articleId: components['schemas']['Uuid'];
+            readonly bookmarked: boolean;
+            readonly changedAt: components['schemas']['Timestamp'];
+        };
         readonly BreakGlassGrant: {
             readonly caseId: components['schemas']['Uuid'];
             readonly expiresAt: components['schemas']['Timestamp'];
@@ -3604,6 +4129,13 @@ export type components = {
             readonly reasonCode: string;
             /** @enum {string} */
             readonly role: 'ADMIN' | 'MEMBER';
+        };
+        readonly ChangeContentSourceState: {
+            /** Format: int64 */
+            readonly expectedVersion: number;
+            readonly reason: components['schemas']['ContentDecisionReason'];
+            readonly reauthenticationProof: components['schemas']['UuidV4'];
+            readonly state: components['schemas']['ContentSourceState'];
         };
         readonly ChangeUserRestriction: {
             readonly confirmationToken?: components['schemas']['AdminConfirmationToken'];
@@ -3834,8 +4366,103 @@ export type components = {
             readonly acceptedVersion: components['schemas']['DocumentVersion'] | null;
             readonly purpose: components['schemas']['ConsentPurpose'];
         };
+        readonly ContentCategory: {
+            readonly id: components['schemas']['Uuid'];
+            readonly locale: components['schemas']['Locale'];
+            readonly name: string;
+            readonly slug: components['schemas']['ContentTaxonomySlug'];
+        };
+        readonly ContentChecklistConfirmation: {
+            /** @enum {boolean} */
+            readonly accessibilityChecked: true;
+            /** @enum {boolean} */
+            readonly attributionChecked: true;
+            /** @enum {boolean} */
+            readonly factsChecked: true;
+            /** @enum {boolean} */
+            readonly languageChecked: true;
+            /** @enum {boolean} */
+            readonly mediaRightsChecked: true;
+            /** @enum {boolean} */
+            readonly privacyChecked: true;
+            readonly selfReview: boolean;
+            /** @enum {boolean} */
+            readonly textRightsChecked: true;
+            readonly version: components['schemas']['ContentPolicyVersion'];
+        };
+        readonly ContentDecisionInput: {
+            readonly checklist?: components['schemas']['ContentChecklistConfirmation'];
+            readonly decision: components['schemas']['ContentDecisionKind'];
+            /** Format: int64 */
+            readonly expectedArticleVersion: number;
+            readonly reason: components['schemas']['ContentDecisionReason'];
+            readonly reauthenticationProof?: components['schemas']['UuidV4'];
+            readonly revisionId: components['schemas']['Uuid'];
+            readonly scheduledFor?: components['schemas']['Timestamp'];
+        };
+        /** @enum {string} */
+        readonly ContentDecisionKind:
+            | 'SUBMIT_REVIEW'
+            | 'RETURN_TO_DRAFT'
+            | 'APPROVE'
+            | 'SCHEDULE'
+            | 'CANCEL_SCHEDULE'
+            | 'PUBLISH'
+            | 'UNPUBLISH'
+            | 'ARCHIVE';
+        /** @enum {string} */
+        readonly ContentDecisionReason:
+            | 'EDITORIAL_READY'
+            | 'EDITORIAL_REVISION_REQUIRED'
+            | 'SCHEDULE_CHANGED'
+            | 'CORRECTION'
+            | 'RIGHTS_REVOKED'
+            | 'LEGAL_TAKEDOWN'
+            | 'SAFETY_REQUEST'
+            | 'SOURCE_UNAVAILABLE'
+            | 'ARCHIVE_POLICY';
+        /** @enum {string} */
+        readonly ContentDuplicateKind: 'CANONICAL_URL' | 'PROVIDER_ID' | 'FINGERPRINT' | 'CROSS_SOURCE_SIMILARITY';
+        /**
+         * Format: uri
+         * @example https://content.example.test/articles/pickleball-basics
+         */
+        readonly ContentHttpsUrl: string;
+        /** @enum {string} */
+        readonly ContentIntegrationKind: 'RSS' | 'API';
+        readonly ContentMediaReference: {
+            readonly altText: string;
+            /** Format: int64 */
+            readonly byteLength: number;
+            readonly id: components['schemas']['Uuid'];
+            /** @example image/webp */
+            readonly mediaType: string;
+            readonly rightsPolicyVersion: components['schemas']['ContentPolicyVersion'];
+            readonly sha256: components['schemas']['ContentSha256'];
+            readonly url: components['schemas']['ContentHttpsUrl'];
+        };
+        /** @example 1.0.0 */
+        readonly ContentPolicyVersion: string;
+        readonly ContentPublicationDecision: {
+            readonly actorUserId: components['schemas']['Uuid'];
+            readonly articleId: components['schemas']['Uuid'];
+            /** Format: int64 */
+            readonly articleVersion: number;
+            readonly checklistVersion: components['schemas']['ContentPolicyVersion'] | null;
+            readonly committedAt: components['schemas']['Timestamp'];
+            readonly decision: components['schemas']['ContentDecisionKind'];
+            readonly id: components['schemas']['Uuid'];
+            readonly reason: components['schemas']['ContentDecisionReason'];
+            readonly reviewerUserId: components['schemas']['Uuid'] | null;
+            readonly revisionId: components['schemas']['Uuid'];
+            readonly scheduledFor: components['schemas']['Timestamp'] | null;
+            readonly selfReview: boolean;
+        };
         /** @enum {string} */
         readonly ContentReportReason: 'SPAM' | 'HARASSMENT' | 'HATE' | 'THREAT' | 'OTHER';
+        readonly ContentResponseHeaders: Record<string, never>;
+        /** @enum {string} */
+        readonly ContentReviewState: 'PENDING' | 'APPROVED' | 'REJECTED' | 'EXPIRED';
         readonly ContentSafetyReport: {
             readonly evidence?: components['schemas']['SafetyEvidenceText'];
             /** @enum {string} */
@@ -3847,6 +4474,99 @@ export type components = {
             /** Format: int64 */
             readonly sourceRevision: number;
         };
+        readonly ContentSearchInput: {
+            readonly category?: components['schemas']['ContentTaxonomySlug'];
+            readonly cursor?: components['schemas']['Cursor'];
+            /**
+             * Format: int32
+             * @default 20
+             */
+            readonly limit: number;
+            readonly locale: components['schemas']['Locale'];
+            readonly query: string;
+            readonly tag?: components['schemas']['ContentTaxonomySlug'];
+        };
+        /** @example 8f14e45fceea167a5a36dedd4bea2543c9f08aaef67a8e16355d8d8b6f2f4f90 */
+        readonly ContentSha256: string;
+        readonly ContentSlug: string;
+        readonly ContentSource: {
+            readonly attributionTemplate: string;
+            readonly canonicalOrigin: components['schemas']['ContentHttpsUrl'];
+            readonly createdAt: components['schemas']['Timestamp'];
+            readonly displayName: string;
+            readonly endpoint: components['schemas']['ContentHttpsUrl'];
+            readonly id: components['schemas']['Uuid'];
+            readonly integrationKind: components['schemas']['ContentIntegrationKind'];
+            readonly legalName: string;
+            readonly licenseNotice: string | null;
+            readonly policyVersion: components['schemas']['ContentPolicyVersion'];
+            readonly reviewedByUserId: components['schemas']['Uuid'] | null;
+            readonly rights: components['schemas']['ContentSourceRights'];
+            readonly state: components['schemas']['ContentSourceState'];
+            readonly updatedAt: components['schemas']['Timestamp'];
+            /** Format: int64 */
+            readonly version: number;
+        };
+        readonly ContentSourceInput: {
+            readonly attributionTemplate: string;
+            readonly canonicalOrigin: components['schemas']['ContentHttpsUrl'];
+            readonly displayName: string;
+            readonly endpoint: components['schemas']['ContentHttpsUrl'];
+            /** Format: int64 */
+            readonly expectedVersion: number;
+            readonly integrationKind: components['schemas']['ContentIntegrationKind'];
+            readonly legalName: string;
+            readonly licenseNotice?: string;
+            readonly policyVersion: components['schemas']['ContentPolicyVersion'];
+            readonly rights: components['schemas']['ContentSourceRights'];
+        };
+        readonly ContentSourcePage: {
+            readonly items: readonly components['schemas']['ContentSource'][];
+            readonly pageInfo: components['schemas']['PageInfo'];
+        };
+        readonly ContentSourceRights: {
+            readonly commercialReview: components['schemas']['ContentReviewState'];
+            readonly fullTextLicenseEvidenceId: components['schemas']['Uuid'] | null;
+            readonly languages: readonly components['schemas']['Locale'][];
+            readonly legalReview: components['schemas']['ContentReviewState'];
+            /** Format: int32 */
+            readonly maximumExcerptCharacters: number;
+            readonly mediaLicenseEvidenceId: components['schemas']['Uuid'] | null;
+            readonly privacyReview: components['schemas']['ContentReviewState'];
+            readonly reviewDueAt: components['schemas']['Timestamp'];
+            readonly reviewedAt: components['schemas']['Timestamp'] | null;
+            readonly rightsBasis: string;
+            readonly securityReview: components['schemas']['ContentReviewState'];
+            readonly termsUrl: components['schemas']['ContentHttpsUrl'];
+            readonly termsVersion: string;
+            readonly territory: string;
+            readonly useClasses: readonly components['schemas']['ContentUseClass'][];
+            readonly validFrom: components['schemas']['Timestamp'];
+            readonly validUntil: components['schemas']['Timestamp'] | null;
+        };
+        /** @enum {string} */
+        readonly ContentSourceState: 'PROPOSED' | 'ENABLED' | 'PAUSED' | 'REVOKED';
+        readonly ContentTag: {
+            readonly id: components['schemas']['Uuid'];
+            readonly locale: components['schemas']['Locale'];
+            readonly name: string;
+            readonly slug: components['schemas']['ContentTaxonomySlug'];
+        };
+        readonly ContentTaxonomySlug: string;
+        /** @enum {string} */
+        readonly ContentTransformationKind: 'ORIGINAL_EDITORIAL' | 'RESEARCH_SUMMARY' | 'TRANSLATION' | 'ADAPTATION';
+        /** @enum {string} */
+        readonly ContentUseClass:
+            | 'FETCH_METADATA'
+            | 'STORE_METADATA'
+            | 'STORE_EXCERPT'
+            | 'TRANSFORM'
+            | 'PUBLISH_ATTRIBUTION'
+            | 'STORE_FULL_TEXT'
+            | 'PUBLISH_FULL_TEXT'
+            | 'STORE_MEDIA'
+            | 'PUBLISH_MEDIA'
+            | 'CACHE';
         readonly Conversation: {
             readonly accessExpiresAt: components['schemas']['Timestamp'] | null;
             readonly accessThroughSequence: number | null;
@@ -3907,6 +4627,10 @@ export type components = {
             readonly revision: number;
             readonly startsAt: components['schemas']['Timestamp'] | null;
             readonly tournamentMatchId: components['schemas']['Uuid'];
+        };
+        readonly CreateArticleInput: {
+            readonly candidateId?: components['schemas']['Uuid'];
+            readonly originKind: components['schemas']['ArticleOriginKind'];
         };
         readonly CreateBreakGlassGrant: {
             readonly caseId: components['schemas']['Uuid'];
@@ -4031,6 +4755,15 @@ export type components = {
             readonly policyVersion: components['schemas']['PolicyVersion'];
             readonly reasonCode: components['schemas']['AdminReasonCode'];
         };
+        readonly DecideIngestCandidate: {
+            readonly duplicateGroupId?: components['schemas']['Uuid'];
+            readonly duplicateKind?: components['schemas']['ContentDuplicateKind'];
+            /** Format: int64 */
+            readonly expectedVersion: number;
+            readonly reason: components['schemas']['ContentDecisionReason'];
+            readonly selectedArticleId?: components['schemas']['Uuid'];
+            readonly state: components['schemas']['IngestCandidateState'];
+        };
         readonly DeleteAccount: {
             readonly attemptId: components['schemas']['Uuid'];
             /** @enum {boolean} */
@@ -4087,6 +4820,16 @@ export type components = {
         readonly EmailProofRequest: {
             readonly email: components['schemas']['EmailInput'];
             readonly side: components['schemas']['ProofSide'];
+        };
+        readonly EmergencyUnpublishContentInput: {
+            /** @enum {string} */
+            readonly decision: 'UNPUBLISH';
+            /** Format: int64 */
+            readonly expectedArticleVersion: number;
+            /** @enum {string} */
+            readonly reason: 'CORRECTION' | 'RIGHTS_REVOKED' | 'LEGAL_TAKEDOWN' | 'SAFETY_REQUEST';
+            readonly reauthenticationProof: components['schemas']['UuidV4'];
+            readonly revisionId: components['schemas']['Uuid'];
         };
         readonly EmptyRequest: Record<string, never>;
         readonly Entrant: {
@@ -4269,6 +5012,41 @@ export type components = {
         readonly IdentityProvider: 'TELEGRAM' | 'EMAIL';
         /** @description Opaque 256-bit credential encoded as 43 unpadded base64url characters. Secret: never log or persist raw. */
         readonly IdentitySecret: string;
+        readonly IngestCandidate: {
+            readonly createdAt: components['schemas']['Timestamp'];
+            readonly currentRevision: components['schemas']['IngestCandidateRevision'];
+            readonly duplicateGroupId: components['schemas']['Uuid'] | null;
+            readonly duplicateKind: components['schemas']['ContentDuplicateKind'] | null;
+            readonly id: components['schemas']['Uuid'];
+            readonly selectedArticleId: components['schemas']['Uuid'] | null;
+            readonly sourceId: components['schemas']['Uuid'];
+            readonly state: components['schemas']['IngestCandidateState'];
+            readonly updatedAt: components['schemas']['Timestamp'];
+            /** Format: int64 */
+            readonly version: number;
+        };
+        readonly IngestCandidatePage: {
+            readonly items: readonly components['schemas']['IngestCandidate'][];
+            readonly pageInfo: components['schemas']['PageInfo'];
+        };
+        readonly IngestCandidateRevision: {
+            readonly author: string | null;
+            readonly canonicalUrl: components['schemas']['ContentHttpsUrl'];
+            readonly excerpt: string | null;
+            readonly fingerprint: components['schemas']['ContentSha256'];
+            readonly id: components['schemas']['Uuid'];
+            readonly originallyPublishedAt: components['schemas']['Timestamp'] | null;
+            readonly providerId: string | null;
+            readonly publisher: string | null;
+            readonly receivedAt: components['schemas']['Timestamp'];
+            /** Format: int64 */
+            readonly revision: number;
+            readonly sourceHash: components['schemas']['ContentSha256'];
+            readonly sourcePolicyVersion: components['schemas']['ContentPolicyVersion'];
+            readonly title: string;
+        };
+        /** @enum {string} */
+        readonly IngestCandidateState: 'NEW' | 'DUPLICATE' | 'DISMISSED' | 'SELECTED' | 'RIGHTS_HOLD';
         readonly JoinRequest: {
             readonly createdAt: components['schemas']['Timestamp'];
             readonly decidedAt: components['schemas']['Timestamp'] | null;
@@ -4781,6 +5559,11 @@ export type components = {
             readonly tournamentId: components['schemas']['Uuid'];
             readonly userId: components['schemas']['Uuid'];
         };
+        readonly PauseContentSource: {
+            /** Format: int64 */
+            readonly expectedVersion: number;
+            readonly reason: components['schemas']['ContentDecisionReason'];
+        };
         readonly PaymentMark: {
             readonly entrantId: components['schemas']['Uuid'];
             readonly id: components['schemas']['Uuid'];
@@ -4922,6 +5705,51 @@ export type components = {
             /** @description At least one proposed field besides baseVersion is required. Unknown fields are rejected. */
             readonly seasonality?: string | null;
         };
+        readonly PublicArticle: {
+            readonly body: components['schemas']['SafeRichTextDocument'];
+            readonly correctionNote: string | null;
+            readonly languageAlternatives: readonly components['schemas']['PublicArticleAlternative'][];
+            readonly seo: components['schemas']['ArticleSeoMetadata'];
+        } & components['schemas']['PublicArticleCard'];
+        readonly PublicArticleAlternative: {
+            readonly canonicalUrl: components['schemas']['ContentHttpsUrl'];
+            readonly locale: components['schemas']['Locale'];
+            readonly slug: components['schemas']['ContentSlug'];
+        };
+        readonly PublicArticleAttribution: {
+            readonly canonicalUrl: components['schemas']['ContentHttpsUrl'];
+            readonly licenseNotice: string | null;
+            readonly originalAuthor: string | null;
+            readonly originallyPublishedAt: components['schemas']['Timestamp'] | null;
+            readonly originalPublisher: string | null;
+            readonly originalTitle: string;
+            readonly sourceAvailable: boolean;
+            readonly sourceDisplayName: string;
+            readonly sourceId: components['schemas']['Uuid'];
+            readonly transformationKind: components['schemas']['ContentTransformationKind'];
+        };
+        readonly PublicArticleCard: {
+            readonly attribution: readonly components['schemas']['PublicArticleAttribution'][];
+            readonly category: components['schemas']['ContentCategory'];
+            readonly coverMedia: components['schemas']['ContentMediaReference'] | null;
+            readonly id: components['schemas']['Uuid'];
+            readonly locale: components['schemas']['Locale'];
+            readonly originKind: components['schemas']['ArticleOriginKind'];
+            readonly publishedAt: components['schemas']['Timestamp'];
+            readonly slug: components['schemas']['ContentSlug'];
+            readonly subtitle: string | null;
+            readonly summary: string;
+            readonly tags: readonly components['schemas']['ContentTag'][];
+            readonly title: string;
+            readonly updatedAt: components['schemas']['Timestamp'];
+            /** Format: int64 */
+            readonly version: number;
+        };
+        readonly PublicArticlePage: {
+            readonly items: readonly components['schemas']['PublicArticleCard'][];
+            readonly pageInfo: components['schemas']['PageInfo'];
+            readonly snapshotAt: components['schemas']['Timestamp'];
+        };
         readonly PublicAttendanceStatistics: {
             /** Format: int64 */
             readonly attendanceCommitments: number;
@@ -4931,6 +5759,7 @@ export type components = {
             /** @description Null until at least five final commitments exist. Reporter, evidence and match identifiers are never exposed. */
             readonly percentage: number | null;
         };
+        readonly PublicContentResponseHeaders: Record<string, never>;
         readonly PublicExternalProfileLink: {
             /** @enum {string} */
             readonly label: 'EXTERNAL_NOT_VERIFIED_OR_SYNCED';
@@ -5176,6 +6005,30 @@ export type components = {
             readonly names: readonly components['schemas']['AdminActionCode'][];
         };
         readonly SafeNotificationRoute: string;
+        /** @description One allowlisted block. HEADING requires level 2 or 3; list blocks contain one or more item arrays. The server rejects incompatible fields. */
+        readonly SafeRichTextBlock: {
+            /** Format: int32 */
+            readonly headingLevel?: number;
+            readonly inlines?: readonly components['schemas']['SafeRichTextInline'][];
+            readonly items?: readonly (readonly components['schemas']['SafeRichTextInline'][])[];
+            readonly kind: components['schemas']['SafeRichTextBlockKind'];
+        };
+        /** @enum {string} */
+        readonly SafeRichTextBlockKind: 'PARAGRAPH' | 'HEADING' | 'BULLETED_LIST' | 'NUMBERED_LIST' | 'QUOTE';
+        /** @description Executable-free SAFE_RICH_TEXT_V1 document. Unknown nodes and attributes are rejected before storage. */
+        readonly SafeRichTextDocument: {
+            readonly blocks: readonly components['schemas']['SafeRichTextBlock'][];
+            /** @enum {string} */
+            readonly format: 'SAFE_RICH_TEXT_V1';
+        };
+        /** @description Allowlisted inline content. It contains text, optional presentation marks and an HTTPS link only; raw HTML, scripts, embeds, styles and event handlers have no representation. */
+        readonly SafeRichTextInline: {
+            readonly href?: components['schemas']['ContentHttpsUrl'];
+            readonly marks?: readonly components['schemas']['SafeRichTextMark'][];
+            readonly text: string;
+        };
+        /** @enum {string} */
+        readonly SafeRichTextMark: 'STRONG' | 'EMPHASIS' | 'CODE';
         /** @description Restricted plain text without active HTML, uploads or location fields. It is authenticated-encrypted at rest. */
         readonly SafetyEvidenceText: string;
         readonly SafetyIncidentReport: {
@@ -5990,6 +6843,8 @@ export type SchemaAchievementDefinition = components['schemas']['AchievementDefi
 export type SchemaAchievementPage = components['schemas']['AchievementPage'];
 export type SchemaAdminActionCode = components['schemas']['AdminActionCode'];
 export type SchemaAdminAgeBucket = components['schemas']['AdminAgeBucket'];
+export type SchemaAdminArticle = components['schemas']['AdminArticle'];
+export type SchemaAdminArticlePage = components['schemas']['AdminArticlePage'];
 export type SchemaAdminAssignmentState = components['schemas']['AdminAssignmentState'];
 export type SchemaAdminCapability = components['schemas']['AdminCapability'];
 export type SchemaAdminCaseDetail = components['schemas']['AdminCaseDetail'];
@@ -6021,6 +6876,14 @@ export type SchemaAdminVenueQueueState = components['schemas']['AdminVenueQueueS
 export type SchemaAdminVenueSourceClass = components['schemas']['AdminVenueSourceClass'];
 export type SchemaAmericanoPreset = components['schemas']['AmericanoPreset'];
 export type SchemaAppealSubmission = components['schemas']['AppealSubmission'];
+export type SchemaArticleOrigin = components['schemas']['ArticleOrigin'];
+export type SchemaArticleOriginKind = components['schemas']['ArticleOriginKind'];
+export type SchemaArticleRevision = components['schemas']['ArticleRevision'];
+export type SchemaArticleRevisionInput = components['schemas']['ArticleRevisionInput'];
+export type SchemaArticleRevisionPage = components['schemas']['ArticleRevisionPage'];
+export type SchemaArticleRevisionSummary = components['schemas']['ArticleRevisionSummary'];
+export type SchemaArticleSeoMetadata = components['schemas']['ArticleSeoMetadata'];
+export type SchemaArticleState = components['schemas']['ArticleState'];
 export type SchemaAssignAdminCase = components['schemas']['AssignAdminCase'];
 export type SchemaAuditEntry = components['schemas']['AuditEntry'];
 export type SchemaAuditEntryPage = components['schemas']['AuditEntryPage'];
@@ -6031,10 +6894,14 @@ export type SchemaAvatarUploadPolicy = components['schemas']['AvatarUploadPolicy
 export type SchemaAvatarUploadRequest = components['schemas']['AvatarUploadRequest'];
 export type SchemaBindNotificationDevice = components['schemas']['BindNotificationDevice'];
 export type SchemaBlockPage = components['schemas']['BlockPage'];
+export type SchemaBookmarkItem = components['schemas']['BookmarkItem'];
+export type SchemaBookmarkPage = components['schemas']['BookmarkPage'];
+export type SchemaBookmarkState = components['schemas']['BookmarkState'];
 export type SchemaBreakGlassGrant = components['schemas']['BreakGlassGrant'];
 export type SchemaBrowserContext = components['schemas']['BrowserContext'];
 export type SchemaCaseResponseSubmission = components['schemas']['CaseResponseSubmission'];
 export type SchemaChangeClubRoleInput = components['schemas']['ChangeClubRoleInput'];
+export type SchemaChangeContentSourceState = components['schemas']['ChangeContentSourceState'];
 export type SchemaChangeUserRestriction = components['schemas']['ChangeUserRestriction'];
 export type SchemaChatReportReason = components['schemas']['ChatReportReason'];
 export type SchemaChatText = components['schemas']['ChatText'];
@@ -6081,8 +6948,33 @@ export type SchemaConsentDocuments = components['schemas']['ConsentDocuments'];
 export type SchemaConsentHistory = components['schemas']['ConsentHistory'];
 export type SchemaConsentPurpose = components['schemas']['ConsentPurpose'];
 export type SchemaConsentState = components['schemas']['ConsentState'];
+export type SchemaContentCategory = components['schemas']['ContentCategory'];
+export type SchemaContentChecklistConfirmation = components['schemas']['ContentChecklistConfirmation'];
+export type SchemaContentDecisionInput = components['schemas']['ContentDecisionInput'];
+export type SchemaContentDecisionKind = components['schemas']['ContentDecisionKind'];
+export type SchemaContentDecisionReason = components['schemas']['ContentDecisionReason'];
+export type SchemaContentDuplicateKind = components['schemas']['ContentDuplicateKind'];
+export type SchemaContentHttpsUrl = components['schemas']['ContentHttpsUrl'];
+export type SchemaContentIntegrationKind = components['schemas']['ContentIntegrationKind'];
+export type SchemaContentMediaReference = components['schemas']['ContentMediaReference'];
+export type SchemaContentPolicyVersion = components['schemas']['ContentPolicyVersion'];
+export type SchemaContentPublicationDecision = components['schemas']['ContentPublicationDecision'];
 export type SchemaContentReportReason = components['schemas']['ContentReportReason'];
+export type SchemaContentResponseHeaders = components['schemas']['ContentResponseHeaders'];
+export type SchemaContentReviewState = components['schemas']['ContentReviewState'];
 export type SchemaContentSafetyReport = components['schemas']['ContentSafetyReport'];
+export type SchemaContentSearchInput = components['schemas']['ContentSearchInput'];
+export type SchemaContentSha256 = components['schemas']['ContentSha256'];
+export type SchemaContentSlug = components['schemas']['ContentSlug'];
+export type SchemaContentSource = components['schemas']['ContentSource'];
+export type SchemaContentSourceInput = components['schemas']['ContentSourceInput'];
+export type SchemaContentSourcePage = components['schemas']['ContentSourcePage'];
+export type SchemaContentSourceRights = components['schemas']['ContentSourceRights'];
+export type SchemaContentSourceState = components['schemas']['ContentSourceState'];
+export type SchemaContentTag = components['schemas']['ContentTag'];
+export type SchemaContentTaxonomySlug = components['schemas']['ContentTaxonomySlug'];
+export type SchemaContentTransformationKind = components['schemas']['ContentTransformationKind'];
+export type SchemaContentUseClass = components['schemas']['ContentUseClass'];
 export type SchemaConversation = components['schemas']['Conversation'];
 export type SchemaConversationReadPosition = components['schemas']['ConversationReadPosition'];
 export type SchemaConversationSnapshot = components['schemas']['ConversationSnapshot'];
@@ -6091,6 +6983,7 @@ export type SchemaCookieHeaders = components['schemas']['CookieHeaders'];
 export type SchemaCorrectTournamentMatchInput = components['schemas']['CorrectTournamentMatchInput'];
 export type SchemaCorrelationId = components['schemas']['CorrelationId'];
 export type SchemaCourtAssignment = components['schemas']['CourtAssignment'];
+export type SchemaCreateArticleInput = components['schemas']['CreateArticleInput'];
 export type SchemaCreateBreakGlassGrant = components['schemas']['CreateBreakGlassGrant'];
 export type SchemaCreateClubInput = components['schemas']['CreateClubInput'];
 export type SchemaCreateClubInvitationInput = components['schemas']['CreateClubInvitationInput'];
@@ -6104,6 +6997,7 @@ export type SchemaCurrencyCode = components['schemas']['CurrencyCode'];
 export type SchemaCursor = components['schemas']['Cursor'];
 export type SchemaDecideAdminCase = components['schemas']['DecideAdminCase'];
 export type SchemaDecideAdminVenue = components['schemas']['DecideAdminVenue'];
+export type SchemaDecideIngestCandidate = components['schemas']['DecideIngestCandidate'];
 export type SchemaDeleteAccount = components['schemas']['DeleteAccount'];
 export type SchemaDeletionAccepted = components['schemas']['DeletionAccepted'];
 export type SchemaDisplayName = components['schemas']['DisplayName'];
@@ -6115,6 +7009,7 @@ export type SchemaEditMessageCommand = components['schemas']['EditMessageCommand
 export type SchemaEmailInput = components['schemas']['EmailInput'];
 export type SchemaEmailProofConsume = components['schemas']['EmailProofConsume'];
 export type SchemaEmailProofRequest = components['schemas']['EmailProofRequest'];
+export type SchemaEmergencyUnpublishContentInput = components['schemas']['EmergencyUnpublishContentInput'];
 export type SchemaEmptyRequest = components['schemas']['EmptyRequest'];
 export type SchemaEntrant = components['schemas']['Entrant'];
 export type SchemaEntrantCommand = components['schemas']['EntrantCommand'];
@@ -6154,6 +7049,10 @@ export type SchemaIdentityList = components['schemas']['IdentityList'];
 export type SchemaIdentityPrivateHeaders = components['schemas']['IdentityPrivateHeaders'];
 export type SchemaIdentityProvider = components['schemas']['IdentityProvider'];
 export type SchemaIdentitySecret = components['schemas']['IdentitySecret'];
+export type SchemaIngestCandidate = components['schemas']['IngestCandidate'];
+export type SchemaIngestCandidatePage = components['schemas']['IngestCandidatePage'];
+export type SchemaIngestCandidateRevision = components['schemas']['IngestCandidateRevision'];
+export type SchemaIngestCandidateState = components['schemas']['IngestCandidateState'];
 export type SchemaJoinRequest = components['schemas']['JoinRequest'];
 export type SchemaJoinRequestState = components['schemas']['JoinRequestState'];
 export type SchemaKingOfCourtPreset = components['schemas']['KingOfCourtPreset'];
@@ -6237,6 +7136,7 @@ export type SchemaOwnSafetyReportDetail = components['schemas']['OwnSafetyReport
 export type SchemaOwnSafetyTextEntry = components['schemas']['OwnSafetyTextEntry'];
 export type SchemaPageInfo = components['schemas']['PageInfo'];
 export type SchemaPartnerIntent = components['schemas']['PartnerIntent'];
+export type SchemaPauseContentSource = components['schemas']['PauseContentSource'];
 export type SchemaPaymentMark = components['schemas']['PaymentMark'];
 export type SchemaPaymentMarkInput = components['schemas']['PaymentMarkInput'];
 export type SchemaPlatformRole = components['schemas']['PlatformRole'];
@@ -6258,7 +7158,13 @@ export type SchemaProfileVisibility = components['schemas']['ProfileVisibility']
 export type SchemaProofSide = components['schemas']['ProofSide'];
 export type SchemaProposeMatchResult = components['schemas']['ProposeMatchResult'];
 export type SchemaProposeVenueRevision = components['schemas']['ProposeVenueRevision'];
+export type SchemaPublicArticle = components['schemas']['PublicArticle'];
+export type SchemaPublicArticleAlternative = components['schemas']['PublicArticleAlternative'];
+export type SchemaPublicArticleAttribution = components['schemas']['PublicArticleAttribution'];
+export type SchemaPublicArticleCard = components['schemas']['PublicArticleCard'];
+export type SchemaPublicArticlePage = components['schemas']['PublicArticlePage'];
 export type SchemaPublicAttendanceStatistics = components['schemas']['PublicAttendanceStatistics'];
+export type SchemaPublicContentResponseHeaders = components['schemas']['PublicContentResponseHeaders'];
 export type SchemaPublicExternalProfileLink = components['schemas']['PublicExternalProfileLink'];
 export type SchemaPublicPlayerProfile = components['schemas']['PublicPlayerProfile'];
 export type SchemaPublicPlayerStatistics = components['schemas']['PublicPlayerStatistics'];
@@ -6301,6 +7207,11 @@ export type SchemaRound = components['schemas']['Round'];
 export type SchemaRoundRobinPreset = components['schemas']['RoundRobinPreset'];
 export type SchemaSafeChangedFields = components['schemas']['SafeChangedFields'];
 export type SchemaSafeNotificationRoute = components['schemas']['SafeNotificationRoute'];
+export type SchemaSafeRichTextBlock = components['schemas']['SafeRichTextBlock'];
+export type SchemaSafeRichTextBlockKind = components['schemas']['SafeRichTextBlockKind'];
+export type SchemaSafeRichTextDocument = components['schemas']['SafeRichTextDocument'];
+export type SchemaSafeRichTextInline = components['schemas']['SafeRichTextInline'];
+export type SchemaSafeRichTextMark = components['schemas']['SafeRichTextMark'];
 export type SchemaSafetyEvidenceText = components['schemas']['SafetyEvidenceText'];
 export type SchemaSafetyIncidentReport = components['schemas']['SafetyIncidentReport'];
 export type SchemaSafetyOutcomeClass = components['schemas']['SafetyOutcomeClass'];
@@ -7887,6 +8798,3654 @@ export interface operations {
                         readonly error: {
                             /** @enum {string} */
                             readonly code: 'ADMIN_WRITE_UNAVAILABLE' | 'AUDIT_UNAVAILABLE';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+        };
+    };
+    readonly listAdminContentArticles: {
+        readonly parameters: {
+            readonly query?: {
+                /** @description Opaque base64url cursor returned by the preceding page; clients must not parse or create it. */
+                readonly cursor?: components['schemas']['Cursor'];
+                /** @description Maximum number of items requested. Endpoints may document a lower maximum. */
+                readonly limit?: number;
+                readonly state?: components['schemas']['ArticleState'];
+            };
+            readonly header?: {
+                /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
+                readonly 'Accept-Language'?: string;
+                /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
+                readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
+                /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
+                readonly 'X-Request-ID'?: components['schemas']['RequestId'];
+            };
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        readonly requestBody?: never;
+        readonly responses: {
+            /** @description The request has succeeded. */
+            readonly 200: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    readonly 'Idempotency-Replayed'?: boolean;
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': components['schemas']['AdminArticlePage'];
+                };
+            };
+            /** @description The server could not understand the request due to invalid syntax. */
+            readonly 400: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'VALIDATION_FAILED' | 'INVALID_CURSOR' | 'INVALID_STATE_TRANSITION';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Access is unauthorized. */
+            readonly 401: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'SESSION_INVALID' | 'REAUTHENTICATION_REQUIRED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Access is forbidden. */
+            readonly 403: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'CONTENT_ACTION_FORBIDDEN';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description The server cannot find the requested resource. */
+            readonly 404: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'CONTENT_RESOURCE_NOT_FOUND';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description The request conflicts with the current state of the server. */
+            readonly 409: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code:
+                                | 'REVISION_CONFLICT'
+                                | 'SLUG_CONFLICT'
+                                | 'RIGHTS_HOLD'
+                                | 'IDEMPOTENCY_KEY_REUSED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Client error */
+            readonly 422: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'CONTENT_FORMAT_REJECTED' | 'CHECKLIST_REQUIRED' | 'ORIGIN_REQUIRED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Client error */
+            readonly 429: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'RATE_LIMITED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+        };
+    };
+    readonly createAdminContentArticle: {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header: {
+                /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
+                readonly 'Accept-Language'?: string;
+                readonly 'Idempotency-Key': components['parameters']['MutationKey'];
+                /** @description Exact browser origin from the configured allowlist; required even for anonymous mutations. Cross-site and missing origins are rejected. */
+                readonly Origin: components['parameters']['BrowserMutationHeaders.origin'];
+                /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
+                readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
+                /** @description Secret bound to the HttpOnly browser context cookie from GET /auth/context. Never log. Validate origin, context cookie and token together before mutation. */
+                readonly 'X-CSRF-Token': components['parameters']['BrowserMutationHeaders.csrfToken'];
+                /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
+                readonly 'X-Request-ID'?: components['schemas']['RequestId'];
+            };
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        readonly requestBody: {
+            readonly content: {
+                readonly 'application/json': components['schemas']['CreateArticleInput'];
+            };
+        };
+        readonly responses: {
+            /** @description The request has succeeded and a new resource has been created as a result. */
+            readonly 201: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    readonly 'Idempotency-Replayed'?: boolean;
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': components['schemas']['AdminArticle'];
+                };
+            };
+            /** @description The server could not understand the request due to invalid syntax. */
+            readonly 400: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'VALIDATION_FAILED' | 'INVALID_CURSOR' | 'INVALID_STATE_TRANSITION';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Access is unauthorized. */
+            readonly 401: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'SESSION_INVALID' | 'REAUTHENTICATION_REQUIRED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Access is forbidden. */
+            readonly 403: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'CONTENT_ACTION_FORBIDDEN';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description The server cannot find the requested resource. */
+            readonly 404: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'CONTENT_RESOURCE_NOT_FOUND';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description The request conflicts with the current state of the server. */
+            readonly 409: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code:
+                                | 'REVISION_CONFLICT'
+                                | 'SLUG_CONFLICT'
+                                | 'RIGHTS_HOLD'
+                                | 'IDEMPOTENCY_KEY_REUSED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Client error */
+            readonly 422: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'CONTENT_FORMAT_REJECTED' | 'CHECKLIST_REQUIRED' | 'ORIGIN_REQUIRED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Client error */
+            readonly 429: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'RATE_LIMITED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+        };
+    };
+    readonly getAdminContentArticle: {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: {
+                /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
+                readonly 'Accept-Language'?: string;
+                /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
+                readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
+                /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
+                readonly 'X-Request-ID'?: components['schemas']['RequestId'];
+            };
+            readonly path: {
+                readonly articleId: components['schemas']['Uuid'];
+            };
+            readonly cookie?: never;
+        };
+        readonly requestBody?: never;
+        readonly responses: {
+            /** @description The request has succeeded. */
+            readonly 200: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    readonly 'Idempotency-Replayed'?: boolean;
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': components['schemas']['AdminArticle'];
+                };
+            };
+            /** @description The server could not understand the request due to invalid syntax. */
+            readonly 400: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'VALIDATION_FAILED' | 'INVALID_CURSOR' | 'INVALID_STATE_TRANSITION';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Access is unauthorized. */
+            readonly 401: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'SESSION_INVALID' | 'REAUTHENTICATION_REQUIRED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Access is forbidden. */
+            readonly 403: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'CONTENT_ACTION_FORBIDDEN';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description The server cannot find the requested resource. */
+            readonly 404: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'CONTENT_RESOURCE_NOT_FOUND';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description The request conflicts with the current state of the server. */
+            readonly 409: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code:
+                                | 'REVISION_CONFLICT'
+                                | 'SLUG_CONFLICT'
+                                | 'RIGHTS_HOLD'
+                                | 'IDEMPOTENCY_KEY_REUSED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Client error */
+            readonly 422: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'CONTENT_FORMAT_REJECTED' | 'CHECKLIST_REQUIRED' | 'ORIGIN_REQUIRED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Client error */
+            readonly 429: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'RATE_LIMITED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+        };
+    };
+    readonly decideAdminContentArticle: {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header: {
+                /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
+                readonly 'Accept-Language'?: string;
+                readonly 'Idempotency-Key': components['parameters']['MutationKey'];
+                /** @description Exact browser origin from the configured allowlist; required even for anonymous mutations. Cross-site and missing origins are rejected. */
+                readonly Origin: components['parameters']['BrowserMutationHeaders.origin'];
+                /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
+                readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
+                /** @description Secret bound to the HttpOnly browser context cookie from GET /auth/context. Never log. Validate origin, context cookie and token together before mutation. */
+                readonly 'X-CSRF-Token': components['parameters']['BrowserMutationHeaders.csrfToken'];
+                /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
+                readonly 'X-Request-ID'?: components['schemas']['RequestId'];
+            };
+            readonly path: {
+                readonly articleId: components['schemas']['Uuid'];
+            };
+            readonly cookie?: never;
+        };
+        readonly requestBody: {
+            readonly content: {
+                readonly 'application/json': components['schemas']['ContentDecisionInput'];
+            };
+        };
+        readonly responses: {
+            /** @description The request has succeeded. */
+            readonly 200: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    readonly 'Idempotency-Replayed'?: boolean;
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': components['schemas']['ContentPublicationDecision'];
+                };
+            };
+            /** @description The server could not understand the request due to invalid syntax. */
+            readonly 400: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'VALIDATION_FAILED' | 'INVALID_CURSOR' | 'INVALID_STATE_TRANSITION';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Access is unauthorized. */
+            readonly 401: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'SESSION_INVALID' | 'REAUTHENTICATION_REQUIRED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Access is forbidden. */
+            readonly 403: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'CONTENT_ACTION_FORBIDDEN';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description The server cannot find the requested resource. */
+            readonly 404: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'CONTENT_RESOURCE_NOT_FOUND';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description The request conflicts with the current state of the server. */
+            readonly 409: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code:
+                                | 'REVISION_CONFLICT'
+                                | 'SLUG_CONFLICT'
+                                | 'RIGHTS_HOLD'
+                                | 'IDEMPOTENCY_KEY_REUSED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Client error */
+            readonly 422: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'CONTENT_FORMAT_REJECTED' | 'CHECKLIST_REQUIRED' | 'ORIGIN_REQUIRED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Client error */
+            readonly 429: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'RATE_LIMITED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+        };
+    };
+    readonly emergencyUnpublishAdminContentArticle: {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header: {
+                /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
+                readonly 'Accept-Language'?: string;
+                readonly 'Idempotency-Key': components['parameters']['MutationKey'];
+                /** @description Exact browser origin from the configured allowlist; required even for anonymous mutations. Cross-site and missing origins are rejected. */
+                readonly Origin: components['parameters']['BrowserMutationHeaders.origin'];
+                /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
+                readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
+                /** @description Secret bound to the HttpOnly browser context cookie from GET /auth/context. Never log. Validate origin, context cookie and token together before mutation. */
+                readonly 'X-CSRF-Token': components['parameters']['BrowserMutationHeaders.csrfToken'];
+                /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
+                readonly 'X-Request-ID'?: components['schemas']['RequestId'];
+            };
+            readonly path: {
+                readonly articleId: components['schemas']['Uuid'];
+            };
+            readonly cookie?: never;
+        };
+        readonly requestBody: {
+            readonly content: {
+                readonly 'application/json': components['schemas']['EmergencyUnpublishContentInput'];
+            };
+        };
+        readonly responses: {
+            /** @description The request has succeeded. */
+            readonly 200: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    readonly 'Idempotency-Replayed'?: boolean;
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': components['schemas']['ContentPublicationDecision'];
+                };
+            };
+            /** @description The server could not understand the request due to invalid syntax. */
+            readonly 400: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'VALIDATION_FAILED' | 'INVALID_CURSOR' | 'INVALID_STATE_TRANSITION';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Access is unauthorized. */
+            readonly 401: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'SESSION_INVALID' | 'REAUTHENTICATION_REQUIRED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Access is forbidden. */
+            readonly 403: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'CONTENT_ACTION_FORBIDDEN';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description The server cannot find the requested resource. */
+            readonly 404: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'CONTENT_RESOURCE_NOT_FOUND';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description The request conflicts with the current state of the server. */
+            readonly 409: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code:
+                                | 'REVISION_CONFLICT'
+                                | 'SLUG_CONFLICT'
+                                | 'RIGHTS_HOLD'
+                                | 'IDEMPOTENCY_KEY_REUSED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Client error */
+            readonly 422: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'CONTENT_FORMAT_REJECTED' | 'CHECKLIST_REQUIRED' | 'ORIGIN_REQUIRED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Client error */
+            readonly 429: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'RATE_LIMITED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+        };
+    };
+    readonly listAdminContentArticleRevisions: {
+        readonly parameters: {
+            readonly query?: {
+                /** @description Opaque base64url cursor returned by the preceding page; clients must not parse or create it. */
+                readonly cursor?: components['schemas']['Cursor'];
+                /** @description Maximum number of items requested. Endpoints may document a lower maximum. */
+                readonly limit?: number;
+            };
+            readonly header?: {
+                /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
+                readonly 'Accept-Language'?: string;
+                /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
+                readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
+                /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
+                readonly 'X-Request-ID'?: components['schemas']['RequestId'];
+            };
+            readonly path: {
+                readonly articleId: components['schemas']['Uuid'];
+            };
+            readonly cookie?: never;
+        };
+        readonly requestBody?: never;
+        readonly responses: {
+            /** @description The request has succeeded. */
+            readonly 200: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    readonly 'Idempotency-Replayed'?: boolean;
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': components['schemas']['ArticleRevisionPage'];
+                };
+            };
+            /** @description The server could not understand the request due to invalid syntax. */
+            readonly 400: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'VALIDATION_FAILED' | 'INVALID_CURSOR' | 'INVALID_STATE_TRANSITION';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Access is unauthorized. */
+            readonly 401: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'SESSION_INVALID' | 'REAUTHENTICATION_REQUIRED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Access is forbidden. */
+            readonly 403: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'CONTENT_ACTION_FORBIDDEN';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description The server cannot find the requested resource. */
+            readonly 404: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'CONTENT_RESOURCE_NOT_FOUND';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description The request conflicts with the current state of the server. */
+            readonly 409: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code:
+                                | 'REVISION_CONFLICT'
+                                | 'SLUG_CONFLICT'
+                                | 'RIGHTS_HOLD'
+                                | 'IDEMPOTENCY_KEY_REUSED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Client error */
+            readonly 422: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'CONTENT_FORMAT_REJECTED' | 'CHECKLIST_REQUIRED' | 'ORIGIN_REQUIRED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Client error */
+            readonly 429: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'RATE_LIMITED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+        };
+    };
+    readonly createAdminContentArticleRevision: {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header: {
+                /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
+                readonly 'Accept-Language'?: string;
+                readonly 'Idempotency-Key': components['parameters']['MutationKey'];
+                /** @description Exact browser origin from the configured allowlist; required even for anonymous mutations. Cross-site and missing origins are rejected. */
+                readonly Origin: components['parameters']['BrowserMutationHeaders.origin'];
+                /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
+                readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
+                /** @description Secret bound to the HttpOnly browser context cookie from GET /auth/context. Never log. Validate origin, context cookie and token together before mutation. */
+                readonly 'X-CSRF-Token': components['parameters']['BrowserMutationHeaders.csrfToken'];
+                /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
+                readonly 'X-Request-ID'?: components['schemas']['RequestId'];
+            };
+            readonly path: {
+                readonly articleId: components['schemas']['Uuid'];
+            };
+            readonly cookie?: never;
+        };
+        readonly requestBody: {
+            readonly content: {
+                readonly 'application/json': components['schemas']['ArticleRevisionInput'];
+            };
+        };
+        readonly responses: {
+            /** @description The request has succeeded and a new resource has been created as a result. */
+            readonly 201: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    readonly 'Idempotency-Replayed'?: boolean;
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': components['schemas']['ArticleRevision'];
+                };
+            };
+            /** @description The server could not understand the request due to invalid syntax. */
+            readonly 400: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'VALIDATION_FAILED' | 'INVALID_CURSOR' | 'INVALID_STATE_TRANSITION';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Access is unauthorized. */
+            readonly 401: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'SESSION_INVALID' | 'REAUTHENTICATION_REQUIRED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Access is forbidden. */
+            readonly 403: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'CONTENT_ACTION_FORBIDDEN';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description The server cannot find the requested resource. */
+            readonly 404: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'CONTENT_RESOURCE_NOT_FOUND';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description The request conflicts with the current state of the server. */
+            readonly 409: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code:
+                                | 'REVISION_CONFLICT'
+                                | 'SLUG_CONFLICT'
+                                | 'RIGHTS_HOLD'
+                                | 'IDEMPOTENCY_KEY_REUSED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Client error */
+            readonly 422: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'CONTENT_FORMAT_REJECTED' | 'CHECKLIST_REQUIRED' | 'ORIGIN_REQUIRED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Client error */
+            readonly 429: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'RATE_LIMITED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+        };
+    };
+    readonly getAdminContentArticleRevision: {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: {
+                /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
+                readonly 'Accept-Language'?: string;
+                /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
+                readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
+                /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
+                readonly 'X-Request-ID'?: components['schemas']['RequestId'];
+            };
+            readonly path: {
+                readonly articleId: components['schemas']['Uuid'];
+                readonly revisionId: components['schemas']['Uuid'];
+            };
+            readonly cookie?: never;
+        };
+        readonly requestBody?: never;
+        readonly responses: {
+            /** @description The request has succeeded. */
+            readonly 200: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    readonly 'Idempotency-Replayed'?: boolean;
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': components['schemas']['ArticleRevision'];
+                };
+            };
+            /** @description The server could not understand the request due to invalid syntax. */
+            readonly 400: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'VALIDATION_FAILED' | 'INVALID_CURSOR' | 'INVALID_STATE_TRANSITION';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Access is unauthorized. */
+            readonly 401: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'SESSION_INVALID' | 'REAUTHENTICATION_REQUIRED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Access is forbidden. */
+            readonly 403: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'CONTENT_ACTION_FORBIDDEN';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description The server cannot find the requested resource. */
+            readonly 404: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'CONTENT_RESOURCE_NOT_FOUND';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description The request conflicts with the current state of the server. */
+            readonly 409: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code:
+                                | 'REVISION_CONFLICT'
+                                | 'SLUG_CONFLICT'
+                                | 'RIGHTS_HOLD'
+                                | 'IDEMPOTENCY_KEY_REUSED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Client error */
+            readonly 422: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'CONTENT_FORMAT_REJECTED' | 'CHECKLIST_REQUIRED' | 'ORIGIN_REQUIRED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Client error */
+            readonly 429: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'RATE_LIMITED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+        };
+    };
+    readonly previewAdminContentArticleRevision: {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: {
+                /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
+                readonly 'Accept-Language'?: string;
+                /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
+                readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
+                /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
+                readonly 'X-Request-ID'?: components['schemas']['RequestId'];
+            };
+            readonly path: {
+                readonly articleId: components['schemas']['Uuid'];
+                readonly revisionId: components['schemas']['Uuid'];
+            };
+            readonly cookie?: never;
+        };
+        readonly requestBody?: never;
+        readonly responses: {
+            /** @description The request has succeeded. */
+            readonly 200: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    readonly 'Idempotency-Replayed'?: boolean;
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': components['schemas']['ArticleRevision'];
+                };
+            };
+            /** @description The server could not understand the request due to invalid syntax. */
+            readonly 400: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'VALIDATION_FAILED' | 'INVALID_CURSOR' | 'INVALID_STATE_TRANSITION';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Access is unauthorized. */
+            readonly 401: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'SESSION_INVALID' | 'REAUTHENTICATION_REQUIRED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Access is forbidden. */
+            readonly 403: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'CONTENT_ACTION_FORBIDDEN';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description The server cannot find the requested resource. */
+            readonly 404: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'CONTENT_RESOURCE_NOT_FOUND';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description The request conflicts with the current state of the server. */
+            readonly 409: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code:
+                                | 'REVISION_CONFLICT'
+                                | 'SLUG_CONFLICT'
+                                | 'RIGHTS_HOLD'
+                                | 'IDEMPOTENCY_KEY_REUSED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Client error */
+            readonly 422: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'CONTENT_FORMAT_REJECTED' | 'CHECKLIST_REQUIRED' | 'ORIGIN_REQUIRED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Client error */
+            readonly 429: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'RATE_LIMITED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+        };
+    };
+    readonly listAdminContentCandidates: {
+        readonly parameters: {
+            readonly query?: {
+                /** @description Opaque base64url cursor returned by the preceding page; clients must not parse or create it. */
+                readonly cursor?: components['schemas']['Cursor'];
+                /** @description Maximum number of items requested. Endpoints may document a lower maximum. */
+                readonly limit?: number;
+                readonly state?: components['schemas']['IngestCandidateState'];
+            };
+            readonly header?: {
+                /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
+                readonly 'Accept-Language'?: string;
+                /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
+                readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
+                /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
+                readonly 'X-Request-ID'?: components['schemas']['RequestId'];
+            };
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        readonly requestBody?: never;
+        readonly responses: {
+            /** @description The request has succeeded. */
+            readonly 200: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    readonly 'Idempotency-Replayed'?: boolean;
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': components['schemas']['IngestCandidatePage'];
+                };
+            };
+            /** @description The server could not understand the request due to invalid syntax. */
+            readonly 400: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'VALIDATION_FAILED' | 'INVALID_CURSOR' | 'INVALID_STATE_TRANSITION';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Access is unauthorized. */
+            readonly 401: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'SESSION_INVALID' | 'REAUTHENTICATION_REQUIRED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Access is forbidden. */
+            readonly 403: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'CONTENT_ACTION_FORBIDDEN';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description The server cannot find the requested resource. */
+            readonly 404: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'CONTENT_RESOURCE_NOT_FOUND';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description The request conflicts with the current state of the server. */
+            readonly 409: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code:
+                                | 'REVISION_CONFLICT'
+                                | 'SLUG_CONFLICT'
+                                | 'RIGHTS_HOLD'
+                                | 'IDEMPOTENCY_KEY_REUSED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Client error */
+            readonly 422: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'CONTENT_FORMAT_REJECTED' | 'CHECKLIST_REQUIRED' | 'ORIGIN_REQUIRED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Client error */
+            readonly 429: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'RATE_LIMITED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+        };
+    };
+    readonly getAdminContentCandidate: {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: {
+                /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
+                readonly 'Accept-Language'?: string;
+                /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
+                readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
+                /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
+                readonly 'X-Request-ID'?: components['schemas']['RequestId'];
+            };
+            readonly path: {
+                readonly candidateId: components['schemas']['Uuid'];
+            };
+            readonly cookie?: never;
+        };
+        readonly requestBody?: never;
+        readonly responses: {
+            /** @description The request has succeeded. */
+            readonly 200: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    readonly 'Idempotency-Replayed'?: boolean;
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': components['schemas']['IngestCandidate'];
+                };
+            };
+            /** @description The server could not understand the request due to invalid syntax. */
+            readonly 400: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'VALIDATION_FAILED' | 'INVALID_CURSOR' | 'INVALID_STATE_TRANSITION';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Access is unauthorized. */
+            readonly 401: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'SESSION_INVALID' | 'REAUTHENTICATION_REQUIRED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Access is forbidden. */
+            readonly 403: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'CONTENT_ACTION_FORBIDDEN';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description The server cannot find the requested resource. */
+            readonly 404: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'CONTENT_RESOURCE_NOT_FOUND';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description The request conflicts with the current state of the server. */
+            readonly 409: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code:
+                                | 'REVISION_CONFLICT'
+                                | 'SLUG_CONFLICT'
+                                | 'RIGHTS_HOLD'
+                                | 'IDEMPOTENCY_KEY_REUSED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Client error */
+            readonly 422: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'CONTENT_FORMAT_REJECTED' | 'CHECKLIST_REQUIRED' | 'ORIGIN_REQUIRED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Client error */
+            readonly 429: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'RATE_LIMITED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+        };
+    };
+    readonly decideAdminContentCandidate: {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header: {
+                /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
+                readonly 'Accept-Language'?: string;
+                readonly 'Idempotency-Key': components['parameters']['MutationKey'];
+                /** @description Exact browser origin from the configured allowlist; required even for anonymous mutations. Cross-site and missing origins are rejected. */
+                readonly Origin: components['parameters']['BrowserMutationHeaders.origin'];
+                /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
+                readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
+                /** @description Secret bound to the HttpOnly browser context cookie from GET /auth/context. Never log. Validate origin, context cookie and token together before mutation. */
+                readonly 'X-CSRF-Token': components['parameters']['BrowserMutationHeaders.csrfToken'];
+                /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
+                readonly 'X-Request-ID'?: components['schemas']['RequestId'];
+            };
+            readonly path: {
+                readonly candidateId: components['schemas']['Uuid'];
+            };
+            readonly cookie?: never;
+        };
+        readonly requestBody: {
+            readonly content: {
+                readonly 'application/json': components['schemas']['DecideIngestCandidate'];
+            };
+        };
+        readonly responses: {
+            /** @description The request has succeeded. */
+            readonly 200: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    readonly 'Idempotency-Replayed'?: boolean;
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': components['schemas']['IngestCandidate'];
+                };
+            };
+            /** @description The server could not understand the request due to invalid syntax. */
+            readonly 400: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'VALIDATION_FAILED' | 'INVALID_CURSOR' | 'INVALID_STATE_TRANSITION';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Access is unauthorized. */
+            readonly 401: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'SESSION_INVALID' | 'REAUTHENTICATION_REQUIRED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Access is forbidden. */
+            readonly 403: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'CONTENT_ACTION_FORBIDDEN';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description The server cannot find the requested resource. */
+            readonly 404: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'CONTENT_RESOURCE_NOT_FOUND';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description The request conflicts with the current state of the server. */
+            readonly 409: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code:
+                                | 'REVISION_CONFLICT'
+                                | 'SLUG_CONFLICT'
+                                | 'RIGHTS_HOLD'
+                                | 'IDEMPOTENCY_KEY_REUSED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Client error */
+            readonly 422: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'CONTENT_FORMAT_REJECTED' | 'CHECKLIST_REQUIRED' | 'ORIGIN_REQUIRED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Client error */
+            readonly 429: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'RATE_LIMITED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+        };
+    };
+    readonly listAdminContentSources: {
+        readonly parameters: {
+            readonly query?: {
+                /** @description Opaque base64url cursor returned by the preceding page; clients must not parse or create it. */
+                readonly cursor?: components['schemas']['Cursor'];
+                /** @description Maximum number of items requested. Endpoints may document a lower maximum. */
+                readonly limit?: number;
+            };
+            readonly header?: {
+                /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
+                readonly 'Accept-Language'?: string;
+                /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
+                readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
+                /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
+                readonly 'X-Request-ID'?: components['schemas']['RequestId'];
+            };
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        readonly requestBody?: never;
+        readonly responses: {
+            /** @description The request has succeeded. */
+            readonly 200: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    readonly 'Idempotency-Replayed'?: boolean;
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': components['schemas']['ContentSourcePage'];
+                };
+            };
+            /** @description The server could not understand the request due to invalid syntax. */
+            readonly 400: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'VALIDATION_FAILED' | 'INVALID_CURSOR' | 'INVALID_STATE_TRANSITION';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Access is unauthorized. */
+            readonly 401: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'SESSION_INVALID' | 'REAUTHENTICATION_REQUIRED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Access is forbidden. */
+            readonly 403: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'CONTENT_ACTION_FORBIDDEN';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description The server cannot find the requested resource. */
+            readonly 404: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'CONTENT_RESOURCE_NOT_FOUND';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description The request conflicts with the current state of the server. */
+            readonly 409: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code:
+                                | 'REVISION_CONFLICT'
+                                | 'SLUG_CONFLICT'
+                                | 'RIGHTS_HOLD'
+                                | 'IDEMPOTENCY_KEY_REUSED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Client error */
+            readonly 422: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'CONTENT_FORMAT_REJECTED' | 'CHECKLIST_REQUIRED' | 'ORIGIN_REQUIRED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Client error */
+            readonly 429: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'RATE_LIMITED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+        };
+    };
+    readonly createAdminContentSource: {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header: {
+                /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
+                readonly 'Accept-Language'?: string;
+                readonly 'Idempotency-Key': components['parameters']['MutationKey'];
+                /** @description Exact browser origin from the configured allowlist; required even for anonymous mutations. Cross-site and missing origins are rejected. */
+                readonly Origin: components['parameters']['BrowserMutationHeaders.origin'];
+                /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
+                readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
+                /** @description Secret bound to the HttpOnly browser context cookie from GET /auth/context. Never log. Validate origin, context cookie and token together before mutation. */
+                readonly 'X-CSRF-Token': components['parameters']['BrowserMutationHeaders.csrfToken'];
+                /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
+                readonly 'X-Request-ID'?: components['schemas']['RequestId'];
+            };
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        readonly requestBody: {
+            readonly content: {
+                readonly 'application/json': components['schemas']['ContentSourceInput'];
+            };
+        };
+        readonly responses: {
+            /** @description The request has succeeded and a new resource has been created as a result. */
+            readonly 201: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    readonly 'Idempotency-Replayed'?: boolean;
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': components['schemas']['ContentSource'];
+                };
+            };
+            /** @description The server could not understand the request due to invalid syntax. */
+            readonly 400: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'VALIDATION_FAILED' | 'INVALID_CURSOR' | 'INVALID_STATE_TRANSITION';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Access is unauthorized. */
+            readonly 401: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'SESSION_INVALID' | 'REAUTHENTICATION_REQUIRED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Access is forbidden. */
+            readonly 403: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'CONTENT_ACTION_FORBIDDEN';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description The server cannot find the requested resource. */
+            readonly 404: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'CONTENT_RESOURCE_NOT_FOUND';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description The request conflicts with the current state of the server. */
+            readonly 409: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code:
+                                | 'REVISION_CONFLICT'
+                                | 'SLUG_CONFLICT'
+                                | 'RIGHTS_HOLD'
+                                | 'IDEMPOTENCY_KEY_REUSED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Client error */
+            readonly 422: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'CONTENT_FORMAT_REJECTED' | 'CHECKLIST_REQUIRED' | 'ORIGIN_REQUIRED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Client error */
+            readonly 429: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'RATE_LIMITED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+        };
+    };
+    readonly updateAdminContentSource: {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header: {
+                /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
+                readonly 'Accept-Language'?: string;
+                readonly 'Idempotency-Key': components['parameters']['MutationKey'];
+                /** @description Exact browser origin from the configured allowlist; required even for anonymous mutations. Cross-site and missing origins are rejected. */
+                readonly Origin: components['parameters']['BrowserMutationHeaders.origin'];
+                /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
+                readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
+                /** @description Secret bound to the HttpOnly browser context cookie from GET /auth/context. Never log. Validate origin, context cookie and token together before mutation. */
+                readonly 'X-CSRF-Token': components['parameters']['BrowserMutationHeaders.csrfToken'];
+                /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
+                readonly 'X-Request-ID'?: components['schemas']['RequestId'];
+            };
+            readonly path: {
+                readonly sourceId: components['schemas']['Uuid'];
+            };
+            readonly cookie?: never;
+        };
+        readonly requestBody: {
+            readonly content: {
+                readonly 'application/json': components['schemas']['ContentSourceInput'];
+            };
+        };
+        readonly responses: {
+            /** @description The request has succeeded. */
+            readonly 200: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    readonly 'Idempotency-Replayed'?: boolean;
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': components['schemas']['ContentSource'];
+                };
+            };
+            /** @description The server could not understand the request due to invalid syntax. */
+            readonly 400: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'VALIDATION_FAILED' | 'INVALID_CURSOR' | 'INVALID_STATE_TRANSITION';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Access is unauthorized. */
+            readonly 401: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'SESSION_INVALID' | 'REAUTHENTICATION_REQUIRED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Access is forbidden. */
+            readonly 403: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'CONTENT_ACTION_FORBIDDEN';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description The server cannot find the requested resource. */
+            readonly 404: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'CONTENT_RESOURCE_NOT_FOUND';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description The request conflicts with the current state of the server. */
+            readonly 409: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code:
+                                | 'REVISION_CONFLICT'
+                                | 'SLUG_CONFLICT'
+                                | 'RIGHTS_HOLD'
+                                | 'IDEMPOTENCY_KEY_REUSED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Client error */
+            readonly 422: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'CONTENT_FORMAT_REJECTED' | 'CHECKLIST_REQUIRED' | 'ORIGIN_REQUIRED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Client error */
+            readonly 429: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'RATE_LIMITED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+        };
+    };
+    readonly pauseAdminContentSource: {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header: {
+                /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
+                readonly 'Accept-Language'?: string;
+                readonly 'Idempotency-Key': components['parameters']['MutationKey'];
+                /** @description Exact browser origin from the configured allowlist; required even for anonymous mutations. Cross-site and missing origins are rejected. */
+                readonly Origin: components['parameters']['BrowserMutationHeaders.origin'];
+                /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
+                readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
+                /** @description Secret bound to the HttpOnly browser context cookie from GET /auth/context. Never log. Validate origin, context cookie and token together before mutation. */
+                readonly 'X-CSRF-Token': components['parameters']['BrowserMutationHeaders.csrfToken'];
+                /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
+                readonly 'X-Request-ID'?: components['schemas']['RequestId'];
+            };
+            readonly path: {
+                readonly sourceId: components['schemas']['Uuid'];
+            };
+            readonly cookie?: never;
+        };
+        readonly requestBody: {
+            readonly content: {
+                readonly 'application/json': components['schemas']['PauseContentSource'];
+            };
+        };
+        readonly responses: {
+            /** @description The request has succeeded. */
+            readonly 200: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    readonly 'Idempotency-Replayed'?: boolean;
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': components['schemas']['ContentSource'];
+                };
+            };
+            /** @description The server could not understand the request due to invalid syntax. */
+            readonly 400: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'VALIDATION_FAILED' | 'INVALID_CURSOR' | 'INVALID_STATE_TRANSITION';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Access is unauthorized. */
+            readonly 401: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'SESSION_INVALID' | 'REAUTHENTICATION_REQUIRED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Access is forbidden. */
+            readonly 403: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'CONTENT_ACTION_FORBIDDEN';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description The server cannot find the requested resource. */
+            readonly 404: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'CONTENT_RESOURCE_NOT_FOUND';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description The request conflicts with the current state of the server. */
+            readonly 409: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code:
+                                | 'REVISION_CONFLICT'
+                                | 'SLUG_CONFLICT'
+                                | 'RIGHTS_HOLD'
+                                | 'IDEMPOTENCY_KEY_REUSED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Client error */
+            readonly 422: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'CONTENT_FORMAT_REJECTED' | 'CHECKLIST_REQUIRED' | 'ORIGIN_REQUIRED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Client error */
+            readonly 429: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'RATE_LIMITED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+        };
+    };
+    readonly changeAdminContentSourceState: {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header: {
+                /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
+                readonly 'Accept-Language'?: string;
+                readonly 'Idempotency-Key': components['parameters']['MutationKey'];
+                /** @description Exact browser origin from the configured allowlist; required even for anonymous mutations. Cross-site and missing origins are rejected. */
+                readonly Origin: components['parameters']['BrowserMutationHeaders.origin'];
+                /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
+                readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
+                /** @description Secret bound to the HttpOnly browser context cookie from GET /auth/context. Never log. Validate origin, context cookie and token together before mutation. */
+                readonly 'X-CSRF-Token': components['parameters']['BrowserMutationHeaders.csrfToken'];
+                /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
+                readonly 'X-Request-ID'?: components['schemas']['RequestId'];
+            };
+            readonly path: {
+                readonly sourceId: components['schemas']['Uuid'];
+            };
+            readonly cookie?: never;
+        };
+        readonly requestBody: {
+            readonly content: {
+                readonly 'application/json': components['schemas']['ChangeContentSourceState'];
+            };
+        };
+        readonly responses: {
+            /** @description The request has succeeded. */
+            readonly 200: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    readonly 'Idempotency-Replayed'?: boolean;
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': components['schemas']['ContentSource'];
+                };
+            };
+            /** @description The server could not understand the request due to invalid syntax. */
+            readonly 400: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'VALIDATION_FAILED' | 'INVALID_CURSOR' | 'INVALID_STATE_TRANSITION';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Access is unauthorized. */
+            readonly 401: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'SESSION_INVALID' | 'REAUTHENTICATION_REQUIRED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Access is forbidden. */
+            readonly 403: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'CONTENT_ACTION_FORBIDDEN';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description The server cannot find the requested resource. */
+            readonly 404: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'CONTENT_RESOURCE_NOT_FOUND';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description The request conflicts with the current state of the server. */
+            readonly 409: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code:
+                                | 'REVISION_CONFLICT'
+                                | 'SLUG_CONFLICT'
+                                | 'RIGHTS_HOLD'
+                                | 'IDEMPOTENCY_KEY_REUSED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Client error */
+            readonly 422: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'CONTENT_FORMAT_REJECTED' | 'CHECKLIST_REQUIRED' | 'ORIGIN_REQUIRED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Client error */
+            readonly 429: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'RATE_LIMITED';
                             readonly details?: readonly components['schemas']['ErrorDetail'][];
                             readonly message: string;
                         };
@@ -19039,6 +23598,1038 @@ export interface operations {
                         readonly error: {
                             /** @enum {string} */
                             readonly code: 'RATE_LIMITED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+        };
+    };
+    readonly listPublishedArticles: {
+        readonly parameters: {
+            readonly query?: {
+                readonly category?: components['schemas']['ContentTaxonomySlug'];
+                /** @description Opaque base64url cursor returned by the preceding page; clients must not parse or create it. */
+                readonly cursor?: components['schemas']['Cursor'];
+                /** @description Maximum number of items requested. Endpoints may document a lower maximum. */
+                readonly limit?: number;
+                readonly locale?: components['schemas']['Locale'];
+                readonly tag?: components['schemas']['ContentTaxonomySlug'];
+            };
+            readonly header?: {
+                /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
+                readonly 'Accept-Language'?: string;
+                /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
+                readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
+                /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
+                readonly 'X-Request-ID'?: components['schemas']['RequestId'];
+            };
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        readonly requestBody?: never;
+        readonly responses: {
+            /** @description The request has succeeded. */
+            readonly 200: {
+                headers: {
+                    readonly 'Cache-Control': 'public, max-age=60, stale-while-revalidate=300';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': components['schemas']['PublicArticlePage'];
+                };
+            };
+            /** @description The server could not understand the request due to invalid syntax. */
+            readonly 400: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'VALIDATION_FAILED' | 'INVALID_CURSOR';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description The server cannot find the requested resource. */
+            readonly 404: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'ARTICLE_NOT_AVAILABLE';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Client error */
+            readonly 429: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'RATE_LIMITED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Service unavailable. */
+            readonly 503: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'CONTENT_SEARCH_UNAVAILABLE';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+        };
+    };
+    readonly getPublishedArticle: {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: {
+                /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
+                readonly 'Accept-Language'?: string;
+                /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
+                readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
+                /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
+                readonly 'X-Request-ID'?: components['schemas']['RequestId'];
+            };
+            readonly path: {
+                readonly locale: components['schemas']['Locale'];
+                readonly slug: components['schemas']['ContentSlug'];
+            };
+            readonly cookie?: never;
+        };
+        readonly requestBody?: never;
+        readonly responses: {
+            /** @description The request has succeeded. */
+            readonly 200: {
+                headers: {
+                    readonly 'Cache-Control': 'public, max-age=60, stale-while-revalidate=300';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': components['schemas']['PublicArticle'];
+                };
+            };
+            /** @description The server could not understand the request due to invalid syntax. */
+            readonly 400: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'VALIDATION_FAILED' | 'INVALID_CURSOR';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description The server cannot find the requested resource. */
+            readonly 404: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'ARTICLE_NOT_AVAILABLE';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Client error */
+            readonly 429: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'RATE_LIMITED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Service unavailable. */
+            readonly 503: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'CONTENT_SEARCH_UNAVAILABLE';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+        };
+    };
+    readonly listOwnContentBookmarks: {
+        readonly parameters: {
+            readonly query?: {
+                /** @description Opaque base64url cursor returned by the preceding page; clients must not parse or create it. */
+                readonly cursor?: components['schemas']['Cursor'];
+                /** @description Maximum number of items requested. Endpoints may document a lower maximum. */
+                readonly limit?: number;
+            };
+            readonly header?: {
+                /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
+                readonly 'Accept-Language'?: string;
+                /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
+                readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
+                /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
+                readonly 'X-Request-ID'?: components['schemas']['RequestId'];
+            };
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        readonly requestBody?: never;
+        readonly responses: {
+            /** @description The request has succeeded. */
+            readonly 200: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    readonly 'Idempotency-Replayed'?: boolean;
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': components['schemas']['BookmarkPage'];
+                };
+            };
+            /** @description The server could not understand the request due to invalid syntax. */
+            readonly 400: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'VALIDATION_FAILED' | 'INVALID_CURSOR';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Access is unauthorized. */
+            readonly 401: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'SESSION_INVALID';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Access is forbidden. */
+            readonly 403: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'ONBOARDING_REQUIRED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description The server cannot find the requested resource. */
+            readonly 404: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'ARTICLE_NOT_AVAILABLE';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description The request conflicts with the current state of the server. */
+            readonly 409: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'IDEMPOTENCY_KEY_REUSED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Client error */
+            readonly 429: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'RATE_LIMITED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Service unavailable. */
+            readonly 503: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'CONTENT_SEARCH_UNAVAILABLE';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+        };
+    };
+    readonly putOwnContentBookmark: {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header: {
+                /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
+                readonly 'Accept-Language'?: string;
+                readonly 'Idempotency-Key': components['parameters']['MutationKey'];
+                /** @description Exact browser origin from the configured allowlist; required even for anonymous mutations. Cross-site and missing origins are rejected. */
+                readonly Origin: components['parameters']['BrowserMutationHeaders.origin'];
+                /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
+                readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
+                /** @description Secret bound to the HttpOnly browser context cookie from GET /auth/context. Never log. Validate origin, context cookie and token together before mutation. */
+                readonly 'X-CSRF-Token': components['parameters']['BrowserMutationHeaders.csrfToken'];
+                /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
+                readonly 'X-Request-ID'?: components['schemas']['RequestId'];
+            };
+            readonly path: {
+                readonly articleId: components['schemas']['Uuid'];
+            };
+            readonly cookie?: never;
+        };
+        readonly requestBody?: never;
+        readonly responses: {
+            /** @description The request has succeeded. */
+            readonly 200: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    readonly 'Idempotency-Replayed'?: boolean;
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': components['schemas']['BookmarkState'];
+                };
+            };
+            /** @description The server could not understand the request due to invalid syntax. */
+            readonly 400: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'VALIDATION_FAILED' | 'INVALID_CURSOR';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Access is unauthorized. */
+            readonly 401: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'SESSION_INVALID';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Access is forbidden. */
+            readonly 403: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'ONBOARDING_REQUIRED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description The server cannot find the requested resource. */
+            readonly 404: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'ARTICLE_NOT_AVAILABLE';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description The request conflicts with the current state of the server. */
+            readonly 409: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'IDEMPOTENCY_KEY_REUSED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Client error */
+            readonly 429: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'RATE_LIMITED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Service unavailable. */
+            readonly 503: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'CONTENT_SEARCH_UNAVAILABLE';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+        };
+    };
+    readonly deleteOwnContentBookmark: {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header: {
+                /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
+                readonly 'Accept-Language'?: string;
+                readonly 'Idempotency-Key': components['parameters']['MutationKey'];
+                /** @description Exact browser origin from the configured allowlist; required even for anonymous mutations. Cross-site and missing origins are rejected. */
+                readonly Origin: components['parameters']['BrowserMutationHeaders.origin'];
+                /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
+                readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
+                /** @description Secret bound to the HttpOnly browser context cookie from GET /auth/context. Never log. Validate origin, context cookie and token together before mutation. */
+                readonly 'X-CSRF-Token': components['parameters']['BrowserMutationHeaders.csrfToken'];
+                /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
+                readonly 'X-Request-ID'?: components['schemas']['RequestId'];
+            };
+            readonly path: {
+                readonly articleId: components['schemas']['Uuid'];
+            };
+            readonly cookie?: never;
+        };
+        readonly requestBody?: never;
+        readonly responses: {
+            /** @description There is no content to send for this request, but the headers may be useful. */
+            readonly 204: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    readonly 'Idempotency-Replayed'?: boolean;
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The server could not understand the request due to invalid syntax. */
+            readonly 400: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'VALIDATION_FAILED' | 'INVALID_CURSOR';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Access is unauthorized. */
+            readonly 401: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'SESSION_INVALID';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Access is forbidden. */
+            readonly 403: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'ONBOARDING_REQUIRED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description The server cannot find the requested resource. */
+            readonly 404: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'ARTICLE_NOT_AVAILABLE';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description The request conflicts with the current state of the server. */
+            readonly 409: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'IDEMPOTENCY_KEY_REUSED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Client error */
+            readonly 429: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'RATE_LIMITED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Service unavailable. */
+            readonly 503: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'CONTENT_SEARCH_UNAVAILABLE';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+        };
+    };
+    readonly searchPublishedArticles: {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: {
+                /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
+                readonly 'Accept-Language'?: string;
+                /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
+                readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
+                /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
+                readonly 'X-Request-ID'?: components['schemas']['RequestId'];
+            };
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        readonly requestBody: {
+            readonly content: {
+                readonly 'application/json': components['schemas']['ContentSearchInput'];
+            };
+        };
+        readonly responses: {
+            /** @description The request has succeeded. */
+            readonly 200: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    readonly 'Idempotency-Replayed'?: boolean;
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': components['schemas']['PublicArticlePage'];
+                };
+            };
+            /** @description The server could not understand the request due to invalid syntax. */
+            readonly 400: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'VALIDATION_FAILED' | 'INVALID_CURSOR';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description The server cannot find the requested resource. */
+            readonly 404: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'ARTICLE_NOT_AVAILABLE';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Client error */
+            readonly 429: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'RATE_LIMITED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Service unavailable. */
+            readonly 503: {
+                headers: {
+                    readonly 'Cache-Control': 'private, no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'CONTENT_SEARCH_UNAVAILABLE';
                             readonly details?: readonly components['schemas']['ErrorDetail'][];
                             readonly message: string;
                         };

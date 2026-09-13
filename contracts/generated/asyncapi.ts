@@ -463,6 +463,46 @@ export namespace ConsentChangedMessage {
     export type DataAction = 'ACCEPTED' | 'WITHDRAWN';
 }
 
+export namespace ContentArticlePublishedMessage {
+    export interface ContentArticlePublishedEnvelope {
+        messageId: string;
+        type: 'content.article.published.v1';
+        occurredAt: string;
+        correlationId: string;
+        causationId?: string | null;
+        data: Data;
+    }
+
+    export interface Data {
+        articleId: string;
+        revisionId: string;
+        articleVersion: number;
+        outcome: DataOutcome;
+    }
+
+    export type DataOutcome = 'PUBLISHED';
+}
+
+export namespace ContentArticleUnpublishedMessage {
+    export interface ContentArticleUnpublishedEnvelope {
+        messageId: string;
+        type: 'content.article.unpublished.v1';
+        occurredAt: string;
+        correlationId: string;
+        causationId?: string | null;
+        data: Data;
+    }
+
+    export interface Data {
+        articleId: string;
+        revisionId: string;
+        articleVersion: number;
+        outcome: DataOutcome;
+    }
+
+    export type DataOutcome = 'EDITORIAL' | 'CORRECTION' | 'RIGHTS_REVOKED' | 'LEGAL_TAKEDOWN' | 'SAFETY_REQUEST';
+}
+
 export namespace IdentityLinkedMessage {
     export interface IdentityLinkedEnvelope {
         messageId: string;
@@ -1244,6 +1284,8 @@ export type ClubStateChangedEnvelope = ClubStateChangedMessage.ClubStateChangedE
 export type ClubVenueLinkChangedEnvelope = ClubVenueLinkChangedMessage.ClubVenueLinkChangedEnvelope;
 export type CommunicationErrorEnvelope = CommunicationErrorMessage.CommunicationErrorEnvelope;
 export type ConsentChangedEnvelope = ConsentChangedMessage.ConsentChangedEnvelope;
+export type ContentArticlePublishedEnvelope = ContentArticlePublishedMessage.ContentArticlePublishedEnvelope;
+export type ContentArticleUnpublishedEnvelope = ContentArticleUnpublishedMessage.ContentArticleUnpublishedEnvelope;
 export type IdentityLinkedEnvelope = IdentityLinkedMessage.IdentityLinkedEnvelope;
 export type IdentityUnlinkedEnvelope = IdentityUnlinkedMessage.IdentityUnlinkedEnvelope;
 export type LeaderboardConsentChangedEnvelope = LeaderboardConsentChangedMessage.LeaderboardConsentChangedEnvelope;
@@ -1310,6 +1352,8 @@ export type WebSocketMessage =
     | ClubStateChangedEnvelope
     | ClubVenueLinkChangedEnvelope
     | CommunicationErrorEnvelope
+    | ContentArticlePublishedEnvelope
+    | ContentArticleUnpublishedEnvelope
     | LeaderboardConsentChangedEnvelope
     | LeaderboardProjectionChangedEnvelope
     | MatchCancelledEnvelope

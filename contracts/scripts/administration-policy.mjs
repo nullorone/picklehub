@@ -28,6 +28,9 @@ export const administrationRoleCapabilities = {
         'SAFETY_CASE_ROUTE',
         'AUDIT_SEARCH',
         'BREAK_GLASS_MANAGE',
+        'CONTENT_SOURCE_READ',
+        'CONTENT_SOURCE_GOVERN',
+        'CONTENT_EMERGENCY_UNPUBLISH',
     ],
     MODERATOR: [
         'ADMIN_SESSION_ACCESS',
@@ -38,7 +41,16 @@ export const administrationRoleCapabilities = {
         'VENUE_MODERATE',
         'AUDIT_SEARCH',
     ],
-    EDITOR: ['ADMIN_SESSION_ACCESS'],
+    EDITOR: [
+        'ADMIN_SESSION_ACCESS',
+        'CONTENT_SOURCE_READ',
+        'CONTENT_SOURCE_PROPOSE',
+        'CONTENT_SOURCE_PAUSE',
+        'CONTENT_CANDIDATE_REVIEW',
+        'CONTENT_EDIT',
+        'CONTENT_PREVIEW',
+        'CONTENT_PUBLISH',
+    ],
     ADS_MANAGER: ['ADMIN_SESSION_ACCESS'],
 };
 
