@@ -405,3 +405,37 @@ Domain events геймификации содержат только opaque IDs,
 amount и coarse timestamp. Display name/avatar подтягиваются через profile projection только при действующем
 leaderboard consent. Score, outcome/winner, review/chat text, координаты, email/Telegram identity, device/network
 signals и пары игроков запрещены в generic outbox/analytics payload.
+
+## Контекст контента и новостей
+
+`content-news` владеет реестром источников, входными кандидатами, статьями и их редакциями, категориями, тегами,
+закладками, origin snapshots и решениями publication/takedown. Identity владеет пользователем и staff role grant;
+content хранит только opaque actor/reader references. Media ownership остаётся в content только для редакционно
+одобренных объектов, а object storage является адаптером, не источником прав.
+
+`ContentSource` — versioned policy aggregate с endpoint, состоянием допуска, разрешёнными use classes, attribution,
+review/evidence references и validity interval. `IngestCandidate` — непубличный снимок только разрешённых полей и
+полученных revisions. Он может породить editorial draft явным решением, но не является `Article` и не переходит в
+публичное состояние. Canonical URL, provider ID и fingerprint дают несколько ключей дедупликации; совпадение
+создаёт связь duplicate group, не уничтожая кандидата или origin.
+
+`Article` — стабильная identity и lifecycle pointer. Содержание находится в append-only `ArticleRevision`; отдельно
+фиксируются locale, category/tag references, SEO, media и attribution snapshot. `PublicationDecision` связывает
+точную revision, checklist/policy versions, actor/reviewer, schedule и outcome. Публична только revision, на которую
+указывает действующее committed publication decision. Поздний draft, retry scheduler или изменение upstream не
+двигает pointer. `UNPUBLISHED` и takedown закрывают все public projections прежде очистки body.
+
+Производная revision имеет один или несколько неизменяемых `ArticleOrigin`: source policy version, исходные title/
+author/publisher/URL/timestamps, transformation kind и rights basis. Original article явно маркируется как original
+и хранит редакционное авторство. Source pause/delete, candidate cleanup и смена attribution display name не удаляют
+origin опубликованной истории.
+
+`Category` — один управляемый локализуемый классификатор статьи; `Tag` — нормализованный редакционный словарь с
+many-to-many связью. Они не являются пользовательским контентом. `Bookmark` принадлежит identity+article,
+уникален для пары и не меняет ranking. После takedown read projection закладки содержит только недоступное состояние,
+а не сохранённую копию title/body.
+
+Content events несут opaque article/revision/source IDs, lifecycle/outcome enum и version; body, excerpt, title,
+slug/source URL, search query, author name, rights evidence и bookmark/user graph в generic outbox отсутствуют.
+Analytics получает отдельную минимизированную projection только при consent и не является источником publication,
+поиска, закладок или истории редакций.

@@ -722,3 +722,56 @@ Logs/traces/analytics не содержат source/user/club/season IDs, display
 баланс малой когорты, reason/evidence, score, review text, location или device/network identifiers. Operational
 metrics используют allowlisted enum/buckets; audit отделён от telemetry. XP нельзя использовать для рекламы,
 чувствительного профилирования, цены, доступа, спортивного рейтинга или решения trust/safety.
+
+## Политика контента и новостей
+
+Все источники deny-by-default. Публичный RSS/API, robots allow или техническая возможность скачать материал не
+заменяют лицензию. Versioned register фиксирует отдельно fetch, storage, excerpt, transformation, publication,
+media, cache и attribution rights, evidence, срок и повторную проверку. Без явного разрешения полный внешний текст,
+HTML страницы и media не попадают в primary storage, queue, DLQ, log, trace, search, analytics или backup.
+
+Fetcher принимает только заранее проверенный HTTPS endpoint из source registry, проверяет redirect/host/IP policy,
+размер, content type и timeout и не имеет произвольного URL из candidate/editor input. Private/link-local/metadata
+addresses, credentials, cookies, browser automation, auth/paywall bypass и fallback scraping запрещены. Raw response
+не логируется; quarantine malformed input имеет минимальный срок и доступ только purpose-bound operator. Конкретные
+SSRF, parser/bomb и sanitizer controls определяются последующим контрактным/backend этапом.
+
+CMS использует отдельную admin audience и fixed deny-by-default capabilities. `EDITOR` читает candidates/origins и
+управляет drafts/review/schedule/publication/history; он не получает user search, bookmarks, safety evidence,
+security audit или ads. `SUPERADMIN` управляет source enable/revoke и emergency unpublish, но не редактирует body.
+`MODERATOR` маршрутизирует content case/request, не читая draft, а `ADS_MANAGER` не имеет content access. Source
+governance и emergency action требуют свежей re-auth, closed reason, evidence/policy version и атомарного audit.
+
+Preview — короткоживущая staff-bound capability одной revision, не bearer URL общего доступа. Она не попадает в
+referrer, analytics, logs, WebSocket, clipboard action, sitemap или shared cache. Draft/candidate/history имеют
+`private, no-store`; публичные caches содержат только активную sanitized revision. Unpublish/takedown немедленно
+закрывает origin read, invalidates cache/search/card previews и запрещает offline-клиенту показывать тело как
+актуальное после получения tombstone.
+
+Article body поддерживает один allowlisted формат без executable HTML, scripts, inline event handlers, unsafe URL,
+embedded credential, arbitrary iframe или third-party tracker. External links явно маркируются, используют
+безопасные schemes/rel/referrer policy. Media проходит content type/size/malware/decompression checks, хранится без
+публичного исходного имени и публикуется только с правом, авторством и alt text. XSS/SSRF enforcement остаётся
+обязательным для этапов contract/backend и не считается реализованным этим документом.
+
+Reader feed/article публичны; bookmark list self-only. Bookmark не раскрывает title/body снятого материала и
+удаляется по запросу владельца/удалению аккаунта. Search query обрабатывается кратковременно, не попадает в URL,
+лог, trace, audit или analytics и не становится профилем. Share не принимает recipient/contact list и создаёт URL
+без user/bookmark/preview/tracking identifiers. Source visit передаёт только безопасный canonical referrer либо no
+referrer согласно review, никогда admin/deep-link secret.
+
+Revision body и rights evidence доступны только редакционной цели. Audit хранит actor/action/opaque target, policy/
+checklist version, reason enum, outcome и changed-field allowlist, но не полные before/after, article body, excerpt,
+query или source credential. Rights evidence хранится отдельно с узким доступом и encryption; operational metrics
+используют closed buckets. Любое чтение evidence и аварийное действие аудируется; недоступность обязательного audit
+откатывает мутацию.
+
+Retention задаётся по классу: rejected candidate/excerpt очищается после короткого редакционного окна; draft и
+revision — по редакционной/legal необходимости; bookmark — до удаления владельцем/аккаунтом; rights evidence,
+publication/takedown receipt и минимальный audit — по утверждённому legal/security сроку. Takedown удаляет
+запрещённое тело/media из primary, cache, index, queue/DLQ и по циклу backup, сохраняя невосстановимый минимальный
+receipt. Точные сроки, РФ-residency, legal hold и физическая очистка подтверждаются до production.
+
+Behavioral analytics допускается только по общему consent и не содержит body/title/excerpt, URL/slug/query,
+article/source/user/bookmark ID, автора, правовое evidence, recipient/contact, точное время или device/ad ID.
+Просмотры и поиск не используются для чувствительного профилирования, персональной рекламы или staff monitoring.

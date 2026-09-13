@@ -3055,3 +3055,68 @@ verify` после checksum-изменения прошли успешно с т
   скрытого winner bonus в проверяемой модели, а суммы прослеживаются до ledger. Полная приёмка остаётся
   заблокированной database/queue и browser runtime gates; к следующему prompt переходить нельзя. `npm ls
 --depth=0` и финальный `git diff --check` успешны, unmet/extraneous dependencies отсутствуют.
+
+## 2026-09-13 — новости и контент, этап 01-requirements
+
+- Активный промпт: `llm/12-content-news/01-requirements.md`, запущенный по прямому запросу владельца несмотря на
+  записанные в gamification verification database/queue/browser runtime gates. Этот документационный этап не
+  устраняет и не выдаёт их за устранённые. TypeSpec/AsyncAPI, OpenAPI, Prisma, migrations, backend, worker и клиенты
+  не менялись; к `12-content-news/02-contract-data.md` не переходили.
+- Определены 10 пользовательских историй и 14 сценариев «Дано/Когда/Тогда». Публичны только committed revisions в
+  `PUBLISHED`; candidate, draft, preview, unpublished, archive, origin evidence и история редакций закрыты от
+  reader API, поиска, sitemap и общих кешей. Публичных комментариев, пользовательских публикаций, реакций,
+  персонализированной поведенческой ленты и автопубликации нет.
+- Source registry закрыт по умолчанию и хранит отдельные права на fetch/storage/excerpt/transformation/publication/
+  media/cache, evidence, terms version, attribution, territory/language, срок и review. Включение/отзыв выполняет
+  `SUPERADMIN` с узкой capability, re-auth и аудитом; технически доступный RSS/API не считается разрешением. Ни один
+  реальный источник этим этапом не одобрен.
+- Без явной документированной лицензии полный внешний текст, HTML, paywalled content и media не извлекаются и не
+  хранятся. Разрешены только allowlisted metadata и короткая выдержка. Каждый производный материал сохраняет один
+  или несколько immutable origin snapshots с source, авторством/издателем, canonical URL, датами, rights policy и
+  видом переработки; оригинальные материалы явно отделены.
+- Ingestion создаёт только private candidate. Дедупликация по canonical URL, provider ID и fingerprint разрешённых
+  полей лишь группирует/помечает кандидатов: она не удаляет provenance, не объединяет origins и не меняет статью.
+  Timeout/malformed/`404/410` используют checkpoint/backoff, не создают пустую запись и не снимают материал
+  автоматически. Pause/revoke прекращает fetch; takedown и отзыв прав ведут к ручному быстрому unpublish.
+- Рабочий процесс задан как `DRAFT → IN_REVIEW → APPROVED → SCHEDULED/PUBLISHED → UNPUBLISHED → ARCHIVED` с
+  immutable revisions, staff-bound preview и versioned checklist. Schedule исполняет только уже одобренную точную
+  revision и идемпотентен. Self-review малой команды явно маркируется; `EDITOR` ведёт routine CMS, `SUPERADMIN`
+  имеет source governance/emergency unpublish без редактирования, `MODERATOR` только маршрутизирует нарушение, а
+  `ADS_MANAGER` CMS-доступа не получает.
+- Существенное исправление создаёт новую revision и публичную correction note; смысл статьи нельзя незаметно
+  заменить под прежним URL. Takedown закрывает reader/search/sitemap/cache и оставляет нейтральное состояние без
+  запрещённого тела. Hard delete истории из CMS отсутствует; удаление по праву очищает body/media из primary и
+  производных хранилищ, сохраняя минимальный невосстановимый restricted receipt. Точные retention и РФ-residency
+  остаются production legal/security gates.
+- Reader experience включает стабильную ленту, одну редакционную категорию, нормализованные теги, локализованный
+  published-only поиск, self-only идемпотентные закладки и canonical share/deep link без recipient/identity/tracking.
+  Снятая статья не раскрывает title/body через bookmark. Атрибуция производного материала видима и содержит
+  источник, автора при наличии, исходный заголовок/ссылку и license notice; недоступность source её не стирает.
+- SEO публикует canonical/OG/`Article` JSON-LD только из подтверждённых публичных полей, `hreflang` только для
+  реально опубликованных проверенных переводов и sitemap только для indexable `PUBLISHED`. Preview/search/bookmark/
+  admin/unpublished получают `noindex`. Перевод — отдельная проверенная revision; автоперевод не публикуется.
+- Behavioral analytics использует общий consent и только locale/surface/origin/method и крупные buckets. Body,
+  excerpt/title, URL/slug/query, IDs, bookmark graph, author/rights evidence, recipient/contact, точное время и
+  device/ad IDs запрещены. Operational metrics измеряют adapter/editorial/scheduler/cache outcomes без контента и
+  staff ranking; missing attribution, full-text violation, stale source review и draft/cache leak имеют target zero.
+- Изменённые файлы: `llm/_docs/product-requirements.md`, `llm/_docs/domain-model.md`,
+  `llm/_docs/architecture.md`, `llm/_docs/security-privacy.md`, `llm/_docs/analytics-plan.md` и этот журнал.
+
+### Проверки этапа content-news 01-requirements
+
+- `npx prettier --write llm/_docs/product-requirements.md llm/_docs/domain-model.md llm/_docs/architecture.md
+llm/_docs/security-privacy.md llm/_docs/analytics-plan.md` — успешно; изменённые документы отформатированы.
+- `npm run docs:check` — успешно, 130 Markdown-файлов и 0 ошибок; `npm run format:check` — успешно, включая 11
+  TypeSpec-файлов; `git diff --check` — успешно до записи журнала.
+- `npm run verify` — успешно полностью: восемь workspaces/один root lockfile; TypeSpec/Redocly; 182 REST
+  operations/61 messages; 123/123 contract/data/backend/verification policy tests; compatibility с `HEAD`, generated
+  drift/typecheck и OpenAPI mock; format/docs; lint и strict typecheck; unit/component tests и production builds.
+  Backend — 38/38 suites и 250/250 tests, web — 11/48, TMA — 9/30, API client — 1/6; shared package suites зелёные.
+- `npm ls --depth=0` — успешно, unmet/extraneous dependencies отсутствуют. Сохраняются прежние неблокирующие build
+  warnings о chunks web около 642 kB, TMA около 651 kB и MapLibre 924 kB; окружение задаёт небезопасный
+  `NODE_TLS_REJECT_UNAUTHORIZED=0`.
+- Критерии текущего этапа выполнены на уровне требований: candidate не может публиковаться автоматически, полный
+  внешний текст запрещён без явной документированной лицензии, а каждый производный материал обязан иметь
+  immutable origin. Реальные source permissions и licenses не проверялись и не заявлены. Точные DTO/state enum,
+  SQL constraints, sanitizer/adapter protocol, event allowlist и TTL принадлежат `12-content-news/02-contract-data.md`.
+  Ранее записанные runtime-gates геймификации остаются отдельным незакрытым риском.

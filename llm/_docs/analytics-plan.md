@@ -398,3 +398,38 @@ leaderboard cache invalidation и blocked-row leak. Labels не содержат
 Targets: duplicate net award, over-cap post, compensation over original, XP-to-DUPR/stat mutation, opt-out leak,
 blocked identity leak и unreviewed automatic sanction — ноль. Analytics outage не блокирует source workflow/XP;
 metrics outage не разрешает invariant violation, а пропущенные behavioral events не replay из ledger.
+
+## Контент и новости
+
+Publication, revision, source policy, takedown и bookmark — доменные records, а не behavioral analytics. CMS и
+reader flows работают без consent/provider; пропущенные поведенческие события не восстанавливаются из access logs,
+article history или bookmarks. Запрещены article/source/candidate/revision/user/bookmark IDs, title/body/excerpt,
+slug/URL, search query, category/tag с малой выборкой, author/publisher, rights evidence, recipient/contact, точное
+время и device/advertising identifiers.
+
+| Событие                        | Условие после факта                                     | Разрешённые свойства                                                             | Дедупликация                    |
+| ------------------------------ | ------------------------------------------------------- | -------------------------------------------------------------------------------- | ------------------------------- |
+| `content_feed_viewed`          | Клиент показал первую успешную страницу или empty state | `locale`, `surface`: web/tma; `resultBucket`; `filterKind`: none/category/tag    | View session у producer         |
+| `content_article_viewed`       | Публичная article projection стала видима               | `locale`; `originKind`: original/derived; `ageBucket`; без category/tag identity | Article view session у producer |
+| `content_search_completed`     | Клиент показал первую страницу результата               | `locale`; `resultBucket`; `queryLengthBucket`; без query/token/result identity   | Search session у producer       |
+| `content_bookmark_changed`     | Backend committed add/remove при consent actor          | `action`: add/remove; `originKind`; без article/bookmark ID                      | Bookmark operation ID           |
+| `content_share_intent_created` | Клиент вызвал share/copy для public canonical           | `method`: native/copy/tma; `surface`; без URL, article и recipient               | Share interaction у producer    |
+
+Feed→article rate использует только согласованные view sessions; auto-prefetch, crawler, preview, editor, retry и
+offline cache refresh исключаются. Search success показывает распределение result buckets и последующий article
+view в рамках ephemeral client session, не сохраняя query или выбранную article identity. Bookmark/share —
+намерения, а не доказательство прочтения или отправки. Метрики режутся только по locale, surface, origin kind,
+крупному age/result bucket и rollout arm; малые когорты подавляются.
+
+Продуктовые показатели сопоставляют публикационный cadence и reader usefulness с guardrails: takedown/correction,
+источник без актуального review, missing attribution, external-full-text violation, preview/draft leak и cache/search
+leak имеют target zero. Рост просмотров, поиска, bookmarks или shares не оправдывает копирование, clickbait,
+автопубликацию или расширение трекинга.
+
+Editorial operational metrics не требуют behavioral consent: candidate outcome/age, adapter success/status class,
+retry/backoff, duplicate key class, rights hold, source review expiry, draft→review→publish latency buckets,
+self-review count, scheduler duplicate suppression, correction/takedown reason class, cache/search invalidation lag и
+audit failure. Labels не содержат source/article/staff IDs, endpoint, body/excerpt/title, evidence, exact time или
+free-text reason. Dashboard не ранжирует редакторов и не восстанавливает историю их работы; audit остаётся
+отдельным security record. Fetch/analytics outage не может автоматически опубликовать либо сохранить запрещённый
+контент.

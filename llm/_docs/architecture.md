@@ -434,3 +434,35 @@ achievement и leaderboard из ledger и fail-closed не публикует pr
 решение остаётся в scoped moderation workflow с audit и appeal. Behavioral analytics получает только события
 после отдельного consent и не служит источником XP, recovery или расследования. Точные TypeSpec/AsyncAPI, SQL
 границы, payload allowlist и consumer retry определяются этапом `11-gamification/02-contract-data.md`.
+
+## Контент и новости
+
+Модуль `content-news` — отдельный bounded context модульного монолита. Он владеет source registry, ingest
+candidates, article/revision/origin, taxonomy, publication decisions и bookmarks. Administration предоставляет
+staff identity/capability и принимает минимальный audit; identity не получает текст или историю чтения. Reader API,
+CMS commands, ingestion worker, search projection и scheduler входят через отдельные ports и не пишут таблицы друг
+друга напрямую.
+
+Каждый RSS/API provider реализуется адаптером закрытого allowlist. Адаптер получает versioned source policy и может
+вернуть только разрешённые metadata/excerpt, checkpoint и технический outcome. Generic HTTP fetch произвольного URL,
+HTML crawler, обход robots/auth/paywall и fallback scraping архитектурно отсутствуют. Источник выключен до legal/
+security/privacy/commercial review; изменение условий переводит его в pause до новой версии policy.
+
+PostgreSQL остаётся источником lifecycle, immutable revisions/origins, checklist, bookmarks, audit link и
+publication pointer. BullMQ опрашивает источники и исполняет уже одобренное расписание at-least-once; source
+checkpoint, candidate keys и publication decision обеспечивают идемпотентность. Redis/CDN/search — удаляемые
+проекции. Они получают только `PUBLISHED`, а unpublish/takedown сначала закрывает authoritative public read и
+отправляет versioned invalidation. При lag система fail-closed не выдаёт старое тело из общего кеша.
+
+Поиск первой версии строится средствами PostgreSQL по активной локализованной revision; отдельного поискового
+кластера нет. Search index не содержит draft, candidate, origin evidence или revision history. Object storage
+принимает только редакционно одобренное media с rights metadata и immutable key; внешнее изображение нельзя
+hotlink/copy без разрешения.
+
+Preview отделён от публичного reader route и cache namespace, связан с staff session, capability и точной revision,
+имеет короткий срок, `private, no-store` и `noindex`. SSR/web SEO строится только из публичной projection; TMA deep
+link разрешается через canonical article identity. Events publication/unpublication не содержат body/title/URL.
+Поведенческая аналитика получает только consented allowlisted buckets и не участвует в выдаче или recovery.
+
+Точные TypeSpec/AsyncAPI, SQL constraints, content sanitizer, adapter protocol, TTL и event payload принадлежат
+этапу `12-content-news/02-contract-data.md`; этот этап не выбирает внешние источники и не заявляет их разрешёнными.
