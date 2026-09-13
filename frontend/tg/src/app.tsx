@@ -8,6 +8,7 @@ import { Link, Navigate, Route, Routes, useLocation, useParams } from 'react-rou
 import { useOnlineStatus } from './connectivity';
 import { ChatScreen, NotificationBadge, NotificationsScreen } from './communications-ui';
 import { ClubDetailsScreen, ClubInvitationScreen, ClubsScreen } from './clubs-ui';
+import { ClubGamificationSettings, ClubProgressRoute, LeaderboardScreen, ProgressScreen } from './gamification-ui';
 import { TelegramAccount, TelegramLogin, TelegramOnboarding } from './identity-ui';
 import { CreateMatchScreen, MatchDetailsScreen, MatchesScreen } from './matches-ui';
 import { ProfileScreen } from './profiles-ui';
@@ -116,6 +117,7 @@ export function App({ config, initData }: { readonly config: RuntimeConfig; read
                         <Link to="/venues">Площадки</Link>
                         <Link to="/clubs">Клубы</Link>
                         <Link to="/tournaments">Турниры</Link>
+                        <Link to="/progress">Прогресс</Link>
                         <Link to="/notifications">
                             Уведомления
                             <NotificationBadge client={client} />
@@ -172,6 +174,46 @@ export function App({ config, initData }: { readonly config: RuntimeConfig; read
                             signedIn={Boolean(session && !onboarding)}
                             userId={session?.user.id}
                         />
+                    }
+                />
+                <Route
+                    path="/clubs/:clubId/progress"
+                    element={
+                        session && !onboarding ? (
+                            <ClubProgressRoute client={client} />
+                        ) : (
+                            <Navigate to={session ? '/onboarding' : '/login'} replace />
+                        )
+                    }
+                />
+                <Route
+                    path="/clubs/:clubId/progress/settings"
+                    element={
+                        session && !onboarding ? (
+                            <ClubGamificationSettings client={client} online={online} />
+                        ) : (
+                            <Navigate to={session ? '/onboarding' : '/login'} replace />
+                        )
+                    }
+                />
+                <Route
+                    path="/progress"
+                    element={
+                        session && !onboarding ? (
+                            <ProgressScreen client={client} />
+                        ) : (
+                            <Navigate to={session ? '/onboarding' : '/login'} replace />
+                        )
+                    }
+                />
+                <Route
+                    path="/progress/seasons/:seasonId"
+                    element={
+                        session && !onboarding ? (
+                            <LeaderboardScreen client={client} online={online} />
+                        ) : (
+                            <Navigate to={session ? '/onboarding' : '/login'} replace />
+                        )
                     }
                 />
                 <Route

@@ -683,6 +683,95 @@ fieldset {
     }
 }
 
+/* TMA progress has no advertising or full-screen celebration layer. */
+.gamification-screen,
+.gamification-screen section,
+.settings-screen label {
+    display: grid;
+    gap: 0.7rem;
+}
+
+.gamification-boundary,
+.progress-card,
+.consent-card,
+.version-preview,
+.xp-source-list li,
+.achievement-list li,
+.template-editor li,
+.level-editor li,
+.leaderboard-list li {
+    padding: 0.85rem;
+    border: 1px solid var(--border);
+    border-radius: 0.9rem;
+    background: var(--surface);
+}
+
+.gamification-boundary {
+    border-width: 2px;
+    border-style: dashed;
+}
+
+.gamification-boundary h2,
+.progress-card h2 {
+    margin: 0;
+}
+
+.progress-card progress {
+    width: 100%;
+    height: 1.1rem;
+    accent-color: var(--primary);
+}
+
+.xp-total {
+    font-size: 1.25rem;
+    font-weight: 800;
+}
+
+.xp-source-list,
+.achievement-list,
+.template-editor,
+.level-editor,
+.leaderboard-list {
+    display: grid;
+    gap: 0.65rem;
+    padding: 0;
+    list-style: none;
+}
+
+.xp-source-list li,
+.achievement-list li,
+.template-editor li,
+.level-editor li,
+.leaderboard-list li,
+.achievement-list li > div {
+    display: flex;
+    align-items: stretch;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.achievement-state,
+.status-note,
+.compensation-note {
+    padding: 0.6rem;
+    border-radius: 0.6rem;
+    background: var(--surface-strong);
+}
+
+.compensation-note {
+    border-left: 0.3rem solid var(--primary);
+}
+
+.settings-screen select,
+.settings-screen input {
+    min-height: 2.75rem;
+}
+
+.field-error {
+    color: #8b271f;
+    font-weight: 700;
+}
+
 .profiles-main {
     width: min(100% - 2rem, 72rem);
     margin: 0 auto;

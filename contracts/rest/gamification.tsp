@@ -94,6 +94,11 @@ model XpLedgerEntry {
     createdAt: Timestamp;
 }
 
+model XpLedgerPage {
+    items: XpLedgerEntry[];
+    pageInfo: PageInfo;
+}
+
 model LevelDefinition {
     id: Uuid;
     scope: GamificationScope;
@@ -279,6 +284,13 @@ interface Gamification {
     @summary("Read own global progress")
     @doc("Returns the authenticated player's private lifetime global projection; it never exposes another player's ledger.")
     globalProgress(...RequestHeaders): GamificationOk<GamificationProgress> | GamificationReadErrors;
+
+    @get
+    @route("/xp-history")
+    @operationId("listOwnXpHistory")
+    @summary("List own XP ledger history")
+    @doc("Returns only the authenticated player's append-only entries in stable created-time and ID order. Source event identifiers are opaque and compensation links explain reversals without exposing match or review contents.")
+    xpHistory(...RequestHeaders, ...PaginationParameters): GamificationOk<XpLedgerPage> | GamificationReadErrors;
 
     @get
     @route("/achievements")

@@ -298,6 +298,7 @@ export function ClubDetailsScreen({
     return (
         <main className="shell-main clubs-screen">
             <Link to="/clubs">← Все клубы</Link>
+            {signedIn && <Link to={`/clubs/${clubId}/progress`}>Прогресс клуба</Link>}
             <section className="hero-card">
                 <div className="hero-copy">
                     <p className="eyebrow">{club.locality}</p>

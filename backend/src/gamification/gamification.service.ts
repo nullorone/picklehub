@@ -38,6 +38,43 @@ export class GamificationService {
         return this.progress(userId, GamificationScopeKind.CLUB, clubId);
     }
 
+    async xpHistory(userId: string, limit: number, cursor?: string): Promise<object> {
+        const before = cursor === undefined ? undefined : this.decodeCursor(cursor);
+        const rows = await this.prisma.xpLedgerEntry.findMany({
+            where: {
+                userId,
+                ...(before === undefined
+                    ? {}
+                    : { OR: [{ createdAt: { lt: before.at } }, { createdAt: before.at, id: { lt: before.id } }] }),
+            },
+            orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+            take: limit + 1,
+        });
+        const page = rows.slice(0, limit);
+        const last = page.at(-1);
+        return {
+            items: page.map((entry) => ({
+                id: entry.id,
+                scope: this.scope(entry.scopeKind, entry.clubId),
+                sourceKind: entry.sourceKind,
+                sourceEventId: entry.sourceEventId,
+                ruleDefinitionId: entry.ruleDefinitionId,
+                ruleVersion: entry.ruleVersion,
+                kind: entry.kind,
+                status: entry.status,
+                amount: entry.amount,
+                compensationOfEntryId: entry.compensationOfEntryId,
+                occurredAt: entry.sourceOccurredAt.toISOString(),
+                createdAt: entry.createdAt.toISOString(),
+            })),
+            pageInfo: {
+                hasMore: rows.length > limit,
+                nextCursor:
+                    rows.length > limit && last !== undefined ? this.encodeCursor(last.createdAt, last.id) : null,
+            },
+        };
+    }
+
     async achievements(userId: string, limit: number, cursor?: string): Promise<object> {
         const before = cursor === undefined ? undefined : this.decodeCursor(cursor);
         const rows = await this.prisma.achievementAward.findMany({

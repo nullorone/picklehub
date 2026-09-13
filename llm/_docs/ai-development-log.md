@@ -2951,3 +2951,58 @@ llm/_docs/security-privacy.md llm/_docs/analytics-plan.md` — успешно; �
   out-of-order / cap / reversal / opt-out / rebuild integration fixtures с Redis и сравнить sequential/rebuild
   checksum. Ранее записанная tournament verification блокировка остаётся отдельным риском; к
   `11-gamification/04-tma-web.md` не переходили.
+
+## 2026-09-13 — геймификация, этап 04-tma-web
+
+- Активный промпт: `llm/11-gamification/04-tma-web.md`. В web/PWA и TMA добавлены отдельные platform UI и маршруты
+  личного и клубного прогресса. Экран показывает текущий/следующий уровень, семантический HTML progress с числовой
+  альтернативой, lifetime XP, frozen state, причины и UTC-лимиты трёх разрешённых источников, историю достижений и
+  состояния пустых данных/загрузки/ошибки. Текст явно отделяет XP активности от спортивной статистики и DUPR и не
+  называет XP рейтингом мастерства.
+- Обнаружен контрактный пропуск завершённого этапа 02: `XpLedgerEntry` существовал, но self-only операция истории
+  отсутствовала, поэтому фактическое объяснение начисления и отмены было невозможно. Минимально добавлен
+  `GET /gamification/xp-history` с bearer, `private, no-store`, cursor pagination и только ledger текущего user;
+  source IDs остаются opaque, содержание матча/отзыва и другие участники не выдаются. TypeSpec остаётся источником,
+  OpenAPI и оба TypeScript artifact перегенерированы. Backend отдаёт стабильный append-only порядок и compensation
+  link; unit test проверяет owner filter, reversal и форму страницы.
+- История в обоих клиентах различает `POSTED`, `PENDING`, `CAPPED`, `AWARD`, `REVERSAL` и `REINSTATEMENT`, показывает
+  причину, время исходного события и версию правила. Отмена представлена отдельной строкой с исходной записью,
+  сохранённой в истории; capped событие не изображается как начисление. Достижение отдельно показывает earned,
+  revoked и reinstated, без связи со спортивным результатом.
+- Сезонная таблица показывает интервал, lifecycle и версию правил, shared competition rank, seasonal XP и
+  privacy-placeholder без identity для заблокированной строки. До отдельной мутации отображается явный opt-out;
+  consent привязан к одному сезону, может быть отозван, offline не создаёт optimistic success, а closed season не
+  предлагает новый opt-in. Объяснено, что отзыв согласия удаляет строку, но сохраняет XP.
+- Настройки клуба используют только три server-provided шаблона: администратор может включить источник и выбрать
+  коэффициент `0.5..2.0` с шагом `0.1`, но не изменить base XP или caps. Редактор 1–20 уровней проверяет порядок,
+  непустые названия до 30 символов, строго растущие thresholds и future effective time. Preview показывает
+  следующий immutable version, XP на событие и неизменные caps; revision conflict требует загрузить свежую версию.
+  Мутации отключены offline. Конфетти, реклама и полноэкранные overlay в surface отсутствуют; существующий
+  `prefers-reduced-motion` отключает transitions.
+- Основные изменённые файлы: `frontend/{web,tg}/src/{app,clubs-ui,gamification-ui,styles}.tsx/css`, platform tests,
+  typed methods `frontend/packages/api-client/src/index.ts`, TypeSpec/generated OpenAPI, gamification controller /
+  service и unit test, contract allowlist, `llm/_docs/gamification-data-policy.md` и этот журнал.
+
+### Проверки этапа gamification 04-tma-web
+
+- Targeted lint/typecheck/test/build для `@picklehub/api-client`, `@picklehub/web`, `@picklehub/tg` и backend —
+  успешно. Web: 11/11 suites и 48/48 tests; TMA: 9/9 и 30/30; API client: 1/1 и 6/6; backend после нового history
+  test: 37/37 и 243/243. Новые UI suites по 3/3 проверяют accessible progress, разделение DUPR/statistics,
+  фактический reversal, explicit consent, blocked placeholder, allowlisted coefficients, preview и offline mutation.
+- `npm run contracts:generate`, `npm run contracts:lint`, `npm run contracts:generated:check` и
+  `npm run contracts:typecheck` — успешно: 182 REST operations/61 messages, 117/117 policy/data/backend tests,
+  Redocly, reproducible generated types и strict contract typecheck зелёные.
+- Финальный `npm run verify` — успешно полностью: workspace/lockfile, TypeSpec, Redocly, 117 contract tests,
+  compatibility с `HEAD`, generated drift/typecheck, OpenAPI mock, format/docs, lint, strict typecheck, tests и
+  production builds всех восьми workspaces. PWA manifest/service worker и отсутствие TMA development mock
+  подтверждены. Сохраняются неблокирующие bundle warnings: web около 642 kB, TMA около 651 kB, MapLibre 924 kB;
+  окружение по-прежнему задаёт небезопасный `NODE_TLS_REJECT_UNAUTHORIZED=0`.
+- Два первых targeted запуска Vitest были ошибочно переданы с Jest-флагом `--runInBand`, затем с путём от корня
+  вместо workspace; они завершились до тестов (`Unknown option` / `No test files found`). Команды исправлены на
+  `npm test --workspace @picklehub/{web,tg} -- src/gamification-ui.test.tsx`, обе suites прошли 3/3. Первый Prettier
+  вызов включал неподдерживаемый `.tsp` parser и остановился до генерации; TypeSpec затем проверен штатными
+  `contracts:*` и полным verify. Проверки не ослаблялись.
+- Runtime PostgreSQL/Redis интеграция этого read-only endpoint не запускалась: среда ранее подтверждённо запрещает
+  loopback к этим сервисам. Новая migration не нужна; owner predicate и response mapping покрыты unit test, contract
+  privacy — policy suite. Ранее записанные runtime gates gamification backend/tournaments остаются без изменений.
+  Следующий промпт — `llm/11-gamification/05-verification.md`; к нему не переходили.

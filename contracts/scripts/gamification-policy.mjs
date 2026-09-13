@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 
 export const gamificationOperations = {
     '/gamification/progress': ['get'],
+    '/gamification/xp-history': ['get'],
     '/gamification/achievements': ['get'],
     '/gamification/seasons/{seasonId}/leaderboard': ['get'],
     '/gamification/seasons/{seasonId}/leaderboard-consent': ['put'],

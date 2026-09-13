@@ -45,6 +45,16 @@ export class GamificationController {
         return this.gamification.globalProgress(await this.user(authorization, request));
     }
 
+    @Get('gamification/xp-history')
+    async xpHistory(
+        @Headers('authorization') authorization: string | undefined,
+        @Req() request: Request,
+        @Query('limit') rawLimit = '50',
+        @Query('cursor') cursor?: string
+    ): Promise<object> {
+        return this.gamification.xpHistory(await this.user(authorization, request), this.limit(rawLimit), cursor);
+    }
+
     @Get('clubs/:clubId/gamification/progress')
     async clubProgress(
         @Param('clubId', new ParseUUIDPipe()) clubId: string,

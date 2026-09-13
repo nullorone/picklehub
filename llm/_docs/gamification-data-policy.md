@@ -5,7 +5,9 @@
 TypeSpec [`gamification.tsp`](../../contracts/rest/gamification.tsp) добавляет только аутентифицированные private
 reads и защищённые мутации. `/gamification/progress` возвращает собственный global progress,
 `/clubs/{clubId}/gamification/progress` — независимый progress одного клуба, а `/gamification/achievements` —
-собственные awards. Сезонная таблица доступна через `/gamification/seasons/{seasonId}/leaderboard`; строка возникает
+собственные awards. Self-only `/gamification/xp-history` возвращает append-only историю с непрозрачными source ID и
+ссылками компенсаций, не раскрывая матч, отзыв или другого игрока. Сезонная таблица доступна через
+`/gamification/seasons/{seasonId}/leaderboard`; строка возникает
 только после отдельного consent данного пользователя, scope и сезона.
 
 `PUT .../leaderboard-consent` принимает явное `optedIn`, policy version и expected revision. Consent выключен по

@@ -1043,6 +1043,59 @@ export function createIdentityClient(options: ApiClientOptions, platform: Client
             call<SchemaBlockPage>('/me/blocks', undefined, { auth: true, query: query({ cursor, limit }) }),
         getPublicPlayerReputation: (playerId: string) =>
             call<SchemaPublicReviewAggregate>(`/players/${playerId}/reputation`, undefined, { auth: true }),
+        getOwnGlobalProgress: () =>
+            call<components['schemas']['GamificationProgress']>('/gamification/progress', undefined, { auth: true }),
+        listOwnXpHistory: (cursor?: string, limit = 100) =>
+            call<components['schemas']['XpLedgerPage']>('/gamification/xp-history', undefined, {
+                auth: true,
+                query: query({ cursor, limit }),
+            }),
+        getClubGamificationProgress: (clubId: string) =>
+            call<components['schemas']['GamificationProgress']>(`/clubs/${clubId}/gamification/progress`, undefined, {
+                auth: true,
+            }),
+        listOwnAchievements: (cursor?: string, limit = 50) =>
+            call<components['schemas']['AchievementPage']>('/gamification/achievements', undefined, {
+                auth: true,
+                query: query({ cursor, limit }),
+            }),
+        getSeasonLeaderboard: (seasonId: string, cursor?: string, limit = 50) =>
+            call<components['schemas']['LeaderboardPage']>(`/gamification/seasons/${seasonId}/leaderboard`, undefined, {
+                auth: true,
+                query: query({ cursor, limit }),
+            }),
+        setLeaderboardConsent: (
+            seasonId: string,
+            body: components['schemas']['LeaderboardConsentInput'],
+            idempotencyKey?: string
+        ) =>
+            call<components['schemas']['LeaderboardConsent']>(
+                `/gamification/seasons/${seasonId}/leaderboard-consent`,
+                body,
+                { auth: true, idempotent: true, idempotencyKey, method: 'PUT', mutation: true }
+            ),
+        getClubGamificationConfiguration: (clubId: string) =>
+            call<components['schemas']['ClubGamificationConfiguration']>(
+                `/clubs/${clubId}/gamification/configuration`,
+                undefined,
+                { auth: true }
+            ),
+        updateClubGamificationConfiguration: (
+            clubId: string,
+            body: components['schemas']['UpdateClubGamificationConfiguration'],
+            idempotencyKey?: string
+        ) =>
+            call<components['schemas']['ClubGamificationConfiguration']>(
+                `/clubs/${clubId}/gamification/configuration`,
+                body,
+                { auth: true, idempotent: true, idempotencyKey, method: 'PUT', mutation: true }
+            ),
+        getGamificationAdminDefinitions: () =>
+            call<components['schemas']['GamificationDefinitionCatalogue']>(
+                '/gamification/admin/definitions',
+                undefined,
+                { auth: true }
+            ),
     } as const;
 }
 
