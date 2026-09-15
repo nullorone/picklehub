@@ -18,6 +18,7 @@ import { VenuesModule } from './venues/venues.module';
 import { TournamentsModule } from './tournaments/tournaments.module';
 import { GamificationModule } from './gamification/gamification.module';
 import { ContentModule } from './content/content.module';
+import { AdvertisingModule } from './advertising/advertising.module';
 
 @Module({
     imports: [
@@ -38,6 +39,7 @@ import { ContentModule } from './content/content.module';
         TournamentsModule,
         GamificationModule,
         ContentModule,
+        AdvertisingModule,
     ],
     providers: [OutboxWorkerService],
 })

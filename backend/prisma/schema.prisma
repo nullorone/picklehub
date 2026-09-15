@@ -3797,6 +3797,7 @@ model AdProviderPolicy {
   id                   String             @id @db.Uuid
   code                 String             @db.VarChar(80)
   version              Int
+  policyVersion        String             @map("policy_version") @db.VarChar(32)
   enabled              Boolean            @default(false)
   legalReview          ContentReviewState @map("legal_review")
   securityReview       ContentReviewState @map("security_review")

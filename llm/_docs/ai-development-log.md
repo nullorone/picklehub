@@ -3529,3 +3529,56 @@ npx prisma validate --schema backend/prisma/schema.prisma` — успешно; �
   этой записи. Критерии этапа выполнены на уровне contracts/schema/static evidence. Legal basis, маркировка/
   ОРД/ЕРИР, provider terms/РФ-residency/deletion и runtime PostgreSQL concurrency не заявляются проверенными;
   следующий промпт — `llm/13-advertising/03-backend.md`, прежние content-news runtime-gates также остаются.
+
+## 2026-09-15 — реклама, этап 03-backend
+
+- Активный промпт: `llm/13-advertising/03-backend.md`. Добавлен NestJS `AdvertisingModule` со всеми опубликованными
+  client и admin routes: deterministic direct selection, отдельные issuance/viewable/click, UUIDv4 encrypted
+  idempotency receipts, CSRF/Origin, private no-store, фиксированные `ADS_MANAGER` capabilities и отдельный
+  `SUPERADMIN` provider-governance capability. Контекст проверяется exact allowlist; URL/query, identity/profile,
+  точные координаты, IP, advertising/device ID и история не имеют runtime-поля и не используются для выбора.
+- Selection фильтрует exact enabled placement/format, `ACTIVE` approved snapshot, полуоткрытое UTC schedule и
+  закрытые target rules; порядок — priority tier, immutable snapshot hash, campaign UUID. Campaign и counter
+  блокируются `FOR UPDATE`, а migration triggers остаются последней границей hard budget и rolling cap. Параллельные
+  issuance до viewable допустимы лишь в пределах зарезервированного бюджета; cap применяется к viewable fact.
+  Пятиминутный Redis cache ускоряет отрицательное решение, но PostgreSQL остаётся authoritative; rollback может
+  создать только консервативный no-fill до 5 минут.
+- CPM/CPC reservation/finalization, replay-safe measurement, exact approved HTTPS destination и минимальные body-free
+  outbox events реализованы одной serializable transaction. Raw delivery/click/cap tokens не хранятся: используются
+  purpose-separated HMAC; token-scoped Redis limits закрывают repeated/automated measurement без IP/fingerprint.
+  Daily aggregate подавляет cohort меньше 20 и не имеет raw/user export.
+- Реализованы placement/campaign/immutable revision/creative moderation, независимый reviewer, audit, pause/resume и
+  schedule lifecycle. Дополнительная forward migration исправляет противоречие data-stage: snapshot остаётся
+  immutable, но допускается единственная запись reviewer/approvedAt; expired reservation получает отдельный
+  database guard, а raw events могут удаляться только retention worker. Provider policy получил сохраняемый
+  `policyVersion`.
+- Worker ежеминутно активирует scheduled и завершает expired/exhausted кампании, сверяет 30-дневные aggregates с
+  append-only facts, один раз освобождает expired reservations и удаляет целиком истёкшие delivery chains, cap state
+  и encrypted receipts. Зарегистрирован только `DisabledAdvertisingProvider`: enable без отсутствующего в wire
+  полного review evidence возвращает `LEGAL_EVIDENCE_REQUIRED`, exception/null всегда превращается в `NO_FILL`.
+  Ни provider, ни SDK, ни реальная кампания/placement не выбраны и не включены.
+- Добавлены unit tests, backend static policy, PostgreSQL/Redis integration scenarios для concurrent one-budget-slot,
+  rolling frequency и immediate pause, эксплуатационный документ `llm/_docs/advertising-backend.md`, first-party
+  `ADVERTISING_ASSET_BASE_URL` и описание модуля в backend README. Обновлён устаревший content policy assertion:
+  он по-прежнему запрещает `ADS_MANAGER` любые CMS capabilities, но допускает новые рекламные capabilities.
+
+### Проверки этапа advertising 03-backend
+
+- Prisma generate без явных engine paths ожидаемо получил sandbox `EPERM` на глобальном cache; повтор с
+  `PRISMA_SCHEMA_ENGINE_BINARY` и `PRISMA_QUERY_ENGINE_LIBRARY` из локального cache — успешно. `prisma validate` с
+  теми же paths — успешно. Backend lint и strict typecheck — успешно.
+- `npm test --workspace @picklehub/backend -- --runInBand` — успешно: 45/45 suites, 281/281 tests. Targeted
+  advertising contract/data/backend policies — 11/11 успешно; полный `contracts:lint` — 149/149 tests, TypeSpec,
+  Redocly и 223 REST operations/66 messages успешно.
+- `npm run verify` успешно прошёл workspace check, contract lint, compatibility, generated drift/typecheck и затем
+  остановился на OpenAPI mock: sandbox запретил `listen EPERM 127.0.0.1`. Это не contract assertion failure. Оставшаяся
+  точная цепочка `format:check`, `docs:check`, lint, strict typecheck, unit/component tests и production builds восьми
+  workspaces выполнена отдельно и успешна; сохраняются прежние bundle warnings web/TMA/MapLibre около
+  682/663/924 KiB.
+- `prisma migrate deploy` с явными engine paths не смог подключиться к PostgreSQL (`P1001 127.0.0.1:5432`), а Docker
+  daemon недоступен sandbox. Targeted `advertising-backend.integration-spec.ts` поэтому не дошёл до сценариев:
+  Redis получил `connect EPERM 127.0.0.1:6379`, а тестовая БД не имела новой migration. Ни SQL syntax новой migration,
+  ни фактические row-lock races, release trigger и aggregate reconciliation не выдаются за runtime-проверенные.
+- `git diff --check` был успешен до записи журнала; после записи повторяются docs/format/whitespace checks. Runtime
+  PostgreSQL/Redis suite, чистое и upgrade-применение migration, legal/ОРД/ЕРИР/residency, реальные creative assets и
+  provider review остаются gates. Следующий промпт — `llm/13-advertising/04-tma-web.md`; этап 04 не начат.

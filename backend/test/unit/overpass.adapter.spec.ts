@@ -59,6 +59,7 @@ function environment(): Environment {
         PROFILE_DUPR_ALLOWED_HOSTS: '',
         PROFILE_DUPR_ALLOWED_PATH_PATTERN: '^/player/[^/]+/?$',
         PROFILE_DUPR_OUTBOUND_ENABLED: 'false',
+        ADVERTISING_ASSET_BASE_URL: 'https://localhost/assets/advertising',
     };
 }
 

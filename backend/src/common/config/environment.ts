@@ -95,6 +95,7 @@ const environmentSchema = z
             .string()
             .regex(/^[1-9][0-9]*\.[0-9]+\.[0-9]+$/u)
             .optional(),
+        ADVERTISING_ASSET_BASE_URL: httpsUrl.default('https://localhost/assets/advertising'),
     })
     .superRefine((environment, context) => {
         if (environment.NODE_ENV === 'production' && environment.REDIS_NAMESPACE === 'local') {

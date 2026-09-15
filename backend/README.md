@@ -36,6 +36,12 @@ refresh выдаётся только в Secure/HttpOnly cookie, ротируе�
 Redis, request context, logging, errors и lifecycle находятся в `common`. Контроллеры работают через сервисы и
 не обращаются к Prisma напрямую.
 
+`advertising` выбирает direct campaign только по allowlisted текущему контексту и coarse geography. PostgreSQL
+сериализует hard budget и rolling frequency cap; Redis используется как консервативный короткий cache и для
+token-scoped anti-fraud limits. Внешний adapter зарегистрирован только в disabled-варианте, а ошибка или отсутствие
+рекламы всегда возвращает `NO_FILL` и не блокирует продукт. Полная модель допуска конкуренции и runtime gates описана
+в `llm/_docs/advertising-backend.md`.
+
 Outbox-запись создаётся прикладным сценарием через `OutboxService` и переданный `Prisma.TransactionClient` — так
 она попадает в ту же транзакцию, что и будущее доменное изменение. Worker конкурентно забирает записи через
 `FOR UPDATE SKIP LOCKED`, публикует минимальную ссылку в BullMQ и использует `eventId` как `jobId` для

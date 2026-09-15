@@ -23,6 +23,13 @@ export const ADMIN_CAPABILITIES = [
     'CONTENT_PREVIEW',
     'CONTENT_PUBLISH',
     'CONTENT_EMERGENCY_UNPUBLISH',
+    'AD_PLACEMENT_MANAGE',
+    'AD_CAMPAIGN_MANAGE',
+    'AD_CAMPAIGN_REVIEW',
+    'AD_CAMPAIGN_PAUSE',
+    'AD_CREATIVE_MANAGE',
+    'AD_PROVIDER_GOVERN',
+    'AD_REPORT_READ',
 ] as const;
 
 export type AdminCapability = (typeof ADMIN_CAPABILITIES)[number];
@@ -39,6 +46,7 @@ const ROLE_CAPABILITIES = {
         'CONTENT_SOURCE_READ',
         'CONTENT_SOURCE_GOVERN',
         'CONTENT_EMERGENCY_UNPUBLISH',
+        'AD_PROVIDER_GOVERN',
     ],
     MODERATOR: [
         'ADMIN_SESSION_ACCESS',
@@ -59,7 +67,15 @@ const ROLE_CAPABILITIES = {
         'CONTENT_PREVIEW',
         'CONTENT_PUBLISH',
     ],
-    ADS_MANAGER: ['ADMIN_SESSION_ACCESS'],
+    ADS_MANAGER: [
+        'ADMIN_SESSION_ACCESS',
+        'AD_PLACEMENT_MANAGE',
+        'AD_CAMPAIGN_MANAGE',
+        'AD_CAMPAIGN_REVIEW',
+        'AD_CAMPAIGN_PAUSE',
+        'AD_CREATIVE_MANAGE',
+        'AD_REPORT_READ',
+    ],
 } as const satisfies Record<PlatformRole, readonly AdminCapability[]>;
 
 @Injectable()

@@ -19,7 +19,17 @@ describe('AdministrationPolicy', () => {
             'CONTENT_PREVIEW',
             'CONTENT_PUBLISH',
         ]);
-        expect(policy.capabilities(PlatformRole.ADS_MANAGER)).toEqual(['ADMIN_SESSION_ACCESS']);
+        expect(policy.capabilities(PlatformRole.ADS_MANAGER)).toEqual([
+            'ADMIN_SESSION_ACCESS',
+            'AD_PLACEMENT_MANAGE',
+            'AD_CAMPAIGN_MANAGE',
+            'AD_CAMPAIGN_REVIEW',
+            'AD_CAMPAIGN_PAUSE',
+            'AD_CREATIVE_MANAGE',
+            'AD_REPORT_READ',
+        ]);
+        expect(policy.capabilities(PlatformRole.ADS_MANAGER)).not.toContain('AD_PROVIDER_GOVERN');
+        expect(policy.capabilities(PlatformRole.SUPERADMIN)).toContain('AD_PROVIDER_GOVERN');
         expect(policy.capabilities(PlatformRole.SUPERADMIN)).toContain('CONTENT_SOURCE_GOVERN');
         expect(policy.capabilities(PlatformRole.MODERATOR)).not.toContain('CONTENT_EDIT');
         expect(() => {

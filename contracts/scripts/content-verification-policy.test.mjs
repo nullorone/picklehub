@@ -22,7 +22,8 @@ test('the CMS role matrix is fixed and drafts stay behind private no-store capab
     assert.match(policy, /EDITOR:[\s\S]*'CONTENT_EDIT'[\s\S]*'CONTENT_PREVIEW'[\s\S]*'CONTENT_PUBLISH'/u);
     assert.match(policy, /SUPERADMIN:[\s\S]*'CONTENT_SOURCE_GOVERN'[\s\S]*'CONTENT_EMERGENCY_UNPUBLISH'/u);
     assert.match(policy, /MODERATOR:[\s\S]*'SAFETY_CASE_DECIDE'/u);
-    assert.match(policy, /ADS_MANAGER: \['ADMIN_SESSION_ACCESS'\]/u);
+    const adsManager = /ADS_MANAGER: \[([\s\S]*?)\],/u.exec(policy)?.[1] ?? '';
+    assert.doesNotMatch(adsManager, /CONTENT_/u);
     assert.match(controller, /await this\.admin\(authorization, 'CONTENT_PREVIEW'\)/u);
     assert.match(controller, /response\.setHeader\('X-Robots-Tag', 'noindex, nofollow'\)/u);
     assert.match(controller, /private, no-store/u);
