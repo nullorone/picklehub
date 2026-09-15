@@ -42,7 +42,9 @@ function requireNoStore(response, label) {
             ?.split(',')
             .some((directive) => directive.trim() === 'no-store')
     ) {
-        throw new Error(`${label} must be no-store.`);
+        throw new Error(
+            `${label} must be no-store (status ${response.status}, cache-control ${response.headers.get('cache-control')}).`
+        );
     }
 }
 
@@ -312,8 +314,51 @@ try {
             `Unexpected content bookmark mock: ${contentBookmarks.status} ${JSON.stringify(contentBookmarksBody)}`
         );
     }
+
+    const advertisingDecision = await fetch(`http://${host}:${port}/advertising/decisions`, {
+        method: 'POST',
+        headers: {
+            'accept-language': 'ru-RU',
+            'content-type': 'application/json',
+            'idempotency-key': '75b02ea4-b8e7-46c9-bb0e-c6f2336b18bd',
+            origin: 'https://app.example.test',
+            'x-csrf-token': contextBody.csrfToken,
+        },
+        body: JSON.stringify({
+            context: {
+                placementCode: 'NEWS_FEED_INLINE',
+                surface: 'NEWS_FEED',
+                clientKind: 'WEB',
+                locale: 'ru-RU',
+                formFactor: 'REGULAR',
+                contentCategory: 'SPORT_NEWS',
+                geography: { countryCode: 'RU', regionCode: 'MOW', cityCode: 'MOSCOW' },
+                connectivity: 'REGULAR',
+                criticalState: false,
+                providerConsent: false,
+            },
+        }),
+    });
+    const advertisingBody = await advertisingDecision.json();
+    if (advertisingDecision.status !== 200) {
+        throw new Error(
+            `Unexpected advertising decision mock status: ${advertisingDecision.status} ${JSON.stringify(advertisingBody)}`
+        );
+    }
+    requireNoStore(advertisingDecision, 'Advertising decision response');
+    if (
+        advertisingDecision.status !== 200 ||
+        !['DIRECT', 'EXTERNAL_FALLBACK', 'HOUSE', 'NO_FILL'].includes(advertisingBody.source) ||
+        ['userId', 'sessionId', 'deviceId', 'ip', 'coordinates', 'url', 'query'].some(
+            (field) => field in advertisingBody
+        )
+    ) {
+        throw new Error(
+            `Unexpected advertising decision mock: ${advertisingDecision.status} ${JSON.stringify(advertisingBody)}`
+        );
+    }
     console.log(
-        'OpenAPI mock passed: health, identity, venue, match, communication, profile, trust/safety, administration, club, tournament, gamification and content examples are valid.'
+        'OpenAPI mock passed: health, identity, venue, match, communication, profile, trust/safety, administration, club, tournament, gamification, content and advertising examples are valid.'
     );
 } finally {
     child.kill('SIGTERM');

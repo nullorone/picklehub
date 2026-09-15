@@ -17,6 +17,11 @@ const [openApiSource, controller, service, migration, adminClient, pwaConfig, ve
 const openApi = parse(openApiSource);
 
 const expected = {
+    'get /admin/advertising/campaigns': ['ADS_MANAGER'],
+    'get /admin/advertising/campaigns/{campaignId}': ['ADS_MANAGER'],
+    'get /admin/advertising/creatives/{creativeId}': ['ADS_MANAGER'],
+    'get /admin/advertising/placements': ['ADS_MANAGER'],
+    'get /admin/advertising/providers': ['SUPERADMIN'],
     'get /admin/audit': ['SUPERADMIN', 'MODERATOR'],
     'get /admin/cases': ['SUPERADMIN', 'MODERATOR'],
     'get /admin/cases/{caseId}': ['SUPERADMIN', 'MODERATOR'],
@@ -32,6 +37,15 @@ const expected = {
     'get /admin/venue-candidates': ['MODERATOR'],
     'get /admin/venue-candidates/{itemId}': ['MODERATOR'],
     'post /admin/break-glass-grants': ['SUPERADMIN'],
+    'post /admin/advertising/campaigns': ['ADS_MANAGER'],
+    'post /admin/advertising/campaigns/{campaignId}/decisions': ['ADS_MANAGER'],
+    'post /admin/advertising/campaigns/{campaignId}/pause': ['ADS_MANAGER'],
+    'post /admin/advertising/campaigns/{campaignId}/resume': ['ADS_MANAGER'],
+    'post /admin/advertising/campaigns/{campaignId}/revisions': ['ADS_MANAGER'],
+    'post /admin/advertising/creatives': ['ADS_MANAGER'],
+    'post /admin/advertising/placements': ['ADS_MANAGER'],
+    'post /admin/advertising/providers/{providerCode}/state': ['SUPERADMIN'],
+    'post /admin/advertising/reports': ['ADS_MANAGER'],
     'post /admin/break-glass-grants/{grantId}/revoke': ['SUPERADMIN'],
     'post /admin/cases/{caseId}/assignment': ['SUPERADMIN', 'MODERATOR'],
     'post /admin/cases/{caseId}/decision': ['MODERATOR'],
@@ -50,13 +64,15 @@ const expected = {
     'post /admin/users/lookup': ['SUPERADMIN', 'MODERATOR'],
     'post /admin/venue-candidates/{itemId}/decision': ['MODERATOR'],
     'post /admin/venue-candidates/{itemId}/merge': ['MODERATOR'],
+    'put /admin/advertising/placements/{placementId}': ['ADS_MANAGER'],
+    'put /admin/content/sources/{sourceId}': ['EDITOR'],
 };
 
 test('every generated admin operation has the reviewed fixed-role matrix', () => {
     const actual = {};
     for (const [path, pathItem] of Object.entries(openApi.paths)) {
         if (!path.startsWith('/admin/')) continue;
-        for (const method of ['get', 'post']) {
+        for (const method of ['get', 'post', 'put']) {
             const operation = pathItem[method];
             if (operation) actual[`${method} ${path}`] = operation['x-admin-roles'];
         }

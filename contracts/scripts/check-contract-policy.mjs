@@ -17,6 +17,7 @@ import { checkClubContract, clubEventFields, clubOperations } from './clubs-poli
 import { checkTournamentContract, tournamentEventFields, tournamentOperations } from './tournaments-policy.mjs';
 import { checkGamificationContract, gamificationEventFields, gamificationOperations } from './gamification-policy.mjs';
 import { checkContentContract, contentEventFields, contentOperations } from './content-policy.mjs';
+import { advertisingEventFields, advertisingOperations, checkAdvertisingContract } from './advertising-policy.mjs';
 
 const allowedPaths = new Set([
     '/health/live',
@@ -32,6 +33,7 @@ const allowedPaths = new Set([
     ...Object.keys(tournamentOperations),
     ...Object.keys(gamificationOperations),
     ...Object.keys(contentOperations),
+    ...Object.keys(advertisingOperations),
 ]);
 const allowedProtocolMessages = new Set([
     'session.authenticate.v1',
@@ -117,7 +119,8 @@ assert(
             name in clubEventFields ||
             name in tournamentEventFields ||
             name in gamificationEventFields ||
-            name in contentEventFields
+            name in contentEventFields ||
+            name in advertisingEventFields
     ),
     'AsyncAPI may define only approved protocol and owning-feature messages.'
 );
@@ -137,7 +140,8 @@ assert(
             Object.keys(clubEventFields).length +
             Object.keys(tournamentEventFields).length +
             Object.keys(gamificationEventFields).length +
-            Object.keys(contentEventFields).length,
+            Object.keys(contentEventFields).length +
+            Object.keys(advertisingEventFields).length,
     'AsyncAPI must define all approved protocol and owning-feature messages.'
 );
 
@@ -172,5 +176,6 @@ checkClubContract(openApi, asyncApi);
 checkTournamentContract(openApi, asyncApi);
 checkGamificationContract(openApi, asyncApi);
 checkContentContract(openApi, asyncApi);
+checkAdvertisingContract(openApi, asyncApi);
 
 console.log(`Contract policy passed: ${operationIds.length} REST operations, ${messageNames.length} messages.`);

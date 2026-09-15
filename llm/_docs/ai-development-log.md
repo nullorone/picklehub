@@ -3477,3 +3477,55 @@ llm/_docs/security-privacy.md llm/_docs/analytics-plan.md` — успешно; �
   запрещены, отсутствие рекламы не блокирует продукт, а внешний SDK не выбран. Точные DTO/state enum, SQL
   constraints, cap/nonce/TTL, provider protocol и event allowlist принадлежат `13-advertising/02-contract-data.md`.
   Ранее записанные content-news runtime-gates остаются отдельным незакрытым риском.
+
+## 2026-09-15 — реклама, этап 02-contract-data
+
+- Активный промпт: `llm/13-advertising/02-contract-data.md`. Добавлен TypeSpec source для client decision,
+  viewable impression, trusted click receipt и capability-bound `/admin/advertising`: placements, campaigns,
+  immutable revisions/creatives/target rules, independent approval, pause/resume, provider governance и daily
+  aggregate reports. Прямой показ, внешний fallback, house и `NO_FILL` представлены явно; no-fill/critical state,
+  budget/cap/provider outage не являются ошибкой основного продукта.
+- Решение принимает только закрытый allowlist surface/placement, client, locale, крупный form factor, public object
+  class/category, connectivity и country/region/city. URL/query/object ID, координаты/search origin/IP locality,
+  identity/profile/DUPR/XP, membership/opponent graph, история и device/ad identifiers не имеют wire-поля.
+  Purpose-bound `capToken` не является targeting dimension, передаётся в body и хранится только как keyed hash.
+- Viewability и click отделены от issuance. Signed delivery/click tokens живут не более 15 минут, browser mutations
+  требуют Origin/CSRF и UUIDv4 idempotency, click receipt возвращает только exact approved HTTPS destination.
+  AsyncAPI получил три body-free internal events: `advertising.delivery.issued.v1`,
+  `advertising.impression.viewable.v1` и `advertising.click.validated.v1`; cap subject, identity, context/URL,
+  creative body и fraud evidence запрещены policy-тестом.
+- Prisma и migration добавляют обязательные `Campaign`, `Creative`, `Placement`, `TargetRule`, `DeliveryCounter`,
+  `AdDeliveryEvent`, а также immutable `CampaignRevision`, append-only decision history, daily aggregate, provider
+  policy и encrypted operation receipts. SQL state/pointer/inventory guards привязывают выдачу к exact approved
+  snapshot. Row-lock trigger атомарно удерживает `reserved + spent <= budget`, сверяет CPM/CPC finalization,
+  обеспечивает one-time release и уникальные delivery/event/token keys.
+- Frequency trigger считает точное rolling окно по append-only viewable facts, сериализует counter и не допускает
+  более 3/24h, 10/7d и refresh чаще 5 минут; conservative session counter ограничен единицей. Cap state имеет
+  максимум 8 суток, raw delivery/token/fraud/receipt — 30 суток. Target enum не содержит behavioral/precise geo,
+  provider policy deny-by-default требует четыре approved review, а report API фиксирует suppression floor 20.
+- Обновлены generated OpenAPI/TypeScript clients, общий contract allowlist, admin fixed role/capability matrix,
+  representative Prism mock, `contracts/README.md` и новый `llm/_docs/advertising-data-policy.md`. Provider/SDK не
+  выбран и ни одна реальная кампания, рекламодатель или provider policy миграцией не включены.
+
+### Проверки этапа advertising 02-contract-data
+
+- `DATABASE_URL=postgresql://picklehub:picklehub@127.0.0.1:5432/picklehub
+PRISMA_SCHEMA_ENGINE_BINARY=/Users/ruasvyn/.cache/prisma/master/1c57fdcd7e44b29b9313256c76699e91c3ac3c43/darwin-arm64/schema-engine
+PRISMA_QUERY_ENGINE_LIBRARY=/Users/ruasvyn/.cache/prisma/master/1c57fdcd7e44b29b9313256c76699e91c3ac3c43/darwin-arm64/libquery-engine
+npx prisma validate --schema backend/prisma/schema.prisma` — успешно; явные engine paths использованы из-за
+  sandbox-запрета `utime` глобального Prisma cache, схема валидна. Migration не применялась к реальному PostgreSQL, поэтому syntax,
+  deferred triggers, row-lock budget/frequency races и cleanup остаются обязательным integration gate этапа 03/05.
+- `npm run contracts:check` — успешно в финальном полном `npm run verify`: TypeSpec и Redocly зелёные, 223 REST
+  operations/66 AsyncAPI messages, 145/145 contract/data/backend/verification policy tests, compatibility с `HEAD`,
+  generated drift/typecheck и representative OpenAPI mock включая advertising decision. Один промежуточный
+  повтор contract check дошёл до mock и получил sandbox `listen EPERM`; отдельный mock и последующий полный verify
+  успешно стартовали и прошли, поэтому ошибка зафиксирована как ограничение среды, а не скрыта.
+- `npm run verify` — успешно полностью: восемь workspaces/один root lockfile, format/docs, lint, strict typecheck,
+  unit/component tests и production builds. Backend — 44/44 suites и 279/279 tests; web — 13/13 и 53/53, TMA —
+  10/10 и 31/31. Сохраняются прежние неблокирующие bundle warnings около 682/663/924 KiB и внешняя небезопасная
+  настройка `NODE_TLS_REJECT_UNAUTHORIZED=0`.
+- После удаления механического Prisma-format шума повторно успешны Prisma validation,
+  `npm run contracts:generated:check`, `npm run format:check` и `npm run docs:check`; `git diff --check` повторён после
+  этой записи. Критерии этапа выполнены на уровне contracts/schema/static evidence. Legal basis, маркировка/
+  ОРД/ЕРИР, provider terms/РФ-residency/deletion и runtime PostgreSQL concurrency не заявляются проверенными;
+  следующий промпт — `llm/13-advertising/03-backend.md`, прежние content-news runtime-gates также остаются.

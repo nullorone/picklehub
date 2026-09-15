@@ -33,6 +33,75 @@ export namespace AchievementAwardChangedMessage {
     export type DataState = 'EARNED' | 'REVOKED' | 'REINSTATED';
 }
 
+export namespace AdvertisingClickValidatedMessage {
+    export interface AdvertisingClickValidatedEnvelope {
+        messageId: string;
+        type: 'advertising.click.validated.v1';
+        occurredAt: string;
+        correlationId: string;
+        causationId?: string | null;
+        data: Data;
+    }
+
+    export interface Data {
+        deliveryId: string;
+        campaignId: string;
+        campaignRevisionId: string;
+        creativeId: string;
+        placementId: string;
+        outcome: DataOutcome;
+    }
+
+    export type DataOutcome = 'VALID_CLICK';
+}
+
+export namespace AdvertisingDeliveryIssuedMessage {
+    export interface AdvertisingDeliveryIssuedEnvelope {
+        messageId: string;
+        type: 'advertising.delivery.issued.v1';
+        occurredAt: string;
+        correlationId: string;
+        causationId?: string | null;
+        data: Data;
+    }
+
+    export interface Data {
+        deliveryId: string;
+        campaignId: string;
+        campaignRevisionId: string;
+        creativeId: string;
+        placementId: string;
+        source: DataSource;
+        outcome: DataOutcome;
+    }
+
+    export type DataSource = 'DIRECT' | 'EXTERNAL_FALLBACK' | 'HOUSE';
+
+    export type DataOutcome = 'ISSUED';
+}
+
+export namespace AdvertisingImpressionViewableMessage {
+    export interface AdvertisingImpressionViewableEnvelope {
+        messageId: string;
+        type: 'advertising.impression.viewable.v1';
+        occurredAt: string;
+        correlationId: string;
+        causationId?: string | null;
+        data: Data;
+    }
+
+    export interface Data {
+        deliveryId: string;
+        campaignId: string;
+        campaignRevisionId: string;
+        creativeId: string;
+        placementId: string;
+        outcome: DataOutcome;
+    }
+
+    export type DataOutcome = 'VIEWABLE_IMPRESSION';
+}
+
 export namespace AuthenticateMessage {
     export interface AuthenticateEnvelope {
         messageId: string;
@@ -1263,6 +1332,10 @@ export namespace XpLedgerEntryRecordedMessage {
 
 export type AccountDeletionRequestedEnvelope = AccountDeletionRequestedMessage.AccountDeletionRequestedEnvelope;
 export type AchievementAwardChangedEnvelope = AchievementAwardChangedMessage.AchievementAwardChangedEnvelope;
+export type AdvertisingClickValidatedEnvelope = AdvertisingClickValidatedMessage.AdvertisingClickValidatedEnvelope;
+export type AdvertisingDeliveryIssuedEnvelope = AdvertisingDeliveryIssuedMessage.AdvertisingDeliveryIssuedEnvelope;
+export type AdvertisingImpressionViewableEnvelope =
+    AdvertisingImpressionViewableMessage.AdvertisingImpressionViewableEnvelope;
 export type AuthenticateEnvelope = AuthenticateMessage.AuthenticateEnvelope;
 export type AuthenticatedEnvelope = AuthenticatedMessage.AuthenticatedEnvelope;
 export type ChatMessageCreateCommandEnvelope = ChatMessageCreateCommandMessage.ChatMessageCreateCommandEnvelope;
@@ -1333,6 +1406,9 @@ export type VenueVerifiedEnvelope = VenueVerifiedMessage.VenueVerifiedEnvelope;
 export type XpLedgerEntryRecordedEnvelope = XpLedgerEntryRecordedMessage.XpLedgerEntryRecordedEnvelope;
 export type WebSocketMessage =
     | AchievementAwardChangedEnvelope
+    | AdvertisingClickValidatedEnvelope
+    | AdvertisingDeliveryIssuedEnvelope
+    | AdvertisingImpressionViewableEnvelope
     | AuthenticateEnvelope
     | AuthenticatedEnvelope
     | ChatMessageCreateCommandEnvelope

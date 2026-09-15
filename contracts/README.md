@@ -22,7 +22,7 @@ npm run contracts:check
 - `contracts:lint` проверяет TypeSpec без записи artifacts, валидирует OpenAPI и AsyncAPI официальными
   parser/linter и применяет PickleHub policy: `/v1`, разрешённые owning-feature paths, уникальные
   operation/message IDs, версионированные envelopes, UTC timestamps, `no-store`, browser CSRF/cookie и безопасный
-  payload внутренних identity/venue/match/communication/profile/club/tournament/gamification/content events,
+  payload внутренних identity/venue/match/communication/profile/club/tournament/gamification/content/advertising events,
   admin capability registry и
   notification jobs.
   Статические data-policy тесты
@@ -41,7 +41,7 @@ npm run contracts:check
   является backend или production fallback.
 - `contracts:mock:check` запускает mock на свободном localhost port, запрашивает representative endpoints health,
   identity, venues, matches, communications, profiles, trust/safety, administration, clubs, tournaments,
-  gamification и content,
+  gamification, content и advertising,
   проверяет status,
   JSON shape и
   `no-store`, включая private progress геймификации.
@@ -148,6 +148,21 @@ pointer и deferred projection guards не позволяют candidate или �
 `content.events.v1` переносит только opaque article/revision IDs, aggregate version и closed outcome, без текста,
 URL, provenance/evidence или identity. Полные решения — в
 [`content-news-data-policy.md`](../llm/_docs/content-news-data-policy.md).
+
+## Реклама
+
+[`rest/advertising.tsp`](rest/advertising.tsp) разделяет contextual decision, видимый показ и доверенный клик.
+Decision явно возвращает `DIRECT`, `EXTERNAL_FALLBACK`, `HOUSE` либо `NO_FILL`; no-fill не является ошибкой
+продукта. Контекст — закрытый allowlist surface/client/locale/form-factor/public taxonomy/coarse locality без URL,
+object identity, координат, профиля и истории. Signed delivery/click token передаются только в body и дают
+идемпотентную квитанцию; redirect разрешён лишь на точный HTTPS destination approved revision.
+
+Миграция хранит immutable campaign/creative/target snapshots, purpose-bound cap hash с пределами 3/24h и 10/7d,
+append-only issuance/viewability/click facts и дневные aggregates. Trigger атомарно защищает budget reservation,
+finalization/release и cross-session frequency; raw delivery живёт не более 30 суток, cap state — не более 8.
+Provider policy выключен до четырёх актуальных review и передаёт только тот же coarse allowlist. `advertising.events.v1`
+не содержит cap subject, identity, IP/coordinates, URL/query, creative body или fraud evidence. Полное решение — в
+[`advertising-data-policy.md`](../llm/_docs/advertising-data-policy.md).
 
 ## Административная панель
 

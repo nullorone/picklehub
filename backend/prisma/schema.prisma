@@ -3491,3 +3491,344 @@ model ContentOperationReceipt {
   @@index([expiresAt], map: "content_operation_receipts_expiry_idx")
   @@map("content_operation_receipts")
 }
+
+// Advertising data contract. Only coarse contextual rules and purpose-bound cap hashes are stored.
+enum AdCampaignState {
+  DRAFT
+  IN_REVIEW
+  APPROVED
+  SCHEDULED
+  ACTIVE
+  PAUSED
+  EXHAUSTED
+  COMPLETED
+  REJECTED
+
+  @@map("ad_campaign_state")
+}
+
+enum AdCreativeFormat {
+  STATIC_IMAGE
+  TEXT_IMAGE_CARD
+
+  @@map("ad_creative_format")
+}
+
+enum AdBillingModel {
+  CPM
+  CPC
+  FIXED_SPONSORSHIP
+
+  @@map("ad_billing_model")
+}
+
+enum AdPriorityTier {
+  HOUSE_EMERGENCY
+  GUARANTEED_DIRECT
+  STANDARD_DIRECT
+
+  @@map("ad_priority_tier")
+}
+
+enum AdTargetDimension {
+  SURFACE
+  CLIENT_KIND
+  LOCALE
+  FORM_FACTOR
+  OBJECT_CLASS
+  CONTENT_CATEGORY
+  COUNTRY
+  REGION
+  CITY
+  CONNECTIVITY
+
+  @@map("ad_target_dimension")
+}
+
+enum AdTargetOperator {
+  INCLUDE
+  EXCLUDE
+
+  @@map("ad_target_operator")
+}
+
+enum AdDeliverySource {
+  DIRECT
+  EXTERNAL_FALLBACK
+  HOUSE
+
+  @@map("ad_delivery_source")
+}
+
+enum AdDeliveryEventKind {
+  ISSUED
+  VIEWABLE_IMPRESSION
+  VALID_CLICK
+  INVALID_CLICK
+  RESERVATION_RELEASED
+
+  @@map("ad_delivery_event_kind")
+}
+
+enum AdCampaignDecisionKind {
+  SUBMIT
+  APPROVE
+  REJECT
+  PAUSE
+  RESUME
+
+  @@map("ad_campaign_decision_kind")
+}
+
+model Campaign {
+  id                 String               @id @db.Uuid
+  version            BigInt               @default(0)
+  state              AdCampaignState      @default(DRAFT)
+  advertiserName     String               @map("advertiser_name") @db.VarChar(160)
+  advertiserLegalId  String               @map("advertiser_legal_id") @db.VarChar(120)
+  timezone           String               @db.VarChar(64)
+  startsAt           DateTime             @map("starts_at") @db.Timestamptz(3)
+  endsAt             DateTime             @map("ends_at") @db.Timestamptz(3)
+  currency           String               @db.Char(3)
+  budgetMinor        BigInt               @map("budget_minor")
+  reservedMinor      BigInt               @default(0) @map("reserved_minor")
+  spentMinor         BigInt               @default(0) @map("spent_minor")
+  currentRevisionId  String?              @unique(map: "campaigns_current_revision_key") @map("current_revision_id") @db.Uuid
+  approvedRevisionId String?              @unique(map: "campaigns_approved_revision_key") @map("approved_revision_id") @db.Uuid
+  createdAt          DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime             @default(now()) @map("updated_at") @db.Timestamptz(3)
+  revisions          CampaignRevision[]   @relation("CampaignRevisions")
+  currentRevision    CampaignRevision?    @relation("CurrentCampaignRevision", fields: [currentRevisionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  approvedRevision   CampaignRevision?    @relation("ApprovedCampaignRevision", fields: [approvedRevisionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  creatives          Creative[]
+  counters           DeliveryCounter[]
+  events             AdDeliveryEvent[]
+  reports            AdReportDaily[]
+  decisions          AdCampaignDecision[]
+
+  @@index([state, startsAt, endsAt], map: "campaigns_delivery_idx")
+  @@map("campaigns")
+}
+
+model CampaignRevision {
+  id                String               @id @db.Uuid
+  campaignId        String               @map("campaign_id") @db.Uuid
+  revision          Int
+  advertiserName    String               @map("advertiser_name") @db.VarChar(160)
+  advertiserLegalId String               @map("advertiser_legal_id") @db.VarChar(120)
+  timezone          String               @db.VarChar(64)
+  startsAt          DateTime             @map("starts_at") @db.Timestamptz(3)
+  endsAt            DateTime             @map("ends_at") @db.Timestamptz(3)
+  currency          String               @db.Char(3)
+  budgetMinor       BigInt               @map("budget_minor")
+  billingModel      AdBillingModel       @map("billing_model")
+  rateMinor         BigInt               @map("rate_minor")
+  priorityTier      AdPriorityTier       @map("priority_tier")
+  cap24Hours        Int                  @map("cap_24_hours") @db.SmallInt
+  cap7Days          Int                  @map("cap_7_days") @db.SmallInt
+  placementIds      String[]             @map("placement_ids") @db.Uuid
+  creativeIds       String[]             @map("creative_ids") @db.Uuid
+  legalLabel        String               @map("legal_label") @db.VarChar(40)
+  legalDisclosure   String?              @map("legal_disclosure") @db.VarChar(500)
+  registrationToken String?              @map("registration_token") @db.VarChar(160)
+  policyVersion     String               @map("policy_version") @db.VarChar(32)
+  snapshotHash      String               @map("snapshot_hash") @db.Char(64)
+  submittedByUserId String               @map("submitted_by_user_id") @db.Uuid
+  reviewedByUserId  String?              @map("reviewed_by_user_id") @db.Uuid
+  approvedAt        DateTime?            @map("approved_at") @db.Timestamptz(3)
+  createdAt         DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
+  campaign          Campaign             @relation("CampaignRevisions", fields: [campaignId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  currentFor        Campaign?            @relation("CurrentCampaignRevision")
+  approvedFor       Campaign?            @relation("ApprovedCampaignRevision")
+  targetRules       TargetRule[]
+  events            AdDeliveryEvent[]
+  decisions         AdCampaignDecision[]
+
+  @@unique([campaignId, revision], map: "campaign_revisions_revision_key")
+  @@map("campaign_revisions")
+}
+
+model Creative {
+  id                    String            @id @db.Uuid
+  campaignId            String            @map("campaign_id") @db.Uuid
+  revision              Int
+  format                AdCreativeFormat
+  assetId               String            @map("asset_id") @db.Uuid
+  mediaType             String            @map("media_type") @db.VarChar(40)
+  byteLength            BigInt            @map("byte_length")
+  sha256                String            @db.Char(64)
+  altText               String            @map("alt_text") @db.VarChar(500)
+  headline              String?           @db.VarChar(120)
+  body                  String?           @db.VarChar(300)
+  landingUrl            String            @map("landing_url") @db.VarChar(2048)
+  approvedRedirectHosts String[]          @map("approved_redirect_hosts") @db.VarChar(253)
+  createdByUserId       String            @map("created_by_user_id") @db.Uuid
+  createdAt             DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  campaign              Campaign          @relation(fields: [campaignId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  events                AdDeliveryEvent[]
+  reports               AdReportDaily[]
+
+  @@unique([campaignId, revision], map: "creatives_campaign_revision_key")
+  @@map("creatives")
+}
+
+model AdCampaignDecision {
+  id                 String                 @id @db.Uuid
+  campaignId         String                 @map("campaign_id") @db.Uuid
+  campaignRevisionId String                 @map("campaign_revision_id") @db.Uuid
+  campaignVersion    BigInt                 @map("campaign_version")
+  kind               AdCampaignDecisionKind
+  reasonCode         String                 @map("reason_code") @db.VarChar(40)
+  checklistVersion   String?                @map("checklist_version") @db.VarChar(32)
+  actorUserId        String                 @map("actor_user_id") @db.Uuid
+  reviewerUserId     String?                @map("reviewer_user_id") @db.Uuid
+  operationId        String                 @unique(map: "ad_campaign_decisions_operation_key") @map("operation_id") @db.Uuid
+  committedAt        DateTime               @default(now()) @map("committed_at") @db.Timestamptz(3)
+  campaign           Campaign               @relation(fields: [campaignId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  campaignRevision   CampaignRevision       @relation(fields: [campaignRevisionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([campaignId, campaignVersion], map: "ad_campaign_decisions_version_key")
+  @@map("ad_campaign_decisions")
+}
+
+model Placement {
+  id              String            @id @db.Uuid
+  version         BigInt            @default(0)
+  code            String            @unique(map: "placements_code_key") @db.VarChar(80)
+  surface         String            @db.VarChar(80)
+  format          AdCreativeFormat
+  enabled         Boolean           @default(false)
+  fallbackEnabled Boolean           @default(false) @map("fallback_enabled")
+  minimumWidth    Int               @map("minimum_width") @db.SmallInt
+  minimumHeight   Int               @map("minimum_height") @db.SmallInt
+  pausedReason    String?           @map("paused_reason") @db.VarChar(40)
+  updatedAt       DateTime          @default(now()) @map("updated_at") @db.Timestamptz(3)
+  events          AdDeliveryEvent[]
+  reports         AdReportDaily[]
+
+  @@map("placements")
+}
+
+model TargetRule {
+  id                 String            @id @db.Uuid
+  campaignRevisionId String            @map("campaign_revision_id") @db.Uuid
+  dimension          AdTargetDimension
+  operator           AdTargetOperator
+  values             String[]          @db.VarChar(120)
+  createdAt          DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  campaignRevision   CampaignRevision  @relation(fields: [campaignRevisionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([campaignRevisionId, dimension, operator], map: "target_rules_revision_dimension_key")
+  @@map("target_rules")
+}
+
+model DeliveryCounter {
+  id                   String            @id @db.Uuid
+  campaignId           String            @map("campaign_id") @db.Uuid
+  capSubjectHash       String            @map("cap_subject_hash") @db.Char(64)
+  window24StartedAt    DateTime          @map("window_24_started_at") @db.Timestamptz(3)
+  window7StartedAt     DateTime          @map("window_7_started_at") @db.Timestamptz(3)
+  viewable24Count      Int               @default(0) @map("viewable_24_count") @db.SmallInt
+  viewable7Count       Int               @default(0) @map("viewable_7_count") @db.SmallInt
+  sessionViewableCount Int               @default(0) @map("session_viewable_count") @db.SmallInt
+  lastViewableAt       DateTime?         @map("last_viewable_at") @db.Timestamptz(3)
+  expiresAt            DateTime          @map("expires_at") @db.Timestamptz(3)
+  updatedAt            DateTime          @default(now()) @map("updated_at") @db.Timestamptz(3)
+  campaign             Campaign          @relation(fields: [campaignId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  events               AdDeliveryEvent[]
+
+  @@unique([campaignId, capSubjectHash], map: "delivery_counters_campaign_subject_key")
+  @@index([expiresAt], map: "delivery_counters_expiry_idx")
+  @@map("delivery_counters")
+}
+
+model AdDeliveryEvent {
+  id                 String              @id @db.Uuid
+  deliveryId         String              @map("delivery_id") @db.Uuid
+  kind               AdDeliveryEventKind
+  source             AdDeliverySource
+  campaignId         String              @map("campaign_id") @db.Uuid
+  campaignRevisionId String              @map("campaign_revision_id") @db.Uuid
+  creativeId         String              @map("creative_id") @db.Uuid
+  placementId        String              @map("placement_id") @db.Uuid
+  deliveryCounterId  String?             @map("delivery_counter_id") @db.Uuid
+  deliveryTokenHash  String?             @map("delivery_token_hash") @db.Char(64)
+  clickTokenHash     String?             @map("click_token_hash") @db.Char(64)
+  tokenExpiresAt     DateTime?           @map("token_expires_at") @db.Timestamptz(3)
+  reservedMinor      BigInt              @default(0) @map("reserved_minor")
+  finalizedMinor     BigInt              @default(0) @map("finalized_minor")
+  invalidReason      String?             @map("invalid_reason") @db.VarChar(40)
+  timingBucket       String              @map("timing_bucket") @db.VarChar(24)
+  policyVersion      String              @map("policy_version") @db.VarChar(32)
+  occurredAt         DateTime            @map("occurred_at") @db.Timestamptz(3)
+  expiresAt          DateTime            @map("expires_at") @db.Timestamptz(3)
+  campaign           Campaign            @relation(fields: [campaignId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  campaignRevision   CampaignRevision    @relation(fields: [campaignRevisionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  creative           Creative            @relation(fields: [creativeId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  placement          Placement           @relation(fields: [placementId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  deliveryCounter    DeliveryCounter?    @relation(fields: [deliveryCounterId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([deliveryId, kind], map: "ad_delivery_events_delivery_kind_key")
+  @@index([expiresAt], map: "ad_delivery_events_expiry_idx")
+  @@map("ad_delivery_events")
+}
+
+model AdReportDaily {
+  day           DateTime  @db.Date
+  campaignId    String    @map("campaign_id") @db.Uuid
+  creativeId    String    @map("creative_id") @db.Uuid
+  placementId   String    @map("placement_id") @db.Uuid
+  eligible      BigInt    @default(0)
+  served        BigInt    @default(0)
+  viewable      BigInt    @default(0)
+  validClicks   BigInt    @default(0) @map("valid_clicks")
+  invalidEvents BigInt    @default(0) @map("invalid_events")
+  spendMinor    BigInt    @default(0) @map("spend_minor")
+  updatedAt     DateTime  @default(now()) @map("updated_at") @db.Timestamptz(3)
+  campaign      Campaign  @relation(fields: [campaignId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  creative      Creative  @relation(fields: [creativeId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  placement     Placement @relation(fields: [placementId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@id([day, campaignId, creativeId, placementId])
+  @@map("ad_report_daily")
+}
+
+model AdProviderPolicy {
+  id                   String             @id @db.Uuid
+  code                 String             @db.VarChar(80)
+  version              Int
+  enabled              Boolean            @default(false)
+  legalReview          ContentReviewState @map("legal_review")
+  securityReview       ContentReviewState @map("security_review")
+  privacyReview        ContentReviewState @map("privacy_review")
+  commercialReview     ContentReviewState @map("commercial_review")
+  termsUrl             String             @map("terms_url") @db.VarChar(2048)
+  termsVersion         String             @map("terms_version") @db.VarChar(120)
+  allowedFields        String[]           @map("allowed_fields") @db.VarChar(40)
+  reviewDueAt          DateTime           @map("review_due_at") @db.Timestamptz(3)
+  evidenceCiphertext   Bytes              @map("evidence_ciphertext")
+  encryptionKeyVersion Int                @map("encryption_key_version")
+  createdByUserId      String             @map("created_by_user_id") @db.Uuid
+  createdAt            DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@unique([code, version], map: "ad_provider_policies_code_version_key")
+  @@map("ad_provider_policies")
+}
+
+model AdvertisingOperationReceipt {
+  id                   String   @id @db.Uuid
+  actorScopeHash       String   @map("actor_scope_hash") @db.Char(64)
+  idempotencyKey       String   @map("idempotency_key") @db.Uuid
+  method               String   @db.VarChar(8)
+  canonicalPath        String   @map("canonical_path") @db.VarChar(240)
+  requestFingerprint   String   @map("request_fingerprint") @db.Char(64)
+  responseStatus       Int      @map("response_status") @db.SmallInt
+  responseCiphertext   Bytes    @map("response_ciphertext")
+  encryptionKeyVersion Int      @map("encryption_key_version")
+  createdAt            DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  expiresAt            DateTime @default(dbgenerated("CURRENT_TIMESTAMP + INTERVAL '30 days'")) @map("expires_at") @db.Timestamptz(3)
+
+  @@unique([actorScopeHash, method, canonicalPath, idempotencyKey], map: "advertising_operation_receipts_scope_key")
+  @@index([expiresAt], map: "advertising_operation_receipts_expiry_idx")
+  @@map("advertising_operation_receipts")
+}

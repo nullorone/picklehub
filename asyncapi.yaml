@@ -248,6 +248,18 @@ channels:
         messages:
             ContentArticlePublished: { $ref: '#/components/messages/ContentArticlePublished' }
             ContentArticleUnpublished: { $ref: '#/components/messages/ContentArticleUnpublished' }
+    advertisingEvents:
+        address: advertising.events.v1
+        title: Internal privacy-minimized advertising delivery events
+        description: Transactional outbox only, delivered at least once and deduplicated by messageId. Payloads
+            distinguish issuance, viewable impression and valid click using opaque inventory references only. Cap
+            subjects, identity, session/device/ad identifiers, IP, coordinates, URL/query and creative content are forbidden.
+        servers:
+            - $ref: '#/servers/outbox'
+        messages:
+            AdvertisingDeliveryIssued: { $ref: '#/components/messages/AdvertisingDeliveryIssued' }
+            AdvertisingImpressionViewable: { $ref: '#/components/messages/AdvertisingImpressionViewable' }
+            AdvertisingClickValidated: { $ref: '#/components/messages/AdvertisingClickValidated' }
 operations:
     receiveClientControl:
         action: receive
@@ -449,6 +461,17 @@ operations:
         messages:
             - $ref: '#/channels/contentEvents/messages/ContentArticlePublished'
             - $ref: '#/channels/contentEvents/messages/ContentArticleUnpublished'
+    publishAdvertisingEvents:
+        action: send
+        title: Publish committed advertising delivery changes
+        summary: Publish opaque issuance, viewability and click facts through the internal outbox.
+        description: Consumers deduplicate by messageId and deliveryId. Events contain no cap subject, identity,
+            exact context, landing destination, creative content or fraud evidence and expire under delivery retention.
+        channel: { $ref: '#/channels/advertisingEvents' }
+        messages:
+            - $ref: '#/channels/advertisingEvents/messages/AdvertisingDeliveryIssued'
+            - $ref: '#/channels/advertisingEvents/messages/AdvertisingImpressionViewable'
+            - $ref: '#/channels/advertisingEvents/messages/AdvertisingClickValidated'
 components:
     messages:
         Authenticate:
@@ -954,6 +977,42 @@ components:
                           revisionId: 4181f32c-7b4a-4f35-8f30-c358f278d103
                           articleVersion: 5
                           outcome: RIGHTS_REVOKED
+        AdvertisingDeliveryIssued:
+            name: advertising.delivery.issued.v1
+            title: AdvertisingDeliveryIssued
+            summary: An approved creative delivery was issued and budget was reserved.
+            contentType: application/json
+            correlationId: { location: '$message.payload#/correlationId' }
+            payload: { $ref: '#/components/schemas/AdvertisingDeliveryIssuedEnvelope' }
+            examples:
+                - name: directIssued
+                  payload:
+                      messageId: 6181f32c-7b4a-4f35-8f30-c358f278d105
+                      type: advertising.delivery.issued.v1
+                      occurredAt: 2026-09-15T12:00:00.000Z
+                      correlationId: 142f1089-c4e5-4594-8b8d-208d861ba762
+                      data:
+                          deliveryId: 7181f32c-7b4a-4f35-8f30-c358f278d106
+                          campaignId: 8181f32c-7b4a-4f35-8f30-c358f278d107
+                          campaignRevisionId: 9181f32c-7b4a-4f35-8f30-c358f278d108
+                          creativeId: a181f32c-7b4a-4f35-8f30-c358f278d109
+                          placementId: b181f32c-7b4a-4f35-8f30-c358f278d110
+                          source: DIRECT
+                          outcome: ISSUED
+        AdvertisingImpressionViewable:
+            name: advertising.impression.viewable.v1
+            title: AdvertisingImpressionViewable
+            summary: One issued delivery met the foreground viewability contract.
+            contentType: application/json
+            correlationId: { location: '$message.payload#/correlationId' }
+            payload: { $ref: '#/components/schemas/AdvertisingImpressionViewableEnvelope' }
+        AdvertisingClickValidated:
+            name: advertising.click.validated.v1
+            title: AdvertisingClickValidated
+            summary: One trusted click was accepted inside its deduplication window.
+            contentType: application/json
+            correlationId: { location: '$message.payload#/correlationId' }
+            payload: { $ref: '#/components/schemas/AdvertisingClickValidatedEnvelope' }
         ClubCreated:
             name: club.created.v1
             title: ClubCreated
@@ -1395,6 +1454,73 @@ components:
                         outcome:
                             type: string
                             enum: [EDITORIAL, CORRECTION, RIGHTS_REVOKED, LEGAL_TAKEDOWN, SAFETY_REQUEST]
+        AdvertisingDeliveryIssuedEnvelope:
+            type: object
+            additionalProperties: false
+            required: [messageId, type, occurredAt, correlationId, data]
+            properties:
+                messageId: { $ref: '#/components/schemas/Uuid' }
+                type: { type: string, const: advertising.delivery.issued.v1 }
+                occurredAt: { $ref: '#/components/schemas/Timestamp' }
+                correlationId: { $ref: '#/components/schemas/Uuid' }
+                causationId:
+                    oneOf: [{ $ref: '#/components/schemas/Uuid' }, { type: 'null' }]
+                data:
+                    type: object
+                    additionalProperties: false
+                    required: [deliveryId, campaignId, campaignRevisionId, creativeId, placementId, source, outcome]
+                    properties:
+                        deliveryId: { $ref: '#/components/schemas/Uuid' }
+                        campaignId: { $ref: '#/components/schemas/Uuid' }
+                        campaignRevisionId: { $ref: '#/components/schemas/Uuid' }
+                        creativeId: { $ref: '#/components/schemas/Uuid' }
+                        placementId: { $ref: '#/components/schemas/Uuid' }
+                        source: { type: string, enum: [DIRECT, EXTERNAL_FALLBACK, HOUSE] }
+                        outcome: { type: string, enum: [ISSUED] }
+        AdvertisingImpressionViewableEnvelope:
+            type: object
+            additionalProperties: false
+            required: [messageId, type, occurredAt, correlationId, data]
+            properties:
+                messageId: { $ref: '#/components/schemas/Uuid' }
+                type: { type: string, const: advertising.impression.viewable.v1 }
+                occurredAt: { $ref: '#/components/schemas/Timestamp' }
+                correlationId: { $ref: '#/components/schemas/Uuid' }
+                causationId:
+                    oneOf: [{ $ref: '#/components/schemas/Uuid' }, { type: 'null' }]
+                data:
+                    type: object
+                    additionalProperties: false
+                    required: [deliveryId, campaignId, campaignRevisionId, creativeId, placementId, outcome]
+                    properties:
+                        deliveryId: { $ref: '#/components/schemas/Uuid' }
+                        campaignId: { $ref: '#/components/schemas/Uuid' }
+                        campaignRevisionId: { $ref: '#/components/schemas/Uuid' }
+                        creativeId: { $ref: '#/components/schemas/Uuid' }
+                        placementId: { $ref: '#/components/schemas/Uuid' }
+                        outcome: { type: string, enum: [VIEWABLE_IMPRESSION] }
+        AdvertisingClickValidatedEnvelope:
+            type: object
+            additionalProperties: false
+            required: [messageId, type, occurredAt, correlationId, data]
+            properties:
+                messageId: { $ref: '#/components/schemas/Uuid' }
+                type: { type: string, const: advertising.click.validated.v1 }
+                occurredAt: { $ref: '#/components/schemas/Timestamp' }
+                correlationId: { $ref: '#/components/schemas/Uuid' }
+                causationId:
+                    oneOf: [{ $ref: '#/components/schemas/Uuid' }, { type: 'null' }]
+                data:
+                    type: object
+                    additionalProperties: false
+                    required: [deliveryId, campaignId, campaignRevisionId, creativeId, placementId, outcome]
+                    properties:
+                        deliveryId: { $ref: '#/components/schemas/Uuid' }
+                        campaignId: { $ref: '#/components/schemas/Uuid' }
+                        campaignRevisionId: { $ref: '#/components/schemas/Uuid' }
+                        creativeId: { $ref: '#/components/schemas/Uuid' }
+                        placementId: { $ref: '#/components/schemas/Uuid' }
+                        outcome: { type: string, enum: [VALID_CLICK] }
         ClubCreatedEnvelope:
             type: object
             additionalProperties: false

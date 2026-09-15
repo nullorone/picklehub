@@ -31,6 +31,7 @@ export const administrationRoleCapabilities = {
         'CONTENT_SOURCE_READ',
         'CONTENT_SOURCE_GOVERN',
         'CONTENT_EMERGENCY_UNPUBLISH',
+        'AD_PROVIDER_GOVERN',
     ],
     MODERATOR: [
         'ADMIN_SESSION_ACCESS',
@@ -51,7 +52,15 @@ export const administrationRoleCapabilities = {
         'CONTENT_PREVIEW',
         'CONTENT_PUBLISH',
     ],
-    ADS_MANAGER: ['ADMIN_SESSION_ACCESS'],
+    ADS_MANAGER: [
+        'ADMIN_SESSION_ACCESS',
+        'AD_CAMPAIGN_MANAGE',
+        'AD_CREATIVE_MANAGE',
+        'AD_PLACEMENT_MANAGE',
+        'AD_CAMPAIGN_REVIEW',
+        'AD_CAMPAIGN_PAUSE',
+        'AD_REPORT_READ',
+    ],
 };
 
 function dereference(document, value) {
