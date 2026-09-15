@@ -226,6 +226,26 @@ describe('content backend publication and concurrency', () => {
         expect(JSON.stringify(event.payload)).not.toMatch(/Безопасный|Проверяемая|body|title/iu);
     });
 
+    it('keeps an approved draft out of the public projection, search and reader API', async () => {
+        const fixture = await approvedArticle();
+        await expect(
+            prisma.contentPublicProjection.findUnique({ where: { articleId: fixture.articleId } })
+        ).resolves.toBeNull();
+        await expect(content.search('проверяемая', 'ru', { limit: 20 })).resolves.toMatchObject({ items: [] });
+        await expect(content.article('ru', `runtime-${fixture.articleId.slice(-12)}`)).rejects.toMatchObject({
+            code: 'ARTICLE_NOT_AVAILABLE',
+        });
+        await expect(
+            prisma.auditEntry.count({ where: { targetType: 'ARTICLE', targetId: fixture.articleId } })
+        ).resolves.toBeGreaterThanOrEqual(4);
+        await expect(
+            prisma.articleRevision.update({
+                where: { id: fixture.revisionId },
+                data: { title: 'Переписано без редакции' },
+            })
+        ).rejects.toBeDefined();
+    });
+
     it('converges concurrent bookmark writes to the database-owned unique row', async () => {
         const fixture = await publishedArticle();
         const results = await Promise.allSettled([
@@ -331,6 +351,35 @@ describe('content backend publication and concurrency', () => {
             where: { sourceId: source.sourceId },
         });
         await expect(prisma.ingestCandidateRevision.count({ where: { candidateId: candidate.id } })).resolves.toBe(1);
+        await redis.client.del(source.checkpointKey);
+    });
+
+    it('keeps an ETag checkpoint on 304 and creates no candidate for an unchanged source', async () => {
+        const source = await enabledSource();
+        await redis.client.set(
+            source.checkpointKey,
+            JSON.stringify({ etag: '"revision-1"', lastModified: 'Mon, 14 Sep 2026 10:00:00 GMT' })
+        );
+        adapter.fetch.mockResolvedValue({
+            outcome: 'NOT_MODIFIED',
+            etag: '"revision-1"',
+            lastModified: 'Mon, 14 Sep 2026 10:00:00 GMT',
+            items: [],
+        });
+
+        await expect(ingestion.pollEnabledSources()).resolves.toEqual({ attempted: 1, succeeded: 1 });
+        expect(adapter.fetch).toHaveBeenLastCalledWith(
+            expect.objectContaining({
+                etag: '"revision-1"',
+                lastModified: 'Mon, 14 Sep 2026 10:00:00 GMT',
+            })
+        );
+        await expect(prisma.ingestCandidate.count({ where: { sourceId: source.sourceId } })).resolves.toBe(0);
+        const checkpoint = JSON.parse((await redis.client.get(source.checkpointKey)) ?? '{}') as {
+            etag?: string;
+            failureCount?: number;
+        };
+        expect(checkpoint).toMatchObject({ etag: '"revision-1"', failureCount: 0 });
         await redis.client.del(source.checkpointKey);
     });
 

@@ -15,6 +15,7 @@ const POLICY: ContentFetchPolicy = {
 
 class StubContentSourceAdapter extends AllowlistedContentSourceAdapter {
     readonly requests: string[] = [];
+    readonly policies: ContentFetchPolicy[] = [];
 
     constructor(private readonly responses: Response[]) {
         super();
@@ -24,8 +25,9 @@ class StubContentSourceAdapter extends AllowlistedContentSourceAdapter {
         return Promise.resolve(hostname === 'private.example.test' ? ['127.0.0.1'] : ['203.0.113.10']);
     }
 
-    protected override request(url: URL): Promise<Response> {
+    protected override request(url: URL, policy: ContentFetchPolicy): Promise<Response> {
         this.requests.push(url.toString());
+        this.policies.push(policy);
         const response = this.responses.shift();
         if (response === undefined) throw new Error('Unexpected request');
         return Promise.resolve(response);
@@ -127,6 +129,12 @@ describe('content source adapter', () => {
             lastModified: 'Sat, 13 Sep 2026 10:00:00 GMT',
             items: [],
         });
+        expect(adapter.policies).toEqual([
+            expect.objectContaining({
+                etag: '"revision-1"',
+                lastModified: 'Sat, 13 Sep 2026 10:00:00 GMT',
+            }),
+        ]);
     });
 
     it('rejects entity declarations, wrong media types and oversized declared responses', async () => {

@@ -3369,3 +3369,54 @@ option`; команды исправлены на штатный `npm test --wor
   показывает последнее известное состояние, а внешние ссылки безопасны и маркированы. Реальный browser viewport,
   Web Share/clipboard, service-worker update и интеграция CMS с PostgreSQL/Redis остаются обязательными runtime
   gates следующей доступной browser/integration среды; этап 05 не начат.
+
+## 2026-09-15 — новости и контент, этап 05-verification
+
+- Активный промпт: `llm/12-content-news/05-verification.md`. Добавлен отдельный verification record с матрицей
+  ingestion/CMS/reader evidence, обязательным source-enable checklist и явными runtime-gates. Проверка репозитория
+  подтверждает нулевой реестр включённых реальных источников: migration не seed-ит `ContentSource`, production
+  source configuration отсутствует, а все fixtures используют `example.test` и явно synthetic evidence. Это не
+  считается разрешением будущего издателя; перед первым `ENABLED` остаётся обязательной фактическая юридическая,
+  security, privacy и commercial проверка актуальных условий.
+- Новый contract/runtime policy связывает OpenAPI/AsyncAPI, fixed CMS role matrix, private no-store preview,
+  published-only search/projection, atomic unpublish, body-free events, conditional ingestion, advisory lock,
+  duplicate indexes и отсутствие real source seed. Policy добавлен в обязательный `contracts:lint`.
+- Unit source-adapter test теперь дополнительно подтверждает перенос ETag/Last-Modified в conditional request и
+  сохранение validators при `304`. PostgreSQL/Redis integration suite расширен двумя сценариями: approved draft не
+  виден reader/search/projection, имеет audit и immutable revision; `304` сохраняет checkpoint и не создаёт
+  candidate. Ранее существующие сценарии покрывают unavailable source/retry, duplicate redelivery, concurrent
+  scheduler, BullMQ retry, bookmark uniqueness, body-free publication и atomic unpublish.
+- Добавлен production-build Playwright `test/e2e/content.spec.ts` для web и TMA: feed, POST-body search,
+  attribution/source link, canonical share, XSS canary без создания `img`, web SEO/JSON-LD, explicit offline stale,
+  360 px layout, authenticated idempotent bookmark write и запрет offline mutation. Assertions и E2E TypeScript
+  скомпилированы; browser runtime в текущей sandbox не стартовал.
+- Основные изменённые файлы: content adapter/integration tests, новый contract policy, новый Playwright suite,
+  `llm/_docs/content-news-verification.md`, root contract script и этот журнал. Product contracts и generated
+  artifacts не менялись.
+
+### Проверки этапа content-news 05-verification
+
+- `npm run test:e2e:typecheck` — успешно. `node --test contracts/scripts/content-verification-policy.test.mjs` —
+  4/4 успешно. Targeted backend unit для adapter/rich-text/admin policy — 3/3 suites и 23/23 tests успешно; backend
+  lint и strict typecheck успешны.
+- `npm run contracts:lint` — успешно: TypeSpec, Redocly, 205 REST operations/63 messages и 138/138 policy/data/
+  backend/verification tests. Targeted web content/CMS и TMA content component tests успешны. Полная оставшаяся
+  цепочка `format:check`, `docs:check`, lint, strict typecheck, unit/component tests и production builds восьми
+  workspaces успешна: 132 Markdown files, backend 44/44 suites и 279/279 tests, web 13/13 и 53/53, TMA 10/10 и
+  31/31. Web PWA и TMA build checks зелёные; сохраняются прежние bundle warnings около 682/663/924 kB.
+- `npm run test:e2e:build` — успешно для web и TMA. `npx playwright test test/e2e/content.spec.ts` — не выполнен на
+  уровне сценариев: все четыре worker launch завершились до открытия страницы с Chrome `SIGABRT`, cleanup получил
+  `kill EPERM`. Assertions не падали и тесты не выдаются за пройденные; production-build browser gate остаётся.
+- `npm run test:integration --workspace @picklehub/backend -- --runInBand
+test/integration/content-backend.integration-spec.ts` — неуспешно до fixtures: sandbox запретил Redis loopback
+  (`connect EPERM 127.0.0.1:6379`), а Prisma setup также не смог подключиться. Все 8 test cases отмечены failed из-за
+  общего `beforeAll`; runtime PostgreSQL triggers/advisory locks, scheduler race, ETag checkpoint, audit immutability,
+  bookmark uniqueness и BullMQ redelivery не выдаются за проверенные.
+- `npm run verify` дошёл через workspace/contracts lint, compatibility и generated checks до OpenAPI mock, затем
+  sandbox запретил `listen EPERM 127.0.0.1`. Поэтому последующие штатные шаги были выполнены отдельной точной
+  цепочкой и прошли, но полный verify целиком не зелёный. После записи журнала повторно требуются docs/format и
+  whitespace checks.
+- Доступные static/unit/component/type/build evidence подтверждают fail-closed source registry, закрытый rich-text
+  AST, role/cache/event boundaries и клиентское отсутствие XSS/ложного offline success. Полная приёмка утечек и
+  гонок остаётся заблокированной browser и PostgreSQL/Redis runtime-gates; к `13-advertising` переходить нельзя до
+  их успешного запуска в разрешённой CI/integration среде.
