@@ -476,3 +476,14 @@ Operational metrics не требуют behavioral consent: campaign state/age, 
 finalize/release, pacing, cap/duplicate suppression, served/viewable/valid-invalid buckets, no-fill reason, provider
 review expiry/latency/error, media/policy reject, audit failure, reporting lag и emergency pause. Labels не содержат
 IDs, content, exact money/time/geo или actor. Dashboard не ранжирует staff и не восстанавливает user journey.
+
+## Mobile transport parity
+
+Общий `ClientChannel` допускает `mobile`; taxonomy Match MVP не расширена. Native отправляет только уже
+утверждённые client-owned события после analytics consent. Magic/verifier/refresh, installation/push token,
+notification/deep-link target, URL/query, точная location и cache identity не являются аналитическими полями.
+
+Push permission/registration/provider outcome, session refresh/reuse, lifecycle/reconnect и cache purge — только
+агрегированные operational counters по OS/app-version/reason class без user/installation/session/object IDs.
+Delivery/open не означает read или доменный success; confirmed match по-прежнему считается только immutable
+server marker. Подробная граница — в [mobile contract/data policy](mobile-parity-contract-data.md).

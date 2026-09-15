@@ -94,23 +94,23 @@ enum AdminRestrictionState {
 }
 
 model PlatformRoleGrant {
-  id                String       @id @db.Uuid
-  subjectUserId     String       @map("subject_user_id") @db.Uuid
+  id                String         @id @db.Uuid
+  subjectUserId     String         @map("subject_user_id") @db.Uuid
   role              PlatformRole
-  grantedByUserId   String       @map("granted_by_user_id") @db.Uuid
-  approvedByUserId  String       @map("approved_by_user_id") @db.Uuid
-  reasonCode        String       @map("reason_code") @db.VarChar(96)
-  policyVersion     String       @map("policy_version") @db.VarChar(128)
-  approvalReference String       @map("approval_reference") @db.VarChar(160)
-  revision          Int          @default(0)
-  validFrom         DateTime     @default(now()) @map("valid_from") @db.Timestamptz(3)
-  validUntil        DateTime?    @map("valid_until") @db.Timestamptz(3)
-  reviewAt          DateTime     @map("review_at") @db.Timestamptz(3)
-  revokedAt         DateTime?    @map("revoked_at") @db.Timestamptz(3)
-  revokedByUserId   String?      @map("revoked_by_user_id") @db.Uuid
-  revokeReasonCode  String?      @map("revoke_reason_code") @db.VarChar(96)
-  createdAt         DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt         DateTime     @default(now()) @map("updated_at") @db.Timestamptz(3)
+  grantedByUserId   String         @map("granted_by_user_id") @db.Uuid
+  approvedByUserId  String         @map("approved_by_user_id") @db.Uuid
+  reasonCode        String         @map("reason_code") @db.VarChar(96)
+  policyVersion     String         @map("policy_version") @db.VarChar(128)
+  approvalReference String         @map("approval_reference") @db.VarChar(160)
+  revision          Int            @default(0)
+  validFrom         DateTime       @default(now()) @map("valid_from") @db.Timestamptz(3)
+  validUntil        DateTime?      @map("valid_until") @db.Timestamptz(3)
+  reviewAt          DateTime       @map("review_at") @db.Timestamptz(3)
+  revokedAt         DateTime?      @map("revoked_at") @db.Timestamptz(3)
+  revokedByUserId   String?        @map("revoked_by_user_id") @db.Uuid
+  revokeReasonCode  String?        @map("revoke_reason_code") @db.VarChar(96)
+  createdAt         DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime       @default(now()) @map("updated_at") @db.Timestamptz(3)
   adminSessions     AdminSession[]
 
   @@index([subjectUserId, role, revokedAt, validUntil], map: "platform_role_grants_access_idx")
@@ -119,22 +119,22 @@ model PlatformRoleGrant {
 }
 
 model AdminSession {
-  id                 String            @id @db.Uuid
-  staffUserId        String            @map("staff_user_id") @db.Uuid
-  roleGrantId        String            @map("role_grant_id") @db.Uuid
-  audience           String            @default("picklehub-admin") @db.VarChar(32)
-  credentialHash     String            @unique(map: "admin_sessions_credential_hash_key") @map("credential_hash") @db.Char(64)
-  mfaMethod          AdminMfaMethod    @map("mfa_method")
-  mfaVerifiedAt      DateTime          @map("mfa_verified_at") @db.Timestamptz(3)
-  reauthenticatedAt  DateTime?         @map("reauthenticated_at") @db.Timestamptz(3)
-  securityEpoch      Int               @map("security_epoch")
-  lastSeenAt         DateTime          @default(now()) @map("last_seen_at") @db.Timestamptz(3)
-  idleExpiresAt      DateTime          @map("idle_expires_at") @db.Timestamptz(3)
-  absoluteExpiresAt  DateTime          @map("absolute_expires_at") @db.Timestamptz(3)
-  revokedAt          DateTime?         @map("revoked_at") @db.Timestamptz(3)
-  revokeReasonCode   String?           @map("revoke_reason_code") @db.VarChar(96)
-  createdAt          DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
-  roleGrant          PlatformRoleGrant @relation(fields: [roleGrantId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  id                String            @id @db.Uuid
+  staffUserId       String            @map("staff_user_id") @db.Uuid
+  roleGrantId       String            @map("role_grant_id") @db.Uuid
+  audience          String            @default("picklehub-admin") @db.VarChar(32)
+  credentialHash    String            @unique(map: "admin_sessions_credential_hash_key") @map("credential_hash") @db.Char(64)
+  mfaMethod         AdminMfaMethod    @map("mfa_method")
+  mfaVerifiedAt     DateTime          @map("mfa_verified_at") @db.Timestamptz(3)
+  reauthenticatedAt DateTime?         @map("reauthenticated_at") @db.Timestamptz(3)
+  securityEpoch     Int               @map("security_epoch")
+  lastSeenAt        DateTime          @default(now()) @map("last_seen_at") @db.Timestamptz(3)
+  idleExpiresAt     DateTime          @map("idle_expires_at") @db.Timestamptz(3)
+  absoluteExpiresAt DateTime          @map("absolute_expires_at") @db.Timestamptz(3)
+  revokedAt         DateTime?         @map("revoked_at") @db.Timestamptz(3)
+  revokeReasonCode  String?           @map("revoke_reason_code") @db.VarChar(96)
+  createdAt         DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  roleGrant         PlatformRoleGrant @relation(fields: [roleGrantId], references: [id], onDelete: Restrict, onUpdate: Restrict)
 
   @@index([staffUserId, revokedAt, absoluteExpiresAt], map: "admin_sessions_staff_access_idx")
   @@index([idleExpiresAt, absoluteExpiresAt], map: "admin_sessions_expiry_idx")
@@ -142,20 +142,20 @@ model AdminSession {
 }
 
 model BreakGlassGrant {
-  id                       String   @id @db.Uuid
-  actorUserId              String   @map("actor_user_id") @db.Uuid
-  caseId                   String   @map("case_id") @db.Uuid
-  incidentReference        String   @map("incident_reference") @db.VarChar(160)
-  reasonCode               String   @map("reason_code") @db.VarChar(96)
-  policyVersion            String   @map("policy_version") @db.VarChar(128)
-  justificationCiphertext  Bytes    @map("justification_ciphertext")
-  encryptionKeyVersion     Int      @map("encryption_key_version")
-  revision                 Int      @default(0)
-  createdAt                DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
-  expiresAt                DateTime @map("expires_at") @db.Timestamptz(3)
-  revokedAt                DateTime? @map("revoked_at") @db.Timestamptz(3)
-  revokedByUserId          String?  @map("revoked_by_user_id") @db.Uuid
-  revokeReasonCode         String?  @map("revoke_reason_code") @db.VarChar(96)
+  id                      String    @id @db.Uuid
+  actorUserId             String    @map("actor_user_id") @db.Uuid
+  caseId                  String    @map("case_id") @db.Uuid
+  incidentReference       String    @map("incident_reference") @db.VarChar(160)
+  reasonCode              String    @map("reason_code") @db.VarChar(96)
+  policyVersion           String    @map("policy_version") @db.VarChar(128)
+  justificationCiphertext Bytes     @map("justification_ciphertext")
+  encryptionKeyVersion    Int       @map("encryption_key_version")
+  revision                Int       @default(0)
+  createdAt               DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  expiresAt               DateTime  @map("expires_at") @db.Timestamptz(3)
+  revokedAt               DateTime? @map("revoked_at") @db.Timestamptz(3)
+  revokedByUserId         String?   @map("revoked_by_user_id") @db.Uuid
+  revokeReasonCode        String?   @map("revoke_reason_code") @db.VarChar(96)
 
   @@index([actorUserId, caseId, expiresAt, revokedAt], map: "break_glass_grants_access_idx")
   @@index([expiresAt, revokedAt], map: "break_glass_grants_expiry_idx")
@@ -186,21 +186,21 @@ model AdminOperationReceipt {
 }
 
 model UserRestriction {
-  id                  String                @id @db.Uuid
-  userId              String                @map("user_id") @db.Uuid
-  decisionId          String                @map("decision_id") @db.Uuid
-  scope               AdminRestrictionScope
-  state               AdminRestrictionState @default(ACTIVE)
-  reasonCode          String                @map("reason_code") @db.VarChar(96)
-  policyVersion       String                @map("policy_version") @db.VarChar(128)
-  revision            Int                   @default(0)
-  createdByUserId     String                @map("created_by_user_id") @db.Uuid
-  createdAt           DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
-  expiresAt           DateTime?             @map("expires_at") @db.Timestamptz(3)
-  revokedAt           DateTime?             @map("revoked_at") @db.Timestamptz(3)
-  revokedByUserId     String?               @map("revoked_by_user_id") @db.Uuid
-  revokeReasonCode    String?               @map("revoke_reason_code") @db.VarChar(96)
-  updatedAt           DateTime              @default(now()) @map("updated_at") @db.Timestamptz(3)
+  id               String                @id @db.Uuid
+  userId           String                @map("user_id") @db.Uuid
+  decisionId       String                @map("decision_id") @db.Uuid
+  scope            AdminRestrictionScope
+  state            AdminRestrictionState @default(ACTIVE)
+  reasonCode       String                @map("reason_code") @db.VarChar(96)
+  policyVersion    String                @map("policy_version") @db.VarChar(128)
+  revision         Int                   @default(0)
+  createdByUserId  String                @map("created_by_user_id") @db.Uuid
+  createdAt        DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
+  expiresAt        DateTime?             @map("expires_at") @db.Timestamptz(3)
+  revokedAt        DateTime?             @map("revoked_at") @db.Timestamptz(3)
+  revokedByUserId  String?               @map("revoked_by_user_id") @db.Uuid
+  revokeReasonCode String?               @map("revoke_reason_code") @db.VarChar(96)
+  updatedAt        DateTime              @default(now()) @map("updated_at") @db.Timestamptz(3)
 
   @@unique([decisionId, scope], map: "user_restrictions_decision_scope_key")
   @@index([userId, state, expiresAt], map: "user_restrictions_effective_idx")
@@ -376,6 +376,9 @@ model MagicLink {
   subjectCiphertext    Bytes            @map("subject_ciphertext")
   encryptionKeyVersion Int              @map("encryption_key_version")
   tokenHash            String           @unique(map: "magic_links_token_hash_key") @map("token_hash") @db.Char(64)
+  clientPlatform       String?          @map("client_platform") @db.VarChar(8)
+  nativeCodeChallenge  String?          @map("native_code_challenge") @db.Char(43)
+  mobileDestination    Json?            @map("mobile_destination")
   createdAt            DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
   expiresAt            DateTime         @map("expires_at") @db.Timestamptz(3)
   consumedAt           DateTime?        @map("consumed_at") @db.Timestamptz(3)
@@ -987,10 +990,10 @@ model Match {
   idempotencyRecords       MatchIdempotencyRecord[]
   conversation             Conversation?
 
+  @@unique([recurringOccurrenceId], map: "matches_recurring_occurrence_key")
   @@index([visibility, state, startsAt, id], map: "matches_public_search_idx")
   @@index([organizerId, state, updatedAt], map: "matches_organizer_idx")
   @@index([clubId, state, startsAt], map: "matches_club_idx")
-  @@unique([recurringOccurrenceId], map: "matches_recurring_occurrence_key")
   @@map("matches")
 }
 
@@ -1864,6 +1867,7 @@ enum NotificationChannel {
   IN_APP
   TELEGRAM
   EMAIL
+  PUSH
 
   @@map("notification_channel")
 }
@@ -1884,6 +1888,7 @@ enum NotificationDeliveryStatus {
 enum CommunicationPlatform {
   WEB
   TMA
+  MOBILE
 
   @@map("communication_platform")
 }
@@ -2053,6 +2058,7 @@ model NotificationDelivery {
   terminalAt         DateTime?                  @map("terminal_at") @db.Timestamptz(3)
   expiresAt          DateTime                   @default(dbgenerated("CURRENT_TIMESTAMP + INTERVAL '30 days'")) @map("expires_at") @db.Timestamptz(3)
   notification       Notification               @relation(fields: [notificationId], references: [id], onDelete: Cascade, onUpdate: Restrict)
+  pushAttempts       PushDeliveryAttempt[]
 
   @@unique([notificationId, channel], map: "notification_deliveries_logical_key")
   @@index([expiresAt], map: "notification_deliveries_expiry_idx")
@@ -2060,16 +2066,71 @@ model NotificationDelivery {
 }
 
 model NotificationDevice {
-  installationId String                @id @map("installation_id") @db.Uuid
-  userId         String                @map("user_id") @db.Uuid
-  platform       CommunicationPlatform
-  createdAt      DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
-  lastSeenAt     DateTime              @default(now()) @map("last_seen_at") @db.Timestamptz(3)
-  revokedAt      DateTime?             @map("revoked_at") @db.Timestamptz(3)
-  user           User                  @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Restrict)
+  installationId    String                @id @map("installation_id") @db.Uuid
+  userId            String                @map("user_id") @db.Uuid
+  platform          CommunicationPlatform
+  createdAt         DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
+  lastSeenAt        DateTime              @default(now()) @map("last_seen_at") @db.Timestamptz(3)
+  revokedAt         DateTime?             @map("revoked_at") @db.Timestamptz(3)
+  user              User                  @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Restrict)
+  pushRegistrations PushRegistration[]
 
   @@index([userId, revokedAt], map: "notification_devices_user_idx")
   @@map("notification_devices")
+}
+
+enum MobileOperatingSystem {
+  IOS
+  ANDROID
+
+  @@map("mobile_operating_system")
+}
+
+enum PushEnvironment {
+  SANDBOX
+  PRODUCTION
+
+  @@map("push_environment")
+}
+
+model PushRegistration {
+  id                   String                @id @db.Uuid
+  installationId       String                @map("installation_id") @db.Uuid
+  operatingSystem      MobileOperatingSystem @map("operating_system")
+  environment          PushEnvironment
+  appVersion           String                @map("app_version") @db.VarChar(64)
+  tokenKey             String?               @map("token_key") @db.Char(64)
+  tokenCiphertext      Bytes?                @map("token_ciphertext")
+  encryptionKeyVersion Int                   @map("encryption_key_version")
+  createdAt            DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
+  lastSeenAt           DateTime              @default(now()) @map("last_seen_at") @db.Timestamptz(3)
+  expiresAt            DateTime              @default(dbgenerated("CURRENT_TIMESTAMP + INTERVAL '90 days'")) @map("expires_at") @db.Timestamptz(3)
+  revokedAt            DateTime?             @map("revoked_at") @db.Timestamptz(3)
+  revokeReasonCode     String?               @map("revoke_reason_code") @db.VarChar(96)
+  device               NotificationDevice    @relation(fields: [installationId], references: [installationId], onDelete: Cascade, onUpdate: Restrict)
+  deliveryAttempts     PushDeliveryAttempt[]
+
+  @@index([installationId, revokedAt, expiresAt], map: "push_registrations_installation_active_idx")
+  @@index([expiresAt], map: "push_registrations_expiry_idx")
+  @@map("push_registrations")
+}
+
+model PushDeliveryAttempt {
+  id                 String                     @id @db.Uuid
+  deliveryId         String                     @map("delivery_id") @db.Uuid
+  registrationId     String                     @map("registration_id") @db.Uuid
+  status             NotificationDeliveryStatus @default(PENDING)
+  attempts           Int                        @default(0)
+  providerMessageKey String?                    @map("provider_message_key") @db.Char(64)
+  lastErrorCode      String?                    @map("last_error_code") @db.VarChar(96)
+  createdAt          DateTime                   @default(now()) @map("created_at") @db.Timestamptz(3)
+  terminalAt         DateTime?                  @map("terminal_at") @db.Timestamptz(3)
+  delivery           NotificationDelivery       @relation(fields: [deliveryId], references: [id], onDelete: Cascade, onUpdate: Restrict)
+  registration       PushRegistration           @relation(fields: [registrationId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([deliveryId, registrationId], map: "push_delivery_attempts_logical_key")
+  @@index([status, createdAt, id], map: "push_delivery_attempts_dispatch_idx")
+  @@map("push_delivery_attempts")
 }
 
 model CommunicationEventReceipt {
@@ -2205,22 +2266,22 @@ enum ClubMatchOrigin {
 }
 
 model Club {
-  id               String               @id @db.Uuid
-  version          Int                  @default(0)
-  state            ClubState            @default(ACTIVE)
-  name             String               @db.VarChar(120)
-  normalizedName   String               @map("normalized_name") @db.VarChar(120)
-  description      String               @db.VarChar(1000)
-  locality         String               @db.VarChar(120)
-  normalizedLocality String             @map("normalized_locality") @db.VarChar(120)
-  membershipPolicy ClubMembershipPolicy @map("membership_policy")
-  createdAt        DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt        DateTime             @default(now()) @map("updated_at") @db.Timestamptz(3)
-  archivedAt       DateTime?            @map("archived_at") @db.Timestamptz(3)
-  memberships      ClubMembership[]
-  venues           ClubVenue[]
-  matches          Match[]
-  recurringRules   RecurringMatchRule[]
+  id                 String               @id @db.Uuid
+  version            Int                  @default(0)
+  state              ClubState            @default(ACTIVE)
+  name               String               @db.VarChar(120)
+  normalizedName     String               @map("normalized_name") @db.VarChar(120)
+  description        String               @db.VarChar(1000)
+  locality           String               @db.VarChar(120)
+  normalizedLocality String               @map("normalized_locality") @db.VarChar(120)
+  membershipPolicy   ClubMembershipPolicy @map("membership_policy")
+  createdAt          DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime             @default(now()) @map("updated_at") @db.Timestamptz(3)
+  archivedAt         DateTime?            @map("archived_at") @db.Timestamptz(3)
+  memberships        ClubMembership[]
+  venues             ClubVenue[]
+  matches            Match[]
+  recurringRules     RecurringMatchRule[]
 
   @@index([state, normalizedName, id], map: "clubs_public_search_idx")
   @@index([state, normalizedLocality, normalizedName, id], map: "clubs_locality_search_idx")
@@ -2228,16 +2289,16 @@ model Club {
 }
 
 model ClubMembership {
-  id        String              @id @db.Uuid
-  clubId    String              @map("club_id") @db.Uuid
-  userId    String              @map("user_id") @db.Uuid
-  role      ClubRole
-  state     ClubMembershipState @default(ACTIVE)
-  revision  Int                 @default(0)
-  joinedAt  DateTime            @default(now()) @map("joined_at") @db.Timestamptz(3)
-  endedAt   DateTime?           @map("ended_at") @db.Timestamptz(3)
-  club      Club                @relation(fields: [clubId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  user      User                @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  id       String              @id @db.Uuid
+  clubId   String              @map("club_id") @db.Uuid
+  userId   String              @map("user_id") @db.Uuid
+  role     ClubRole
+  state    ClubMembershipState @default(ACTIVE)
+  revision Int                 @default(0)
+  joinedAt DateTime            @default(now()) @map("joined_at") @db.Timestamptz(3)
+  endedAt  DateTime?           @map("ended_at") @db.Timestamptz(3)
+  club     Club                @relation(fields: [clubId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  user     User                @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
 
   @@index([clubId, state, role, joinedAt, id], map: "club_memberships_roster_idx")
   @@index([userId, state, clubId], map: "club_memberships_user_idx")
@@ -2245,30 +2306,30 @@ model ClubMembership {
 }
 
 model ClubJoinRequest {
-  id         String               @id @db.Uuid
-  clubId     String               @map("club_id") @db.Uuid
-  requesterId String              @map("requester_id") @db.Uuid
-  state      ClubJoinRequestState @default(PENDING)
-  revision   Int                  @default(0)
-  createdAt  DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
-  resolvedAt DateTime?            @map("resolved_at") @db.Timestamptz(3)
+  id          String               @id @db.Uuid
+  clubId      String               @map("club_id") @db.Uuid
+  requesterId String               @map("requester_id") @db.Uuid
+  state       ClubJoinRequestState @default(PENDING)
+  revision    Int                  @default(0)
+  createdAt   DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
+  resolvedAt  DateTime?            @map("resolved_at") @db.Timestamptz(3)
 
   @@index([clubId, state, createdAt, id], map: "club_join_requests_queue_idx")
   @@map("club_join_requests")
 }
 
 model ClubInvitation {
-  id                   String              @id @db.Uuid
-  clubId               String              @map("club_id") @db.Uuid
-  inviteeId            String              @map("invitee_id") @db.Uuid
-  issuedByUserId       String              @map("issued_by_user_id") @db.Uuid
-  state                ClubInvitationState @default(PENDING)
-  revision             Int                 @default(0)
-  tokenHash            String              @unique(map: "club_invitations_token_hash_key") @map("token_hash") @db.Char(64)
-  keyVersion           Int                 @map("key_version")
-  createdAt            DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
-  expiresAt            DateTime            @default(dbgenerated("CURRENT_TIMESTAMP + INTERVAL '7 days'")) @map("expires_at") @db.Timestamptz(3)
-  resolvedAt           DateTime?           @map("resolved_at") @db.Timestamptz(3)
+  id             String              @id @db.Uuid
+  clubId         String              @map("club_id") @db.Uuid
+  inviteeId      String              @map("invitee_id") @db.Uuid
+  issuedByUserId String              @map("issued_by_user_id") @db.Uuid
+  state          ClubInvitationState @default(PENDING)
+  revision       Int                 @default(0)
+  tokenHash      String              @unique(map: "club_invitations_token_hash_key") @map("token_hash") @db.Char(64)
+  keyVersion     Int                 @map("key_version")
+  createdAt      DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
+  expiresAt      DateTime            @default(dbgenerated("CURRENT_TIMESTAMP + INTERVAL '7 days'")) @map("expires_at") @db.Timestamptz(3)
+  resolvedAt     DateTime?           @map("resolved_at") @db.Timestamptz(3)
 
   @@index([clubId, state, createdAt, id], map: "club_invitations_queue_idx")
   @@index([inviteeId, state, expiresAt], map: "club_invitations_invitee_idx")
@@ -2305,31 +2366,31 @@ model ClubVenue {
 }
 
 model RecurringMatchRule {
-  id                      String                      @id @db.Uuid
-  clubId                  String                      @map("club_id") @db.Uuid
-  organizerId             String                      @map("organizer_id") @db.Uuid
-  revision                Int                         @default(0)
-  state                   RecurringMatchRuleState     @default(ACTIVE)
-  frequency               RecurringMatchFrequency     @default(WEEKLY)
-  intervalWeeks           Int                         @map("interval_weeks") @db.SmallInt
-  weekdays                Int[]                       @db.SmallInt
-  localStartTime          DateTime                    @map("local_start_time") @db.Time
-  timeZone                String                      @map("time_zone") @db.VarChar(64)
-  tzdataVersion           String                      @map("tzdata_version") @db.VarChar(32)
-  dstGapPolicy            RecurringDstGapPolicy       @default(SKIP) @map("dst_gap_policy")
-  dstOverlapPolicy        RecurringDstOverlapPolicy   @map("dst_overlap_policy")
-  startsOn                DateTime                    @map("starts_on") @db.Date
-  endsOn                  DateTime?                   @map("ends_on") @db.Date
-  generatedThrough        DateTime?                   @map("generated_through") @db.Date
-  generationHorizonDays   Int                         @default(42) @map("generation_horizon_days") @db.SmallInt
-  templateVersion         Int                         @default(1) @map("template_version")
-  matchTemplate           Json                        @map("match_template")
-  pauseReasonCode         String?                     @map("pause_reason_code") @db.VarChar(96)
-  createdAt               DateTime                    @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt               DateTime                    @default(now()) @map("updated_at") @db.Timestamptz(3)
-  endedAt                 DateTime?                   @map("ended_at") @db.Timestamptz(3)
-  club                    Club                        @relation(fields: [clubId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  occurrences             RecurringMatchOccurrence[]
+  id                    String                     @id @db.Uuid
+  clubId                String                     @map("club_id") @db.Uuid
+  organizerId           String                     @map("organizer_id") @db.Uuid
+  revision              Int                        @default(0)
+  state                 RecurringMatchRuleState    @default(ACTIVE)
+  frequency             RecurringMatchFrequency    @default(WEEKLY)
+  intervalWeeks         Int                        @map("interval_weeks") @db.SmallInt
+  weekdays              Int[]                      @db.SmallInt
+  localStartTime        DateTime                   @map("local_start_time") @db.Time
+  timeZone              String                     @map("time_zone") @db.VarChar(64)
+  tzdataVersion         String                     @map("tzdata_version") @db.VarChar(32)
+  dstGapPolicy          RecurringDstGapPolicy      @default(SKIP) @map("dst_gap_policy")
+  dstOverlapPolicy      RecurringDstOverlapPolicy  @map("dst_overlap_policy")
+  startsOn              DateTime                   @map("starts_on") @db.Date
+  endsOn                DateTime?                  @map("ends_on") @db.Date
+  generatedThrough      DateTime?                  @map("generated_through") @db.Date
+  generationHorizonDays Int                        @default(42) @map("generation_horizon_days") @db.SmallInt
+  templateVersion       Int                        @default(1) @map("template_version")
+  matchTemplate         Json                       @map("match_template")
+  pauseReasonCode       String?                    @map("pause_reason_code") @db.VarChar(96)
+  createdAt             DateTime                   @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt             DateTime                   @default(now()) @map("updated_at") @db.Timestamptz(3)
+  endedAt               DateTime?                  @map("ended_at") @db.Timestamptz(3)
+  club                  Club                       @relation(fields: [clubId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  occurrences           RecurringMatchOccurrence[]
 
   @@index([state, generatedThrough, id], map: "recurring_match_rules_generation_idx")
   @@index([clubId, state, createdAt, id], map: "recurring_match_rules_club_idx")
@@ -2337,19 +2398,19 @@ model RecurringMatchRule {
 }
 
 model RecurringMatchOccurrence {
-  id                 String                   @id @db.Uuid
-  clubId             String                   @map("club_id") @db.Uuid
-  ruleId             String                   @map("rule_id") @db.Uuid
-  templateVersion    Int                      @map("template_version")
-  calendarKey        String                   @map("calendar_key") @db.VarChar(16)
-  localDate          DateTime                 @map("local_date") @db.Date
-  localStartTime     DateTime                 @map("local_start_time") @db.Time
-  state              RecurringOccurrenceState
-  startsAt           DateTime?                @map("starts_at") @db.Timestamptz(3)
-  utcOffsetMinutes   Int?                     @map("utc_offset_minutes") @db.SmallInt
-  matchId            String?                  @unique(map: "recurring_match_occurrences_match_key") @map("match_id") @db.Uuid
-  materializedAt     DateTime                 @default(now()) @map("materialized_at") @db.Timestamptz(3)
-  rule               RecurringMatchRule       @relation(fields: [ruleId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  id               String                   @id @db.Uuid
+  clubId           String                   @map("club_id") @db.Uuid
+  ruleId           String                   @map("rule_id") @db.Uuid
+  templateVersion  Int                      @map("template_version")
+  calendarKey      String                   @map("calendar_key") @db.VarChar(16)
+  localDate        DateTime                 @map("local_date") @db.Date
+  localStartTime   DateTime                 @map("local_start_time") @db.Time
+  state            RecurringOccurrenceState
+  startsAt         DateTime?                @map("starts_at") @db.Timestamptz(3)
+  utcOffsetMinutes Int?                     @map("utc_offset_minutes") @db.SmallInt
+  matchId          String?                  @unique(map: "recurring_match_occurrences_match_key") @map("match_id") @db.Uuid
+  materializedAt   DateTime                 @default(now()) @map("materialized_at") @db.Timestamptz(3)
+  rule             RecurringMatchRule       @relation(fields: [ruleId], references: [id], onDelete: Restrict, onUpdate: Restrict)
 
   @@unique([ruleId, calendarKey], map: "recurring_match_occurrences_calendar_key")
   @@index([clubId, startsAt, id], map: "recurring_match_occurrences_club_idx")
@@ -2359,7 +2420,7 @@ model RecurringMatchOccurrence {
 model ClubOperationReceipt {
   id                   String   @id @db.Uuid
   clubId               String?  @map("club_id") @db.Uuid
-  actorUserId           String   @map("actor_user_id") @db.Uuid
+  actorUserId          String   @map("actor_user_id") @db.Uuid
   idempotencyKey       String   @map("idempotency_key") @db.Uuid
   method               String   @db.VarChar(8)
   canonicalPath        String   @map("canonical_path") @db.VarChar(200)
@@ -2376,15 +2437,15 @@ model ClubOperationReceipt {
 }
 
 model ClubGovernanceAudit {
-  id         String   @id @db.Uuid
-  clubId     String   @map("club_id") @db.Uuid
-  operationId String  @unique(map: "club_governance_audits_operation_key") @map("operation_id") @db.Uuid
-  actorId    String   @map("actor_id") @db.Uuid
-  targetId   String?  @map("target_id") @db.Uuid
-  action     String   @db.VarChar(96)
-  outcome    String   @db.VarChar(32)
-  reasonCode String   @map("reason_code") @db.VarChar(96)
-  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  id          String   @id @db.Uuid
+  clubId      String   @map("club_id") @db.Uuid
+  operationId String   @unique(map: "club_governance_audits_operation_key") @map("operation_id") @db.Uuid
+  actorId     String   @map("actor_id") @db.Uuid
+  targetId    String?  @map("target_id") @db.Uuid
+  action      String   @db.VarChar(96)
+  outcome     String   @db.VarChar(32)
+  reasonCode  String   @map("reason_code") @db.VarChar(96)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
   @@index([clubId, createdAt, id], map: "club_governance_audits_club_idx")
   @@map("club_governance_audits")
@@ -2542,39 +2603,39 @@ model FormatDefinition {
 }
 
 model Tournament {
-  id                    String                     @id @db.Uuid
-  version               Int                        @default(0)
-  projectionRevision    BigInt                     @default(0) @map("projection_revision")
-  projectionChecksum    String?                    @map("projection_checksum") @db.Char(64)
-  state                 TournamentState            @default(DRAFT)
-  registrationGate      TournamentRegistrationGate @default(CLOSED) @map("registration_gate")
-  organizerId           String                     @map("organizer_id") @db.Uuid
-  clubId                String?                    @map("club_id") @db.Uuid
-  venueId               String                     @map("venue_id") @db.Uuid
-  formatDefinitionId    String                     @map("format_definition_id") @db.Uuid
-  formatSnapshot        Json                       @map("format_snapshot")
-  formatSnapshotHash    String                     @map("format_snapshot_hash") @db.Char(64)
-  name                  String                     @db.VarChar(120)
-  description           String                     @db.VarChar(2000)
-  timeZone              String                     @map("time_zone") @db.VarChar(64)
-  startsAt              DateTime                   @map("starts_at") @db.Timestamptz(3)
-  registrationOpensAt   DateTime                   @map("registration_opens_at") @db.Timestamptz(3)
-  registrationClosesAt  DateTime                   @map("registration_closes_at") @db.Timestamptz(3)
-  checkInClosesAt       DateTime?                  @map("check_in_closes_at") @db.Timestamptz(3)
-  capacity              Int                        @db.SmallInt
-  priceMinor            BigInt?                    @map("price_minor")
-  currency              String?                    @db.Char(3)
-  createdAt             DateTime                   @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt             DateTime                   @default(now()) @map("updated_at") @db.Timestamptz(3)
-  completedAt           DateTime?                  @map("completed_at") @db.Timestamptz(3)
-  cancelledAt           DateTime?                  @map("cancelled_at") @db.Timestamptz(3)
-  formatDefinition      FormatDefinition           @relation(fields: [formatDefinitionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  entrants              Entrant[]
-  stages                Stage[]
-  matches               TournamentMatch[]
-  standings             Standing[]
-  partnerIntents        TournamentPartnerIntent[]
-  roles                 TournamentRole[]
+  id                   String                     @id @db.Uuid
+  version              Int                        @default(0)
+  projectionRevision   BigInt                     @default(0) @map("projection_revision")
+  projectionChecksum   String?                    @map("projection_checksum") @db.Char(64)
+  state                TournamentState            @default(DRAFT)
+  registrationGate     TournamentRegistrationGate @default(CLOSED) @map("registration_gate")
+  organizerId          String                     @map("organizer_id") @db.Uuid
+  clubId               String?                    @map("club_id") @db.Uuid
+  venueId              String                     @map("venue_id") @db.Uuid
+  formatDefinitionId   String                     @map("format_definition_id") @db.Uuid
+  formatSnapshot       Json                       @map("format_snapshot")
+  formatSnapshotHash   String                     @map("format_snapshot_hash") @db.Char(64)
+  name                 String                     @db.VarChar(120)
+  description          String                     @db.VarChar(2000)
+  timeZone             String                     @map("time_zone") @db.VarChar(64)
+  startsAt             DateTime                   @map("starts_at") @db.Timestamptz(3)
+  registrationOpensAt  DateTime                   @map("registration_opens_at") @db.Timestamptz(3)
+  registrationClosesAt DateTime                   @map("registration_closes_at") @db.Timestamptz(3)
+  checkInClosesAt      DateTime?                  @map("check_in_closes_at") @db.Timestamptz(3)
+  capacity             Int                        @db.SmallInt
+  priceMinor           BigInt?                    @map("price_minor")
+  currency             String?                    @db.Char(3)
+  createdAt            DateTime                   @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt            DateTime                   @default(now()) @map("updated_at") @db.Timestamptz(3)
+  completedAt          DateTime?                  @map("completed_at") @db.Timestamptz(3)
+  cancelledAt          DateTime?                  @map("cancelled_at") @db.Timestamptz(3)
+  formatDefinition     FormatDefinition           @relation(fields: [formatDefinitionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  entrants             Entrant[]
+  stages               Stage[]
+  matches              TournamentMatch[]
+  standings            Standing[]
+  partnerIntents       TournamentPartnerIntent[]
+  roles                TournamentRole[]
 
   @@index([state, startsAt, id], map: "tournaments_public_search_idx")
   @@index([organizerId, state, updatedAt], map: "tournaments_organizer_idx")
@@ -2583,22 +2644,22 @@ model Tournament {
 }
 
 model Entrant {
-  id             String                  @id @db.Uuid
-  tournamentId   String                  @map("tournament_id") @db.Uuid
-  state          TournamentEntrantState  @default(ELIGIBLE)
-  revision       Int                     @default(0)
-  kind           String                  @db.VarChar(16)
-  captainUserId  String?                 @map("captain_user_id") @db.Uuid
-  fifoSequence   BigInt?                 @map("fifo_sequence")
-  seed           Int?                    @db.SmallInt
-  tieBreakLot    BigInt?                 @map("tie_break_lot")
-  checkInState   String                  @map("check_in_state") @db.VarChar(24)
-  registeredAt   DateTime                @default(now()) @map("registered_at") @db.Timestamptz(3)
-  terminalAt     DateTime?               @map("terminal_at") @db.Timestamptz(3)
-  tournament     Tournament              @relation(fields: [tournamentId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  members        EntrantMember[]
-  paymentMarks   PaymentMark[]
-  standings      Standing[]
+  id            String                 @id @db.Uuid
+  tournamentId  String                 @map("tournament_id") @db.Uuid
+  state         TournamentEntrantState @default(ELIGIBLE)
+  revision      Int                    @default(0)
+  kind          String                 @db.VarChar(16)
+  captainUserId String?                @map("captain_user_id") @db.Uuid
+  fifoSequence  BigInt?                @map("fifo_sequence")
+  seed          Int?                   @db.SmallInt
+  tieBreakLot   BigInt?                @map("tie_break_lot")
+  checkInState  String                 @map("check_in_state") @db.VarChar(24)
+  registeredAt  DateTime               @default(now()) @map("registered_at") @db.Timestamptz(3)
+  terminalAt    DateTime?              @map("terminal_at") @db.Timestamptz(3)
+  tournament    Tournament             @relation(fields: [tournamentId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  members       EntrantMember[]
+  paymentMarks  PaymentMark[]
+  standings     Standing[]
 
   @@index([tournamentId, state, registeredAt, id], map: "entrants_roster_idx")
   @@index([tournamentId, state, fifoSequence], map: "entrants_fifo_idx")
@@ -2622,16 +2683,16 @@ model EntrantMember {
 }
 
 model TournamentPartnerIntent {
-  id             String                       @id @db.Uuid
-  tournamentId   String                       @map("tournament_id") @db.Uuid
-  userId         String                       @map("user_id") @db.Uuid
-  revision       Int                          @default(0)
-  state          TournamentPartnerIntentState @default(PENDING)
-  matchingOptIn  Boolean                      @default(true) @map("matching_opt_in")
-  fifoSequence   BigInt                       @map("fifo_sequence")
-  registeredAt   DateTime                     @default(now()) @map("registered_at") @db.Timestamptz(3)
-  terminalAt     DateTime?                    @map("terminal_at") @db.Timestamptz(3)
-  tournament     Tournament                   @relation(fields: [tournamentId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  id            String                       @id @db.Uuid
+  tournamentId  String                       @map("tournament_id") @db.Uuid
+  userId        String                       @map("user_id") @db.Uuid
+  revision      Int                          @default(0)
+  state         TournamentPartnerIntentState @default(PENDING)
+  matchingOptIn Boolean                      @default(true) @map("matching_opt_in")
+  fifoSequence  BigInt                       @map("fifo_sequence")
+  registeredAt  DateTime                     @default(now()) @map("registered_at") @db.Timestamptz(3)
+  terminalAt    DateTime?                    @map("terminal_at") @db.Timestamptz(3)
+  tournament    Tournament                   @relation(fields: [tournamentId], references: [id], onDelete: Restrict, onUpdate: Restrict)
 
   @@unique([tournamentId, fifoSequence], map: "tournament_partner_intents_fifo_key")
   @@index([tournamentId, state, fifoSequence], map: "tournament_partner_intents_queue_idx")
@@ -2668,16 +2729,16 @@ model Stage {
 }
 
 model Round {
-  id         String               @id @db.Uuid
-  stageId    String               @map("stage_id") @db.Uuid
-  sequence   Int                  @db.SmallInt
-  generation Int                 @default(1)
-  revision   Int                 @default(0)
-  state      TournamentRoundState @default(PLANNED)
-  startedAt  DateTime?            @map("started_at") @db.Timestamptz(3)
-  completedAt DateTime?           @map("completed_at") @db.Timestamptz(3)
-  stage      Stage                @relation(fields: [stageId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  matches    TournamentMatch[]
+  id          String               @id @db.Uuid
+  stageId     String               @map("stage_id") @db.Uuid
+  sequence    Int                  @db.SmallInt
+  generation  Int                  @default(1)
+  revision    Int                  @default(0)
+  state       TournamentRoundState @default(PLANNED)
+  startedAt   DateTime?            @map("started_at") @db.Timestamptz(3)
+  completedAt DateTime?            @map("completed_at") @db.Timestamptz(3)
+  stage       Stage                @relation(fields: [stageId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  matches     TournamentMatch[]
 
   @@unique([stageId, sequence, generation], map: "tournament_rounds_generation_key")
   @@index([stageId, state, sequence], map: "tournament_rounds_stage_idx")
@@ -2685,24 +2746,24 @@ model Round {
 }
 
 model TournamentMatch {
-  id                 String               @id @db.Uuid
-  tournamentId       String               @map("tournament_id") @db.Uuid
-  stageId            String               @map("stage_id") @db.Uuid
-  roundId            String               @map("round_id") @db.Uuid
-  strategyKey        String               @map("strategy_key") @db.VarChar(120)
-  sequence           Int                  @db.SmallInt
-  revision           Int                  @default(0)
-  resultRevision     Int                  @default(0) @map("result_revision")
-  state              TournamentMatchState @default(PLANNED)
-  winnerEntrantId    String?              @map("winner_entrant_id") @db.Uuid
-  authoritativeResultId String?           @map("authoritative_result_id") @db.Uuid
-  startedAt          DateTime?            @map("started_at") @db.Timestamptz(3)
-  terminalAt         DateTime?            @map("terminal_at") @db.Timestamptz(3)
-  tournament         Tournament           @relation(fields: [tournamentId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  round              Round                @relation(fields: [roundId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  slots              TournamentMatchSlot[]
-  courtAssignments   CourtAssignment[]
-  results            TournamentMatchResult[]
+  id                    String                  @id @db.Uuid
+  tournamentId          String                  @map("tournament_id") @db.Uuid
+  stageId               String                  @map("stage_id") @db.Uuid
+  roundId               String                  @map("round_id") @db.Uuid
+  strategyKey           String                  @map("strategy_key") @db.VarChar(120)
+  sequence              Int                     @db.SmallInt
+  revision              Int                     @default(0)
+  resultRevision        Int                     @default(0) @map("result_revision")
+  state                 TournamentMatchState    @default(PLANNED)
+  winnerEntrantId       String?                 @map("winner_entrant_id") @db.Uuid
+  authoritativeResultId String?                 @map("authoritative_result_id") @db.Uuid
+  startedAt             DateTime?               @map("started_at") @db.Timestamptz(3)
+  terminalAt            DateTime?               @map("terminal_at") @db.Timestamptz(3)
+  tournament            Tournament              @relation(fields: [tournamentId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  round                 Round                   @relation(fields: [roundId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  slots                 TournamentMatchSlot[]
+  courtAssignments      CourtAssignment[]
+  results               TournamentMatchResult[]
 
   @@unique([tournamentId, strategyKey], map: "tournament_matches_strategy_key")
   @@unique([roundId, sequence], map: "tournament_matches_round_sequence_key")
@@ -2757,20 +2818,20 @@ model TournamentMatchResult {
 }
 
 model Standing {
-  tournamentId     String     @map("tournament_id") @db.Uuid
-  stageId          String?    @map("stage_id") @db.Uuid
-  entrantId        String     @map("entrant_id") @db.Uuid
-  revision         Int
-  rank             Int        @db.SmallInt
-  matchPoints      Int        @map("match_points")
-  wins             Int
-  gameDifferential Int        @map("game_differential")
-  pointDifferential Int       @map("point_differential")
-  pointsScored     Int        @map("points_scored")
-  tieBreakLot      BigInt     @map("tie_break_lot")
-  detail           Json
-  tournament       Tournament @relation(fields: [tournamentId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  entrant          Entrant    @relation(fields: [entrantId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  tournamentId      String     @map("tournament_id") @db.Uuid
+  stageId           String?    @map("stage_id") @db.Uuid
+  entrantId         String     @map("entrant_id") @db.Uuid
+  revision          Int
+  rank              Int        @db.SmallInt
+  matchPoints       Int        @map("match_points")
+  wins              Int
+  gameDifferential  Int        @map("game_differential")
+  pointDifferential Int        @map("point_differential")
+  pointsScored      Int        @map("points_scored")
+  tieBreakLot       BigInt     @map("tie_break_lot")
+  detail            Json
+  tournament        Tournament @relation(fields: [tournamentId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  entrant           Entrant    @relation(fields: [entrantId], references: [id], onDelete: Restrict, onUpdate: Restrict)
 
   @@id([tournamentId, entrantId, revision])
   @@unique([tournamentId, revision, rank], map: "tournament_standings_rank_key")
@@ -2779,15 +2840,15 @@ model Standing {
 }
 
 model PaymentMark {
-  id                String                 @id @db.Uuid
-  tournamentId      String                 @map("tournament_id") @db.Uuid
-  entrantId         String                 @map("entrant_id") @db.Uuid
-  revision          Int
-  state             TournamentPaymentState
-  reasonCode        String                 @map("reason_code") @db.VarChar(96)
-  markedByUserId    String                 @map("marked_by_user_id") @db.Uuid
-  markedAt          DateTime               @default(now()) @map("marked_at") @db.Timestamptz(3)
-  entrant           Entrant                @relation(fields: [entrantId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  id             String                 @id @db.Uuid
+  tournamentId   String                 @map("tournament_id") @db.Uuid
+  entrantId      String                 @map("entrant_id") @db.Uuid
+  revision       Int
+  state          TournamentPaymentState
+  reasonCode     String                 @map("reason_code") @db.VarChar(96)
+  markedByUserId String                 @map("marked_by_user_id") @db.Uuid
+  markedAt       DateTime               @default(now()) @map("marked_at") @db.Timestamptz(3)
+  entrant        Entrant                @relation(fields: [entrantId], references: [id], onDelete: Restrict, onUpdate: Restrict)
 
   @@unique([entrantId, revision], map: "tournament_payment_marks_revision_key")
   @@index([tournamentId, entrantId, markedAt], map: "tournament_payment_marks_entry_idx")
@@ -2831,10 +2892,10 @@ model TournamentAudit {
 }
 
 model TournamentCompletionMarker {
-  tournamentId      String   @id @map("tournament_id") @db.Uuid
-  projectionRevision BigInt  @map("projection_revision")
-  projectionChecksum String  @map("projection_checksum") @db.Char(64)
-  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  tournamentId       String   @id @map("tournament_id") @db.Uuid
+  projectionRevision BigInt   @map("projection_revision")
+  projectionChecksum String   @map("projection_checksum") @db.Char(64)
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
   @@map("tournament_completion_markers")
 }
@@ -2888,41 +2949,41 @@ enum LeaderboardSeasonState {
 }
 
 model XpRuleDefinition {
-  id                 String            @id @db.Uuid
-  scopeKind          GamificationScopeKind @map("scope_kind")
-  clubId             String?           @map("club_id") @db.Uuid
-  sourceKind         XpSourceKind       @map("source_kind")
-  version            String            @db.VarChar(32)
-  enabled            Boolean           @default(true)
-  baseXp             Int               @map("base_xp")
-  coefficientTenths  Int               @map("coefficient_tenths") @db.SmallInt
-  dailyEventCap      Int               @map("daily_event_cap") @db.SmallInt
-  weeklyEventCap     Int               @map("weekly_event_cap") @db.SmallInt
-  effectiveFrom      DateTime          @map("effective_from") @db.Timestamptz(3)
-  effectiveUntil     DateTime?         @map("effective_until") @db.Timestamptz(3)
-  snapshotHash       String            @map("snapshot_hash") @db.Char(64)
-  createdAt          DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  id                String                @id @db.Uuid
+  scopeKind         GamificationScopeKind @map("scope_kind")
+  clubId            String?               @map("club_id") @db.Uuid
+  sourceKind        XpSourceKind          @map("source_kind")
+  version           String                @db.VarChar(32)
+  enabled           Boolean               @default(true)
+  baseXp            Int                   @map("base_xp")
+  coefficientTenths Int                   @map("coefficient_tenths") @db.SmallInt
+  dailyEventCap     Int                   @map("daily_event_cap") @db.SmallInt
+  weeklyEventCap    Int                   @map("weekly_event_cap") @db.SmallInt
+  effectiveFrom     DateTime              @map("effective_from") @db.Timestamptz(3)
+  effectiveUntil    DateTime?             @map("effective_until") @db.Timestamptz(3)
+  snapshotHash      String                @map("snapshot_hash") @db.Char(64)
+  createdAt         DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
 
   @@index([scopeKind, clubId, effectiveFrom], map: "xp_rule_definitions_effective_idx")
   @@map("xp_rule_definitions")
 }
 
 model XpLedgerEntry {
-  id                    String              @id @db.Uuid
-  userId                String              @map("user_id") @db.Uuid
+  id                    String                @id @db.Uuid
+  userId                String                @map("user_id") @db.Uuid
   scopeKind             GamificationScopeKind @map("scope_kind")
-  clubId                String?             @map("club_id") @db.Uuid
-  sourceKind            XpSourceKind        @map("source_kind")
-  sourceEventId         String              @map("source_event_id") @db.Uuid
-  sourceOccurredAt      DateTime            @map("source_occurred_at") @db.Timestamptz(3)
-  ruleDefinitionId      String              @map("rule_definition_id") @db.Uuid
-  ruleVersion           String              @map("rule_version") @db.VarChar(32)
+  clubId                String?               @map("club_id") @db.Uuid
+  sourceKind            XpSourceKind          @map("source_kind")
+  sourceEventId         String                @map("source_event_id") @db.Uuid
+  sourceOccurredAt      DateTime              @map("source_occurred_at") @db.Timestamptz(3)
+  ruleDefinitionId      String                @map("rule_definition_id") @db.Uuid
+  ruleVersion           String                @map("rule_version") @db.VarChar(32)
   kind                  XpLedgerEntryKind
   status                XpLedgerEntryStatus
   amount                Int
-  compensationOfEntryId String?             @map("compensation_of_entry_id") @db.Uuid
-  reasonCode            String?             @map("reason_code") @db.VarChar(96)
-  createdAt             DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
+  compensationOfEntryId String?               @map("compensation_of_entry_id") @db.Uuid
+  reasonCode            String?               @map("reason_code") @db.VarChar(96)
+  createdAt             DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
 
   @@index([userId, scopeKind, clubId, createdAt, id], map: "xp_ledger_entries_owner_idx")
   @@index([compensationOfEntryId], map: "xp_ledger_entries_compensation_idx")
@@ -2930,59 +2991,59 @@ model XpLedgerEntry {
 }
 
 model XpBalance {
-  id                 String            @id @db.Uuid
-  userId             String            @map("user_id") @db.Uuid
+  id                 String                @id @db.Uuid
+  userId             String                @map("user_id") @db.Uuid
   scopeKind          GamificationScopeKind @map("scope_kind")
-  clubId             String?           @map("club_id") @db.Uuid
-  lifetimeNetXp      BigInt            @map("lifetime_net_xp")
-  projectionRevision BigInt            @map("projection_revision")
-  checksum           String            @db.Char(64)
-  frozenAt           DateTime?         @map("frozen_at") @db.Timestamptz(3)
-  updatedAt          DateTime          @default(now()) @map("updated_at") @db.Timestamptz(3)
+  clubId             String?               @map("club_id") @db.Uuid
+  lifetimeNetXp      BigInt                @map("lifetime_net_xp")
+  projectionRevision BigInt                @map("projection_revision")
+  checksum           String                @db.Char(64)
+  frozenAt           DateTime?             @map("frozen_at") @db.Timestamptz(3)
+  updatedAt          DateTime              @default(now()) @map("updated_at") @db.Timestamptz(3)
 
   @@index([scopeKind, clubId, lifetimeNetXp], map: "xp_balances_scope_idx")
   @@map("xp_balances")
 }
 
 model LevelDefinition {
-  id            String            @id @db.Uuid
+  id            String                @id @db.Uuid
   scopeKind     GamificationScopeKind @map("scope_kind")
-  clubId        String?           @map("club_id") @db.Uuid
-  version       String            @db.VarChar(32)
-  ordinal       Int               @db.SmallInt
-  name          String            @db.VarChar(30)
-  thresholdXp   BigInt            @map("threshold_xp")
-  effectiveFrom DateTime          @map("effective_from") @db.Timestamptz(3)
-  createdAt     DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  clubId        String?               @map("club_id") @db.Uuid
+  version       String                @db.VarChar(32)
+  ordinal       Int                   @db.SmallInt
+  name          String                @db.VarChar(30)
+  thresholdXp   BigInt                @map("threshold_xp")
+  effectiveFrom DateTime              @map("effective_from") @db.Timestamptz(3)
+  createdAt     DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
 
   @@map("level_definitions")
 }
 
 model AchievementDefinition {
-  id             String            @id @db.Uuid
+  id             String                @id @db.Uuid
   scopeKind      GamificationScopeKind @map("scope_kind")
-  code           String            @db.VarChar(96)
-  version        String            @db.VarChar(32)
-  sourceKind     XpSourceKind      @map("source_kind")
-  thresholdCount Int               @map("threshold_count")
-  title          String            @db.VarChar(80)
-  description    String            @db.VarChar(300)
-  createdAt      DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  code           String                @db.VarChar(96)
+  version        String                @db.VarChar(32)
+  sourceKind     XpSourceKind          @map("source_kind")
+  thresholdCount Int                   @map("threshold_count")
+  title          String                @db.VarChar(80)
+  description    String                @db.VarChar(300)
+  createdAt      DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
 
   @@unique([scopeKind, code, version], map: "achievement_definitions_scope_code_version_key")
   @@map("achievement_definitions")
 }
 
 model AchievementAward {
-  id                    String                @id @db.Uuid
-  userId                String                @map("user_id") @db.Uuid
-  clubId                String?               @map("club_id") @db.Uuid
-  achievementDefinitionId String              @map("achievement_definition_id") @db.Uuid
-  state                 AchievementAwardState
-  qualifyingCount       Int                   @map("qualifying_count")
-  sourceLedgerEntryId   String                @map("source_ledger_entry_id") @db.Uuid
-  supersedesAwardId     String?               @map("supersedes_award_id") @db.Uuid
-  createdAt             DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
+  id                      String                @id @db.Uuid
+  userId                  String                @map("user_id") @db.Uuid
+  clubId                  String?               @map("club_id") @db.Uuid
+  achievementDefinitionId String                @map("achievement_definition_id") @db.Uuid
+  state                   AchievementAwardState
+  qualifyingCount         Int                   @map("qualifying_count")
+  sourceLedgerEntryId     String                @map("source_ledger_entry_id") @db.Uuid
+  supersedesAwardId       String?               @map("supersedes_award_id") @db.Uuid
+  createdAt               DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
 
   @@index([userId, createdAt], map: "achievement_awards_owner_idx")
   @@map("achievement_awards")
@@ -2990,7 +3051,7 @@ model AchievementAward {
 
 model LeaderboardSeason {
   id                     String                 @id @db.Uuid
-  scopeKind              GamificationScopeKind @map("scope_kind")
+  scopeKind              GamificationScopeKind  @map("scope_kind")
   clubId                 String?                @map("club_id") @db.Uuid
   name                   String                 @db.VarChar(80)
   state                  LeaderboardSeasonState
@@ -3020,14 +3081,14 @@ model LeaderboardConsent {
 }
 
 model LeaderboardEntry {
-  seasonId          String   @map("season_id") @db.Uuid
-  userId            String   @map("user_id") @db.Uuid
-  consentRevision   Int      @map("consent_revision")
-  rank              Int
-  seasonalNetXp     BigInt   @map("seasonal_net_xp")
-  levelDefinitionId String   @map("level_definition_id") @db.Uuid
-  projectionRevision BigInt  @map("projection_revision")
-  updatedAt         DateTime @default(now()) @map("updated_at") @db.Timestamptz(3)
+  seasonId           String   @map("season_id") @db.Uuid
+  userId             String   @map("user_id") @db.Uuid
+  consentRevision    Int      @map("consent_revision")
+  rank               Int
+  seasonalNetXp      BigInt   @map("seasonal_net_xp")
+  levelDefinitionId  String   @map("level_definition_id") @db.Uuid
+  projectionRevision BigInt   @map("projection_revision")
+  updatedAt          DateTime @default(now()) @map("updated_at") @db.Timestamptz(3)
 
   @@id([seasonId, userId])
   @@index([seasonId, rank, userId], map: "leaderboard_entries_page_idx")
@@ -3036,13 +3097,13 @@ model LeaderboardEntry {
 }
 
 model ProcessedGamificationEvent {
-  messageId       String   @id @map("message_id") @db.Uuid
-  eventType       String   @map("event_type") @db.VarChar(160)
-  sourceEventId   String   @map("source_event_id") @db.Uuid
-  sourceRevision  Int      @map("source_revision")
-  payloadHash     String   @map("payload_hash") @db.Char(64)
-  outcome         String   @db.VarChar(32)
-  processedAt     DateTime @default(now()) @map("processed_at") @db.Timestamptz(3)
+  messageId      String   @id @map("message_id") @db.Uuid
+  eventType      String   @map("event_type") @db.VarChar(160)
+  sourceEventId  String   @map("source_event_id") @db.Uuid
+  sourceRevision Int      @map("source_revision")
+  payloadHash    String   @map("payload_hash") @db.Char(64)
+  outcome        String   @db.VarChar(32)
+  processedAt    DateTime @default(now()) @map("processed_at") @db.Timestamptz(3)
 
   @@unique([eventType, sourceEventId, sourceRevision], map: "processed_gamification_events_source_key")
   @@index([processedAt], map: "processed_gamification_events_retention_idx")
@@ -3154,57 +3215,57 @@ enum ContentDecisionKind {
 }
 
 model ContentSource {
-  id                    String                 @id @db.Uuid
-  version               BigInt                 @default(0)
-  state                 ContentSourceState     @default(PROPOSED)
-  integrationKind       ContentIntegrationKind @map("integration_kind")
-  legalName             String                 @map("legal_name") @db.VarChar(200)
-  displayName           String                 @map("display_name") @db.VarChar(120)
-  canonicalOrigin       String                 @unique(map: "content_sources_canonical_origin_key") @map("canonical_origin") @db.VarChar(2048)
-  endpoint              String                 @unique(map: "content_sources_endpoint_key") @db.VarChar(2048)
-  currentPolicyId       String?                @unique(map: "content_sources_current_policy_key") @map("current_policy_id") @db.Uuid
-  reviewedByUserId      String?                @map("reviewed_by_user_id") @db.Uuid
-  createdAt             DateTime               @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt             DateTime               @default(now()) @map("updated_at") @db.Timestamptz(3)
-  policies              ContentSourcePolicy[]  @relation("ContentSourcePolicies")
-  currentPolicy         ContentSourcePolicy?   @relation("CurrentContentSourcePolicy", fields: [currentPolicyId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  candidates            IngestCandidate[]
-  origins               ArticleOrigin[]
+  id               String                 @id @db.Uuid
+  version          BigInt                 @default(0)
+  state            ContentSourceState     @default(PROPOSED)
+  integrationKind  ContentIntegrationKind @map("integration_kind")
+  legalName        String                 @map("legal_name") @db.VarChar(200)
+  displayName      String                 @map("display_name") @db.VarChar(120)
+  canonicalOrigin  String                 @unique(map: "content_sources_canonical_origin_key") @map("canonical_origin") @db.VarChar(2048)
+  endpoint         String                 @unique(map: "content_sources_endpoint_key") @db.VarChar(2048)
+  currentPolicyId  String?                @unique(map: "content_sources_current_policy_key") @map("current_policy_id") @db.Uuid
+  reviewedByUserId String?                @map("reviewed_by_user_id") @db.Uuid
+  createdAt        DateTime               @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt        DateTime               @default(now()) @map("updated_at") @db.Timestamptz(3)
+  policies         ContentSourcePolicy[]  @relation("ContentSourcePolicies")
+  currentPolicy    ContentSourcePolicy?   @relation("CurrentContentSourcePolicy", fields: [currentPolicyId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  candidates       IngestCandidate[]
+  origins          ArticleOrigin[]
 
   @@map("content_sources")
 }
 
 model ContentSourcePolicy {
-  id                          String             @id @db.Uuid
-  sourceId                    String             @map("source_id") @db.Uuid
-  version                     String             @db.VarChar(32)
-  useClasses                  String[]           @map("use_classes") @db.VarChar(40)
-  maximumExcerptCharacters   Int                @map("maximum_excerpt_characters") @db.SmallInt
-  fullTextLicenseEvidenceId  String?            @map("full_text_license_evidence_id") @db.Uuid
-  mediaLicenseEvidenceId     String?            @map("media_license_evidence_id") @db.Uuid
-  termsUrl                    String             @map("terms_url") @db.VarChar(2048)
-  termsVersion                String             @map("terms_version") @db.VarChar(120)
-  rightsBasis                 String             @map("rights_basis") @db.VarChar(500)
-  attributionTemplate        String             @map("attribution_template") @db.VarChar(500)
-  licenseNotice              String?            @map("license_notice") @db.VarChar(500)
-  territory                  String             @db.VarChar(120)
-  languages                  String[]           @db.VarChar(35)
-  validFrom                   DateTime           @map("valid_from") @db.Timestamptz(3)
-  validUntil                  DateTime?          @map("valid_until") @db.Timestamptz(3)
-  reviewedAt                 DateTime?          @map("reviewed_at") @db.Timestamptz(3)
-  reviewDueAt                DateTime            @map("review_due_at") @db.Timestamptz(3)
-  legalReview                ContentReviewState @map("legal_review")
-  securityReview             ContentReviewState @map("security_review")
-  privacyReview              ContentReviewState @map("privacy_review")
-  commercialReview           ContentReviewState @map("commercial_review")
-  evidenceCiphertext         Bytes              @map("evidence_ciphertext")
-  encryptionKeyVersion       Int                @map("encryption_key_version")
-  createdByUserId            String             @map("created_by_user_id") @db.Uuid
-  createdAt                   DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
-  source                      ContentSource      @relation("ContentSourcePolicies", fields: [sourceId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  currentFor                  ContentSource?     @relation("CurrentContentSourcePolicy")
-  candidateRevisions         IngestCandidateRevision[]
-  origins                     ArticleOrigin[]
+  id                        String                    @id @db.Uuid
+  sourceId                  String                    @map("source_id") @db.Uuid
+  version                   String                    @db.VarChar(32)
+  useClasses                String[]                  @map("use_classes") @db.VarChar(40)
+  maximumExcerptCharacters  Int                       @map("maximum_excerpt_characters") @db.SmallInt
+  fullTextLicenseEvidenceId String?                   @map("full_text_license_evidence_id") @db.Uuid
+  mediaLicenseEvidenceId    String?                   @map("media_license_evidence_id") @db.Uuid
+  termsUrl                  String                    @map("terms_url") @db.VarChar(2048)
+  termsVersion              String                    @map("terms_version") @db.VarChar(120)
+  rightsBasis               String                    @map("rights_basis") @db.VarChar(500)
+  attributionTemplate       String                    @map("attribution_template") @db.VarChar(500)
+  licenseNotice             String?                   @map("license_notice") @db.VarChar(500)
+  territory                 String                    @db.VarChar(120)
+  languages                 String[]                  @db.VarChar(35)
+  validFrom                 DateTime                  @map("valid_from") @db.Timestamptz(3)
+  validUntil                DateTime?                 @map("valid_until") @db.Timestamptz(3)
+  reviewedAt                DateTime?                 @map("reviewed_at") @db.Timestamptz(3)
+  reviewDueAt               DateTime                  @map("review_due_at") @db.Timestamptz(3)
+  legalReview               ContentReviewState        @map("legal_review")
+  securityReview            ContentReviewState        @map("security_review")
+  privacyReview             ContentReviewState        @map("privacy_review")
+  commercialReview          ContentReviewState        @map("commercial_review")
+  evidenceCiphertext        Bytes                     @map("evidence_ciphertext")
+  encryptionKeyVersion      Int                       @map("encryption_key_version")
+  createdByUserId           String                    @map("created_by_user_id") @db.Uuid
+  createdAt                 DateTime                  @default(now()) @map("created_at") @db.Timestamptz(3)
+  source                    ContentSource             @relation("ContentSourcePolicies", fields: [sourceId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  currentFor                ContentSource?            @relation("CurrentContentSourcePolicy")
+  candidateRevisions        IngestCandidateRevision[]
+  origins                   ArticleOrigin[]
 
   @@unique([sourceId, version], map: "content_source_policies_version_key")
   @@index([sourceId, validFrom, validUntil], map: "content_source_policies_validity_idx")
@@ -3212,20 +3273,20 @@ model ContentSourcePolicy {
 }
 
 model IngestCandidate {
-  id                 String                @id @db.Uuid
-  sourceId           String                @map("source_id") @db.Uuid
-  state              IngestCandidateState  @default(NEW)
-  version            BigInt                @default(0)
-  currentRevisionId  String?               @unique(map: "ingest_candidates_current_revision_key") @map("current_revision_id") @db.Uuid
-  duplicateGroupId   String?               @map("duplicate_group_id") @db.Uuid
-  duplicateKind      ContentDuplicateKind? @map("duplicate_kind")
-  selectedArticleId  String?               @map("selected_article_id") @db.Uuid
-  createdAt          DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt          DateTime              @default(now()) @map("updated_at") @db.Timestamptz(3)
-  source             ContentSource         @relation(fields: [sourceId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  revisions          IngestCandidateRevision[] @relation("CandidateRevisions")
-  currentRevision    IngestCandidateRevision?  @relation("CurrentCandidateRevision", fields: [currentRevisionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  selectedArticle    Article?              @relation(fields: [selectedArticleId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  id                String                    @id @db.Uuid
+  sourceId          String                    @map("source_id") @db.Uuid
+  state             IngestCandidateState      @default(NEW)
+  version           BigInt                    @default(0)
+  currentRevisionId String?                   @unique(map: "ingest_candidates_current_revision_key") @map("current_revision_id") @db.Uuid
+  duplicateGroupId  String?                   @map("duplicate_group_id") @db.Uuid
+  duplicateKind     ContentDuplicateKind?     @map("duplicate_kind")
+  selectedArticleId String?                   @map("selected_article_id") @db.Uuid
+  createdAt         DateTime                  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime                  @default(now()) @map("updated_at") @db.Timestamptz(3)
+  source            ContentSource             @relation(fields: [sourceId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  revisions         IngestCandidateRevision[] @relation("CandidateRevisions")
+  currentRevision   IngestCandidateRevision?  @relation("CurrentCandidateRevision", fields: [currentRevisionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  selectedArticle   Article?                  @relation(fields: [selectedArticleId], references: [id], onDelete: Restrict, onUpdate: Restrict)
 
   @@index([sourceId, state, createdAt, id], map: "ingest_candidates_queue_idx")
   @@index([duplicateGroupId], map: "ingest_candidates_duplicate_group_idx")
@@ -3263,68 +3324,68 @@ model IngestCandidateRevision {
 }
 
 model Article {
-  id                       String              @id @db.Uuid
-  version                  BigInt              @default(0)
-  state                    ContentArticleState @default(DRAFT)
-  originKind               ContentOriginKind  @map("origin_kind")
-  currentDraftRevisionId   String?             @unique(map: "articles_current_draft_revision_key") @map("current_draft_revision_id") @db.Uuid
-  approvedRevisionId       String?             @unique(map: "articles_approved_revision_key") @map("approved_revision_id") @db.Uuid
-  publishedRevisionId      String?             @unique(map: "articles_published_revision_key") @map("published_revision_id") @db.Uuid
-  scheduledRevisionId      String?             @unique(map: "articles_scheduled_revision_key") @map("scheduled_revision_id") @db.Uuid
-  scheduledFor             DateTime?           @map("scheduled_for") @db.Timestamptz(3)
-  firstPublishedAt         DateTime?           @map("first_published_at") @db.Timestamptz(3)
-  createdByUserId          String               @map("created_by_user_id") @db.Uuid
-  createdAt                DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt                DateTime             @default(now()) @map("updated_at") @db.Timestamptz(3)
-  revisions                ArticleRevision[]    @relation("ArticleRevisions")
-  currentDraftRevision     ArticleRevision?     @relation("CurrentDraftRevision", fields: [currentDraftRevisionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  approvedRevision         ArticleRevision?     @relation("ApprovedRevision", fields: [approvedRevisionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  publishedRevision        ArticleRevision?     @relation("PublishedRevision", fields: [publishedRevisionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  scheduledRevision        ArticleRevision?     @relation("ScheduledRevision", fields: [scheduledRevisionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  selectedCandidates       IngestCandidate[]
-  decisions                ContentPublicationDecision[]
-  bookmarks                Bookmark[]
-  canonicalSlugs           ContentCanonicalSlug[]
-  publicProjection         ContentPublicProjection?
+  id                     String                       @id @db.Uuid
+  version                BigInt                       @default(0)
+  state                  ContentArticleState          @default(DRAFT)
+  originKind             ContentOriginKind            @map("origin_kind")
+  currentDraftRevisionId String?                      @unique(map: "articles_current_draft_revision_key") @map("current_draft_revision_id") @db.Uuid
+  approvedRevisionId     String?                      @unique(map: "articles_approved_revision_key") @map("approved_revision_id") @db.Uuid
+  publishedRevisionId    String?                      @unique(map: "articles_published_revision_key") @map("published_revision_id") @db.Uuid
+  scheduledRevisionId    String?                      @unique(map: "articles_scheduled_revision_key") @map("scheduled_revision_id") @db.Uuid
+  scheduledFor           DateTime?                    @map("scheduled_for") @db.Timestamptz(3)
+  firstPublishedAt       DateTime?                    @map("first_published_at") @db.Timestamptz(3)
+  createdByUserId        String                       @map("created_by_user_id") @db.Uuid
+  createdAt              DateTime                     @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt              DateTime                     @default(now()) @map("updated_at") @db.Timestamptz(3)
+  revisions              ArticleRevision[]            @relation("ArticleRevisions")
+  currentDraftRevision   ArticleRevision?             @relation("CurrentDraftRevision", fields: [currentDraftRevisionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  approvedRevision       ArticleRevision?             @relation("ApprovedRevision", fields: [approvedRevisionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  publishedRevision      ArticleRevision?             @relation("PublishedRevision", fields: [publishedRevisionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  scheduledRevision      ArticleRevision?             @relation("ScheduledRevision", fields: [scheduledRevisionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  selectedCandidates     IngestCandidate[]
+  decisions              ContentPublicationDecision[]
+  bookmarks              Bookmark[]
+  canonicalSlugs         ContentCanonicalSlug[]
+  publicProjection       ContentPublicProjection?
 
   @@index([state, firstPublishedAt, id], map: "articles_public_order_idx")
   @@map("content_articles")
 }
 
 model ArticleRevision {
-  id                       String            @id @db.Uuid
-  articleId                String            @map("article_id") @db.Uuid
-  revision                 BigInt
-  locale                   String            @db.VarChar(35)
-  slug                     String            @db.VarChar(96)
-  title                    String            @db.VarChar(300)
-  subtitle                 String?           @db.VarChar(300)
-  summary                  String            @db.VarChar(600)
-  body                     Json
-  bodyHash                 String            @map("body_hash") @db.Char(64)
-  categoryId               String            @map("category_id") @db.Uuid
-  originKind               ContentOriginKind @map("origin_kind")
-  seoTitle                 String            @map("seo_title") @db.VarChar(70)
-  seoDescription           String            @map("seo_description") @db.VarChar(170)
-  canonicalUrl             String            @map("canonical_url") @db.VarChar(2048)
-  correctionNote           String?           @map("correction_note") @db.VarChar(1000)
-  translationOfRevisionId  String?           @map("translation_of_revision_id") @db.Uuid
-  changedFields            String[]          @map("changed_fields") @db.VarChar(40)
-  createdByUserId          String            @map("created_by_user_id") @db.Uuid
-  createdAt                DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
-  article                  Article           @relation("ArticleRevisions", fields: [articleId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  currentDraftFor          Article?          @relation("CurrentDraftRevision")
-  approvedFor              Article?          @relation("ApprovedRevision")
-  publishedFor             Article?          @relation("PublishedRevision")
-  scheduledFor             Article?          @relation("ScheduledRevision")
-  category                 ContentCategory   @relation(fields: [categoryId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  translationOf            ArticleRevision?  @relation("ArticleTranslations", fields: [translationOfRevisionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  translations             ArticleRevision[] @relation("ArticleTranslations")
-  origins                  ArticleOrigin[]
-  tags                     ArticleRevisionTag[]
-  media                    ContentMedia[]
-  decisions                ContentPublicationDecision[]
-  publicProjection         ContentPublicProjection?
+  id                      String                       @id @db.Uuid
+  articleId               String                       @map("article_id") @db.Uuid
+  revision                BigInt
+  locale                  String                       @db.VarChar(35)
+  slug                    String                       @db.VarChar(96)
+  title                   String                       @db.VarChar(300)
+  subtitle                String?                      @db.VarChar(300)
+  summary                 String                       @db.VarChar(600)
+  body                    Json
+  bodyHash                String                       @map("body_hash") @db.Char(64)
+  categoryId              String                       @map("category_id") @db.Uuid
+  originKind              ContentOriginKind            @map("origin_kind")
+  seoTitle                String                       @map("seo_title") @db.VarChar(70)
+  seoDescription          String                       @map("seo_description") @db.VarChar(170)
+  canonicalUrl            String                       @map("canonical_url") @db.VarChar(2048)
+  correctionNote          String?                      @map("correction_note") @db.VarChar(1000)
+  translationOfRevisionId String?                      @map("translation_of_revision_id") @db.Uuid
+  changedFields           String[]                     @map("changed_fields") @db.VarChar(40)
+  createdByUserId         String                       @map("created_by_user_id") @db.Uuid
+  createdAt               DateTime                     @default(now()) @map("created_at") @db.Timestamptz(3)
+  article                 Article                      @relation("ArticleRevisions", fields: [articleId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  currentDraftFor         Article?                     @relation("CurrentDraftRevision")
+  approvedFor             Article?                     @relation("ApprovedRevision")
+  publishedFor            Article?                     @relation("PublishedRevision")
+  scheduledFor            Article?                     @relation("ScheduledRevision")
+  category                ContentCategory              @relation(fields: [categoryId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  translationOf           ArticleRevision?             @relation("ArticleTranslations", fields: [translationOfRevisionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  translations            ArticleRevision[]            @relation("ArticleTranslations")
+  origins                 ArticleOrigin[]
+  tags                    ArticleRevisionTag[]
+  media                   ContentMedia[]
+  decisions               ContentPublicationDecision[]
+  publicProjection        ContentPublicProjection?
 
   @@unique([articleId, revision], map: "article_revisions_revision_key")
   @@index([locale, slug], map: "article_revisions_slug_idx")
@@ -3393,31 +3454,31 @@ model ArticleRevisionTag {
 }
 
 model ContentMedia {
-  id                     String          @id @db.Uuid
-  articleRevisionId      String          @map("article_revision_id") @db.Uuid
-  objectKey              String          @unique(map: "content_media_object_key") @map("object_key") @db.VarChar(240)
-  mediaType              String          @map("media_type") @db.VarChar(40)
-  byteLength             BigInt          @map("byte_length")
-  sha256                 String          @db.Char(64)
-  rightsPolicyVersion    String          @map("rights_policy_version") @db.VarChar(32)
-  rightsEvidenceId       String          @map("rights_evidence_id") @db.Uuid
-  altText                String          @map("alt_text") @db.VarChar(500)
-  approvedAt             DateTime        @map("approved_at") @db.Timestamptz(3)
-  createdAt              DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
-  articleRevision        ArticleRevision @relation(fields: [articleRevisionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  id                  String          @id @db.Uuid
+  articleRevisionId   String          @map("article_revision_id") @db.Uuid
+  objectKey           String          @unique(map: "content_media_object_key") @map("object_key") @db.VarChar(240)
+  mediaType           String          @map("media_type") @db.VarChar(40)
+  byteLength          BigInt          @map("byte_length")
+  sha256              String          @db.Char(64)
+  rightsPolicyVersion String          @map("rights_policy_version") @db.VarChar(32)
+  rightsEvidenceId    String          @map("rights_evidence_id") @db.Uuid
+  altText             String          @map("alt_text") @db.VarChar(500)
+  approvedAt          DateTime        @map("approved_at") @db.Timestamptz(3)
+  createdAt           DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  articleRevision     ArticleRevision @relation(fields: [articleRevisionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
 
   @@map("content_media")
 }
 
 model ContentCanonicalSlug {
-  id         String   @id @db.Uuid
-  articleId  String   @map("article_id") @db.Uuid
-  locale     String   @db.VarChar(35)
-  slug       String   @db.VarChar(96)
-  active     Boolean  @default(true)
-  replacedById String? @map("replaced_by_id") @db.Uuid
-  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
-  article    Article  @relation(fields: [articleId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  id           String   @id @db.Uuid
+  articleId    String   @map("article_id") @db.Uuid
+  locale       String   @db.VarChar(35)
+  slug         String   @db.VarChar(96)
+  active       Boolean  @default(true)
+  replacedById String?  @map("replaced_by_id") @db.Uuid
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  article      Article  @relation(fields: [articleId], references: [id], onDelete: Restrict, onUpdate: Restrict)
 
   @@unique([locale, slug], map: "content_canonical_slugs_locale_slug_key")
   @@index([articleId, locale, active], map: "content_canonical_slugs_article_idx")
@@ -3447,16 +3508,16 @@ model ContentPublicationDecision {
 }
 
 model ContentPublicProjection {
-  articleId         String          @id @map("article_id") @db.Uuid
-  articleRevisionId String          @unique(map: "content_public_projections_revision_key") @map("article_revision_id") @db.Uuid
-  publicationDecisionId String      @unique(map: "content_public_projections_decision_key") @map("publication_decision_id") @db.Uuid
-  locale            String          @db.VarChar(35)
-  slug              String          @db.VarChar(96)
-  publishedAt       DateTime        @map("published_at") @db.Timestamptz(3)
-  updatedAt         DateTime        @default(now()) @map("updated_at") @db.Timestamptz(3)
-  searchDocument    Unsupported("tsvector") @map("search_document")
-  article           Article         @relation(fields: [articleId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  articleRevision   ArticleRevision @relation(fields: [articleRevisionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  articleId             String                  @id @map("article_id") @db.Uuid
+  articleRevisionId     String                  @unique(map: "content_public_projections_revision_key") @map("article_revision_id") @db.Uuid
+  publicationDecisionId String                  @unique(map: "content_public_projections_decision_key") @map("publication_decision_id") @db.Uuid
+  locale                String                  @db.VarChar(35)
+  slug                  String                  @db.VarChar(96)
+  publishedAt           DateTime                @map("published_at") @db.Timestamptz(3)
+  updatedAt             DateTime                @default(now()) @map("updated_at") @db.Timestamptz(3)
+  searchDocument        Unsupported("tsvector") @map("search_document")
+  article               Article                 @relation(fields: [articleId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  articleRevision       ArticleRevision         @relation(fields: [articleRevisionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
 
   @@unique([locale, slug], map: "content_public_projections_locale_slug_key")
   @@index([publishedAt, articleId], map: "content_public_projections_feed_idx")

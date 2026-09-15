@@ -23,7 +23,7 @@ using TypeSpec.OpenAPI;
 @doc("Contract-first API for PickleHub clients. All timestamps are UTC RFC 3339 instants and all identifiers are opaque. Product endpoints are added only by their owning feature prompts.")
 @tagMetadata(#[
     #{ name: "Health", description: "Process liveness and mandatory dependency readiness." },
-    #{ name: "Identity", description: "Identity, browser sessions, consent and onboarding." },
+    #{ name: "Identity", description: "Identity, browser/native sessions, consent and onboarding." },
     #{ name: "Matches", description: "One-off match discovery, roster lifecycle and confirmed results." },
     #{ name: "Profiles", description: "Player profiles, privacy, match history and rebuildable statistics." },
     #{ name: "TrustSafety", description: "Private reviews, safety reports, blocks and user-visible case receipts." },

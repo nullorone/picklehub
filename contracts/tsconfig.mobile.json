@@ -1,0 +1,13 @@
+{
+    "compilerOptions": {
+        "lib": ["ES2022"],
+        "module": "NodeNext",
+        "moduleResolution": "NodeNext",
+        "noEmit": true,
+        "skipLibCheck": true,
+        "strict": true,
+        "target": "ES2022",
+        "types": []
+    },
+    "files": ["mobile-compat.ts", "generated/openapi.ts", "generated/asyncapi.ts"]
+}

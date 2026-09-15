@@ -10,8 +10,11 @@ export const communicationOperations = {
     '/notifications': ['get'],
     '/notifications/{notificationId}/read': ['post'],
     '/notification-preferences': ['get', 'put'],
-    '/notification-devices': ['post'],
+    '/notification-devices': ['get', 'post'],
     '/notification-devices/{installationId}': ['delete'],
+    '/notification-devices/{installationId}/push-registrations': ['post'],
+    '/notification-devices/{installationId}/push-registrations/{registrationId}': ['delete'],
+    '/realtime/tickets': ['post'],
 };
 
 export const communicationMessageNames = new Set([
@@ -102,12 +105,14 @@ export function checkCommunicationContract(openApi, asyncApi) {
                     'listConversationMessages',
                     'listNotifications',
                     'getNotificationPreferences',
+                    'listNotificationDevices',
                 ].includes(operation.operationId)
             ) {
                 for (const header of ['Origin', 'X-CSRF-Token', 'Idempotency-Key']) {
+                    const value = parameter(openApi, operation, header);
                     assert(
-                        parameter(openApi, operation, header)?.required,
-                        `${operation.operationId} requires ${header}.`
+                        value && (header === 'Idempotency-Key' ? value.required : !value.required),
+                        `${operation.operationId} has invalid ${header}.`
                     );
                 }
             }
@@ -124,7 +129,7 @@ export function checkCommunicationContract(openApi, asyncApi) {
     }
     const text = openApi.components.schemas.ChatText;
     assert.equal(text.maxLength, 2000);
-    assert.equal(openApi.components.schemas.NotificationChannel.enum.includes('PUSH'), false);
+    assert.equal(openApi.components.schemas.NotificationChannel.enum.includes('PUSH'), true);
 
     for (const channel of ['matchChat', 'notificationStream']) {
         assert.equal(asyncApi.channels[channel].address, '/v1/ws');

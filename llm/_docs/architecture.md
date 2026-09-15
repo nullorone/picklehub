@@ -501,3 +501,15 @@ Behavioral analytics получает consented coarse events отдельно �
 использует placement-level holdout и emergency pause при ухудшении match-funnel, accessibility или performance
 guardrail. Точные API, SQL constraints, provider protocol, cap key/TTL и event allowlist принадлежат
 `13-advertising/02-contract-data.md`; этот этап не выбирает сеть и не включает SDK.
+
+## Native transport boundary
+
+React Native использует общие generated OpenAPI/AsyncAPI types, но отдельный platform transport: browser cookie/
+CSRF adapter не импортируется. Native magic link связывается с S256 verifier, rotating refresh передаётся только в
+TLS body и хранится Keychain/Keystore-backed; bearer mutations определяют platform из server session. Realtime
+начинается с короткого REST-issued single-use ticket и восстанавливается opaque cursor/REST snapshot.
+
+Installation/push registration принадлежит communications, а не identity или клиентскому SDK. Push token хранится
+только encrypted/keyed backend record; payload — нейтральный opaque refetch signal. Provider adapter выключен до
+review. Closed deep-link targets и cache/data boundaries описаны в
+[mobile contract/data policy](mobile-parity-contract-data.md).

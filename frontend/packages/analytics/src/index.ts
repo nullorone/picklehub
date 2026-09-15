@@ -36,7 +36,7 @@ export type AnalyticsEvent =
           readonly name: 'notification_opened';
           readonly ageBucket: 'LT_5M' | '5M_1H' | 'GT_1H';
           readonly category: 'ROSTER' | 'REQUESTS' | 'MATCH_CRITICAL' | 'REMINDERS' | 'RESULTS' | 'CHAT';
-          readonly channel: 'IN_APP' | 'TELEGRAM' | 'EMAIL';
+          readonly channel: 'IN_APP' | 'TELEGRAM' | 'EMAIL' | 'PUSH';
       }
     | {
           readonly name: 'profile_viewed';

@@ -13,7 +13,7 @@ const openApi = parse(await readFile(new URL('../../openapi.yaml', import.meta.u
 const asyncApi = parse(await readFile(new URL('../../asyncapi.yaml', import.meta.url), 'utf8'));
 
 test('communications operation and message allowlists are complete', () => {
-    assert.equal(Object.values(communicationOperations).flat().length, 15);
+    assert.equal(Object.values(communicationOperations).flat().length, 19);
     assert.equal(communicationMessageNames.size, 14);
 });
 

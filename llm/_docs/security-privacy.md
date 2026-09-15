@@ -833,3 +833,16 @@ Logs/traces/analytics не содержат cap subject, user/session/device/ad 
 creative/landing content, exact time, fraud evidence или малую geo cohort. Operational labels ограничены enums и
 buckets. Advertising outage не блокирует продукт, analytics outage не ослабляет cap/budget/audit, а пропущенные
 behavioral events не восстанавливаются из delivery records.
+
+## Native credentials, device и push
+
+Native refresh/verifier хранятся только в Keychain/Keystore-backed secure storage и исключены из backup; access
+живёт в памяти. Body credential не становится cookie, URL, query, log, crash/analytics или audit field. Browser
+Origin/CSRF остаются обязательными для `WEB`/`TMA`; отсутствие headers разрешено только server-known `MOBILE`
+session. Reuse rotating credential отзывает family без grace.
+
+Installation UUID не является hardware/ad ID или authentication. Push token HMAC-keyed для dedupe, encrypted at
+rest и стирается при revoke; lost device отзывается из другой session. Lock-screen payload нейтрален и tap только
+инициирует authorized refetch. Cache partition, closed deep links, 90-day registration review и threat model
+зафиксированы в [mobile contract/data policy](mobile-parity-contract-data.md); provider, residency и store privacy
+review остаются production gates.

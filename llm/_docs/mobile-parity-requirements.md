@@ -236,3 +236,8 @@ crash attachments/session replay, ads, social login SDK, map telemetry и push p
 6. Синхронизировать analytics schema с `MOBILE`; client event taxonomy не расширять молча.
 7. На client/verification этапах подтвердить актуальный Expo SDK, store target SDK/deadlines, реальные устройства,
    VoiceOver/TalkBack, lifecycle/reconnect, provider conditions и disclosures. Сейчас это требования, не evidence.
+
+Контрактные решения пунктов 1, 3–6 зафиксированы в
+[mobile parity contract/data policy](mobile-parity-contract-data.md). Telegram link из пункта 2 остаётся
+fail-closed unavailable; backend/runtime, provider/legal, ownership files, Expo и device evidence не считаются
+закрытыми данным контрактом.

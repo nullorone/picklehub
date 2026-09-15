@@ -14,6 +14,7 @@ npm run contracts:breaking
 npm run contracts:generate
 npm run contracts:generated:check
 npm run contracts:typecheck
+npm run contracts:mobile:check
 npm run contracts:mock:check
 npm run contracts:check
 ```
@@ -37,6 +38,8 @@ npm run contracts:check
 - `contracts:generated:check` компилирует TypeSpec и генерирует типы во временный каталог, затем сравнивает bytes с
   committed output.
 - `contracts:typecheck` проверяет сгенерированные TypeScript-типы в strict mode.
+- `contracts:mobile:check` компилирует generated OpenAPI/AsyncAPI и выбранную native surface без DOM/Node globals;
+  это runtime-neutral contract check, а не сборка ещё не созданного Expo-приложения.
 - `contracts:mock` запускает локальный Prism на `127.0.0.1:4010`; он предназначен только для разработки и не
   является backend или production fallback.
 - `contracts:mock:check` запускает mock на свободном localhost port, запрашивает representative endpoints health,
@@ -80,7 +83,8 @@ AsyncAPI schema и не
 
 [`rest/trust-safety.tsp`](rest/trust-safety.tsp) описывает private review revisions, no-show и другие safety reports,
 caller-only receipt/status, response/appeal, собственный список блокировок и пороговый публичный review aggregate.
-Все мутации требуют bearer, browser CSRF и UUIDv4 `Idempotency-Key`; read models имеют `no-store`. Чужая квитанция
+Все мутации требуют bearer и UUIDv4 `Idempotency-Key`; `WEB`/`TMA` дополнительно требуют browser CSRF, а `MOBILE`
+опирается на non-ambient bearer. Read models имеют `no-store`. Чужая квитанция
 неотличима от отсутствующей, а case, reporter/subject, source, evidence другой стороны, assignee и sanction detail
 никогда не входят в receipt DTO. Собственный detail может вернуть только собственный ещё хранимый текст.
 
@@ -207,8 +211,9 @@ bbox — 100×100 км, координаты принимаются как WGS84
 знаков. Курсоры живут 15 минут и связаны с режимом, фильтрами и снимком каталога. Геокодерные подсказки transient;
 его стабильная ошибка — `GEOCODER_TEMPORARILY_UNAVAILABLE` с `Retry-After`.
 
-Создание match-only кандидата, исправления и структурированной жалобы требует bearer, browser CSRF и UUIDv4
-`Idempotency-Key`; закрытый safe-response шифруется в БД на 24 часа. Административных маршрутов здесь нет — они
+Создание match-only кандидата, исправления и структурированной жалобы требует bearer и UUIDv4 `Idempotency-Key`;
+browser sessions дополнительно требуют CSRF. Закрытый safe-response шифруется в БД на 24 часа. Административных
+маршрутов здесь нет — они
 принадлежат функции `08`. Внутренние события публикуются как совместимые с общей версионностью
 `venue.candidate.created.v1`, `venue.verified.v1` и `venue.merged.v1`; адреса, координаты и личности авторов в них
 не входят.
@@ -217,7 +222,7 @@ bbox — 100×100 км, координаты принимаются как WGS84
 
 [`rest/matches.tsp`](rest/matches.tsp) владеет публичным поиском, аутентифицированными рекомендациями, черновиком,
 публикацией, capability read, составом/заявками/FIFO-очередью и предложением/подтверждением/спором результата. Все
-мутации требуют bearer, browser CSRF, UUIDv4 `Idempotency-Key`; существующий агрегат также проверяет
+мутации требуют bearer и UUIDv4 `Idempotency-Key`, а browser session также CSRF; существующий агрегат проверяет
 `expectedVersion`. Capability `UNLISTED` не участвует в `/matches` и `/matches/recommendations`, выдаётся raw только
 организатору, а хранится как keyed hash.
 
@@ -232,8 +237,9 @@ application precheck защищают вместимость команды, о�
 
 [`rest/communications.tsp`](rest/communications.tsp) описывает авторизованный снимок чата, backward history и
 forward catch-up через opaque cursor, REST fallback для отправки, edit/delete/tombstone, foreground read marker,
-структурированную жалобу, блокировку, in-app inbox, настройки и привязку opaque web/TMA installation. Все маршруты
-требуют bearer; мутации дополнительно требуют browser CSRF и UUIDv4 `Idempotency-Key`. Ответы всегда `no-store`.
+структурированную жалобу, блокировку, in-app inbox, настройки, opaque installation, push registration/revoke и
+одноразовый realtime ticket. Все маршруты требуют bearer; мутации требуют UUIDv4 `Idempotency-Key`, а browser
+session дополнительно CSRF. Ответы всегда `no-store`.
 Invitation capability, pending request, waitlist и guest не дают доступа к чату.
 
 AsyncAPI разделяет client streams `/v1/ws`, внутренний transactional outbox `communication.events.v1` и BullMQ

@@ -86,7 +86,11 @@ export function checkVenueContract(openApi, asyncApi) {
     }
     for (const operation of mutations) {
         for (const name of ['Origin', 'X-CSRF-Token', 'Idempotency-Key']) {
-            assert(parameter(openApi, operation, name)?.required, `${operation.operationId} requires ${name}.`);
+            const value = parameter(openApi, operation, name);
+            assert(
+                value && (name === 'Idempotency-Key' ? value.required : !value.required),
+                `${operation.operationId} has invalid ${name}.`
+            );
         }
     }
 

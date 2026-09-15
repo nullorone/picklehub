@@ -311,7 +311,7 @@ interface MatchReviews {
         @path matchId: Uuid,
         @path subjectPlayerId: Uuid,
         ...RequestHeaders,
-        ...BrowserMutationHeaders,
+        ...SessionMutationHeaders,
         ...MutationKey,
         @body body: ReviewSubmission,
     ): TrustSafetyOk<OwnReview> | TrustSafetyCreated<OwnReview> | TrustSafetyMutationErrors;
@@ -324,7 +324,7 @@ interface MatchReviews {
         @path matchId: Uuid,
         @path subjectPlayerId: Uuid,
         ...RequestHeaders,
-        ...BrowserMutationHeaders,
+        ...SessionMutationHeaders,
         ...MutationKey,
     ): TrustSafetyNoContent | TrustSafetyMutationErrors;
 }
@@ -340,7 +340,7 @@ interface MatchNoShowReports {
     submit(
         @path matchId: Uuid,
         ...RequestHeaders,
-        ...BrowserMutationHeaders,
+        ...SessionMutationHeaders,
         ...MutationKey,
         @body body: NoShowReportSubmission,
     ): TrustSafetyCreated<SafetyReceipt> | TrustSafetyOk<SafetyReceipt> | TrustSafetyMutationErrors;
@@ -354,7 +354,7 @@ interface SafetyReports {
     @operationId("submitSafetyReport")
     @summary("Submit a safety, content, venue or result report")
     @doc("Validates access to the exact source revision, stores optional evidence only as authenticated ciphertext, and returns a minimal receipt. A result report alone never changes score or statistics.")
-    submit(...RequestHeaders, ...BrowserMutationHeaders, ...MutationKey, @body body: ReportSubmission):
+    submit(...RequestHeaders, ...SessionMutationHeaders, ...MutationKey, @body body: ReportSubmission):
         | TrustSafetyCreated<SafetyReceipt>
         | TrustSafetyOk<SafetyReceipt>
         | TrustSafetyMutationErrors;
@@ -385,7 +385,7 @@ interface OwnSafetyReports {
     requestWithdrawal(
         @path receiptId: Uuid,
         ...RequestHeaders,
-        ...BrowserMutationHeaders,
+        ...SessionMutationHeaders,
         ...MutationKey,
         @body body: WithdrawalRequest,
     ): TrustSafetyOk<SafetyReceipt> | TrustSafetyMutationErrors;
@@ -398,7 +398,7 @@ interface OwnSafetyReports {
     respond(
         @path receiptId: Uuid,
         ...RequestHeaders,
-        ...BrowserMutationHeaders,
+        ...SessionMutationHeaders,
         ...MutationKey,
         @body body: CaseResponseSubmission,
     ): TrustSafetyCreated<SafetyReceipt> | TrustSafetyMutationErrors;
@@ -411,7 +411,7 @@ interface OwnSafetyReports {
     appeal(
         @path receiptId: Uuid,
         ...RequestHeaders,
-        ...BrowserMutationHeaders,
+        ...SessionMutationHeaders,
         ...MutationKey,
         @body body: AppealSubmission,
     ): TrustSafetyCreated<SafetyReceipt> | TrustSafetyMutationErrors;

@@ -50,6 +50,7 @@ enum IdentityProvider {
 enum ClientPlatform {
     WEB,
     TMA,
+    MOBILE,
 }
 enum OnboardingStatus {
     DRAFT,
@@ -95,6 +96,16 @@ model BrowserMutationHeaders {
     @header("X-CSRF-Token")
     @doc("Secret bound to the HttpOnly browser context cookie from GET /auth/context. Never log. Validate origin, context cookie and token together before mutation.")
     csrfToken: IdentitySecret;
+}
+
+model SessionMutationHeaders {
+    @header("Origin")
+    @doc("Required with X-CSRF-Token for WEB/TMA sessions and rejected when missing or cross-origin. Omit for MOBILE sessions; the server derives the platform from the access credential and never trusts a caller platform header.")
+    origin?: string;
+
+    @header("X-CSRF-Token")
+    @doc("Required with Origin for WEB/TMA sessions and validated against the browser context cookie. Omit for MOBILE sessions, whose bearer credential is non-ambient. Supplying only one browser header is rejected.")
+    csrfToken?: IdentitySecret;
 }
 
 model MutationKey {
@@ -231,13 +242,94 @@ model Session {
     absoluteExpiresAt: Timestamp;
 }
 
-model AuthenticatedSession {
+model AccessSession {
     tokenType: "Bearer";
     accessToken: IdentitySecret;
     accessExpiresAt: Timestamp;
-    csrfToken: IdentitySecret;
     session: Session;
     user: User;
+}
+
+model AuthenticatedSession extends AccessSession {
+    csrfToken: IdentitySecret;
+}
+
+@doc("Rotating native refresh credential returned only in a MOBILE response body. Store in Keychain/Keystore-backed secure storage; never put it in a URL, cookie, log, analytics, clipboard, AsyncStorage or backup.")
+model NativeAuthenticatedSession extends AccessSession {
+    refreshToken: IdentitySecret;
+    refreshExpiresAt: Timestamp;
+    destination: MobileDeepLinkTarget | null;
+}
+
+@oneOf
+union MobileDeepLinkTarget {
+    matches: {
+        kind: "MATCHES",
+    },
+    match: {
+        kind: "MATCH",
+        matchId: Uuid,
+    },
+    matchChat: {
+        kind: "MATCH_CHAT",
+        matchId: Uuid,
+    },
+    venues: {
+        kind: "VENUES",
+    },
+    venue: {
+        kind: "VENUE",
+        venueId: Uuid,
+    },
+    notifications: {
+        kind: "NOTIFICATIONS",
+    },
+    profile: {
+        kind: "PROFILE",
+    },
+    player: {
+        kind: "PLAYER",
+        playerId: Uuid,
+    },
+    account: {
+        kind: "ACCOUNT",
+    },
+    safety: {
+        kind: "SAFETY",
+    },
+    safetyReceipt: {
+        kind: "SAFETY_RECEIPT",
+        receiptId: Uuid,
+    },
+}
+
+@minLength(43)
+@maxLength(128)
+@pattern("^[A-Za-z0-9._~-]+$")
+@doc("High-entropy native verifier generated on-device. Never log or persist outside Keychain/Keystore-backed secure storage.")
+scalar NativeCodeVerifier extends string;
+
+@minLength(43)
+@maxLength(43)
+@pattern("^[A-Za-z0-9_-]{43}$")
+@doc("Unpadded base64url SHA-256 digest of a native verifier (S256). It is safe to bind to a pending login link but is not a credential.")
+scalar NativeCodeChallenge extends string;
+
+model NativeLoginEmailRequest {
+    email: EmailInput;
+    platform: "MOBILE";
+    codeChallenge: NativeCodeChallenge;
+    destination?: MobileDeepLinkTarget;
+}
+
+model NativeLoginEmailConsume {
+    token: IdentitySecret;
+    platform: "MOBILE";
+    codeVerifier: NativeCodeVerifier;
+}
+
+model NativeRefreshRequest {
+    refreshToken: IdentitySecret;
 }
 
 @doc("Self-only identity projection: email and Telegram subject are deliberately absent, including masked values.")
@@ -478,9 +570,49 @@ interface IdentityAuthentication {
     @operationId("logoutAllSessions")
     @summary("Revoke all current sessions and pending proofs")
     @doc("Atomically increments user auth epoch and revokes sessions/links/attempts; serialize with login and refresh. Clear refresh cookie. No generic credential replay. Repeating with revoked access returns SESSION_INVALID, never a new effect. Rate shared with logout.")
-    logoutAll(...RequestHeaders, ...BrowserMutationHeaders, @body body: EmptyRequest):
+    logoutAll(...RequestHeaders, ...SessionMutationHeaders, @body body: EmptyRequest):
         | IdentityCookieOk<LogoutResult>
         | IdentityErrors;
+}
+
+@tag("Identity")
+@route("/auth/mobile")
+@useAuth(NoAuth)
+interface NativeIdentityAuthentication {
+    @post
+    @route("/magic-links/request")
+    @operationId("requestNativeMagicLink")
+    @summary("Request a proof-bound native sign-in email")
+    @doc("Neutral response and delivery suppression match the browser request. The server stores only the S256 challenge and an optional closed destination with the 10-minute link. MOBILE is literal; Origin, browser context cookies and CSRF headers are neither required nor accepted. No generic idempotency or automatic retry.")
+    requestLink(...RequestHeaders, @body body: NativeLoginEmailRequest):
+        | IdentityAccepted<MagicLinkRequested>
+        | LoginErrors;
+
+    @post
+    @route("/magic-links/consume")
+    @operationId("consumeNativeMagicLink")
+    @summary("Consume a native magic link and issue body credentials")
+    @doc("Foreground explicit POST only. Atomically consume the link after constant-time S256 verifier comparison and issue a 300-second in-memory access token plus one rotating refresh token. Unknown, expired, used, revoked, wrong-platform or wrong-verifier links all return MAGIC_LINK_INVALID. No cookies, CSRF headers, URL credentials, response replay or automatic retry; a lost response requires a new link.")
+    consumeLink(...RequestHeaders, @body body: NativeLoginEmailConsume):
+        | IdentityOk<NativeAuthenticatedSession>
+        | LoginErrors
+        | IdentityFailure<401, "MAGIC_LINK_INVALID">;
+
+    @post
+    @route("/refresh")
+    @operationId("refreshNativeSession")
+    @summary("Rotate a native refresh credential")
+    @doc("Refresh token is accepted only in the JSON body over TLS and redacted before logging. It is never accepted from a cookie, URL or query. Rotation, 7-day inactivity, 30-day absolute lifetime and family-wide reuse detection match browser sessions; the client serializes refresh and atomically replaces secure storage. Loss of response or reuse revokes the family and requires login.")
+    refresh(...RequestHeaders, @body body: NativeRefreshRequest):
+        | IdentityOk<NativeAuthenticatedSession>
+        | IdentityErrors;
+
+    @post
+    @route("/logout")
+    @operationId("logoutNativeSession")
+    @summary("Revoke one native session")
+    @doc("Revokes the presented native refresh family and is intrinsically idempotent. An unknown, already revoked or locally deleted credential returns SIGNED_OUT without disclosing state. The client clears access, secure refresh, push registration and its user cache even when offline; an offline logout is not queued or retried after credential erasure and may be completed server-side by logout-all from another session or expiry.")
+    logout(...RequestHeaders, @body body: NativeRefreshRequest): IdentityOk<LogoutResult> | LoginErrors;
 }
 
 @tag("Identity")
@@ -505,7 +637,7 @@ interface IdentitySelf {
     @operationId("startIdentityAttempt")
     @summary("Start an operation-bound proof attempt")
     @doc("10 minute attempt bound to user, session and action. LINK requires CURRENT and TARGET independent proofs; UNLINK requires CURRENT proof from a remaining identity; DELETE_ACCOUNT requires CURRENT proof. Missing/foreign identities return IDENTITY_LINK_FAILED. Idempotency retains only safe result 24h. Limit: 5 attempts/h/user and 20/h/IP; proof steps do not consume another attempt budget but use provider-specific limits.")
-    startAttempt(...RequestHeaders, ...BrowserMutationHeaders, ...MutationKey, @body body: StartIdentityAttempt):
+    startAttempt(...RequestHeaders, ...SessionMutationHeaders, ...MutationKey, @body body: StartIdentityAttempt):
         | IdentityOk<IdentityAttempt>
         | IdentityErrors;
 
@@ -521,7 +653,7 @@ interface IdentitySelf {
     @operationId("proveTelegramIdentity")
     @summary("Prove a Telegram identity for this attempt")
     @doc("No session issuance. Atomically consume verified Telegram fingerprint and bind side/subject to attempt. CURRENT must belong to actor (and remain after UNLINK); TARGET only for LINK. Proof lasts 300s, bounded by attempt expiry. No generic idempotency. Rates match Telegram exchange.")
-    telegramProof(@path attemptId: Uuid, ...RequestHeaders, ...BrowserMutationHeaders, @body body: TelegramProof):
+    telegramProof(@path attemptId: Uuid, ...RequestHeaders, ...SessionMutationHeaders, @body body: TelegramProof):
         | IdentityOk<IdentityAttempt>
         | IdentityErrors
         | IdentityFailure<401, "TELEGRAM_AUTH_INVALID">;
@@ -534,7 +666,7 @@ interface IdentitySelf {
     requestEmailProof(
         @path attemptId: Uuid,
         ...RequestHeaders,
-        ...BrowserMutationHeaders,
+        ...SessionMutationHeaders,
         @body body: EmailProofRequest,
     ): IdentityAccepted<MagicLinkRequested> | IdentityErrors;
 
@@ -546,7 +678,7 @@ interface IdentitySelf {
     consumeEmailProof(
         @path attemptId: Uuid,
         ...RequestHeaders,
-        ...BrowserMutationHeaders,
+        ...SessionMutationHeaders,
         @body body: EmailProofConsume,
     ): IdentityOk<IdentityAttempt> | IdentityErrors | IdentityFailure<401, "MAGIC_LINK_INVALID">;
 
@@ -555,7 +687,7 @@ interface IdentitySelf {
     @operationId("linkIdentity")
     @summary("Link a proven identity and replace the session")
     @doc("Consume LINK attempt with both proofs younger than 300s. Transaction locks user, enforces provider subject uniqueness and one identity/provider/user. Occupied target returns only IDENTITY_LINK_FAILED; no merging. Revoke all old sessions and issue new credentials. Attempt is single-use; no generic credential replay. Commit uses the reserved attempt budget, no additional attempt charge.")
-    link(...RequestHeaders, ...BrowserMutationHeaders, @body body: FinishIdentityAttempt):
+    link(...RequestHeaders, ...SessionMutationHeaders, @body body: FinishIdentityAttempt):
         | IdentityCookieOk<AuthenticatedSession>
         | IdentityErrors;
 
@@ -564,7 +696,7 @@ interface IdentitySelf {
     @operationId("unlinkIdentity")
     @summary("Unlink a method after proving the remaining method")
     @doc("UNLINK attempt must target identityId. Lock user, enforce at least one remaining identity and consume fresh proof. Revoke all sessions and issue new credentials. No generic idempotency; lost response requires login. Commit uses the reserved attempt budget.")
-    unlink(@path identityId: Uuid, ...RequestHeaders, ...BrowserMutationHeaders, @body body: FinishIdentityAttempt):
+    unlink(@path identityId: Uuid, ...RequestHeaders, ...SessionMutationHeaders, @body body: FinishIdentityAttempt):
         | IdentityCookieOk<AuthenticatedSession>
         | IdentityErrors;
 
@@ -580,7 +712,7 @@ interface IdentitySelf {
     @operationId("updateOnboardingDraft")
     @summary("Save a versioned partial draft")
     @doc("Idempotency-Key required; 24h safe response retention encrypted at rest because draft is personal data. Match expectedVersion, increment version once, reject completed/stale writes with DRAFT_VERSION_CONFLICT. Validate locality, timezone and DUPR capability on server. Mutation limits: 30/min/user, 120/min/IP shared with completion and consent changes.")
-    saveDraft(...RequestHeaders, ...BrowserMutationHeaders, ...MutationKey, @body body: UpdateDraft):
+    saveDraft(...RequestHeaders, ...SessionMutationHeaders, ...MutationKey, @body body: UpdateDraft):
         | IdentityOk<Onboarding>
         | IdentityErrors;
 
@@ -589,7 +721,7 @@ interface IdentitySelf {
     @operationId("completeOnboarding")
     @summary("Atomically complete onboarding once")
     @doc("Require all non-null mandatory fields, nonempty formats, current accepted TERMS/PERSONAL_DATA versions and matching draft version. Optional analytics, marketing and DUPR do not gate completion. Lock document publication and consent updates through commit. Existing COMPLETED returns prior completedAt even on a new key. One profile and one domain event; no repeat activation. Shares draft mutation limits; 24h idempotency.")
-    complete(...RequestHeaders, ...BrowserMutationHeaders, ...MutationKey, @body body: CompleteOnboarding):
+    complete(...RequestHeaders, ...SessionMutationHeaders, ...MutationKey, @body body: CompleteOnboarding):
         | IdentityOk<Onboarding>
         | IdentityErrors;
 
@@ -608,7 +740,7 @@ interface IdentitySelf {
     @operationId("changeMyConsent")
     @summary("Append explicit acceptance or withdrawal")
     @doc("Only active document version may be accepted; withdrawal targets own accepted version. Required acceptance is never bundled with analytics/marketing. Same state is a no-op. Store immutable document checksum and source, no automatic acceptance on upgrade. Shares draft mutation limits and 24h idempotency.")
-    changeConsent(...RequestHeaders, ...BrowserMutationHeaders, ...MutationKey, @body body: ConsentChange):
+    changeConsent(...RequestHeaders, ...SessionMutationHeaders, ...MutationKey, @body body: ConsentChange):
         | IdentityOk<Consent>
         | IdentityErrors;
 
@@ -617,7 +749,7 @@ interface IdentitySelf {
     @operationId("requestAccountDeletion")
     @summary("Revoke access and schedule account erasure")
     @doc("Requires single-use DELETE_ACCOUNT proof younger than 300s and explicit confirmed=true. Serialize with identity/login, set DELETION_PENDING, hide profile, revoke all sessions/proofs/links and enqueue one erasure event in same transaction. Clear refresh cookie. 202 is acceptance, not completed erasure; no restoration. Repeated request with revoked access gets SESSION_INVALID without another task. Rate: 3/h/user, 10/h/IP.")
-    deleteAccount(...RequestHeaders, ...BrowserMutationHeaders, @body body: DeleteAccount):
+    deleteAccount(...RequestHeaders, ...SessionMutationHeaders, @body body: DeleteAccount):
         | IdentityCookieAccepted<DeletionAccepted>
         | IdentityErrors;
 }

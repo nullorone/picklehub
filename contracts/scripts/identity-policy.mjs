@@ -9,6 +9,10 @@ export const identityOperations = {
     '/auth/refresh': ['post'],
     '/auth/logout': ['post'],
     '/auth/logout-all': ['post'],
+    '/auth/mobile/magic-links/request': ['post'],
+    '/auth/mobile/magic-links/consume': ['post'],
+    '/auth/mobile/refresh': ['post'],
+    '/auth/mobile/logout': ['post'],
     '/me': ['get'],
     '/me/identities': ['get'],
     '/me/identity-attempts': ['post'],
@@ -69,6 +73,19 @@ const cookieOperations = new Set([
     'unlinkIdentity',
     'requestAccountDeletion',
 ]);
+const browserAnonymousMutations = new Set([
+    'exchangeTelegramInitData',
+    'requestMagicLink',
+    'consumeMagicLink',
+    'refreshSession',
+    'logoutSession',
+]);
+const nativeAnonymousMutations = new Set([
+    'requestNativeMagicLink',
+    'consumeNativeMagicLink',
+    'refreshNativeSession',
+    'logoutNativeSession',
+]);
 
 export function checkIdentityContract(openApi, asyncApi) {
     for (const [path, methods] of Object.entries(identityOperations)) {
@@ -98,10 +115,14 @@ export function checkIdentityContract(openApi, asyncApi) {
             const parameters = (operation.parameters ?? []).map((value) => dereference(openApi, value));
             if (method !== 'get') {
                 for (const name of ['Origin', 'X-CSRF-Token']) {
-                    assert(
-                        parameters.some((p) => p.in === 'header' && p.name === name && p.required),
-                        `${operation.operationId} requires ${name}`
-                    );
+                    const header = parameters.find((p) => p.in === 'header' && p.name === name);
+                    if (browserAnonymousMutations.has(operation.operationId)) {
+                        assert(header?.required, `${operation.operationId} requires ${name}`);
+                    } else if (nativeAnonymousMutations.has(operation.operationId)) {
+                        assert(!header, `${operation.operationId} must not accept browser ${name}`);
+                    } else {
+                        assert(header && !header.required, `${operation.operationId} requires conditional ${name}`);
+                    }
                 }
                 const key = parameters.find((p) => p.name === 'Idempotency-Key');
                 assert(
@@ -130,6 +151,7 @@ export function checkIdentityContract(openApi, asyncApi) {
         }
     }
     const refresh = openApi.paths['/auth/refresh'].post;
+    const nativeRefresh = openApi.paths['/auth/mobile/refresh'].post;
     const magicRequest = openApi.paths['/auth/magic-links/request'].post;
     assert.deepEqual(
         Object.keys(magicRequest.responses).sort(),
@@ -165,11 +187,18 @@ export function checkIdentityContract(openApi, asyncApi) {
         );
     }
     assert(
-        Object.values(openApi.components.schemas).every(
-            (schema) => !Object.keys(schema.properties ?? {}).some((key) => /refreshToken/i.test(key))
+        Object.entries(openApi.components.schemas).every(
+            ([name, schema]) =>
+                name === 'NativeAuthenticatedSession' ||
+                name === 'NativeRefreshRequest' ||
+                !Object.keys(schema.properties ?? {}).some((key) => /refreshToken/i.test(key))
         ),
-        'Browser response schemas cannot expose refresh credentials in JSON'
+        'Only native request/response schemas may carry refresh credentials in JSON'
     );
+    assert.deepEqual(nativeRefresh.security, [{}], 'Native refresh must not depend on an ambient cookie.');
+    const nativeRefreshBody = dereference(openApi, nativeRefresh.requestBody.content['application/json'].schema);
+    assert(nativeRefreshBody.required.includes('refreshToken'), 'Native refresh must require its body credential.');
+    assert.deepEqual(openApi.components.schemas.ClientPlatform.enum, ['WEB', 'TMA', 'MOBILE']);
     const domainChannel = asyncApi.channels.identityEvents;
     assert(domainChannel?.address === 'identity.events.v1', 'Identity events need a separate internal channel');
     assert.deepEqual(

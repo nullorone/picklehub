@@ -3734,3 +3734,55 @@ llm/_docs/analytics-plan.md llm/_docs/architecture.md llm/_docs/security-privacy
   924 KiB, а также внешняя небезопасная настройка `NODE_TLS_REJECT_UNAUTHORIZED=0`; она не добавлена в репозиторий.
   Store/provider/legal/residency, OS/device/accessibility и runtime mobile evidence не проверялись и не заявляются,
   поскольку Expo-клиент ещё не создан. Следующий промпт — `llm/14-mobile-parity/02-contract-data.md`; он не начат.
+
+## 2026-09-16 — функциональный паритет mobile, этап 02-contract-data
+
+- Активный промпт: `llm/14-mobile-parity/02-contract-data.md`. TypeSpec получил отдельный non-cookie native magic
+  link/refresh/logout contract с S256 verifier binding, body-only rotating refresh, `MOBILE` platform/consent и
+  закрытым structured deep-link destination. Browser auth endpoints сохранили обязательные Origin/CSRF/cookie;
+  bearer mutations Match MVP используют условные Origin/CSRF, которые backend обязан требовать для server-known
+  `WEB`/`TMA` и запрещать как неполную пару, но не требовать для non-ambient `MOBILE`. UUIDv4 idempotency и domain
+  DTO не дублировались.
+- Закрыт найденный audit gap AsyncAPI: добавлен bearer `POST /realtime/tickets` с single-use 60-second `ws1_…`
+  ticket, передаваемым первой WebSocket-командой, а reconnect сохраняет opaque cursor → REST snapshot semantics.
+  Existing five-minute single-object avatar PUT признан runtime-neutral; новых upload/multipart DTO нет.
+- Communications contract расширен `MOBILE` installation, `PUSH`, self-device list для lost-device revoke,
+  idempotent push registration/rotation/revoke и neutral payload только из schema version, notification ID и
+  `OPEN_NOTIFICATION`. Token присутствует только в request; response/event/job его не возвращают. Provider/SDK не
+  выбран, adapter остаётся fail-closed до terms/privacy/security/legal/residency review; Telegram native link также
+  остаётся unavailable.
+- Миграция `20260916090000_mobile_parity_contract_data` расширяет session/consent platform, связывает native magic
+  link с challenge/destination, добавляет push registration history и per-registration delivery attempts. Active
+  token уникален по installation/environment и keyed token/environment; raw token хранится как encrypted
+  ciphertext с HMAC key, а revoke очищает оба значения. Device revoke каскадно отзывает active registrations,
+  inactivity expiry равен 90 дням и требует privacy confirmation. Prisma schema валидна.
+- Добавлен `contracts:mobile:check`: generated OpenAPI/AsyncAPI и native-selected surface компилируются strict
+  TypeScript с ES2022 без DOM/Node globals. Общие domain/analytics enums получили `mobile`/`PUSH`; browser-specific
+  handwritten `createIdentityClient` намеренно не объявлен Expo transport. Добавлены 6 executable mobile policy/
+  data tests, а root contract allowlists и policies обновлены до 231 REST operations/66 messages и 161 tests.
+- `llm/_docs/mobile-parity-contract-data.md` фиксирует runtime audit, credential/session lifecycle, closed link
+  targets и AASA/assetlinks ownership gates, realtime/upload/idempotency, push data flow, cache schema/classes/TTL,
+  purge/account-switch и lost/stolen-device threat model. Cross-links и границы добавлены в architecture,
+  security/privacy, data conventions, analytics, requirements и contracts README. Expo/client/backend product code
+  не создавался; generated artifacts пересозданы только codegen.
+
+### Проверки этапа mobile parity 02-contract-data
+
+- `npm run contracts:lint` — успешно: TypeSpec и Redocly, 231 REST operations/66 AsyncAPI messages, 161/161
+  contract/data/policy tests и новый DOM-free `contracts:mobile:check`. `npm run contracts:breaking`,
+  `contracts:generated:check` и `contracts:typecheck` — успешно; OpenAPI/TypeScript generated artifacts
+  воспроизводимы и compatibility с HEAD сохранена.
+- Targeted `@picklehub/api-client` lint/typecheck/7 tests/build, `@picklehub/domain` typecheck/1 test и
+  `@picklehub/analytics` typecheck/1 test — успешно. Первый domain test корректно выявил старое ожидание только
+  `web/telegram`; test обновлён вместе с утверждённым additive `mobile`, не ослаблен.
+- `prisma validate` сначала остановился только на отсутствующем `DATABASE_URL`; повтор с синтетическим local URL и
+  локальными копиями Prisma engines — успешно. `prisma migrate deploy` с теми же engine paths не применил migration:
+  PostgreSQL недоступен (`P1001 127.0.0.1:5432`). Поэтому SQL syntax на реальном PostgreSQL, clean/upgrade migration,
+  enum/check ordering, concurrent push rotation/revoke и cascade trigger не выдаются за runtime-проверенные.
+- Финальный `npm run verify` — успешно полностью: восемь workspaces/один lockfile, contract lint/compatibility/
+  generated drift/typecheck/OpenAPI mock, format/docs, lint, strict typecheck, unit/component tests и production
+  builds. Backend — 46/46 suites и 284/284 tests; web — 14/14 и 59/59; TMA — 11/11 и 34/34; shared suites зелёные.
+- Сохраняются прежние неблокирующие build warnings около 706/667/924 KiB и внешняя небезопасная настройка
+  `NODE_TLS_REJECT_UNAUTHORIZED=0`. Expo build, secure-store/backup, real WebSocket/lifecycle/cursor gap, object PUT,
+  AASA/assetlinks, push provider/token invalidation, store/legal/residency, PostgreSQL races и реальные устройства
+  остаются gates. Следующий промпт — `llm/14-mobile-parity/03-backend.md`; он не начат.

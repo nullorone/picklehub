@@ -38,6 +38,7 @@ enum NotificationChannel {
     IN_APP,
     TELEGRAM,
     EMAIL,
+    PUSH,
 }
 
 enum NotificationDeliveryStatus {
@@ -68,6 +69,17 @@ enum NotificationType {
 enum CommunicationPlatform {
     WEB,
     TMA,
+    MOBILE,
+}
+
+enum MobileOperatingSystem {
+    IOS,
+    ANDROID,
+}
+
+enum PushEnvironment {
+    SANDBOX,
+    PRODUCTION,
 }
 
 enum ChatReportReason {
@@ -167,6 +179,10 @@ model Notification {
     type: NotificationType;
     category: NotificationCategory;
     route: SafeNotificationRoute;
+
+    @doc("Closed structured destination for native navigation. Null means open the notification inbox. It never contains a URL, query, fragment, secret or mutation command.")
+    mobileTarget?: MobileDeepLinkTarget | null;
+
     readAt: Timestamp | null;
     createdAt: Timestamp;
     deliveries: NotificationDelivery[];
@@ -174,7 +190,7 @@ model Notification {
 
 model NotificationDelivery {
     id: Uuid;
-    channel: "TELEGRAM" | "EMAIL";
+    channel: "TELEGRAM" | "EMAIL" | "PUSH";
 
     @doc("Transport state only. ACCEPTED/DELIVERED never means the person read the notification.")
     status: NotificationDeliveryStatus;
@@ -229,11 +245,64 @@ model NotificationDevice {
     platform: CommunicationPlatform;
     createdAt: Timestamp;
     lastSeenAt: Timestamp;
+    activePushRegistration?: PushRegistration | null;
 }
 
 model BindNotificationDevice {
     installationId: UuidV4;
     platform: CommunicationPlatform;
+}
+
+@minLength(1)
+@maxLength(4096)
+@doc("Opaque OS/provider push token accepted only in a TLS request body. It is encrypted at rest, keyed by HMAC for deduplication, and never returned, logged, audited, placed in events or sent to analytics.")
+scalar PushToken extends string;
+
+@minLength(1)
+@maxLength(64)
+@pattern("^[0-9A-Za-z][0-9A-Za-z.+_-]*$")
+scalar MobileAppVersion extends string;
+
+model RegisterPushToken {
+    operatingSystem: MobileOperatingSystem;
+    environment: PushEnvironment;
+    appVersion: MobileAppVersion;
+    token: PushToken;
+}
+
+model PushRegistration {
+    id: Uuid;
+    installationId: UuidV4;
+    operatingSystem: MobileOperatingSystem;
+    environment: PushEnvironment;
+    appVersion: MobileAppVersion;
+    createdAt: Timestamp;
+    lastSeenAt: Timestamp;
+    expiresAt: Timestamp;
+    revokedAt: Timestamp | null;
+}
+
+model NotificationDevicePage {
+    items: NotificationDevice[];
+}
+
+@doc("Neutral lock-screen payload. notificationId is an opaque refetch signal, not proof of state or read. No chat text, player, venue, address, safety data, route, token or provider URL is allowed.")
+model NeutralPushPayload {
+    schemaVersion: 1;
+    notificationId: Uuid;
+    action: "OPEN_NOTIFICATION";
+}
+
+@minLength(32)
+@maxLength(256)
+@pattern("^ws1_[A-Za-z0-9_-]+$")
+scalar WebSocketTicket extends string;
+
+model RealtimeTicket {
+    @doc("Single-use secret presented as the first WebSocket message, never in a URL or log.")
+    ticket: WebSocketTicket;
+
+    expiresAt: Timestamp;
 }
 
 model CommunicationResponseHeaders {
@@ -296,7 +365,14 @@ alias CommunicationMutationErrors =
     | CommunicationFailure<400, "VALIDATION_FAILED">
     | CommunicationFailure<401, "SESSION_INVALID">
     | CommunicationFailure<403, "CONVERSATION_ACCESS_DENIED" | "MESSAGE_MUTATION_FORBIDDEN">
-    | CommunicationFailure<404, "CONVERSATION_NOT_FOUND" | "MESSAGE_NOT_FOUND" | "NOTIFICATION_NOT_FOUND">
+    | CommunicationFailure<
+          404,
+          | "CONVERSATION_NOT_FOUND"
+          | "MESSAGE_NOT_FOUND"
+          | "NOTIFICATION_NOT_FOUND"
+          | "NOTIFICATION_DEVICE_NOT_FOUND"
+          | "PUSH_REGISTRATION_NOT_FOUND"
+      >
     | CommunicationFailure<409, "MESSAGE_REVISION_CONFLICT" | "IDEMPOTENCY_KEY_REUSED" | "PREFERENCE_VERSION_CONFLICT">
     | CommunicationRateLimited;
 
@@ -334,7 +410,7 @@ interface MatchConversation {
     send(
         @path matchId: Uuid,
         ...RequestHeaders,
-        ...BrowserMutationHeaders,
+        ...SessionMutationHeaders,
         ...MutationKey,
         @body body: SendMessageCommand,
     ): CommunicationCreated<Message> | CommunicationMutationErrors;
@@ -348,7 +424,7 @@ interface MatchConversation {
         @path matchId: Uuid,
         @path messageId: Uuid,
         ...RequestHeaders,
-        ...BrowserMutationHeaders,
+        ...SessionMutationHeaders,
         ...MutationKey,
         @body body: EditMessageCommand,
     ): CommunicationOk<Message> | CommunicationMutationErrors;
@@ -362,7 +438,7 @@ interface MatchConversation {
         @path matchId: Uuid,
         @path messageId: Uuid,
         ...RequestHeaders,
-        ...BrowserMutationHeaders,
+        ...SessionMutationHeaders,
         ...MutationKey,
         @query @minValue(1) expectedRevision: int32,
     ): CommunicationOk<Message> | CommunicationMutationErrors;
@@ -375,7 +451,7 @@ interface MatchConversation {
     markRead(
         @path matchId: Uuid,
         ...RequestHeaders,
-        ...BrowserMutationHeaders,
+        ...SessionMutationHeaders,
         ...MutationKey,
         @body body: MarkConversationReadCommand,
     ): CommunicationOk<ConversationReadPosition> | CommunicationMutationErrors;
@@ -389,7 +465,7 @@ interface MatchConversation {
         @path matchId: Uuid,
         @path messageId: Uuid,
         ...RequestHeaders,
-        ...BrowserMutationHeaders,
+        ...SessionMutationHeaders,
         ...MutationKey,
         @body body: ReportMessageCommand,
     ): CommunicationCreated<MessageReportReceipt> | CommunicationMutationErrors;
@@ -403,7 +479,7 @@ interface CommunicationBlocks {
     @operationId("blockCommunicationUser")
     @summary("Hide future chat text from one user")
     @doc("Creates an idempotent platform-wide safety preference. New direct profile, search, invite, join, request, waitlist, promotion and chat interactions are denied in both directions without changing an existing shared match or required system facts.")
-    block(@path blockedUserId: Uuid, ...RequestHeaders, ...BrowserMutationHeaders, ...MutationKey):
+    block(@path blockedUserId: Uuid, ...RequestHeaders, ...SessionMutationHeaders, ...MutationKey):
         | CommunicationOk<UserBlock>
         | CommunicationMutationErrors;
 
@@ -411,7 +487,7 @@ interface CommunicationBlocks {
     @operationId("unblockCommunicationUser")
     @summary("Remove the caller's active block")
     @doc("Allows only future direct interactions when no reciprocal block or moderation restriction exists. It never restores removed requests, promotions or content and does not reveal another party's block.")
-    unblock(@path blockedUserId: Uuid, ...RequestHeaders, ...BrowserMutationHeaders, ...MutationKey):
+    unblock(@path blockedUserId: Uuid, ...RequestHeaders, ...SessionMutationHeaders, ...MutationKey):
         | CommunicationNoContent
         | CommunicationMutationErrors;
 }
@@ -431,7 +507,7 @@ interface Notifications {
     @operationId("markNotificationRead")
     @summary("Mark one in-app notification read by foreground action")
     @doc("Marks only the caller's item after foreground display. Replays return the same read timestamp and external transport receipts never invoke this operation.")
-    read(@path notificationId: Uuid, ...RequestHeaders, ...BrowserMutationHeaders, ...MutationKey):
+    read(@path notificationId: Uuid, ...RequestHeaders, ...SessionMutationHeaders, ...MutationKey):
         | CommunicationOk<NotificationReadReceipt>
         | CommunicationMutationErrors;
 }
@@ -450,7 +526,7 @@ interface NotificationPreferences {
     @operationId("updateNotificationPreferences")
     @summary("Replace versioned locale, timezone, quiet hours and external channel choices")
     @doc("IN_APP is mandatory and cannot be disabled. TELEGRAM and EMAIL categories default off and require a verified identity. Changes affect future fan-out and pending attempts, not existing inbox items.")
-    update(...RequestHeaders, ...BrowserMutationHeaders, ...MutationKey, @body body: UpdateNotificationPreference):
+    update(...RequestHeaders, ...SessionMutationHeaders, ...MutationKey, @body body: UpdateNotificationPreference):
         | CommunicationOk<NotificationPreference>
         | CommunicationMutationErrors;
 }
@@ -459,20 +535,69 @@ interface NotificationPreferences {
 @route("/notification-devices")
 @useAuth(BearerAuth)
 interface NotificationDevices {
+    @get
+    @operationId("listNotificationDevices")
+    @summary("List caller-owned installations without push secrets")
+    @doc("Supports lost-device revocation from another authenticated session. Returns no token, provider identifier or device fingerprint. Revoked installations remain visible only for the bounded account-security retention window.")
+    list(...RequestHeaders): CommunicationOk<NotificationDevicePage> | CommunicationReadErrors;
+
     @post
     @operationId("bindNotificationDevice")
-    @summary("Bind an opaque web or TMA installation")
-    @doc("Stores only an opaque installation ID for inbox synchronization. Push tokens and a PUSH delivery channel are outside this MVP contract.")
-    bind(...RequestHeaders, ...BrowserMutationHeaders, ...MutationKey, @body body: BindNotificationDevice):
+    @summary("Bind an opaque client installation")
+    @doc("A random purpose-bound installation ID may be bound to only one user at a time. MOBILE binding contains no push token; registration is a separate versioned operation. Account switch must revoke the old binding before reuse.")
+    bind(...RequestHeaders, ...SessionMutationHeaders, ...MutationKey, @body body: BindNotificationDevice):
         | CommunicationCreated<NotificationDevice>
         | CommunicationMutationErrors;
 
     @delete
     @route("/{installationId}")
     @operationId("unbindNotificationDevice")
-    @summary("Unbind an opaque web or TMA installation")
-    @doc("Revokes only the caller-owned installation binding. It does not delete inbox items or silently change Telegram/email preferences.")
-    unbind(@path installationId: UuidV4, ...RequestHeaders, ...BrowserMutationHeaders, ...MutationKey):
+    @summary("Revoke an installation and all of its push registrations")
+    @doc("Revokes only the caller-owned installation, including every active or rotated push token, so a lost device can be disabled from another session. It does not delete inbox items or silently change Telegram/email preferences.")
+    unbind(@path installationId: UuidV4, ...RequestHeaders, ...SessionMutationHeaders, ...MutationKey):
         | CommunicationNoContent
+        | CommunicationMutationErrors;
+}
+
+@tag("Communications")
+@route("/notification-devices/{installationId}/push-registrations")
+@useAuth(BearerAuth)
+interface PushRegistrations {
+    @post
+    @operationId("registerPushToken")
+    @summary("Register or rotate a mobile push token")
+    @doc("MOBILE installation only. Atomically HMAC-deduplicates the token, encrypts it, revokes the previous active token for the same installation/environment and returns no secret. Retry with the same idempotency key is stable. Registrations expire after 90 days without authenticated activity; sandbox and production never mix. The adapter remains fail-closed until provider, privacy, legal and residency review.")
+    register(
+        @path installationId: UuidV4,
+        ...RequestHeaders,
+        ...SessionMutationHeaders,
+        ...MutationKey,
+        @body body: RegisterPushToken,
+    ): CommunicationCreated<PushRegistration> | CommunicationMutationErrors;
+
+    @delete
+    @route("/{registrationId}")
+    @operationId("revokePushRegistration")
+    @summary("Revoke one caller-owned push registration")
+    @doc("Immediately marks the selected token unusable without exposing whether a provider still recognizes it. Provider invalid-token feedback invokes the same transition idempotently.")
+    revoke(
+        @path installationId: UuidV4,
+        @path registrationId: Uuid,
+        ...RequestHeaders,
+        ...SessionMutationHeaders,
+        ...MutationKey,
+    ): CommunicationNoContent | CommunicationMutationErrors;
+}
+
+@tag("Communications")
+@route("/realtime/tickets")
+@useAuth(BearerAuth)
+interface RealtimeTickets {
+    @post
+    @operationId("createRealtimeTicket")
+    @summary("Issue a single-use WebSocket authentication ticket")
+    @doc("Binds a random single-use ticket to the authenticated user, session and current auth epoch for at most 60 seconds. It is returned only in this no-store body, presented as the first WebSocket message and consumed atomically. Reconnect obtains a fresh ticket; stream cursors remain opaque and cursor expiry/gaps require canonical REST resync.")
+    create(...RequestHeaders, ...SessionMutationHeaders, ...MutationKey, @body body: EmptyRequest):
+        | CommunicationCreated<RealtimeTicket>
         | CommunicationMutationErrors;
 }

@@ -497,7 +497,7 @@ interface Matches {
     @operationId("createMatchDraft")
     @summary("Create a private match draft")
     @doc("Creates the organizer as the sole ACTIVE TEAM_A participant. Draft fields may be incomplete. It never appears in discovery and does not create an invite until publication.")
-    create(...RequestHeaders, ...BrowserMutationHeaders, ...MutationKey, @body body: DraftMatchInput):
+    create(...RequestHeaders, ...SessionMutationHeaders, ...MutationKey, @body body: DraftMatchInput):
         | MatchCreated<Match>
         | MatchMutationErrors;
 
@@ -517,7 +517,7 @@ interface Matches {
     update(
         @path matchId: Uuid,
         ...RequestHeaders,
-        ...BrowserMutationHeaders,
+        ...SessionMutationHeaders,
         ...MutationKey,
         @body body: UpdateMatchDraft,
     ): MatchOk<Match> | MatchMutationErrors;
@@ -531,7 +531,7 @@ interface Matches {
     delete(
         @path matchId: Uuid,
         ...RequestHeaders,
-        ...BrowserMutationHeaders,
+        ...SessionMutationHeaders,
         ...MutationKey,
         @query expectedVersion: int32,
     ): MatchNoContent | MatchMutationErrors;
@@ -545,7 +545,7 @@ interface Matches {
     publish(
         @path matchId: Uuid,
         ...RequestHeaders,
-        ...BrowserMutationHeaders,
+        ...SessionMutationHeaders,
         ...MutationKey,
         @body body: PublishMatch,
     ): MatchOk<Match | MatchInvite> | MatchMutationErrors;
@@ -559,7 +559,7 @@ interface Matches {
     rotateInvite(
         @path matchId: Uuid,
         ...RequestHeaders,
-        ...BrowserMutationHeaders,
+        ...SessionMutationHeaders,
         ...MutationKey,
         @body body: ExpectedMatchVersion,
     ): MatchOk<MatchInvite> | MatchMutationErrors;
@@ -573,7 +573,7 @@ interface Matches {
     join(
         @path matchId: Uuid,
         ...RequestHeaders,
-        ...BrowserMutationHeaders,
+        ...SessionMutationHeaders,
         ...MutationKey,
         @body body: MatchJoinCommand,
     ): MatchOk<MatchJoinOutcome> | MatchMutationErrors;
@@ -601,7 +601,7 @@ interface Matches {
         @path matchId: Uuid,
         @path joinRequestId: Uuid,
         ...RequestHeaders,
-        ...BrowserMutationHeaders,
+        ...SessionMutationHeaders,
         ...MutationKey,
         @body body: MatchDecisionCommand,
     ): MatchOk<MatchJoinOutcome> | MatchMutationErrors;
@@ -616,7 +616,7 @@ interface Matches {
         @path matchId: Uuid,
         @path joinRequestId: Uuid,
         ...RequestHeaders,
-        ...BrowserMutationHeaders,
+        ...SessionMutationHeaders,
         ...MutationKey,
         @body body: MatchDecisionCommand,
     ): MatchOk<JoinRequest> | MatchMutationErrors;
@@ -631,7 +631,7 @@ interface Matches {
         @path matchId: Uuid,
         @path joinRequestId: Uuid,
         ...RequestHeaders,
-        ...BrowserMutationHeaders,
+        ...SessionMutationHeaders,
         ...MutationKey,
         @body body: MatchDecisionCommand,
     ): MatchOk<JoinRequest> | MatchMutationErrors;
@@ -659,7 +659,7 @@ interface Matches {
         @path matchId: Uuid,
         @path entryId: Uuid,
         ...RequestHeaders,
-        ...BrowserMutationHeaders,
+        ...SessionMutationHeaders,
         ...MutationKey,
         @body body: MatchDecisionCommand,
     ): MatchOk<WaitlistEntry> | MatchMutationErrors;
@@ -674,7 +674,7 @@ interface Matches {
         @path matchId: Uuid,
         @path entryId: Uuid,
         ...RequestHeaders,
-        ...BrowserMutationHeaders,
+        ...SessionMutationHeaders,
         ...MutationKey,
         @body body: MatchDecisionCommand,
     ): MatchOk<MatchJoinOutcome> | MatchMutationErrors;
@@ -689,7 +689,7 @@ interface Matches {
         @path matchId: Uuid,
         @path participantId: Uuid,
         ...RequestHeaders,
-        ...BrowserMutationHeaders,
+        ...SessionMutationHeaders,
         ...MutationKey,
         @body body: MatchDecisionCommand,
     ): MatchOk<Match> | MatchMutationErrors;
@@ -703,7 +703,7 @@ interface Matches {
     cancel(
         @path matchId: Uuid,
         ...RequestHeaders,
-        ...BrowserMutationHeaders,
+        ...SessionMutationHeaders,
         ...MutationKey,
         @body body: MatchDecisionCommand,
     ): MatchOk<Match> | MatchMutationErrors;
@@ -717,7 +717,7 @@ interface Matches {
     start(
         @path matchId: Uuid,
         ...RequestHeaders,
-        ...BrowserMutationHeaders,
+        ...SessionMutationHeaders,
         ...MutationKey,
         @body body: MatchDecisionCommand,
     ): MatchOk<Match> | MatchMutationErrors;
@@ -731,7 +731,7 @@ interface Matches {
     proposeResult(
         @path matchId: Uuid,
         ...RequestHeaders,
-        ...BrowserMutationHeaders,
+        ...SessionMutationHeaders,
         ...MutationKey,
         @body body: ProposeMatchResult,
     ): MatchCreated<MatchResult> | MatchMutationErrors;
@@ -746,7 +746,7 @@ interface Matches {
         @path matchId: Uuid,
         @path resultId: Uuid,
         ...RequestHeaders,
-        ...BrowserMutationHeaders,
+        ...SessionMutationHeaders,
         ...MutationKey,
         @body body: ResolveMatchResult,
     ): MatchOk<MatchResult> | MatchMutationErrors;
@@ -761,7 +761,7 @@ interface Matches {
         @path matchId: Uuid,
         @path resultId: Uuid,
         ...RequestHeaders,
-        ...BrowserMutationHeaders,
+        ...SessionMutationHeaders,
         ...MutationKey,
         @body body: ResolveMatchResult,
     ): MatchOk<MatchResult> | MatchMutationErrors;

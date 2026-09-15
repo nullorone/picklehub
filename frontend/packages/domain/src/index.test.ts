@@ -4,7 +4,7 @@ import { clientChannels, supportedLocales } from './index';
 
 describe('foundation domain values', () => {
     it('keeps client channels and the initial locale explicit', () => {
-        expect(clientChannels).toEqual(['web', 'telegram']);
+        expect(clientChannels).toEqual(['web', 'telegram', 'mobile']);
         expect(supportedLocales).toEqual(['ru-RU']);
     });
 });

@@ -107,7 +107,11 @@ export function checkMatchContract(openApi, asyncApi) {
             }
             if (!readOnly.has(operation.operationId) && !protectedReads.has(operation.operationId)) {
                 for (const name of ['Origin', 'X-CSRF-Token', 'Idempotency-Key']) {
-                    assert(parameter(openApi, operation, name)?.required, `${operation.operationId} requires ${name}.`);
+                    const value = parameter(openApi, operation, name);
+                    assert(
+                        value && (name === 'Idempotency-Key' ? value.required : !value.required),
+                        `${operation.operationId} has invalid ${name}.`
+                    );
                 }
                 assert(
                     parameter(openApi, operation, 'expectedVersion')?.required ||

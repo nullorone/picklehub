@@ -1,4 +1,4 @@
-export const clientChannels = ['web', 'telegram'] as const;
+export const clientChannels = ['web', 'telegram', 'mobile'] as const;
 export const supportedLocales = ['ru-RU'] as const;
 
 export type ClientChannel = (typeof clientChannels)[number];

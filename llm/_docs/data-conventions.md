@@ -127,3 +127,13 @@
 Команды, generated-file policy, mock rules и процесс compatibility review описаны в
 [`contracts/README.md`](../../contracts/README.md). Общие security-требования находятся в
 [`security-privacy.md`](security-privacy.md), а направления зависимостей — в [`architecture.md`](architecture.md).
+
+## Native credential, push и cache
+
+- Native refresh хранится raw только в secure storage клиента и передаётся в TLS body; database хранит прежний
+  one-way refresh hash. Magic link хранит только S256 challenge и closed destination.
+- Push token хранится randomized encrypted ciphertext плюс HMAC key для dedupe. Token не входит в projection,
+  event/job, audit, log или analytics; revoke стирает ciphertext. Active uniqueness scoped installation/environment.
+- Native read cache всегда versioned, encrypted, backup-excluded и user-partitioned; allowlist классов, TTL и
+  purge rules находятся в [mobile contract/data policy](mobile-parity-contract-data.md). Secret, location и
+  restricted safety/provider классы имеют TTL zero.

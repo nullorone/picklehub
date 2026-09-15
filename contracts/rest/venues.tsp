@@ -467,7 +467,7 @@ interface VenueCatalogue {
     @operationId("createVenueCandidate")
     @summary("Create a match-only venue candidate")
     @doc("Requires completed onboarding and an owned match creation flow. The point must be a public sports object, never a home. Candidate address/location remain restricted. One candidate per source match; confirmed completion later moves it once to PENDING_REVIEW but never auto-publishes or auto-merges. A selected geocoder value is stored only when adapter capability permits every field. Idempotency response is encrypted and retained 24 hours.")
-    createCandidate(...RequestHeaders, ...BrowserMutationHeaders, ...MutationKey, @body body: CreateVenueCandidate):
+    createCandidate(...RequestHeaders, ...SessionMutationHeaders, ...MutationKey, @body body: CreateVenueCandidate):
         | VenueCreated<VenueCandidate>
         | VenueMutationErrors;
 
@@ -480,7 +480,7 @@ interface VenueCatalogue {
     revise(
         @path venueId: Uuid,
         ...RequestHeaders,
-        ...BrowserMutationHeaders,
+        ...SessionMutationHeaders,
         ...MutationKey,
         @body body: ProposeVenueRevision,
     ): VenueCreated<VenueRevision> | VenueMutationErrors;
@@ -494,7 +494,7 @@ interface VenueCatalogue {
     report(
         @path venueId: Uuid,
         ...RequestHeaders,
-        ...BrowserMutationHeaders,
+        ...SessionMutationHeaders,
         ...MutationKey,
         @body body: CreateVenueReport,
     ): VenueCreated<VenueReport> | VenueMutationErrors;

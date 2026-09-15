@@ -338,7 +338,7 @@ interface OwnPlayerProfile {
     @operationId("updateOwnPlayerProfile")
     @summary("Update mutable profile fields")
     @doc("Uses optimistic versioning. Changes affect future discovery and never rewrite historical match contributions.")
-    update(...RequestHeaders, ...BrowserMutationHeaders, ...MutationKey, @body body: UpdatePlayerProfile):
+    update(...RequestHeaders, ...SessionMutationHeaders, ...MutationKey, @body body: UpdatePlayerProfile):
         | ProfileOk<PlayerProfile>
         | ProfileMutationErrors;
 
@@ -356,7 +356,7 @@ interface OwnPlayerProfile {
     @doc("The new visibility applies after commit and invalidates public caches. It does not erase the minimal participant projection from an already authorized match.")
     updatePrivacy(
         ...RequestHeaders,
-        ...BrowserMutationHeaders,
+        ...SessionMutationHeaders,
         ...MutationKey,
         @body body: UpdateProfilePrivacySettings,
     ): ProfileOk<ProfilePrivacySettings> | ProfileMutationErrors;
@@ -366,7 +366,7 @@ interface OwnPlayerProfile {
     @operationId("setDuprProfileLink")
     @summary("Validate policy and store a DUPR link")
     @doc("Performs local syntax and approved host/path policy checks only. The server never fetches or scrapes DUPR, confirms ownership, imports a rating, or marks the link verified/synchronized.")
-    setDupr(...RequestHeaders, ...BrowserMutationHeaders, ...MutationKey, @body body: SetDuprProfileLink):
+    setDupr(...RequestHeaders, ...SessionMutationHeaders, ...MutationKey, @body body: SetDuprProfileLink):
         | ProfileOk<PlayerProfile>
         | ProfileMutationErrors;
 
@@ -375,7 +375,7 @@ interface OwnPlayerProfile {
     @operationId("removeDuprProfileLink")
     @summary("Remove the stored DUPR link")
     @doc("Deletes the encrypted external link and invalidates public projections without contacting DUPR.")
-    removeDupr(...RequestHeaders, ...BrowserMutationHeaders, ...MutationKey, @body body: RemoveDuprProfileLink):
+    removeDupr(...RequestHeaders, ...SessionMutationHeaders, ...MutationKey, @body body: RemoveDuprProfileLink):
         | ProfileNoContent
         | ProfileMutationErrors;
 
@@ -384,7 +384,7 @@ interface OwnPlayerProfile {
     @operationId("createProfileAvatarUpload")
     @summary("Create a bounded signed avatar upload")
     @doc("Creates a five-minute single-object PUT policy for a server-generated private key. It binds content type, length and SHA-256. The object is never public before decode/re-encode, malware checks and explicit activation.")
-    createAvatarUpload(...RequestHeaders, ...BrowserMutationHeaders, ...MutationKey, @body body: AvatarUploadRequest):
+    createAvatarUpload(...RequestHeaders, ...SessionMutationHeaders, ...MutationKey, @body body: AvatarUploadRequest):
         | ProfileCreated<AvatarUploadPolicy>
         | ProfileMutationErrors;
 
@@ -393,7 +393,7 @@ interface OwnPlayerProfile {
     @operationId("removeProfileAvatar")
     @summary("Remove the active avatar")
     @doc("Clears the active asset with optimistic versioning; object cleanup is asynchronous and the old key is never reused.")
-    removeAvatar(...RequestHeaders, ...BrowserMutationHeaders, ...MutationKey, @body body: ExpectedProfileVersion):
+    removeAvatar(...RequestHeaders, ...SessionMutationHeaders, ...MutationKey, @body body: ExpectedProfileVersion):
         | ProfileNoContent
         | ProfileMutationErrors;
 }

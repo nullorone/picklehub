@@ -1064,6 +1064,86 @@ export type paths = {
         readonly patch?: never;
         readonly trace?: never;
     };
+    readonly '/auth/mobile/logout': {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        readonly get?: never;
+        readonly put?: never;
+        /**
+         * Revoke one native session
+         * @description Revokes the presented native refresh family and is intrinsically idempotent. An unknown, already revoked or locally deleted credential returns SIGNED_OUT without disclosing state. The client clears access, secure refresh, push registration and its user cache even when offline; an offline logout is not queued or retried after credential erasure and may be completed server-side by logout-all from another session or expiry.
+         */
+        readonly post: operations['logoutNativeSession'];
+        readonly delete?: never;
+        readonly options?: never;
+        readonly head?: never;
+        readonly patch?: never;
+        readonly trace?: never;
+    };
+    readonly '/auth/mobile/magic-links/consume': {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        readonly get?: never;
+        readonly put?: never;
+        /**
+         * Consume a native magic link and issue body credentials
+         * @description Foreground explicit POST only. Atomically consume the link after constant-time S256 verifier comparison and issue a 300-second in-memory access token plus one rotating refresh token. Unknown, expired, used, revoked, wrong-platform or wrong-verifier links all return MAGIC_LINK_INVALID. No cookies, CSRF headers, URL credentials, response replay or automatic retry; a lost response requires a new link.
+         */
+        readonly post: operations['consumeNativeMagicLink'];
+        readonly delete?: never;
+        readonly options?: never;
+        readonly head?: never;
+        readonly patch?: never;
+        readonly trace?: never;
+    };
+    readonly '/auth/mobile/magic-links/request': {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        readonly get?: never;
+        readonly put?: never;
+        /**
+         * Request a proof-bound native sign-in email
+         * @description Neutral response and delivery suppression match the browser request. The server stores only the S256 challenge and an optional closed destination with the 10-minute link. MOBILE is literal; Origin, browser context cookies and CSRF headers are neither required nor accepted. No generic idempotency or automatic retry.
+         */
+        readonly post: operations['requestNativeMagicLink'];
+        readonly delete?: never;
+        readonly options?: never;
+        readonly head?: never;
+        readonly patch?: never;
+        readonly trace?: never;
+    };
+    readonly '/auth/mobile/refresh': {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        readonly get?: never;
+        readonly put?: never;
+        /**
+         * Rotate a native refresh credential
+         * @description Refresh token is accepted only in the JSON body over TLS and redacted before logging. It is never accepted from a cookie, URL or query. Rotation, 7-day inactivity, 30-day absolute lifetime and family-wide reuse detection match browser sessions; the client serializes refresh and atomically replaces secure storage. Loss of response or reuse revokes the family and requires login.
+         */
+        readonly post: operations['refreshNativeSession'];
+        readonly delete?: never;
+        readonly options?: never;
+        readonly head?: never;
+        readonly patch?: never;
+        readonly trace?: never;
+    };
     readonly '/auth/refresh': {
         readonly parameters: {
             readonly query?: never;
@@ -3251,11 +3331,15 @@ export type paths = {
             readonly path?: never;
             readonly cookie?: never;
         };
-        readonly get?: never;
+        /**
+         * List caller-owned installations without push secrets
+         * @description Supports lost-device revocation from another authenticated session. Returns no token, provider identifier or device fingerprint. Revoked installations remain visible only for the bounded account-security retention window.
+         */
+        readonly get: operations['listNotificationDevices'];
         readonly put?: never;
         /**
-         * Bind an opaque web or TMA installation
-         * @description Stores only an opaque installation ID for inbox synchronization. Push tokens and a PUSH delivery channel are outside this MVP contract.
+         * Bind an opaque client installation
+         * @description A random purpose-bound installation ID may be bound to only one user at a time. MOBILE binding contains no push token; registration is a separate versioned operation. Account switch must revoke the old binding before reuse.
          */
         readonly post: operations['bindNotificationDevice'];
         readonly delete?: never;
@@ -3275,10 +3359,50 @@ export type paths = {
         readonly put?: never;
         readonly post?: never;
         /**
-         * Unbind an opaque web or TMA installation
-         * @description Revokes only the caller-owned installation binding. It does not delete inbox items or silently change Telegram/email preferences.
+         * Revoke an installation and all of its push registrations
+         * @description Revokes only the caller-owned installation, including every active or rotated push token, so a lost device can be disabled from another session. It does not delete inbox items or silently change Telegram/email preferences.
          */
         readonly delete: operations['unbindNotificationDevice'];
+        readonly options?: never;
+        readonly head?: never;
+        readonly patch?: never;
+        readonly trace?: never;
+    };
+    readonly '/notification-devices/{installationId}/push-registrations': {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        readonly get?: never;
+        readonly put?: never;
+        /**
+         * Register or rotate a mobile push token
+         * @description MOBILE installation only. Atomically HMAC-deduplicates the token, encrypts it, revokes the previous active token for the same installation/environment and returns no secret. Retry with the same idempotency key is stable. Registrations expire after 90 days without authenticated activity; sandbox and production never mix. The adapter remains fail-closed until provider, privacy, legal and residency review.
+         */
+        readonly post: operations['registerPushToken'];
+        readonly delete?: never;
+        readonly options?: never;
+        readonly head?: never;
+        readonly patch?: never;
+        readonly trace?: never;
+    };
+    readonly '/notification-devices/{installationId}/push-registrations/{registrationId}': {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        readonly get?: never;
+        readonly put?: never;
+        readonly post?: never;
+        /**
+         * Revoke one caller-owned push registration
+         * @description Immediately marks the selected token unusable without exposing whether a provider still recognizes it. Provider invalid-token feedback invokes the same transition idempotently.
+         */
+        readonly delete: operations['revokePushRegistration'];
         readonly options?: never;
         readonly head?: never;
         readonly patch?: never;
@@ -3422,6 +3546,26 @@ export type paths = {
         readonly get: operations['getPublicPlayerStatistics'];
         readonly put?: never;
         readonly post?: never;
+        readonly delete?: never;
+        readonly options?: never;
+        readonly head?: never;
+        readonly patch?: never;
+        readonly trace?: never;
+    };
+    readonly '/realtime/tickets': {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        readonly get?: never;
+        readonly put?: never;
+        /**
+         * Issue a single-use WebSocket authentication ticket
+         * @description Binds a random single-use ticket to the authenticated user, session and current auth epoch for at most 60 seconds. It is returned only in this no-store body, presented as the first WebSocket message and consumed atomically. Reconnect obtains a fresh ticket; stream cursors remain opaque and cursor expiry/gaps require canonical REST resync.
+         */
+        readonly post: operations['createRealtimeTicket'];
         readonly delete?: never;
         readonly options?: never;
         readonly head?: never;
@@ -4020,6 +4164,14 @@ export type paths = {
 export type webhooks = Record<string, never>;
 export type components = {
     schemas: {
+        readonly AccessSession: {
+            readonly accessExpiresAt: components['schemas']['Timestamp'];
+            readonly accessToken: components['schemas']['IdentitySecret'];
+            readonly session: components['schemas']['Session'];
+            /** @enum {string} */
+            readonly tokenType: 'Bearer';
+            readonly user: components['schemas']['User'];
+        };
         readonly AchievementAward: {
             readonly awardedAt: components['schemas']['Timestamp'];
             readonly changedAt: components['schemas']['Timestamp'];
@@ -4753,14 +4905,8 @@ export type components = {
         /** @enum {string} */
         readonly AuditOutcome: 'SUCCEEDED' | 'DENIED' | 'FAILED' | 'CONFLICT';
         readonly AuthenticatedSession: {
-            readonly accessExpiresAt: components['schemas']['Timestamp'];
-            readonly accessToken: components['schemas']['IdentitySecret'];
             readonly csrfToken: components['schemas']['IdentitySecret'];
-            readonly session: components['schemas']['Session'];
-            /** @enum {string} */
-            readonly tokenType: 'Bearer';
-            readonly user: components['schemas']['User'];
-        };
+        } & components['schemas']['AccessSession'];
         /** @enum {string} */
         readonly AvatarAssetState: 'PENDING_UPLOAD' | 'PENDING_SCAN' | 'ACTIVE' | 'REJECTED';
         readonly AvatarUploadPolicy: {
@@ -4861,7 +5007,7 @@ export type components = {
         /** @description NFKC-normalized, trimmed plain text without control characters or HTML. Never log or copy to generic outbox/job data. */
         readonly ChatText: string;
         /** @enum {string} */
-        readonly ClientPlatform: 'WEB' | 'TMA';
+        readonly ClientPlatform: 'WEB' | 'TMA' | 'MOBILE';
         readonly Club: {
             readonly createdAt: components['schemas']['Timestamp'];
             readonly description: string;
@@ -5020,7 +5166,7 @@ export type components = {
             readonly weeklyEventCap: number;
         };
         /** @enum {string} */
-        readonly CommunicationPlatform: 'WEB' | 'TMA';
+        readonly CommunicationPlatform: 'WEB' | 'TMA' | 'MOBILE';
         readonly CommunicationResponseHeaders: Record<string, never>;
         readonly CompleteOnboarding: {
             /** Format: int32 */
@@ -6124,6 +6270,93 @@ export type components = {
             /** @enum {string} */
             readonly status: 'RECEIVED';
         };
+        readonly MobileAppVersion: string;
+        readonly MobileDeepLinkTarget:
+            | {
+                  /** @enum {string} */
+                  readonly kind: 'MATCHES';
+              }
+            | {
+                  /** @enum {string} */
+                  readonly kind: 'MATCH';
+                  readonly matchId: components['schemas']['Uuid'];
+              }
+            | {
+                  /** @enum {string} */
+                  readonly kind: 'MATCH_CHAT';
+                  readonly matchId: components['schemas']['Uuid'];
+              }
+            | {
+                  /** @enum {string} */
+                  readonly kind: 'VENUES';
+              }
+            | {
+                  /** @enum {string} */
+                  readonly kind: 'VENUE';
+                  readonly venueId: components['schemas']['Uuid'];
+              }
+            | {
+                  /** @enum {string} */
+                  readonly kind: 'NOTIFICATIONS';
+              }
+            | {
+                  /** @enum {string} */
+                  readonly kind: 'PROFILE';
+              }
+            | {
+                  /** @enum {string} */
+                  readonly kind: 'PLAYER';
+                  readonly playerId: components['schemas']['Uuid'];
+              }
+            | {
+                  /** @enum {string} */
+                  readonly kind: 'ACCOUNT';
+              }
+            | {
+                  /** @enum {string} */
+                  readonly kind: 'SAFETY';
+              }
+            | {
+                  /** @enum {string} */
+                  readonly kind: 'SAFETY_RECEIPT';
+                  readonly receiptId: components['schemas']['Uuid'];
+              };
+        /** @enum {string} */
+        readonly MobileOperatingSystem: 'IOS' | 'ANDROID';
+        /** @description Rotating native refresh credential returned only in a MOBILE response body. Store in Keychain/Keystore-backed secure storage; never put it in a URL, cookie, log, analytics, clipboard, AsyncStorage or backup. */
+        readonly NativeAuthenticatedSession: {
+            readonly destination: components['schemas']['MobileDeepLinkTarget'] | null;
+            readonly refreshExpiresAt: components['schemas']['Timestamp'];
+            readonly refreshToken: components['schemas']['IdentitySecret'];
+        } & components['schemas']['AccessSession'];
+        /** @description Unpadded base64url SHA-256 digest of a native verifier (S256). It is safe to bind to a pending login link but is not a credential. */
+        readonly NativeCodeChallenge: string;
+        /** @description High-entropy native verifier generated on-device. Never log or persist outside Keychain/Keystore-backed secure storage. */
+        readonly NativeCodeVerifier: string;
+        readonly NativeLoginEmailConsume: {
+            readonly codeVerifier: components['schemas']['NativeCodeVerifier'];
+            /** @enum {string} */
+            readonly platform: 'MOBILE';
+            readonly token: components['schemas']['IdentitySecret'];
+        };
+        readonly NativeLoginEmailRequest: {
+            readonly codeChallenge: components['schemas']['NativeCodeChallenge'];
+            readonly destination?: components['schemas']['MobileDeepLinkTarget'];
+            readonly email: components['schemas']['EmailInput'];
+            /** @enum {string} */
+            readonly platform: 'MOBILE';
+        };
+        readonly NativeRefreshRequest: {
+            readonly refreshToken: components['schemas']['IdentitySecret'];
+        };
+        /** @description Neutral lock-screen payload. notificationId is an opaque refetch signal, not proof of state or read. No chat text, player, venue, address, safety data, route, token or provider URL is allowed. */
+        readonly NeutralPushPayload: {
+            /** @enum {string} */
+            readonly action: 'OPEN_NOTIFICATION';
+            readonly notificationId: components['schemas']['Uuid'];
+            /** @enum {number} */
+            readonly schemaVersion: 1;
+        };
         /** @enum {string} */
         readonly NoShowReason: 'DID_NOT_ARRIVE' | 'LEFT_BEFORE_PLAY' | 'UNREACHABLE_AT_START';
         readonly NoShowReportSubmission: {
@@ -6138,6 +6371,8 @@ export type components = {
             readonly createdAt: components['schemas']['Timestamp'];
             readonly deliveries: readonly components['schemas']['NotificationDelivery'][];
             readonly id: components['schemas']['Uuid'];
+            /** @description Closed structured destination for native navigation. Null means open the notification inbox. It never contains a URL, query, fragment, secret or mutation command. */
+            readonly mobileTarget?: components['schemas']['MobileDeepLinkTarget'] | null;
             readonly readAt: components['schemas']['Timestamp'] | null;
             readonly route: components['schemas']['SafeNotificationRoute'];
             readonly type: components['schemas']['NotificationType'];
@@ -6145,7 +6380,7 @@ export type components = {
         /** @enum {string} */
         readonly NotificationCategory: 'ROSTER' | 'REQUESTS' | 'MATCH_CRITICAL' | 'REMINDERS' | 'RESULTS' | 'CHAT';
         /** @enum {string} */
-        readonly NotificationChannel: 'IN_APP' | 'TELEGRAM' | 'EMAIL';
+        readonly NotificationChannel: 'IN_APP' | 'TELEGRAM' | 'EMAIL' | 'PUSH';
         readonly NotificationChannelPreference: {
             readonly category: components['schemas']['NotificationCategory'];
             readonly channel: components['schemas']['NotificationChannel'];
@@ -6153,7 +6388,7 @@ export type components = {
         };
         readonly NotificationDelivery: {
             /** @enum {string} */
-            readonly channel: 'TELEGRAM' | 'EMAIL';
+            readonly channel: 'TELEGRAM' | 'EMAIL' | 'PUSH';
             readonly id: components['schemas']['Uuid'];
             readonly lastAttemptAt: components['schemas']['Timestamp'] | null;
             readonly notBefore: components['schemas']['Timestamp'];
@@ -6172,10 +6407,14 @@ export type components = {
             | 'SUPPRESSED'
             | 'QUARANTINED';
         readonly NotificationDevice: {
+            readonly activePushRegistration?: components['schemas']['PushRegistration'] | null;
             readonly createdAt: components['schemas']['Timestamp'];
             readonly installationId: components['schemas']['UuidV4'];
             readonly lastSeenAt: components['schemas']['Timestamp'];
             readonly platform: components['schemas']['CommunicationPlatform'];
+        };
+        readonly NotificationDevicePage: {
+            readonly items: readonly components['schemas']['NotificationDevice'][];
         };
         readonly NotificationPage: {
             readonly items: readonly components['schemas']['Notification'][];
@@ -6524,10 +6763,30 @@ export type components = {
             /** Format: int32 */
             readonly expectedVersion: number;
         };
+        /** @enum {string} */
+        readonly PushEnvironment: 'SANDBOX' | 'PRODUCTION';
+        readonly PushRegistration: {
+            readonly appVersion: components['schemas']['MobileAppVersion'];
+            readonly createdAt: components['schemas']['Timestamp'];
+            readonly environment: components['schemas']['PushEnvironment'];
+            readonly expiresAt: components['schemas']['Timestamp'];
+            readonly id: components['schemas']['Uuid'];
+            readonly installationId: components['schemas']['UuidV4'];
+            readonly lastSeenAt: components['schemas']['Timestamp'];
+            readonly operatingSystem: components['schemas']['MobileOperatingSystem'];
+            readonly revokedAt: components['schemas']['Timestamp'] | null;
+        };
+        /** @description Opaque OS/provider push token accepted only in a TLS request body. It is encrypted at rest, keyed by HMAC for deduplication, and never returned, logged, audited, placed in events or sent to analytics. */
+        readonly PushToken: string;
         readonly QuietHours: {
             readonly enabled: boolean;
             readonly endLocal: string;
             readonly startLocal: string;
+        };
+        readonly RealtimeTicket: {
+            readonly expiresAt: components['schemas']['Timestamp'];
+            /** @description Single-use secret presented as the first WebSocket message, never in a URL or log. */
+            readonly ticket: components['schemas']['WebSocketTicket'];
         };
         /** @description Stable local calendar position without an offset; interpreted only with the rule timezone and DST policy. */
         readonly RecurringCalendarKey: string;
@@ -6597,6 +6856,12 @@ export type components = {
         };
         /** @enum {string} */
         readonly RecurringOccurrenceState: 'MATERIALIZED' | 'SKIPPED_DST_GAP' | 'SKIPPED_PAUSE';
+        readonly RegisterPushToken: {
+            readonly appVersion: components['schemas']['MobileAppVersion'];
+            readonly environment: components['schemas']['PushEnvironment'];
+            readonly operatingSystem: components['schemas']['MobileOperatingSystem'];
+            readonly token: components['schemas']['PushToken'];
+        };
         readonly RegisterTournamentInput: {
             /** Format: int32 */
             readonly expectedVersion: number;
@@ -7458,6 +7723,7 @@ export type components = {
             readonly reasonCode: components['schemas']['TournamentReasonCode'];
             readonly winnerEntrantId: components['schemas']['Uuid'] | null;
         };
+        readonly WebSocketTicket: string;
         /** @enum {string} */
         readonly Weekday: 'MONDAY' | 'TUESDAY' | 'WEDNESDAY' | 'THURSDAY' | 'FRIDAY' | 'SATURDAY' | 'SUNDAY';
         readonly WithdrawalRequest: {
@@ -7531,6 +7797,10 @@ export type components = {
         readonly 'MatchSearchFilters.startsFrom': components['schemas']['Timestamp'];
         readonly 'MatchSearchFilters.startsTo': components['schemas']['Timestamp'];
         readonly MutationKey: components['schemas']['UuidV4'];
+        /** @description Required with Origin for WEB/TMA sessions and validated against the browser context cookie. Omit for MOBILE sessions, whose bearer credential is non-ambient. Supplying only one browser header is rejected. */
+        readonly 'SessionMutationHeaders.csrfToken': components['schemas']['IdentitySecret'];
+        /** @description Required with X-CSRF-Token for WEB/TMA sessions and rejected when missing or cross-origin. Omit for MOBILE sessions; the server derives the platform from the access credential and never trusts a caller platform header. */
+        readonly 'SessionMutationHeaders.origin': string;
         readonly 'TournamentSearchFilters.clubId': components['schemas']['Uuid'];
         readonly 'TournamentSearchFilters.format': components['schemas']['TournamentFormatCode'];
         readonly 'TournamentSearchFilters.query': string;
@@ -7546,6 +7816,7 @@ export type components = {
     headers: never;
     pathItems: never;
 };
+export type SchemaAccessSession = components['schemas']['AccessSession'];
 export type SchemaAchievementAward = components['schemas']['AchievementAward'];
 export type SchemaAchievementAwardState = components['schemas']['AchievementAwardState'];
 export type SchemaAchievementDefinition = components['schemas']['AchievementDefinition'];
@@ -7873,6 +8144,16 @@ export type SchemaMessage = components['schemas']['Message'];
 export type SchemaMessageKind = components['schemas']['MessageKind'];
 export type SchemaMessagePage = components['schemas']['MessagePage'];
 export type SchemaMessageReportReceipt = components['schemas']['MessageReportReceipt'];
+export type SchemaMobileAppVersion = components['schemas']['MobileAppVersion'];
+export type SchemaMobileDeepLinkTarget = components['schemas']['MobileDeepLinkTarget'];
+export type SchemaMobileOperatingSystem = components['schemas']['MobileOperatingSystem'];
+export type SchemaNativeAuthenticatedSession = components['schemas']['NativeAuthenticatedSession'];
+export type SchemaNativeCodeChallenge = components['schemas']['NativeCodeChallenge'];
+export type SchemaNativeCodeVerifier = components['schemas']['NativeCodeVerifier'];
+export type SchemaNativeLoginEmailConsume = components['schemas']['NativeLoginEmailConsume'];
+export type SchemaNativeLoginEmailRequest = components['schemas']['NativeLoginEmailRequest'];
+export type SchemaNativeRefreshRequest = components['schemas']['NativeRefreshRequest'];
+export type SchemaNeutralPushPayload = components['schemas']['NeutralPushPayload'];
 export type SchemaNoShowReason = components['schemas']['NoShowReason'];
 export type SchemaNoShowReportSubmission = components['schemas']['NoShowReportSubmission'];
 export type SchemaNoShowResponseDisposition = components['schemas']['NoShowResponseDisposition'];
@@ -7883,6 +8164,7 @@ export type SchemaNotificationChannelPreference = components['schemas']['Notific
 export type SchemaNotificationDelivery = components['schemas']['NotificationDelivery'];
 export type SchemaNotificationDeliveryStatus = components['schemas']['NotificationDeliveryStatus'];
 export type SchemaNotificationDevice = components['schemas']['NotificationDevice'];
+export type SchemaNotificationDevicePage = components['schemas']['NotificationDevicePage'];
 export type SchemaNotificationPage = components['schemas']['NotificationPage'];
 export type SchemaNotificationPreference = components['schemas']['NotificationPreference'];
 export type SchemaNotificationReadReceipt = components['schemas']['NotificationReadReceipt'];
@@ -7932,7 +8214,11 @@ export type SchemaPublicReliabilityStatistics = components['schemas']['PublicRel
 export type SchemaPublicReviewAggregate = components['schemas']['PublicReviewAggregate'];
 export type SchemaPublicThresholdedPercentage = components['schemas']['PublicThresholdedPercentage'];
 export type SchemaPublishMatch = components['schemas']['PublishMatch'];
+export type SchemaPushEnvironment = components['schemas']['PushEnvironment'];
+export type SchemaPushRegistration = components['schemas']['PushRegistration'];
+export type SchemaPushToken = components['schemas']['PushToken'];
 export type SchemaQuietHours = components['schemas']['QuietHours'];
+export type SchemaRealtimeTicket = components['schemas']['RealtimeTicket'];
 export type SchemaRecurringCalendarKey = components['schemas']['RecurringCalendarKey'];
 export type SchemaRecurringDstGapPolicy = components['schemas']['RecurringDstGapPolicy'];
 export type SchemaRecurringDstOverlapPolicy = components['schemas']['RecurringDstOverlapPolicy'];
@@ -7944,6 +8230,7 @@ export type SchemaRecurringMatchRulePage = components['schemas']['RecurringMatch
 export type SchemaRecurringMatchRuleState = components['schemas']['RecurringMatchRuleState'];
 export type SchemaRecurringMatchTemplate = components['schemas']['RecurringMatchTemplate'];
 export type SchemaRecurringOccurrenceState = components['schemas']['RecurringOccurrenceState'];
+export type SchemaRegisterPushToken = components['schemas']['RegisterPushToken'];
 export type SchemaRegisterTournamentInput = components['schemas']['RegisterTournamentInput'];
 export type SchemaRemoveDuprProfileLink = components['schemas']['RemoveDuprProfileLink'];
 export type SchemaReportMessageCommand = components['schemas']['ReportMessageCommand'];
@@ -8077,6 +8364,7 @@ export type SchemaVenueVerificationState = components['schemas']['VenueVerificat
 export type SchemaWaitlistEntry = components['schemas']['WaitlistEntry'];
 export type SchemaWaitlistEntryState = components['schemas']['WaitlistEntryState'];
 export type SchemaWalkoverTournamentMatchInput = components['schemas']['WalkoverTournamentMatchInput'];
+export type SchemaWebSocketTicket = components['schemas']['WebSocketTicket'];
 export type SchemaWeekday = components['schemas']['Weekday'];
 export type SchemaWithdrawalRequest = components['schemas']['WithdrawalRequest'];
 export type SchemaXpAmount = components['schemas']['XpAmount'];
@@ -8101,6 +8389,8 @@ export type ParameterMatchSearchFiltersSkillLevel = components['parameters']['Ma
 export type ParameterMatchSearchFiltersStartsFrom = components['parameters']['MatchSearchFilters.startsFrom'];
 export type ParameterMatchSearchFiltersStartsTo = components['parameters']['MatchSearchFilters.startsTo'];
 export type ParameterMutationKey = components['parameters']['MutationKey'];
+export type ParameterSessionMutationHeadersCsrfToken = components['parameters']['SessionMutationHeaders.csrfToken'];
+export type ParameterSessionMutationHeadersOrigin = components['parameters']['SessionMutationHeaders.origin'];
 export type ParameterTournamentSearchFiltersClubId = components['parameters']['TournamentSearchFilters.clubId'];
 export type ParameterTournamentSearchFiltersFormat = components['parameters']['TournamentSearchFilters.format'];
 export type ParameterTournamentSearchFiltersQuery = components['parameters']['TournamentSearchFilters.query'];
@@ -19533,15 +19823,15 @@ export interface operations {
     readonly logoutAllSessions: {
         readonly parameters: {
             readonly query?: never;
-            readonly header: {
+            readonly header?: {
                 /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
                 readonly 'Accept-Language'?: string;
-                /** @description Exact browser origin from the configured allowlist; required even for anonymous mutations. Cross-site and missing origins are rejected. */
-                readonly Origin: components['parameters']['BrowserMutationHeaders.origin'];
+                /** @description Required with X-CSRF-Token for WEB/TMA sessions and rejected when missing or cross-origin. Omit for MOBILE sessions; the server derives the platform from the access credential and never trusts a caller platform header. */
+                readonly Origin?: components['parameters']['SessionMutationHeaders.origin'];
                 /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
                 readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
-                /** @description Secret bound to the HttpOnly browser context cookie from GET /auth/context. Never log. Validate origin, context cookie and token together before mutation. */
-                readonly 'X-CSRF-Token': components['parameters']['BrowserMutationHeaders.csrfToken'];
+                /** @description Required with Origin for WEB/TMA sessions and validated against the browser context cookie. Omit for MOBILE sessions, whose bearer credential is non-ambient. Supplying only one browser header is rejected. */
+                readonly 'X-CSRF-Token'?: components['parameters']['SessionMutationHeaders.csrfToken'];
                 /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
                 readonly 'X-Request-ID'?: components['schemas']['RequestId'];
             };
@@ -20003,6 +20293,678 @@ export interface operations {
                                 | 'REAUTHENTICATION_REQUIRED'
                                 | 'ONBOARDING_REQUIRED'
                                 | 'CONSENT_REQUIRED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Client error */
+            readonly 429: {
+                headers: {
+                    readonly 'Cache-Control': 'no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    readonly Pragma: 'no-cache';
+                    /** @description Non-negative whole seconds before the client should retry. */
+                    readonly 'Retry-After': number;
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'RATE_LIMITED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Service unavailable. */
+            readonly 503: {
+                headers: {
+                    readonly 'Cache-Control': 'no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    readonly Pragma: 'no-cache';
+                    /** @description Non-negative whole seconds before the client should retry. */
+                    readonly 'Retry-After': number;
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'AUTH_TEMPORARILY_UNAVAILABLE';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+        };
+    };
+    readonly logoutNativeSession: {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: {
+                /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
+                readonly 'Accept-Language'?: string;
+                /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
+                readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
+                /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
+                readonly 'X-Request-ID'?: components['schemas']['RequestId'];
+            };
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        readonly requestBody: {
+            readonly content: {
+                readonly 'application/json': components['schemas']['NativeRefreshRequest'];
+            };
+        };
+        readonly responses: {
+            /** @description The request has succeeded. */
+            readonly 200: {
+                headers: {
+                    readonly 'Cache-Control': 'no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    readonly 'Idempotency-Replayed'?: boolean;
+                    readonly Pragma: 'no-cache';
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': components['schemas']['LogoutResult'];
+                };
+            };
+            /** @description The server could not understand the request due to invalid syntax. */
+            readonly 400: {
+                headers: {
+                    readonly 'Cache-Control': 'no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    readonly Pragma: 'no-cache';
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'VALIDATION_FAILED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Access is forbidden. */
+            readonly 403: {
+                headers: {
+                    readonly 'Cache-Control': 'no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    readonly Pragma: 'no-cache';
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code:
+                                | 'REQUEST_NOT_ALLOWED'
+                                | 'REAUTHENTICATION_REQUIRED'
+                                | 'ONBOARDING_REQUIRED'
+                                | 'CONSENT_REQUIRED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Client error */
+            readonly 429: {
+                headers: {
+                    readonly 'Cache-Control': 'no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    readonly Pragma: 'no-cache';
+                    /** @description Non-negative whole seconds before the client should retry. */
+                    readonly 'Retry-After': number;
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'RATE_LIMITED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Service unavailable. */
+            readonly 503: {
+                headers: {
+                    readonly 'Cache-Control': 'no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    readonly Pragma: 'no-cache';
+                    /** @description Non-negative whole seconds before the client should retry. */
+                    readonly 'Retry-After': number;
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'AUTH_TEMPORARILY_UNAVAILABLE';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+        };
+    };
+    readonly consumeNativeMagicLink: {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: {
+                /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
+                readonly 'Accept-Language'?: string;
+                /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
+                readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
+                /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
+                readonly 'X-Request-ID'?: components['schemas']['RequestId'];
+            };
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        readonly requestBody: {
+            readonly content: {
+                readonly 'application/json': components['schemas']['NativeLoginEmailConsume'];
+            };
+        };
+        readonly responses: {
+            /** @description The request has succeeded. */
+            readonly 200: {
+                headers: {
+                    readonly 'Cache-Control': 'no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    readonly 'Idempotency-Replayed'?: boolean;
+                    readonly Pragma: 'no-cache';
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': components['schemas']['NativeAuthenticatedSession'];
+                };
+            };
+            /** @description The server could not understand the request due to invalid syntax. */
+            readonly 400: {
+                headers: {
+                    readonly 'Cache-Control': 'no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    readonly Pragma: 'no-cache';
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'VALIDATION_FAILED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Access is unauthorized. */
+            readonly 401: {
+                headers: {
+                    readonly 'Cache-Control': 'no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    readonly Pragma: 'no-cache';
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'MAGIC_LINK_INVALID';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Access is forbidden. */
+            readonly 403: {
+                headers: {
+                    readonly 'Cache-Control': 'no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    readonly Pragma: 'no-cache';
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code:
+                                | 'REQUEST_NOT_ALLOWED'
+                                | 'REAUTHENTICATION_REQUIRED'
+                                | 'ONBOARDING_REQUIRED'
+                                | 'CONSENT_REQUIRED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Client error */
+            readonly 429: {
+                headers: {
+                    readonly 'Cache-Control': 'no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    readonly Pragma: 'no-cache';
+                    /** @description Non-negative whole seconds before the client should retry. */
+                    readonly 'Retry-After': number;
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'RATE_LIMITED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Service unavailable. */
+            readonly 503: {
+                headers: {
+                    readonly 'Cache-Control': 'no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    readonly Pragma: 'no-cache';
+                    /** @description Non-negative whole seconds before the client should retry. */
+                    readonly 'Retry-After': number;
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'AUTH_TEMPORARILY_UNAVAILABLE';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+        };
+    };
+    readonly requestNativeMagicLink: {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: {
+                /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
+                readonly 'Accept-Language'?: string;
+                /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
+                readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
+                /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
+                readonly 'X-Request-ID'?: components['schemas']['RequestId'];
+            };
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        readonly requestBody: {
+            readonly content: {
+                readonly 'application/json': components['schemas']['NativeLoginEmailRequest'];
+            };
+        };
+        readonly responses: {
+            /** @description The request has been accepted for processing, but processing has not yet completed. */
+            readonly 202: {
+                headers: {
+                    readonly 'Cache-Control': 'no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    readonly 'Idempotency-Replayed'?: boolean;
+                    readonly Pragma: 'no-cache';
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': components['schemas']['MagicLinkRequested'];
+                };
+            };
+            /** @description The server could not understand the request due to invalid syntax. */
+            readonly 400: {
+                headers: {
+                    readonly 'Cache-Control': 'no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    readonly Pragma: 'no-cache';
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'VALIDATION_FAILED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Access is forbidden. */
+            readonly 403: {
+                headers: {
+                    readonly 'Cache-Control': 'no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    readonly Pragma: 'no-cache';
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code:
+                                | 'REQUEST_NOT_ALLOWED'
+                                | 'REAUTHENTICATION_REQUIRED'
+                                | 'ONBOARDING_REQUIRED'
+                                | 'CONSENT_REQUIRED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Client error */
+            readonly 429: {
+                headers: {
+                    readonly 'Cache-Control': 'no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    readonly Pragma: 'no-cache';
+                    /** @description Non-negative whole seconds before the client should retry. */
+                    readonly 'Retry-After': number;
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'RATE_LIMITED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Service unavailable. */
+            readonly 503: {
+                headers: {
+                    readonly 'Cache-Control': 'no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    readonly Pragma: 'no-cache';
+                    /** @description Non-negative whole seconds before the client should retry. */
+                    readonly 'Retry-After': number;
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'AUTH_TEMPORARILY_UNAVAILABLE';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+        };
+    };
+    readonly refreshNativeSession: {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: {
+                /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
+                readonly 'Accept-Language'?: string;
+                /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
+                readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
+                /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
+                readonly 'X-Request-ID'?: components['schemas']['RequestId'];
+            };
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        readonly requestBody: {
+            readonly content: {
+                readonly 'application/json': components['schemas']['NativeRefreshRequest'];
+            };
+        };
+        readonly responses: {
+            /** @description The request has succeeded. */
+            readonly 200: {
+                headers: {
+                    readonly 'Cache-Control': 'no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    readonly 'Idempotency-Replayed'?: boolean;
+                    readonly Pragma: 'no-cache';
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': components['schemas']['NativeAuthenticatedSession'];
+                };
+            };
+            /** @description The server could not understand the request due to invalid syntax. */
+            readonly 400: {
+                headers: {
+                    readonly 'Cache-Control': 'no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    readonly Pragma: 'no-cache';
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'VALIDATION_FAILED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Access is unauthorized. */
+            readonly 401: {
+                headers: {
+                    readonly 'Cache-Control': 'no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    readonly Pragma: 'no-cache';
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'SESSION_INVALID';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Access is forbidden. */
+            readonly 403: {
+                headers: {
+                    readonly 'Cache-Control': 'no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    readonly Pragma: 'no-cache';
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code:
+                                | 'REQUEST_NOT_ALLOWED'
+                                | 'REAUTHENTICATION_REQUIRED'
+                                | 'ONBOARDING_REQUIRED'
+                                | 'CONSENT_REQUIRED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description The request conflicts with the current state of the server. */
+            readonly 409: {
+                headers: {
+                    readonly 'Cache-Control': 'no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    readonly Pragma: 'no-cache';
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code:
+                                | 'IDENTITY_LINK_FAILED'
+                                | 'LAST_IDENTITY_REQUIRED'
+                                | 'DRAFT_VERSION_CONFLICT'
+                                | 'CONSENT_VERSION_CHANGED'
+                                | 'IDEMPOTENCY_KEY_REUSED';
                             readonly details?: readonly components['schemas']['ErrorDetail'][];
                             readonly message: string;
                         };
@@ -27940,12 +28902,12 @@ export interface operations {
                 /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
                 readonly 'Accept-Language'?: string;
                 readonly 'Idempotency-Key': components['parameters']['MutationKey'];
-                /** @description Exact browser origin from the configured allowlist; required even for anonymous mutations. Cross-site and missing origins are rejected. */
-                readonly Origin: components['parameters']['BrowserMutationHeaders.origin'];
+                /** @description Required with X-CSRF-Token for WEB/TMA sessions and rejected when missing or cross-origin. Omit for MOBILE sessions; the server derives the platform from the access credential and never trusts a caller platform header. */
+                readonly Origin?: components['parameters']['SessionMutationHeaders.origin'];
                 /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
                 readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
-                /** @description Secret bound to the HttpOnly browser context cookie from GET /auth/context. Never log. Validate origin, context cookie and token together before mutation. */
-                readonly 'X-CSRF-Token': components['parameters']['BrowserMutationHeaders.csrfToken'];
+                /** @description Required with Origin for WEB/TMA sessions and validated against the browser context cookie. Omit for MOBILE sessions, whose bearer credential is non-ambient. Supplying only one browser header is rejected. */
+                readonly 'X-CSRF-Token'?: components['parameters']['SessionMutationHeaders.csrfToken'];
                 /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
                 readonly 'X-Request-ID'?: components['schemas']['RequestId'];
             };
@@ -28061,7 +29023,12 @@ export interface operations {
                     readonly 'application/json': {
                         readonly error: {
                             /** @enum {string} */
-                            readonly code: 'CONVERSATION_NOT_FOUND' | 'MESSAGE_NOT_FOUND' | 'NOTIFICATION_NOT_FOUND';
+                            readonly code:
+                                | 'CONVERSATION_NOT_FOUND'
+                                | 'MESSAGE_NOT_FOUND'
+                                | 'NOTIFICATION_NOT_FOUND'
+                                | 'NOTIFICATION_DEVICE_NOT_FOUND'
+                                | 'PUSH_REGISTRATION_NOT_FOUND';
                             readonly details?: readonly components['schemas']['ErrorDetail'][];
                             readonly message: string;
                         };
@@ -28131,12 +29098,12 @@ export interface operations {
                 /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
                 readonly 'Accept-Language'?: string;
                 readonly 'Idempotency-Key': components['parameters']['MutationKey'];
-                /** @description Exact browser origin from the configured allowlist; required even for anonymous mutations. Cross-site and missing origins are rejected. */
-                readonly Origin: components['parameters']['BrowserMutationHeaders.origin'];
+                /** @description Required with X-CSRF-Token for WEB/TMA sessions and rejected when missing or cross-origin. Omit for MOBILE sessions; the server derives the platform from the access credential and never trusts a caller platform header. */
+                readonly Origin?: components['parameters']['SessionMutationHeaders.origin'];
                 /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
                 readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
-                /** @description Secret bound to the HttpOnly browser context cookie from GET /auth/context. Never log. Validate origin, context cookie and token together before mutation. */
-                readonly 'X-CSRF-Token': components['parameters']['BrowserMutationHeaders.csrfToken'];
+                /** @description Required with Origin for WEB/TMA sessions and validated against the browser context cookie. Omit for MOBILE sessions, whose bearer credential is non-ambient. Supplying only one browser header is rejected. */
+                readonly 'X-CSRF-Token'?: components['parameters']['SessionMutationHeaders.csrfToken'];
                 /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
                 readonly 'X-Request-ID'?: components['schemas']['RequestId'];
             };
@@ -28250,7 +29217,12 @@ export interface operations {
                     readonly 'application/json': {
                         readonly error: {
                             /** @enum {string} */
-                            readonly code: 'CONVERSATION_NOT_FOUND' | 'MESSAGE_NOT_FOUND' | 'NOTIFICATION_NOT_FOUND';
+                            readonly code:
+                                | 'CONVERSATION_NOT_FOUND'
+                                | 'MESSAGE_NOT_FOUND'
+                                | 'NOTIFICATION_NOT_FOUND'
+                                | 'NOTIFICATION_DEVICE_NOT_FOUND'
+                                | 'PUSH_REGISTRATION_NOT_FOUND';
                             readonly details?: readonly components['schemas']['ErrorDetail'][];
                             readonly message: string;
                         };
@@ -31425,12 +32397,12 @@ export interface operations {
                 /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
                 readonly 'Accept-Language'?: string;
                 readonly 'Idempotency-Key': components['parameters']['MutationKey'];
-                /** @description Exact browser origin from the configured allowlist; required even for anonymous mutations. Cross-site and missing origins are rejected. */
-                readonly Origin: components['parameters']['BrowserMutationHeaders.origin'];
+                /** @description Required with X-CSRF-Token for WEB/TMA sessions and rejected when missing or cross-origin. Omit for MOBILE sessions; the server derives the platform from the access credential and never trusts a caller platform header. */
+                readonly Origin?: components['parameters']['SessionMutationHeaders.origin'];
                 /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
                 readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
-                /** @description Secret bound to the HttpOnly browser context cookie from GET /auth/context. Never log. Validate origin, context cookie and token together before mutation. */
-                readonly 'X-CSRF-Token': components['parameters']['BrowserMutationHeaders.csrfToken'];
+                /** @description Required with Origin for WEB/TMA sessions and validated against the browser context cookie. Omit for MOBILE sessions, whose bearer credential is non-ambient. Supplying only one browser header is rejected. */
+                readonly 'X-CSRF-Token'?: components['parameters']['SessionMutationHeaders.csrfToken'];
                 /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
                 readonly 'X-Request-ID'?: components['schemas']['RequestId'];
             };
@@ -31743,12 +32715,12 @@ export interface operations {
                 /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
                 readonly 'Accept-Language'?: string;
                 readonly 'Idempotency-Key': components['parameters']['MutationKey'];
-                /** @description Exact browser origin from the configured allowlist; required even for anonymous mutations. Cross-site and missing origins are rejected. */
-                readonly Origin: components['parameters']['BrowserMutationHeaders.origin'];
+                /** @description Required with X-CSRF-Token for WEB/TMA sessions and rejected when missing or cross-origin. Omit for MOBILE sessions; the server derives the platform from the access credential and never trusts a caller platform header. */
+                readonly Origin?: components['parameters']['SessionMutationHeaders.origin'];
                 /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
                 readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
-                /** @description Secret bound to the HttpOnly browser context cookie from GET /auth/context. Never log. Validate origin, context cookie and token together before mutation. */
-                readonly 'X-CSRF-Token': components['parameters']['BrowserMutationHeaders.csrfToken'];
+                /** @description Required with Origin for WEB/TMA sessions and validated against the browser context cookie. Omit for MOBILE sessions, whose bearer credential is non-ambient. Supplying only one browser header is rejected. */
+                readonly 'X-CSRF-Token'?: components['parameters']['SessionMutationHeaders.csrfToken'];
                 /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
                 readonly 'X-Request-ID'?: components['schemas']['RequestId'];
             };
@@ -31944,12 +32916,12 @@ export interface operations {
                 /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
                 readonly 'Accept-Language'?: string;
                 readonly 'Idempotency-Key': components['parameters']['MutationKey'];
-                /** @description Exact browser origin from the configured allowlist; required even for anonymous mutations. Cross-site and missing origins are rejected. */
-                readonly Origin: components['parameters']['BrowserMutationHeaders.origin'];
+                /** @description Required with X-CSRF-Token for WEB/TMA sessions and rejected when missing or cross-origin. Omit for MOBILE sessions; the server derives the platform from the access credential and never trusts a caller platform header. */
+                readonly Origin?: components['parameters']['SessionMutationHeaders.origin'];
                 /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
                 readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
-                /** @description Secret bound to the HttpOnly browser context cookie from GET /auth/context. Never log. Validate origin, context cookie and token together before mutation. */
-                readonly 'X-CSRF-Token': components['parameters']['BrowserMutationHeaders.csrfToken'];
+                /** @description Required with Origin for WEB/TMA sessions and validated against the browser context cookie. Omit for MOBILE sessions, whose bearer credential is non-ambient. Supplying only one browser header is rejected. */
+                readonly 'X-CSRF-Token'?: components['parameters']['SessionMutationHeaders.csrfToken'];
                 /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
                 readonly 'X-Request-ID'?: components['schemas']['RequestId'];
             };
@@ -32151,12 +33123,12 @@ export interface operations {
                 /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
                 readonly 'Accept-Language'?: string;
                 readonly 'Idempotency-Key': components['parameters']['MutationKey'];
-                /** @description Exact browser origin from the configured allowlist; required even for anonymous mutations. Cross-site and missing origins are rejected. */
-                readonly Origin: components['parameters']['BrowserMutationHeaders.origin'];
+                /** @description Required with X-CSRF-Token for WEB/TMA sessions and rejected when missing or cross-origin. Omit for MOBILE sessions; the server derives the platform from the access credential and never trusts a caller platform header. */
+                readonly Origin?: components['parameters']['SessionMutationHeaders.origin'];
                 /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
                 readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
-                /** @description Secret bound to the HttpOnly browser context cookie from GET /auth/context. Never log. Validate origin, context cookie and token together before mutation. */
-                readonly 'X-CSRF-Token': components['parameters']['BrowserMutationHeaders.csrfToken'];
+                /** @description Required with Origin for WEB/TMA sessions and validated against the browser context cookie. Omit for MOBILE sessions, whose bearer credential is non-ambient. Supplying only one browser header is rejected. */
+                readonly 'X-CSRF-Token'?: components['parameters']['SessionMutationHeaders.csrfToken'];
                 /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
                 readonly 'X-Request-ID'?: components['schemas']['RequestId'];
             };
@@ -32687,12 +33659,12 @@ export interface operations {
                 /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
                 readonly 'Accept-Language'?: string;
                 readonly 'Idempotency-Key': components['parameters']['MutationKey'];
-                /** @description Exact browser origin from the configured allowlist; required even for anonymous mutations. Cross-site and missing origins are rejected. */
-                readonly Origin: components['parameters']['BrowserMutationHeaders.origin'];
+                /** @description Required with X-CSRF-Token for WEB/TMA sessions and rejected when missing or cross-origin. Omit for MOBILE sessions; the server derives the platform from the access credential and never trusts a caller platform header. */
+                readonly Origin?: components['parameters']['SessionMutationHeaders.origin'];
                 /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
                 readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
-                /** @description Secret bound to the HttpOnly browser context cookie from GET /auth/context. Never log. Validate origin, context cookie and token together before mutation. */
-                readonly 'X-CSRF-Token': components['parameters']['BrowserMutationHeaders.csrfToken'];
+                /** @description Required with Origin for WEB/TMA sessions and validated against the browser context cookie. Omit for MOBILE sessions, whose bearer credential is non-ambient. Supplying only one browser header is rejected. */
+                readonly 'X-CSRF-Token'?: components['parameters']['SessionMutationHeaders.csrfToken'];
                 /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
                 readonly 'X-Request-ID'?: components['schemas']['RequestId'];
             };
@@ -32812,7 +33784,12 @@ export interface operations {
                     readonly 'application/json': {
                         readonly error: {
                             /** @enum {string} */
-                            readonly code: 'CONVERSATION_NOT_FOUND' | 'MESSAGE_NOT_FOUND' | 'NOTIFICATION_NOT_FOUND';
+                            readonly code:
+                                | 'CONVERSATION_NOT_FOUND'
+                                | 'MESSAGE_NOT_FOUND'
+                                | 'NOTIFICATION_NOT_FOUND'
+                                | 'NOTIFICATION_DEVICE_NOT_FOUND'
+                                | 'PUSH_REGISTRATION_NOT_FOUND';
                             readonly details?: readonly components['schemas']['ErrorDetail'][];
                             readonly message: string;
                         };
@@ -32884,12 +33861,12 @@ export interface operations {
                 /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
                 readonly 'Accept-Language'?: string;
                 readonly 'Idempotency-Key': components['parameters']['MutationKey'];
-                /** @description Exact browser origin from the configured allowlist; required even for anonymous mutations. Cross-site and missing origins are rejected. */
-                readonly Origin: components['parameters']['BrowserMutationHeaders.origin'];
+                /** @description Required with X-CSRF-Token for WEB/TMA sessions and rejected when missing or cross-origin. Omit for MOBILE sessions; the server derives the platform from the access credential and never trusts a caller platform header. */
+                readonly Origin?: components['parameters']['SessionMutationHeaders.origin'];
                 /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
                 readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
-                /** @description Secret bound to the HttpOnly browser context cookie from GET /auth/context. Never log. Validate origin, context cookie and token together before mutation. */
-                readonly 'X-CSRF-Token': components['parameters']['BrowserMutationHeaders.csrfToken'];
+                /** @description Required with Origin for WEB/TMA sessions and validated against the browser context cookie. Omit for MOBILE sessions, whose bearer credential is non-ambient. Supplying only one browser header is rejected. */
+                readonly 'X-CSRF-Token'?: components['parameters']['SessionMutationHeaders.csrfToken'];
                 /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
                 readonly 'X-Request-ID'?: components['schemas']['RequestId'];
             };
@@ -33006,7 +33983,12 @@ export interface operations {
                     readonly 'application/json': {
                         readonly error: {
                             /** @enum {string} */
-                            readonly code: 'CONVERSATION_NOT_FOUND' | 'MESSAGE_NOT_FOUND' | 'NOTIFICATION_NOT_FOUND';
+                            readonly code:
+                                | 'CONVERSATION_NOT_FOUND'
+                                | 'MESSAGE_NOT_FOUND'
+                                | 'NOTIFICATION_NOT_FOUND'
+                                | 'NOTIFICATION_DEVICE_NOT_FOUND'
+                                | 'PUSH_REGISTRATION_NOT_FOUND';
                             readonly details?: readonly components['schemas']['ErrorDetail'][];
                             readonly message: string;
                         };
@@ -33076,12 +34058,12 @@ export interface operations {
                 /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
                 readonly 'Accept-Language'?: string;
                 readonly 'Idempotency-Key': components['parameters']['MutationKey'];
-                /** @description Exact browser origin from the configured allowlist; required even for anonymous mutations. Cross-site and missing origins are rejected. */
-                readonly Origin: components['parameters']['BrowserMutationHeaders.origin'];
+                /** @description Required with X-CSRF-Token for WEB/TMA sessions and rejected when missing or cross-origin. Omit for MOBILE sessions; the server derives the platform from the access credential and never trusts a caller platform header. */
+                readonly Origin?: components['parameters']['SessionMutationHeaders.origin'];
                 /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
                 readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
-                /** @description Secret bound to the HttpOnly browser context cookie from GET /auth/context. Never log. Validate origin, context cookie and token together before mutation. */
-                readonly 'X-CSRF-Token': components['parameters']['BrowserMutationHeaders.csrfToken'];
+                /** @description Required with Origin for WEB/TMA sessions and validated against the browser context cookie. Omit for MOBILE sessions, whose bearer credential is non-ambient. Supplying only one browser header is rejected. */
+                readonly 'X-CSRF-Token'?: components['parameters']['SessionMutationHeaders.csrfToken'];
                 /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
                 readonly 'X-Request-ID'?: components['schemas']['RequestId'];
             };
@@ -33202,7 +34184,12 @@ export interface operations {
                     readonly 'application/json': {
                         readonly error: {
                             /** @enum {string} */
-                            readonly code: 'CONVERSATION_NOT_FOUND' | 'MESSAGE_NOT_FOUND' | 'NOTIFICATION_NOT_FOUND';
+                            readonly code:
+                                | 'CONVERSATION_NOT_FOUND'
+                                | 'MESSAGE_NOT_FOUND'
+                                | 'NOTIFICATION_NOT_FOUND'
+                                | 'NOTIFICATION_DEVICE_NOT_FOUND'
+                                | 'PUSH_REGISTRATION_NOT_FOUND';
                             readonly details?: readonly components['schemas']['ErrorDetail'][];
                             readonly message: string;
                         };
@@ -33272,12 +34259,12 @@ export interface operations {
                 /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
                 readonly 'Accept-Language'?: string;
                 readonly 'Idempotency-Key': components['parameters']['MutationKey'];
-                /** @description Exact browser origin from the configured allowlist; required even for anonymous mutations. Cross-site and missing origins are rejected. */
-                readonly Origin: components['parameters']['BrowserMutationHeaders.origin'];
+                /** @description Required with X-CSRF-Token for WEB/TMA sessions and rejected when missing or cross-origin. Omit for MOBILE sessions; the server derives the platform from the access credential and never trusts a caller platform header. */
+                readonly Origin?: components['parameters']['SessionMutationHeaders.origin'];
                 /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
                 readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
-                /** @description Secret bound to the HttpOnly browser context cookie from GET /auth/context. Never log. Validate origin, context cookie and token together before mutation. */
-                readonly 'X-CSRF-Token': components['parameters']['BrowserMutationHeaders.csrfToken'];
+                /** @description Required with Origin for WEB/TMA sessions and validated against the browser context cookie. Omit for MOBILE sessions, whose bearer credential is non-ambient. Supplying only one browser header is rejected. */
+                readonly 'X-CSRF-Token'?: components['parameters']['SessionMutationHeaders.csrfToken'];
                 /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
                 readonly 'X-Request-ID'?: components['schemas']['RequestId'];
             };
@@ -33398,7 +34385,12 @@ export interface operations {
                     readonly 'application/json': {
                         readonly error: {
                             /** @enum {string} */
-                            readonly code: 'CONVERSATION_NOT_FOUND' | 'MESSAGE_NOT_FOUND' | 'NOTIFICATION_NOT_FOUND';
+                            readonly code:
+                                | 'CONVERSATION_NOT_FOUND'
+                                | 'MESSAGE_NOT_FOUND'
+                                | 'NOTIFICATION_NOT_FOUND'
+                                | 'NOTIFICATION_DEVICE_NOT_FOUND'
+                                | 'PUSH_REGISTRATION_NOT_FOUND';
                             readonly details?: readonly components['schemas']['ErrorDetail'][];
                             readonly message: string;
                         };
@@ -33468,12 +34460,12 @@ export interface operations {
                 /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
                 readonly 'Accept-Language'?: string;
                 readonly 'Idempotency-Key': components['parameters']['MutationKey'];
-                /** @description Exact browser origin from the configured allowlist; required even for anonymous mutations. Cross-site and missing origins are rejected. */
-                readonly Origin: components['parameters']['BrowserMutationHeaders.origin'];
+                /** @description Required with X-CSRF-Token for WEB/TMA sessions and rejected when missing or cross-origin. Omit for MOBILE sessions; the server derives the platform from the access credential and never trusts a caller platform header. */
+                readonly Origin?: components['parameters']['SessionMutationHeaders.origin'];
                 /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
                 readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
-                /** @description Secret bound to the HttpOnly browser context cookie from GET /auth/context. Never log. Validate origin, context cookie and token together before mutation. */
-                readonly 'X-CSRF-Token': components['parameters']['BrowserMutationHeaders.csrfToken'];
+                /** @description Required with Origin for WEB/TMA sessions and validated against the browser context cookie. Omit for MOBILE sessions, whose bearer credential is non-ambient. Supplying only one browser header is rejected. */
+                readonly 'X-CSRF-Token'?: components['parameters']['SessionMutationHeaders.csrfToken'];
                 /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
                 readonly 'X-Request-ID'?: components['schemas']['RequestId'];
             };
@@ -33593,7 +34585,12 @@ export interface operations {
                     readonly 'application/json': {
                         readonly error: {
                             /** @enum {string} */
-                            readonly code: 'CONVERSATION_NOT_FOUND' | 'MESSAGE_NOT_FOUND' | 'NOTIFICATION_NOT_FOUND';
+                            readonly code:
+                                | 'CONVERSATION_NOT_FOUND'
+                                | 'MESSAGE_NOT_FOUND'
+                                | 'NOTIFICATION_NOT_FOUND'
+                                | 'NOTIFICATION_DEVICE_NOT_FOUND'
+                                | 'PUSH_REGISTRATION_NOT_FOUND';
                             readonly details?: readonly components['schemas']['ErrorDetail'][];
                             readonly message: string;
                         };
@@ -33663,12 +34660,12 @@ export interface operations {
                 /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
                 readonly 'Accept-Language'?: string;
                 readonly 'Idempotency-Key': components['parameters']['MutationKey'];
-                /** @description Exact browser origin from the configured allowlist; required even for anonymous mutations. Cross-site and missing origins are rejected. */
-                readonly Origin: components['parameters']['BrowserMutationHeaders.origin'];
+                /** @description Required with X-CSRF-Token for WEB/TMA sessions and rejected when missing or cross-origin. Omit for MOBILE sessions; the server derives the platform from the access credential and never trusts a caller platform header. */
+                readonly Origin?: components['parameters']['SessionMutationHeaders.origin'];
                 /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
                 readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
-                /** @description Secret bound to the HttpOnly browser context cookie from GET /auth/context. Never log. Validate origin, context cookie and token together before mutation. */
-                readonly 'X-CSRF-Token': components['parameters']['BrowserMutationHeaders.csrfToken'];
+                /** @description Required with Origin for WEB/TMA sessions and validated against the browser context cookie. Omit for MOBILE sessions, whose bearer credential is non-ambient. Supplying only one browser header is rejected. */
+                readonly 'X-CSRF-Token'?: components['parameters']['SessionMutationHeaders.csrfToken'];
                 /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
                 readonly 'X-Request-ID'?: components['schemas']['RequestId'];
             };
@@ -33870,12 +34867,12 @@ export interface operations {
                 /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
                 readonly 'Accept-Language'?: string;
                 readonly 'Idempotency-Key': components['parameters']['MutationKey'];
-                /** @description Exact browser origin from the configured allowlist; required even for anonymous mutations. Cross-site and missing origins are rejected. */
-                readonly Origin: components['parameters']['BrowserMutationHeaders.origin'];
+                /** @description Required with X-CSRF-Token for WEB/TMA sessions and rejected when missing or cross-origin. Omit for MOBILE sessions; the server derives the platform from the access credential and never trusts a caller platform header. */
+                readonly Origin?: components['parameters']['SessionMutationHeaders.origin'];
                 /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
                 readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
-                /** @description Secret bound to the HttpOnly browser context cookie from GET /auth/context. Never log. Validate origin, context cookie and token together before mutation. */
-                readonly 'X-CSRF-Token': components['parameters']['BrowserMutationHeaders.csrfToken'];
+                /** @description Required with Origin for WEB/TMA sessions and validated against the browser context cookie. Omit for MOBILE sessions, whose bearer credential is non-ambient. Supplying only one browser header is rejected. */
+                readonly 'X-CSRF-Token'?: components['parameters']['SessionMutationHeaders.csrfToken'];
                 /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
                 readonly 'X-Request-ID'?: components['schemas']['RequestId'];
             };
@@ -34283,12 +35280,12 @@ export interface operations {
                 /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
                 readonly 'Accept-Language'?: string;
                 readonly 'Idempotency-Key': components['parameters']['MutationKey'];
-                /** @description Exact browser origin from the configured allowlist; required even for anonymous mutations. Cross-site and missing origins are rejected. */
-                readonly Origin: components['parameters']['BrowserMutationHeaders.origin'];
+                /** @description Required with X-CSRF-Token for WEB/TMA sessions and rejected when missing or cross-origin. Omit for MOBILE sessions; the server derives the platform from the access credential and never trusts a caller platform header. */
+                readonly Origin?: components['parameters']['SessionMutationHeaders.origin'];
                 /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
                 readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
-                /** @description Secret bound to the HttpOnly browser context cookie from GET /auth/context. Never log. Validate origin, context cookie and token together before mutation. */
-                readonly 'X-CSRF-Token': components['parameters']['BrowserMutationHeaders.csrfToken'];
+                /** @description Required with Origin for WEB/TMA sessions and validated against the browser context cookie. Omit for MOBILE sessions, whose bearer credential is non-ambient. Supplying only one browser header is rejected. */
+                readonly 'X-CSRF-Token'?: components['parameters']['SessionMutationHeaders.csrfToken'];
                 /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
                 readonly 'X-Request-ID'?: components['schemas']['RequestId'];
             };
@@ -34491,12 +35488,12 @@ export interface operations {
                 /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
                 readonly 'Accept-Language'?: string;
                 readonly 'Idempotency-Key': components['parameters']['MutationKey'];
-                /** @description Exact browser origin from the configured allowlist; required even for anonymous mutations. Cross-site and missing origins are rejected. */
-                readonly Origin: components['parameters']['BrowserMutationHeaders.origin'];
+                /** @description Required with X-CSRF-Token for WEB/TMA sessions and rejected when missing or cross-origin. Omit for MOBILE sessions; the server derives the platform from the access credential and never trusts a caller platform header. */
+                readonly Origin?: components['parameters']['SessionMutationHeaders.origin'];
                 /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
                 readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
-                /** @description Secret bound to the HttpOnly browser context cookie from GET /auth/context. Never log. Validate origin, context cookie and token together before mutation. */
-                readonly 'X-CSRF-Token': components['parameters']['BrowserMutationHeaders.csrfToken'];
+                /** @description Required with Origin for WEB/TMA sessions and validated against the browser context cookie. Omit for MOBILE sessions, whose bearer credential is non-ambient. Supplying only one browser header is rejected. */
+                readonly 'X-CSRF-Token'?: components['parameters']['SessionMutationHeaders.csrfToken'];
                 /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
                 readonly 'X-Request-ID'?: components['schemas']['RequestId'];
             };
@@ -34699,12 +35696,12 @@ export interface operations {
                 /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
                 readonly 'Accept-Language'?: string;
                 readonly 'Idempotency-Key': components['parameters']['MutationKey'];
-                /** @description Exact browser origin from the configured allowlist; required even for anonymous mutations. Cross-site and missing origins are rejected. */
-                readonly Origin: components['parameters']['BrowserMutationHeaders.origin'];
+                /** @description Required with X-CSRF-Token for WEB/TMA sessions and rejected when missing or cross-origin. Omit for MOBILE sessions; the server derives the platform from the access credential and never trusts a caller platform header. */
+                readonly Origin?: components['parameters']['SessionMutationHeaders.origin'];
                 /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
                 readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
-                /** @description Secret bound to the HttpOnly browser context cookie from GET /auth/context. Never log. Validate origin, context cookie and token together before mutation. */
-                readonly 'X-CSRF-Token': components['parameters']['BrowserMutationHeaders.csrfToken'];
+                /** @description Required with Origin for WEB/TMA sessions and validated against the browser context cookie. Omit for MOBILE sessions, whose bearer credential is non-ambient. Supplying only one browser header is rejected. */
+                readonly 'X-CSRF-Token'?: components['parameters']['SessionMutationHeaders.csrfToken'];
                 /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
                 readonly 'X-Request-ID'?: components['schemas']['RequestId'];
             };
@@ -34907,12 +35904,12 @@ export interface operations {
                 /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
                 readonly 'Accept-Language'?: string;
                 readonly 'Idempotency-Key': components['parameters']['MutationKey'];
-                /** @description Exact browser origin from the configured allowlist; required even for anonymous mutations. Cross-site and missing origins are rejected. */
-                readonly Origin: components['parameters']['BrowserMutationHeaders.origin'];
+                /** @description Required with X-CSRF-Token for WEB/TMA sessions and rejected when missing or cross-origin. Omit for MOBILE sessions; the server derives the platform from the access credential and never trusts a caller platform header. */
+                readonly Origin?: components['parameters']['SessionMutationHeaders.origin'];
                 /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
                 readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
-                /** @description Secret bound to the HttpOnly browser context cookie from GET /auth/context. Never log. Validate origin, context cookie and token together before mutation. */
-                readonly 'X-CSRF-Token': components['parameters']['BrowserMutationHeaders.csrfToken'];
+                /** @description Required with Origin for WEB/TMA sessions and validated against the browser context cookie. Omit for MOBILE sessions, whose bearer credential is non-ambient. Supplying only one browser header is rejected. */
+                readonly 'X-CSRF-Token'?: components['parameters']['SessionMutationHeaders.csrfToken'];
                 /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
                 readonly 'X-Request-ID'?: components['schemas']['RequestId'];
             };
@@ -35143,12 +36140,12 @@ export interface operations {
                 /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
                 readonly 'Accept-Language'?: string;
                 readonly 'Idempotency-Key': components['parameters']['MutationKey'];
-                /** @description Exact browser origin from the configured allowlist; required even for anonymous mutations. Cross-site and missing origins are rejected. */
-                readonly Origin: components['parameters']['BrowserMutationHeaders.origin'];
+                /** @description Required with X-CSRF-Token for WEB/TMA sessions and rejected when missing or cross-origin. Omit for MOBILE sessions; the server derives the platform from the access credential and never trusts a caller platform header. */
+                readonly Origin?: components['parameters']['SessionMutationHeaders.origin'];
                 /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
                 readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
-                /** @description Secret bound to the HttpOnly browser context cookie from GET /auth/context. Never log. Validate origin, context cookie and token together before mutation. */
-                readonly 'X-CSRF-Token': components['parameters']['BrowserMutationHeaders.csrfToken'];
+                /** @description Required with Origin for WEB/TMA sessions and validated against the browser context cookie. Omit for MOBILE sessions, whose bearer credential is non-ambient. Supplying only one browser header is rejected. */
+                readonly 'X-CSRF-Token'?: components['parameters']['SessionMutationHeaders.csrfToken'];
                 /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
                 readonly 'X-Request-ID'?: components['schemas']['RequestId'];
             };
@@ -35351,12 +36348,12 @@ export interface operations {
                 /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
                 readonly 'Accept-Language'?: string;
                 readonly 'Idempotency-Key': components['parameters']['MutationKey'];
-                /** @description Exact browser origin from the configured allowlist; required even for anonymous mutations. Cross-site and missing origins are rejected. */
-                readonly Origin: components['parameters']['BrowserMutationHeaders.origin'];
+                /** @description Required with X-CSRF-Token for WEB/TMA sessions and rejected when missing or cross-origin. Omit for MOBILE sessions; the server derives the platform from the access credential and never trusts a caller platform header. */
+                readonly Origin?: components['parameters']['SessionMutationHeaders.origin'];
                 /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
                 readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
-                /** @description Secret bound to the HttpOnly browser context cookie from GET /auth/context. Never log. Validate origin, context cookie and token together before mutation. */
-                readonly 'X-CSRF-Token': components['parameters']['BrowserMutationHeaders.csrfToken'];
+                /** @description Required with Origin for WEB/TMA sessions and validated against the browser context cookie. Omit for MOBILE sessions, whose bearer credential is non-ambient. Supplying only one browser header is rejected. */
+                readonly 'X-CSRF-Token'?: components['parameters']['SessionMutationHeaders.csrfToken'];
                 /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
                 readonly 'X-Request-ID'?: components['schemas']['RequestId'];
             };
@@ -35558,12 +36555,12 @@ export interface operations {
                 /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
                 readonly 'Accept-Language'?: string;
                 readonly 'Idempotency-Key': components['parameters']['MutationKey'];
-                /** @description Exact browser origin from the configured allowlist; required even for anonymous mutations. Cross-site and missing origins are rejected. */
-                readonly Origin: components['parameters']['BrowserMutationHeaders.origin'];
+                /** @description Required with X-CSRF-Token for WEB/TMA sessions and rejected when missing or cross-origin. Omit for MOBILE sessions; the server derives the platform from the access credential and never trusts a caller platform header. */
+                readonly Origin?: components['parameters']['SessionMutationHeaders.origin'];
                 /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
                 readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
-                /** @description Secret bound to the HttpOnly browser context cookie from GET /auth/context. Never log. Validate origin, context cookie and token together before mutation. */
-                readonly 'X-CSRF-Token': components['parameters']['BrowserMutationHeaders.csrfToken'];
+                /** @description Required with Origin for WEB/TMA sessions and validated against the browser context cookie. Omit for MOBILE sessions, whose bearer credential is non-ambient. Supplying only one browser header is rejected. */
+                readonly 'X-CSRF-Token'?: components['parameters']['SessionMutationHeaders.csrfToken'];
                 /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
                 readonly 'X-Request-ID'?: components['schemas']['RequestId'];
             };
@@ -35765,12 +36762,12 @@ export interface operations {
                 /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
                 readonly 'Accept-Language'?: string;
                 readonly 'Idempotency-Key': components['parameters']['MutationKey'];
-                /** @description Exact browser origin from the configured allowlist; required even for anonymous mutations. Cross-site and missing origins are rejected. */
-                readonly Origin: components['parameters']['BrowserMutationHeaders.origin'];
+                /** @description Required with X-CSRF-Token for WEB/TMA sessions and rejected when missing or cross-origin. Omit for MOBILE sessions; the server derives the platform from the access credential and never trusts a caller platform header. */
+                readonly Origin?: components['parameters']['SessionMutationHeaders.origin'];
                 /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
                 readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
-                /** @description Secret bound to the HttpOnly browser context cookie from GET /auth/context. Never log. Validate origin, context cookie and token together before mutation. */
-                readonly 'X-CSRF-Token': components['parameters']['BrowserMutationHeaders.csrfToken'];
+                /** @description Required with Origin for WEB/TMA sessions and validated against the browser context cookie. Omit for MOBILE sessions, whose bearer credential is non-ambient. Supplying only one browser header is rejected. */
+                readonly 'X-CSRF-Token'?: components['parameters']['SessionMutationHeaders.csrfToken'];
                 /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
                 readonly 'X-Request-ID'?: components['schemas']['RequestId'];
             };
@@ -35973,12 +36970,12 @@ export interface operations {
                 /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
                 readonly 'Accept-Language'?: string;
                 readonly 'Idempotency-Key': components['parameters']['MutationKey'];
-                /** @description Exact browser origin from the configured allowlist; required even for anonymous mutations. Cross-site and missing origins are rejected. */
-                readonly Origin: components['parameters']['BrowserMutationHeaders.origin'];
+                /** @description Required with X-CSRF-Token for WEB/TMA sessions and rejected when missing or cross-origin. Omit for MOBILE sessions; the server derives the platform from the access credential and never trusts a caller platform header. */
+                readonly Origin?: components['parameters']['SessionMutationHeaders.origin'];
                 /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
                 readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
-                /** @description Secret bound to the HttpOnly browser context cookie from GET /auth/context. Never log. Validate origin, context cookie and token together before mutation. */
-                readonly 'X-CSRF-Token': components['parameters']['BrowserMutationHeaders.csrfToken'];
+                /** @description Required with Origin for WEB/TMA sessions and validated against the browser context cookie. Omit for MOBILE sessions, whose bearer credential is non-ambient. Supplying only one browser header is rejected. */
+                readonly 'X-CSRF-Token'?: components['parameters']['SessionMutationHeaders.csrfToken'];
                 /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
                 readonly 'X-Request-ID'?: components['schemas']['RequestId'];
             };
@@ -36181,12 +37178,12 @@ export interface operations {
                 /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
                 readonly 'Accept-Language'?: string;
                 readonly 'Idempotency-Key': components['parameters']['MutationKey'];
-                /** @description Exact browser origin from the configured allowlist; required even for anonymous mutations. Cross-site and missing origins are rejected. */
-                readonly Origin: components['parameters']['BrowserMutationHeaders.origin'];
+                /** @description Required with X-CSRF-Token for WEB/TMA sessions and rejected when missing or cross-origin. Omit for MOBILE sessions; the server derives the platform from the access credential and never trusts a caller platform header. */
+                readonly Origin?: components['parameters']['SessionMutationHeaders.origin'];
                 /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
                 readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
-                /** @description Secret bound to the HttpOnly browser context cookie from GET /auth/context. Never log. Validate origin, context cookie and token together before mutation. */
-                readonly 'X-CSRF-Token': components['parameters']['BrowserMutationHeaders.csrfToken'];
+                /** @description Required with Origin for WEB/TMA sessions and validated against the browser context cookie. Omit for MOBILE sessions, whose bearer credential is non-ambient. Supplying only one browser header is rejected. */
+                readonly 'X-CSRF-Token'?: components['parameters']['SessionMutationHeaders.csrfToken'];
                 /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
                 readonly 'X-Request-ID'?: components['schemas']['RequestId'];
             };
@@ -36418,12 +37415,12 @@ export interface operations {
                 /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
                 readonly 'Accept-Language'?: string;
                 readonly 'Idempotency-Key': components['parameters']['MutationKey'];
-                /** @description Exact browser origin from the configured allowlist; required even for anonymous mutations. Cross-site and missing origins are rejected. */
-                readonly Origin: components['parameters']['BrowserMutationHeaders.origin'];
+                /** @description Required with X-CSRF-Token for WEB/TMA sessions and rejected when missing or cross-origin. Omit for MOBILE sessions; the server derives the platform from the access credential and never trusts a caller platform header. */
+                readonly Origin?: components['parameters']['SessionMutationHeaders.origin'];
                 /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
                 readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
-                /** @description Secret bound to the HttpOnly browser context cookie from GET /auth/context. Never log. Validate origin, context cookie and token together before mutation. */
-                readonly 'X-CSRF-Token': components['parameters']['BrowserMutationHeaders.csrfToken'];
+                /** @description Required with Origin for WEB/TMA sessions and validated against the browser context cookie. Omit for MOBILE sessions, whose bearer credential is non-ambient. Supplying only one browser header is rejected. */
+                readonly 'X-CSRF-Token'?: components['parameters']['SessionMutationHeaders.csrfToken'];
                 /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
                 readonly 'X-Request-ID'?: components['schemas']['RequestId'];
             };
@@ -36632,12 +37629,12 @@ export interface operations {
                 /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
                 readonly 'Accept-Language'?: string;
                 readonly 'Idempotency-Key': components['parameters']['MutationKey'];
-                /** @description Exact browser origin from the configured allowlist; required even for anonymous mutations. Cross-site and missing origins are rejected. */
-                readonly Origin: components['parameters']['BrowserMutationHeaders.origin'];
+                /** @description Required with X-CSRF-Token for WEB/TMA sessions and rejected when missing or cross-origin. Omit for MOBILE sessions; the server derives the platform from the access credential and never trusts a caller platform header. */
+                readonly Origin?: components['parameters']['SessionMutationHeaders.origin'];
                 /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
                 readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
-                /** @description Secret bound to the HttpOnly browser context cookie from GET /auth/context. Never log. Validate origin, context cookie and token together before mutation. */
-                readonly 'X-CSRF-Token': components['parameters']['BrowserMutationHeaders.csrfToken'];
+                /** @description Required with Origin for WEB/TMA sessions and validated against the browser context cookie. Omit for MOBILE sessions, whose bearer credential is non-ambient. Supplying only one browser header is rejected. */
+                readonly 'X-CSRF-Token'?: components['parameters']['SessionMutationHeaders.csrfToken'];
                 /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
                 readonly 'X-Request-ID'?: components['schemas']['RequestId'];
             };
@@ -37045,12 +38042,12 @@ export interface operations {
                 /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
                 readonly 'Accept-Language'?: string;
                 readonly 'Idempotency-Key': components['parameters']['MutationKey'];
-                /** @description Exact browser origin from the configured allowlist; required even for anonymous mutations. Cross-site and missing origins are rejected. */
-                readonly Origin: components['parameters']['BrowserMutationHeaders.origin'];
+                /** @description Required with X-CSRF-Token for WEB/TMA sessions and rejected when missing or cross-origin. Omit for MOBILE sessions; the server derives the platform from the access credential and never trusts a caller platform header. */
+                readonly Origin?: components['parameters']['SessionMutationHeaders.origin'];
                 /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
                 readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
-                /** @description Secret bound to the HttpOnly browser context cookie from GET /auth/context. Never log. Validate origin, context cookie and token together before mutation. */
-                readonly 'X-CSRF-Token': components['parameters']['BrowserMutationHeaders.csrfToken'];
+                /** @description Required with Origin for WEB/TMA sessions and validated against the browser context cookie. Omit for MOBILE sessions, whose bearer credential is non-ambient. Supplying only one browser header is rejected. */
+                readonly 'X-CSRF-Token'?: components['parameters']['SessionMutationHeaders.csrfToken'];
                 /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
                 readonly 'X-Request-ID'?: components['schemas']['RequestId'];
             };
@@ -37253,12 +38250,12 @@ export interface operations {
                 /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
                 readonly 'Accept-Language'?: string;
                 readonly 'Idempotency-Key': components['parameters']['MutationKey'];
-                /** @description Exact browser origin from the configured allowlist; required even for anonymous mutations. Cross-site and missing origins are rejected. */
-                readonly Origin: components['parameters']['BrowserMutationHeaders.origin'];
+                /** @description Required with X-CSRF-Token for WEB/TMA sessions and rejected when missing or cross-origin. Omit for MOBILE sessions; the server derives the platform from the access credential and never trusts a caller platform header. */
+                readonly Origin?: components['parameters']['SessionMutationHeaders.origin'];
                 /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
                 readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
-                /** @description Secret bound to the HttpOnly browser context cookie from GET /auth/context. Never log. Validate origin, context cookie and token together before mutation. */
-                readonly 'X-CSRF-Token': components['parameters']['BrowserMutationHeaders.csrfToken'];
+                /** @description Required with Origin for WEB/TMA sessions and validated against the browser context cookie. Omit for MOBILE sessions, whose bearer credential is non-ambient. Supplying only one browser header is rejected. */
+                readonly 'X-CSRF-Token'?: components['parameters']['SessionMutationHeaders.csrfToken'];
                 /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
                 readonly 'X-Request-ID'?: components['schemas']['RequestId'];
             };
@@ -38181,12 +39178,12 @@ export interface operations {
                 /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
                 readonly 'Accept-Language'?: string;
                 readonly 'Idempotency-Key': components['parameters']['MutationKey'];
-                /** @description Exact browser origin from the configured allowlist; required even for anonymous mutations. Cross-site and missing origins are rejected. */
-                readonly Origin: components['parameters']['BrowserMutationHeaders.origin'];
+                /** @description Required with X-CSRF-Token for WEB/TMA sessions and rejected when missing or cross-origin. Omit for MOBILE sessions; the server derives the platform from the access credential and never trusts a caller platform header. */
+                readonly Origin?: components['parameters']['SessionMutationHeaders.origin'];
                 /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
                 readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
-                /** @description Secret bound to the HttpOnly browser context cookie from GET /auth/context. Never log. Validate origin, context cookie and token together before mutation. */
-                readonly 'X-CSRF-Token': components['parameters']['BrowserMutationHeaders.csrfToken'];
+                /** @description Required with Origin for WEB/TMA sessions and validated against the browser context cookie. Omit for MOBILE sessions, whose bearer credential is non-ambient. Supplying only one browser header is rejected. */
+                readonly 'X-CSRF-Token'?: components['parameters']['SessionMutationHeaders.csrfToken'];
                 /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
                 readonly 'X-Request-ID'?: components['schemas']['RequestId'];
             };
@@ -38385,15 +39382,15 @@ export interface operations {
     readonly requestAccountDeletion: {
         readonly parameters: {
             readonly query?: never;
-            readonly header: {
+            readonly header?: {
                 /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
                 readonly 'Accept-Language'?: string;
-                /** @description Exact browser origin from the configured allowlist; required even for anonymous mutations. Cross-site and missing origins are rejected. */
-                readonly Origin: components['parameters']['BrowserMutationHeaders.origin'];
+                /** @description Required with X-CSRF-Token for WEB/TMA sessions and rejected when missing or cross-origin. Omit for MOBILE sessions; the server derives the platform from the access credential and never trusts a caller platform header. */
+                readonly Origin?: components['parameters']['SessionMutationHeaders.origin'];
                 /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
                 readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
-                /** @description Secret bound to the HttpOnly browser context cookie from GET /auth/context. Never log. Validate origin, context cookie and token together before mutation. */
-                readonly 'X-CSRF-Token': components['parameters']['BrowserMutationHeaders.csrfToken'];
+                /** @description Required with Origin for WEB/TMA sessions and validated against the browser context cookie. Omit for MOBILE sessions, whose bearer credential is non-ambient. Supplying only one browser header is rejected. */
+                readonly 'X-CSRF-Token'?: components['parameters']['SessionMutationHeaders.csrfToken'];
                 /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
                 readonly 'X-Request-ID'?: components['schemas']['RequestId'];
             };
@@ -38791,15 +39788,15 @@ export interface operations {
     readonly unlinkIdentity: {
         readonly parameters: {
             readonly query?: never;
-            readonly header: {
+            readonly header?: {
                 /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
                 readonly 'Accept-Language'?: string;
-                /** @description Exact browser origin from the configured allowlist; required even for anonymous mutations. Cross-site and missing origins are rejected. */
-                readonly Origin: components['parameters']['BrowserMutationHeaders.origin'];
+                /** @description Required with X-CSRF-Token for WEB/TMA sessions and rejected when missing or cross-origin. Omit for MOBILE sessions; the server derives the platform from the access credential and never trusts a caller platform header. */
+                readonly Origin?: components['parameters']['SessionMutationHeaders.origin'];
                 /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
                 readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
-                /** @description Secret bound to the HttpOnly browser context cookie from GET /auth/context. Never log. Validate origin, context cookie and token together before mutation. */
-                readonly 'X-CSRF-Token': components['parameters']['BrowserMutationHeaders.csrfToken'];
+                /** @description Required with Origin for WEB/TMA sessions and validated against the browser context cookie. Omit for MOBILE sessions, whose bearer credential is non-ambient. Supplying only one browser header is rejected. */
+                readonly 'X-CSRF-Token'?: components['parameters']['SessionMutationHeaders.csrfToken'];
                 /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
                 readonly 'X-Request-ID'?: components['schemas']['RequestId'];
             };
@@ -39000,15 +39997,15 @@ export interface operations {
     readonly linkIdentity: {
         readonly parameters: {
             readonly query?: never;
-            readonly header: {
+            readonly header?: {
                 /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
                 readonly 'Accept-Language'?: string;
-                /** @description Exact browser origin from the configured allowlist; required even for anonymous mutations. Cross-site and missing origins are rejected. */
-                readonly Origin: components['parameters']['BrowserMutationHeaders.origin'];
+                /** @description Required with X-CSRF-Token for WEB/TMA sessions and rejected when missing or cross-origin. Omit for MOBILE sessions; the server derives the platform from the access credential and never trusts a caller platform header. */
+                readonly Origin?: components['parameters']['SessionMutationHeaders.origin'];
                 /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
                 readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
-                /** @description Secret bound to the HttpOnly browser context cookie from GET /auth/context. Never log. Validate origin, context cookie and token together before mutation. */
-                readonly 'X-CSRF-Token': components['parameters']['BrowserMutationHeaders.csrfToken'];
+                /** @description Required with Origin for WEB/TMA sessions and validated against the browser context cookie. Omit for MOBILE sessions, whose bearer credential is non-ambient. Supplying only one browser header is rejected. */
+                readonly 'X-CSRF-Token'?: components['parameters']['SessionMutationHeaders.csrfToken'];
                 /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
                 readonly 'X-Request-ID'?: components['schemas']['RequestId'];
             };
@@ -39211,12 +40208,12 @@ export interface operations {
                 /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
                 readonly 'Accept-Language'?: string;
                 readonly 'Idempotency-Key': components['parameters']['MutationKey'];
-                /** @description Exact browser origin from the configured allowlist; required even for anonymous mutations. Cross-site and missing origins are rejected. */
-                readonly Origin: components['parameters']['BrowserMutationHeaders.origin'];
+                /** @description Required with X-CSRF-Token for WEB/TMA sessions and rejected when missing or cross-origin. Omit for MOBILE sessions; the server derives the platform from the access credential and never trusts a caller platform header. */
+                readonly Origin?: components['parameters']['SessionMutationHeaders.origin'];
                 /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
                 readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
-                /** @description Secret bound to the HttpOnly browser context cookie from GET /auth/context. Never log. Validate origin, context cookie and token together before mutation. */
-                readonly 'X-CSRF-Token': components['parameters']['BrowserMutationHeaders.csrfToken'];
+                /** @description Required with Origin for WEB/TMA sessions and validated against the browser context cookie. Omit for MOBILE sessions, whose bearer credential is non-ambient. Supplying only one browser header is rejected. */
+                readonly 'X-CSRF-Token'?: components['parameters']['SessionMutationHeaders.csrfToken'];
                 /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
                 readonly 'X-Request-ID'?: components['schemas']['RequestId'];
             };
@@ -39616,15 +40613,15 @@ export interface operations {
     readonly consumeIdentityEmailProof: {
         readonly parameters: {
             readonly query?: never;
-            readonly header: {
+            readonly header?: {
                 /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
                 readonly 'Accept-Language'?: string;
-                /** @description Exact browser origin from the configured allowlist; required even for anonymous mutations. Cross-site and missing origins are rejected. */
-                readonly Origin: components['parameters']['BrowserMutationHeaders.origin'];
+                /** @description Required with X-CSRF-Token for WEB/TMA sessions and rejected when missing or cross-origin. Omit for MOBILE sessions; the server derives the platform from the access credential and never trusts a caller platform header. */
+                readonly Origin?: components['parameters']['SessionMutationHeaders.origin'];
                 /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
                 readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
-                /** @description Secret bound to the HttpOnly browser context cookie from GET /auth/context. Never log. Validate origin, context cookie and token together before mutation. */
-                readonly 'X-CSRF-Token': components['parameters']['BrowserMutationHeaders.csrfToken'];
+                /** @description Required with Origin for WEB/TMA sessions and validated against the browser context cookie. Omit for MOBILE sessions, whose bearer credential is non-ambient. Supplying only one browser header is rejected. */
+                readonly 'X-CSRF-Token'?: components['parameters']['SessionMutationHeaders.csrfToken'];
                 /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
                 readonly 'X-Request-ID'?: components['schemas']['RequestId'];
             };
@@ -39835,15 +40832,15 @@ export interface operations {
     readonly requestIdentityEmailProof: {
         readonly parameters: {
             readonly query?: never;
-            readonly header: {
+            readonly header?: {
                 /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
                 readonly 'Accept-Language'?: string;
-                /** @description Exact browser origin from the configured allowlist; required even for anonymous mutations. Cross-site and missing origins are rejected. */
-                readonly Origin: components['parameters']['BrowserMutationHeaders.origin'];
+                /** @description Required with X-CSRF-Token for WEB/TMA sessions and rejected when missing or cross-origin. Omit for MOBILE sessions; the server derives the platform from the access credential and never trusts a caller platform header. */
+                readonly Origin?: components['parameters']['SessionMutationHeaders.origin'];
                 /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
                 readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
-                /** @description Secret bound to the HttpOnly browser context cookie from GET /auth/context. Never log. Validate origin, context cookie and token together before mutation. */
-                readonly 'X-CSRF-Token': components['parameters']['BrowserMutationHeaders.csrfToken'];
+                /** @description Required with Origin for WEB/TMA sessions and validated against the browser context cookie. Omit for MOBILE sessions, whose bearer credential is non-ambient. Supplying only one browser header is rejected. */
+                readonly 'X-CSRF-Token'?: components['parameters']['SessionMutationHeaders.csrfToken'];
                 /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
                 readonly 'X-Request-ID'?: components['schemas']['RequestId'];
             };
@@ -40044,15 +41041,15 @@ export interface operations {
     readonly proveTelegramIdentity: {
         readonly parameters: {
             readonly query?: never;
-            readonly header: {
+            readonly header?: {
                 /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
                 readonly 'Accept-Language'?: string;
-                /** @description Exact browser origin from the configured allowlist; required even for anonymous mutations. Cross-site and missing origins are rejected. */
-                readonly Origin: components['parameters']['BrowserMutationHeaders.origin'];
+                /** @description Required with X-CSRF-Token for WEB/TMA sessions and rejected when missing or cross-origin. Omit for MOBILE sessions; the server derives the platform from the access credential and never trusts a caller platform header. */
+                readonly Origin?: components['parameters']['SessionMutationHeaders.origin'];
                 /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
                 readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
-                /** @description Secret bound to the HttpOnly browser context cookie from GET /auth/context. Never log. Validate origin, context cookie and token together before mutation. */
-                readonly 'X-CSRF-Token': components['parameters']['BrowserMutationHeaders.csrfToken'];
+                /** @description Required with Origin for WEB/TMA sessions and validated against the browser context cookie. Omit for MOBILE sessions, whose bearer credential is non-ambient. Supplying only one browser header is rejected. */
+                readonly 'X-CSRF-Token'?: components['parameters']['SessionMutationHeaders.csrfToken'];
                 /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
                 readonly 'X-Request-ID'?: components['schemas']['RequestId'];
             };
@@ -40604,12 +41601,12 @@ export interface operations {
                 /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
                 readonly 'Accept-Language'?: string;
                 readonly 'Idempotency-Key': components['parameters']['MutationKey'];
-                /** @description Exact browser origin from the configured allowlist; required even for anonymous mutations. Cross-site and missing origins are rejected. */
-                readonly Origin: components['parameters']['BrowserMutationHeaders.origin'];
+                /** @description Required with X-CSRF-Token for WEB/TMA sessions and rejected when missing or cross-origin. Omit for MOBILE sessions; the server derives the platform from the access credential and never trusts a caller platform header. */
+                readonly Origin?: components['parameters']['SessionMutationHeaders.origin'];
                 /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
                 readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
-                /** @description Secret bound to the HttpOnly browser context cookie from GET /auth/context. Never log. Validate origin, context cookie and token together before mutation. */
-                readonly 'X-CSRF-Token': components['parameters']['BrowserMutationHeaders.csrfToken'];
+                /** @description Required with Origin for WEB/TMA sessions and validated against the browser context cookie. Omit for MOBILE sessions, whose bearer credential is non-ambient. Supplying only one browser header is rejected. */
+                readonly 'X-CSRF-Token'?: components['parameters']['SessionMutationHeaders.csrfToken'];
                 /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
                 readonly 'X-Request-ID'?: components['schemas']['RequestId'];
             };
@@ -40812,12 +41809,12 @@ export interface operations {
                 /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
                 readonly 'Accept-Language'?: string;
                 readonly 'Idempotency-Key': components['parameters']['MutationKey'];
-                /** @description Exact browser origin from the configured allowlist; required even for anonymous mutations. Cross-site and missing origins are rejected. */
-                readonly Origin: components['parameters']['BrowserMutationHeaders.origin'];
+                /** @description Required with X-CSRF-Token for WEB/TMA sessions and rejected when missing or cross-origin. Omit for MOBILE sessions; the server derives the platform from the access credential and never trusts a caller platform header. */
+                readonly Origin?: components['parameters']['SessionMutationHeaders.origin'];
                 /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
                 readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
-                /** @description Secret bound to the HttpOnly browser context cookie from GET /auth/context. Never log. Validate origin, context cookie and token together before mutation. */
-                readonly 'X-CSRF-Token': components['parameters']['BrowserMutationHeaders.csrfToken'];
+                /** @description Required with Origin for WEB/TMA sessions and validated against the browser context cookie. Omit for MOBILE sessions, whose bearer credential is non-ambient. Supplying only one browser header is rejected. */
+                readonly 'X-CSRF-Token'?: components['parameters']['SessionMutationHeaders.csrfToken'];
                 /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
                 readonly 'X-Request-ID'?: components['schemas']['RequestId'];
             };
@@ -41153,12 +42150,12 @@ export interface operations {
                 /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
                 readonly 'Accept-Language'?: string;
                 readonly 'Idempotency-Key': components['parameters']['MutationKey'];
-                /** @description Exact browser origin from the configured allowlist; required even for anonymous mutations. Cross-site and missing origins are rejected. */
-                readonly Origin: components['parameters']['BrowserMutationHeaders.origin'];
+                /** @description Required with X-CSRF-Token for WEB/TMA sessions and rejected when missing or cross-origin. Omit for MOBILE sessions; the server derives the platform from the access credential and never trusts a caller platform header. */
+                readonly Origin?: components['parameters']['SessionMutationHeaders.origin'];
                 /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
                 readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
-                /** @description Secret bound to the HttpOnly browser context cookie from GET /auth/context. Never log. Validate origin, context cookie and token together before mutation. */
-                readonly 'X-CSRF-Token': components['parameters']['BrowserMutationHeaders.csrfToken'];
+                /** @description Required with Origin for WEB/TMA sessions and validated against the browser context cookie. Omit for MOBILE sessions, whose bearer credential is non-ambient. Supplying only one browser header is rejected. */
+                readonly 'X-CSRF-Token'?: components['parameters']['SessionMutationHeaders.csrfToken'];
                 /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
                 readonly 'X-Request-ID'?: components['schemas']['RequestId'];
             };
@@ -41319,12 +42316,12 @@ export interface operations {
                 /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
                 readonly 'Accept-Language'?: string;
                 readonly 'Idempotency-Key': components['parameters']['MutationKey'];
-                /** @description Exact browser origin from the configured allowlist; required even for anonymous mutations. Cross-site and missing origins are rejected. */
-                readonly Origin: components['parameters']['BrowserMutationHeaders.origin'];
+                /** @description Required with X-CSRF-Token for WEB/TMA sessions and rejected when missing or cross-origin. Omit for MOBILE sessions; the server derives the platform from the access credential and never trusts a caller platform header. */
+                readonly Origin?: components['parameters']['SessionMutationHeaders.origin'];
                 /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
                 readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
-                /** @description Secret bound to the HttpOnly browser context cookie from GET /auth/context. Never log. Validate origin, context cookie and token together before mutation. */
-                readonly 'X-CSRF-Token': components['parameters']['BrowserMutationHeaders.csrfToken'];
+                /** @description Required with Origin for WEB/TMA sessions and validated against the browser context cookie. Omit for MOBILE sessions, whose bearer credential is non-ambient. Supplying only one browser header is rejected. */
+                readonly 'X-CSRF-Token'?: components['parameters']['SessionMutationHeaders.csrfToken'];
                 /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
                 readonly 'X-Request-ID'?: components['schemas']['RequestId'];
             };
@@ -41483,12 +42480,12 @@ export interface operations {
                 /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
                 readonly 'Accept-Language'?: string;
                 readonly 'Idempotency-Key': components['parameters']['MutationKey'];
-                /** @description Exact browser origin from the configured allowlist; required even for anonymous mutations. Cross-site and missing origins are rejected. */
-                readonly Origin: components['parameters']['BrowserMutationHeaders.origin'];
+                /** @description Required with X-CSRF-Token for WEB/TMA sessions and rejected when missing or cross-origin. Omit for MOBILE sessions; the server derives the platform from the access credential and never trusts a caller platform header. */
+                readonly Origin?: components['parameters']['SessionMutationHeaders.origin'];
                 /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
                 readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
-                /** @description Secret bound to the HttpOnly browser context cookie from GET /auth/context. Never log. Validate origin, context cookie and token together before mutation. */
-                readonly 'X-CSRF-Token': components['parameters']['BrowserMutationHeaders.csrfToken'];
+                /** @description Required with Origin for WEB/TMA sessions and validated against the browser context cookie. Omit for MOBILE sessions, whose bearer credential is non-ambient. Supplying only one browser header is rejected. */
+                readonly 'X-CSRF-Token'?: components['parameters']['SessionMutationHeaders.csrfToken'];
                 /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
                 readonly 'X-Request-ID'?: components['schemas']['RequestId'];
             };
@@ -41649,12 +42646,12 @@ export interface operations {
                 /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
                 readonly 'Accept-Language'?: string;
                 readonly 'Idempotency-Key': components['parameters']['MutationKey'];
-                /** @description Exact browser origin from the configured allowlist; required even for anonymous mutations. Cross-site and missing origins are rejected. */
-                readonly Origin: components['parameters']['BrowserMutationHeaders.origin'];
+                /** @description Required with X-CSRF-Token for WEB/TMA sessions and rejected when missing or cross-origin. Omit for MOBILE sessions; the server derives the platform from the access credential and never trusts a caller platform header. */
+                readonly Origin?: components['parameters']['SessionMutationHeaders.origin'];
                 /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
                 readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
-                /** @description Secret bound to the HttpOnly browser context cookie from GET /auth/context. Never log. Validate origin, context cookie and token together before mutation. */
-                readonly 'X-CSRF-Token': components['parameters']['BrowserMutationHeaders.csrfToken'];
+                /** @description Required with Origin for WEB/TMA sessions and validated against the browser context cookie. Omit for MOBILE sessions, whose bearer credential is non-ambient. Supplying only one browser header is rejected. */
+                readonly 'X-CSRF-Token'?: components['parameters']['SessionMutationHeaders.csrfToken'];
                 /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
                 readonly 'X-Request-ID'?: components['schemas']['RequestId'];
             };
@@ -41815,12 +42812,12 @@ export interface operations {
                 /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
                 readonly 'Accept-Language'?: string;
                 readonly 'Idempotency-Key': components['parameters']['MutationKey'];
-                /** @description Exact browser origin from the configured allowlist; required even for anonymous mutations. Cross-site and missing origins are rejected. */
-                readonly Origin: components['parameters']['BrowserMutationHeaders.origin'];
+                /** @description Required with X-CSRF-Token for WEB/TMA sessions and rejected when missing or cross-origin. Omit for MOBILE sessions; the server derives the platform from the access credential and never trusts a caller platform header. */
+                readonly Origin?: components['parameters']['SessionMutationHeaders.origin'];
                 /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
                 readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
-                /** @description Secret bound to the HttpOnly browser context cookie from GET /auth/context. Never log. Validate origin, context cookie and token together before mutation. */
-                readonly 'X-CSRF-Token': components['parameters']['BrowserMutationHeaders.csrfToken'];
+                /** @description Required with Origin for WEB/TMA sessions and validated against the browser context cookie. Omit for MOBILE sessions, whose bearer credential is non-ambient. Supplying only one browser header is rejected. */
+                readonly 'X-CSRF-Token'?: components['parameters']['SessionMutationHeaders.csrfToken'];
                 /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
                 readonly 'X-Request-ID'?: components['schemas']['RequestId'];
             };
@@ -42112,12 +43109,12 @@ export interface operations {
                 /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
                 readonly 'Accept-Language'?: string;
                 readonly 'Idempotency-Key': components['parameters']['MutationKey'];
-                /** @description Exact browser origin from the configured allowlist; required even for anonymous mutations. Cross-site and missing origins are rejected. */
-                readonly Origin: components['parameters']['BrowserMutationHeaders.origin'];
+                /** @description Required with X-CSRF-Token for WEB/TMA sessions and rejected when missing or cross-origin. Omit for MOBILE sessions; the server derives the platform from the access credential and never trusts a caller platform header. */
+                readonly Origin?: components['parameters']['SessionMutationHeaders.origin'];
                 /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
                 readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
-                /** @description Secret bound to the HttpOnly browser context cookie from GET /auth/context. Never log. Validate origin, context cookie and token together before mutation. */
-                readonly 'X-CSRF-Token': components['parameters']['BrowserMutationHeaders.csrfToken'];
+                /** @description Required with Origin for WEB/TMA sessions and validated against the browser context cookie. Omit for MOBILE sessions, whose bearer credential is non-ambient. Supplying only one browser header is rejected. */
+                readonly 'X-CSRF-Token'?: components['parameters']['SessionMutationHeaders.csrfToken'];
                 /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
                 readonly 'X-Request-ID'?: components['schemas']['RequestId'];
             };
@@ -42551,12 +43548,12 @@ export interface operations {
                 /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
                 readonly 'Accept-Language'?: string;
                 readonly 'Idempotency-Key': components['parameters']['MutationKey'];
-                /** @description Exact browser origin from the configured allowlist; required even for anonymous mutations. Cross-site and missing origins are rejected. */
-                readonly Origin: components['parameters']['BrowserMutationHeaders.origin'];
+                /** @description Required with X-CSRF-Token for WEB/TMA sessions and rejected when missing or cross-origin. Omit for MOBILE sessions; the server derives the platform from the access credential and never trusts a caller platform header. */
+                readonly Origin?: components['parameters']['SessionMutationHeaders.origin'];
                 /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
                 readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
-                /** @description Secret bound to the HttpOnly browser context cookie from GET /auth/context. Never log. Validate origin, context cookie and token together before mutation. */
-                readonly 'X-CSRF-Token': components['parameters']['BrowserMutationHeaders.csrfToken'];
+                /** @description Required with Origin for WEB/TMA sessions and validated against the browser context cookie. Omit for MOBILE sessions, whose bearer credential is non-ambient. Supplying only one browser header is rejected. */
+                readonly 'X-CSRF-Token'?: components['parameters']['SessionMutationHeaders.csrfToken'];
                 /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
                 readonly 'X-Request-ID'?: components['schemas']['RequestId'];
             };
@@ -42770,12 +43767,12 @@ export interface operations {
                 /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
                 readonly 'Accept-Language'?: string;
                 readonly 'Idempotency-Key': components['parameters']['MutationKey'];
-                /** @description Exact browser origin from the configured allowlist; required even for anonymous mutations. Cross-site and missing origins are rejected. */
-                readonly Origin: components['parameters']['BrowserMutationHeaders.origin'];
+                /** @description Required with X-CSRF-Token for WEB/TMA sessions and rejected when missing or cross-origin. Omit for MOBILE sessions; the server derives the platform from the access credential and never trusts a caller platform header. */
+                readonly Origin?: components['parameters']['SessionMutationHeaders.origin'];
                 /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
                 readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
-                /** @description Secret bound to the HttpOnly browser context cookie from GET /auth/context. Never log. Validate origin, context cookie and token together before mutation. */
-                readonly 'X-CSRF-Token': components['parameters']['BrowserMutationHeaders.csrfToken'];
+                /** @description Required with Origin for WEB/TMA sessions and validated against the browser context cookie. Omit for MOBILE sessions, whose bearer credential is non-ambient. Supplying only one browser header is rejected. */
+                readonly 'X-CSRF-Token'?: components['parameters']['SessionMutationHeaders.csrfToken'];
                 /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
                 readonly 'X-Request-ID'?: components['schemas']['RequestId'];
             };
@@ -42989,12 +43986,12 @@ export interface operations {
                 /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
                 readonly 'Accept-Language'?: string;
                 readonly 'Idempotency-Key': components['parameters']['MutationKey'];
-                /** @description Exact browser origin from the configured allowlist; required even for anonymous mutations. Cross-site and missing origins are rejected. */
-                readonly Origin: components['parameters']['BrowserMutationHeaders.origin'];
+                /** @description Required with X-CSRF-Token for WEB/TMA sessions and rejected when missing or cross-origin. Omit for MOBILE sessions; the server derives the platform from the access credential and never trusts a caller platform header. */
+                readonly Origin?: components['parameters']['SessionMutationHeaders.origin'];
                 /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
                 readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
-                /** @description Secret bound to the HttpOnly browser context cookie from GET /auth/context. Never log. Validate origin, context cookie and token together before mutation. */
-                readonly 'X-CSRF-Token': components['parameters']['BrowserMutationHeaders.csrfToken'];
+                /** @description Required with Origin for WEB/TMA sessions and validated against the browser context cookie. Omit for MOBILE sessions, whose bearer credential is non-ambient. Supplying only one browser header is rejected. */
+                readonly 'X-CSRF-Token'?: components['parameters']['SessionMutationHeaders.csrfToken'];
                 /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
                 readonly 'X-Request-ID'?: components['schemas']['RequestId'];
             };
@@ -43334,6 +44331,167 @@ export interface operations {
             };
         };
     };
+    readonly listNotificationDevices: {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: {
+                /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
+                readonly 'Accept-Language'?: string;
+                /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
+                readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
+                /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
+                readonly 'X-Request-ID'?: components['schemas']['RequestId'];
+            };
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        readonly requestBody?: never;
+        readonly responses: {
+            /** @description The request has succeeded. */
+            readonly 200: {
+                headers: {
+                    readonly 'Cache-Control': 'no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    readonly 'Idempotency-Replayed'?: boolean;
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': components['schemas']['NotificationDevicePage'];
+                };
+            };
+            /** @description The server could not understand the request due to invalid syntax. */
+            readonly 400: {
+                headers: {
+                    readonly 'Cache-Control': 'no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code:
+                                | 'VALIDATION_FAILED'
+                                | 'INVALID_CURSOR'
+                                | 'CURSOR_EXPIRED'
+                                | 'RESYNC_REQUIRED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Access is unauthorized. */
+            readonly 401: {
+                headers: {
+                    readonly 'Cache-Control': 'no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'SESSION_INVALID';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Access is forbidden. */
+            readonly 403: {
+                headers: {
+                    readonly 'Cache-Control': 'no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'CONVERSATION_ACCESS_DENIED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description The server cannot find the requested resource. */
+            readonly 404: {
+                headers: {
+                    readonly 'Cache-Control': 'no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'CONVERSATION_NOT_FOUND' | 'MESSAGE_NOT_FOUND' | 'NOTIFICATION_NOT_FOUND';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Client error */
+            readonly 429: {
+                headers: {
+                    readonly 'Cache-Control': 'no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Non-negative whole seconds before the client should retry. */
+                    readonly 'Retry-After': number;
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'RATE_LIMITED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+        };
+    };
     readonly bindNotificationDevice: {
         readonly parameters: {
             readonly query?: never;
@@ -43341,12 +44499,12 @@ export interface operations {
                 /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
                 readonly 'Accept-Language'?: string;
                 readonly 'Idempotency-Key': components['parameters']['MutationKey'];
-                /** @description Exact browser origin from the configured allowlist; required even for anonymous mutations. Cross-site and missing origins are rejected. */
-                readonly Origin: components['parameters']['BrowserMutationHeaders.origin'];
+                /** @description Required with X-CSRF-Token for WEB/TMA sessions and rejected when missing or cross-origin. Omit for MOBILE sessions; the server derives the platform from the access credential and never trusts a caller platform header. */
+                readonly Origin?: components['parameters']['SessionMutationHeaders.origin'];
                 /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
                 readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
-                /** @description Secret bound to the HttpOnly browser context cookie from GET /auth/context. Never log. Validate origin, context cookie and token together before mutation. */
-                readonly 'X-CSRF-Token': components['parameters']['BrowserMutationHeaders.csrfToken'];
+                /** @description Required with Origin for WEB/TMA sessions and validated against the browser context cookie. Omit for MOBILE sessions, whose bearer credential is non-ambient. Supplying only one browser header is rejected. */
+                readonly 'X-CSRF-Token'?: components['parameters']['SessionMutationHeaders.csrfToken'];
                 /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
                 readonly 'X-Request-ID'?: components['schemas']['RequestId'];
             };
@@ -43464,7 +44622,12 @@ export interface operations {
                     readonly 'application/json': {
                         readonly error: {
                             /** @enum {string} */
-                            readonly code: 'CONVERSATION_NOT_FOUND' | 'MESSAGE_NOT_FOUND' | 'NOTIFICATION_NOT_FOUND';
+                            readonly code:
+                                | 'CONVERSATION_NOT_FOUND'
+                                | 'MESSAGE_NOT_FOUND'
+                                | 'NOTIFICATION_NOT_FOUND'
+                                | 'NOTIFICATION_DEVICE_NOT_FOUND'
+                                | 'PUSH_REGISTRATION_NOT_FOUND';
                             readonly details?: readonly components['schemas']['ErrorDetail'][];
                             readonly message: string;
                         };
@@ -43534,12 +44697,12 @@ export interface operations {
                 /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
                 readonly 'Accept-Language'?: string;
                 readonly 'Idempotency-Key': components['parameters']['MutationKey'];
-                /** @description Exact browser origin from the configured allowlist; required even for anonymous mutations. Cross-site and missing origins are rejected. */
-                readonly Origin: components['parameters']['BrowserMutationHeaders.origin'];
+                /** @description Required with X-CSRF-Token for WEB/TMA sessions and rejected when missing or cross-origin. Omit for MOBILE sessions; the server derives the platform from the access credential and never trusts a caller platform header. */
+                readonly Origin?: components['parameters']['SessionMutationHeaders.origin'];
                 /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
                 readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
-                /** @description Secret bound to the HttpOnly browser context cookie from GET /auth/context. Never log. Validate origin, context cookie and token together before mutation. */
-                readonly 'X-CSRF-Token': components['parameters']['BrowserMutationHeaders.csrfToken'];
+                /** @description Required with Origin for WEB/TMA sessions and validated against the browser context cookie. Omit for MOBILE sessions, whose bearer credential is non-ambient. Supplying only one browser header is rejected. */
+                readonly 'X-CSRF-Token'?: components['parameters']['SessionMutationHeaders.csrfToken'];
                 /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
                 readonly 'X-Request-ID'?: components['schemas']['RequestId'];
             };
@@ -43653,7 +44816,407 @@ export interface operations {
                     readonly 'application/json': {
                         readonly error: {
                             /** @enum {string} */
-                            readonly code: 'CONVERSATION_NOT_FOUND' | 'MESSAGE_NOT_FOUND' | 'NOTIFICATION_NOT_FOUND';
+                            readonly code:
+                                | 'CONVERSATION_NOT_FOUND'
+                                | 'MESSAGE_NOT_FOUND'
+                                | 'NOTIFICATION_NOT_FOUND'
+                                | 'NOTIFICATION_DEVICE_NOT_FOUND'
+                                | 'PUSH_REGISTRATION_NOT_FOUND';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description The request conflicts with the current state of the server. */
+            readonly 409: {
+                headers: {
+                    readonly 'Cache-Control': 'no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code:
+                                | 'MESSAGE_REVISION_CONFLICT'
+                                | 'IDEMPOTENCY_KEY_REUSED'
+                                | 'PREFERENCE_VERSION_CONFLICT';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Client error */
+            readonly 429: {
+                headers: {
+                    readonly 'Cache-Control': 'no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Non-negative whole seconds before the client should retry. */
+                    readonly 'Retry-After': number;
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'RATE_LIMITED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+        };
+    };
+    readonly registerPushToken: {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header: {
+                /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
+                readonly 'Accept-Language'?: string;
+                readonly 'Idempotency-Key': components['parameters']['MutationKey'];
+                /** @description Required with X-CSRF-Token for WEB/TMA sessions and rejected when missing or cross-origin. Omit for MOBILE sessions; the server derives the platform from the access credential and never trusts a caller platform header. */
+                readonly Origin?: components['parameters']['SessionMutationHeaders.origin'];
+                /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
+                readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
+                /** @description Required with Origin for WEB/TMA sessions and validated against the browser context cookie. Omit for MOBILE sessions, whose bearer credential is non-ambient. Supplying only one browser header is rejected. */
+                readonly 'X-CSRF-Token'?: components['parameters']['SessionMutationHeaders.csrfToken'];
+                /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
+                readonly 'X-Request-ID'?: components['schemas']['RequestId'];
+            };
+            readonly path: {
+                readonly installationId: components['schemas']['UuidV4'];
+            };
+            readonly cookie?: never;
+        };
+        readonly requestBody: {
+            readonly content: {
+                readonly 'application/json': components['schemas']['RegisterPushToken'];
+            };
+        };
+        readonly responses: {
+            /** @description The request has succeeded and a new resource has been created as a result. */
+            readonly 201: {
+                headers: {
+                    readonly 'Cache-Control': 'no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    readonly 'Idempotency-Replayed'?: boolean;
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': components['schemas']['PushRegistration'];
+                };
+            };
+            /** @description The server could not understand the request due to invalid syntax. */
+            readonly 400: {
+                headers: {
+                    readonly 'Cache-Control': 'no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'VALIDATION_FAILED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Access is unauthorized. */
+            readonly 401: {
+                headers: {
+                    readonly 'Cache-Control': 'no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'SESSION_INVALID';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Access is forbidden. */
+            readonly 403: {
+                headers: {
+                    readonly 'Cache-Control': 'no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'CONVERSATION_ACCESS_DENIED' | 'MESSAGE_MUTATION_FORBIDDEN';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description The server cannot find the requested resource. */
+            readonly 404: {
+                headers: {
+                    readonly 'Cache-Control': 'no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code:
+                                | 'CONVERSATION_NOT_FOUND'
+                                | 'MESSAGE_NOT_FOUND'
+                                | 'NOTIFICATION_NOT_FOUND'
+                                | 'NOTIFICATION_DEVICE_NOT_FOUND'
+                                | 'PUSH_REGISTRATION_NOT_FOUND';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description The request conflicts with the current state of the server. */
+            readonly 409: {
+                headers: {
+                    readonly 'Cache-Control': 'no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code:
+                                | 'MESSAGE_REVISION_CONFLICT'
+                                | 'IDEMPOTENCY_KEY_REUSED'
+                                | 'PREFERENCE_VERSION_CONFLICT';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Client error */
+            readonly 429: {
+                headers: {
+                    readonly 'Cache-Control': 'no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Non-negative whole seconds before the client should retry. */
+                    readonly 'Retry-After': number;
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'RATE_LIMITED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+        };
+    };
+    readonly revokePushRegistration: {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header: {
+                /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
+                readonly 'Accept-Language'?: string;
+                readonly 'Idempotency-Key': components['parameters']['MutationKey'];
+                /** @description Required with X-CSRF-Token for WEB/TMA sessions and rejected when missing or cross-origin. Omit for MOBILE sessions; the server derives the platform from the access credential and never trusts a caller platform header. */
+                readonly Origin?: components['parameters']['SessionMutationHeaders.origin'];
+                /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
+                readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
+                /** @description Required with Origin for WEB/TMA sessions and validated against the browser context cookie. Omit for MOBILE sessions, whose bearer credential is non-ambient. Supplying only one browser header is rejected. */
+                readonly 'X-CSRF-Token'?: components['parameters']['SessionMutationHeaders.csrfToken'];
+                /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
+                readonly 'X-Request-ID'?: components['schemas']['RequestId'];
+            };
+            readonly path: {
+                readonly installationId: components['schemas']['UuidV4'];
+                readonly registrationId: components['schemas']['Uuid'];
+            };
+            readonly cookie?: never;
+        };
+        readonly requestBody?: never;
+        readonly responses: {
+            /** @description There is no content to send for this request, but the headers may be useful. */
+            readonly 204: {
+                headers: {
+                    readonly 'Cache-Control': 'no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    readonly 'Idempotency-Replayed'?: boolean;
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The server could not understand the request due to invalid syntax. */
+            readonly 400: {
+                headers: {
+                    readonly 'Cache-Control': 'no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'VALIDATION_FAILED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Access is unauthorized. */
+            readonly 401: {
+                headers: {
+                    readonly 'Cache-Control': 'no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'SESSION_INVALID';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Access is forbidden. */
+            readonly 403: {
+                headers: {
+                    readonly 'Cache-Control': 'no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'CONVERSATION_ACCESS_DENIED' | 'MESSAGE_MUTATION_FORBIDDEN';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description The server cannot find the requested resource. */
+            readonly 404: {
+                headers: {
+                    readonly 'Cache-Control': 'no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code:
+                                | 'CONVERSATION_NOT_FOUND'
+                                | 'MESSAGE_NOT_FOUND'
+                                | 'NOTIFICATION_NOT_FOUND'
+                                | 'NOTIFICATION_DEVICE_NOT_FOUND'
+                                | 'PUSH_REGISTRATION_NOT_FOUND';
                             readonly details?: readonly components['schemas']['ErrorDetail'][];
                             readonly message: string;
                         };
@@ -43884,12 +45447,12 @@ export interface operations {
                 /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
                 readonly 'Accept-Language'?: string;
                 readonly 'Idempotency-Key': components['parameters']['MutationKey'];
-                /** @description Exact browser origin from the configured allowlist; required even for anonymous mutations. Cross-site and missing origins are rejected. */
-                readonly Origin: components['parameters']['BrowserMutationHeaders.origin'];
+                /** @description Required with X-CSRF-Token for WEB/TMA sessions and rejected when missing or cross-origin. Omit for MOBILE sessions; the server derives the platform from the access credential and never trusts a caller platform header. */
+                readonly Origin?: components['parameters']['SessionMutationHeaders.origin'];
                 /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
                 readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
-                /** @description Secret bound to the HttpOnly browser context cookie from GET /auth/context. Never log. Validate origin, context cookie and token together before mutation. */
-                readonly 'X-CSRF-Token': components['parameters']['BrowserMutationHeaders.csrfToken'];
+                /** @description Required with Origin for WEB/TMA sessions and validated against the browser context cookie. Omit for MOBILE sessions, whose bearer credential is non-ambient. Supplying only one browser header is rejected. */
+                readonly 'X-CSRF-Token'?: components['parameters']['SessionMutationHeaders.csrfToken'];
                 /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
                 readonly 'X-Request-ID'?: components['schemas']['RequestId'];
             };
@@ -44007,7 +45570,12 @@ export interface operations {
                     readonly 'application/json': {
                         readonly error: {
                             /** @enum {string} */
-                            readonly code: 'CONVERSATION_NOT_FOUND' | 'MESSAGE_NOT_FOUND' | 'NOTIFICATION_NOT_FOUND';
+                            readonly code:
+                                | 'CONVERSATION_NOT_FOUND'
+                                | 'MESSAGE_NOT_FOUND'
+                                | 'NOTIFICATION_NOT_FOUND'
+                                | 'NOTIFICATION_DEVICE_NOT_FOUND'
+                                | 'PUSH_REGISTRATION_NOT_FOUND';
                             readonly details?: readonly components['schemas']['ErrorDetail'][];
                             readonly message: string;
                         };
@@ -44243,12 +45811,12 @@ export interface operations {
                 /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
                 readonly 'Accept-Language'?: string;
                 readonly 'Idempotency-Key': components['parameters']['MutationKey'];
-                /** @description Exact browser origin from the configured allowlist; required even for anonymous mutations. Cross-site and missing origins are rejected. */
-                readonly Origin: components['parameters']['BrowserMutationHeaders.origin'];
+                /** @description Required with X-CSRF-Token for WEB/TMA sessions and rejected when missing or cross-origin. Omit for MOBILE sessions; the server derives the platform from the access credential and never trusts a caller platform header. */
+                readonly Origin?: components['parameters']['SessionMutationHeaders.origin'];
                 /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
                 readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
-                /** @description Secret bound to the HttpOnly browser context cookie from GET /auth/context. Never log. Validate origin, context cookie and token together before mutation. */
-                readonly 'X-CSRF-Token': components['parameters']['BrowserMutationHeaders.csrfToken'];
+                /** @description Required with Origin for WEB/TMA sessions and validated against the browser context cookie. Omit for MOBILE sessions, whose bearer credential is non-ambient. Supplying only one browser header is rejected. */
+                readonly 'X-CSRF-Token'?: components['parameters']['SessionMutationHeaders.csrfToken'];
                 /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
                 readonly 'X-Request-ID'?: components['schemas']['RequestId'];
             };
@@ -44364,7 +45932,12 @@ export interface operations {
                     readonly 'application/json': {
                         readonly error: {
                             /** @enum {string} */
-                            readonly code: 'CONVERSATION_NOT_FOUND' | 'MESSAGE_NOT_FOUND' | 'NOTIFICATION_NOT_FOUND';
+                            readonly code:
+                                | 'CONVERSATION_NOT_FOUND'
+                                | 'MESSAGE_NOT_FOUND'
+                                | 'NOTIFICATION_NOT_FOUND'
+                                | 'NOTIFICATION_DEVICE_NOT_FOUND'
+                                | 'PUSH_REGISTRATION_NOT_FOUND';
                             readonly details?: readonly components['schemas']['ErrorDetail'][];
                             readonly message: string;
                         };
@@ -44969,6 +46542,204 @@ export interface operations {
             };
         };
     };
+    readonly createRealtimeTicket: {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header: {
+                /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
+                readonly 'Accept-Language'?: string;
+                readonly 'Idempotency-Key': components['parameters']['MutationKey'];
+                /** @description Required with X-CSRF-Token for WEB/TMA sessions and rejected when missing or cross-origin. Omit for MOBILE sessions; the server derives the platform from the access credential and never trusts a caller platform header. */
+                readonly Origin?: components['parameters']['SessionMutationHeaders.origin'];
+                /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
+                readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
+                /** @description Required with Origin for WEB/TMA sessions and validated against the browser context cookie. Omit for MOBILE sessions, whose bearer credential is non-ambient. Supplying only one browser header is rejected. */
+                readonly 'X-CSRF-Token'?: components['parameters']['SessionMutationHeaders.csrfToken'];
+                /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
+                readonly 'X-Request-ID'?: components['schemas']['RequestId'];
+            };
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        readonly requestBody: {
+            readonly content: {
+                readonly 'application/json': components['schemas']['EmptyRequest'];
+            };
+        };
+        readonly responses: {
+            /** @description The request has succeeded and a new resource has been created as a result. */
+            readonly 201: {
+                headers: {
+                    readonly 'Cache-Control': 'no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    readonly 'Idempotency-Replayed'?: boolean;
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': components['schemas']['RealtimeTicket'];
+                };
+            };
+            /** @description The server could not understand the request due to invalid syntax. */
+            readonly 400: {
+                headers: {
+                    readonly 'Cache-Control': 'no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'VALIDATION_FAILED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Access is unauthorized. */
+            readonly 401: {
+                headers: {
+                    readonly 'Cache-Control': 'no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'SESSION_INVALID';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Access is forbidden. */
+            readonly 403: {
+                headers: {
+                    readonly 'Cache-Control': 'no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'CONVERSATION_ACCESS_DENIED' | 'MESSAGE_MUTATION_FORBIDDEN';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description The server cannot find the requested resource. */
+            readonly 404: {
+                headers: {
+                    readonly 'Cache-Control': 'no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code:
+                                | 'CONVERSATION_NOT_FOUND'
+                                | 'MESSAGE_NOT_FOUND'
+                                | 'NOTIFICATION_NOT_FOUND'
+                                | 'NOTIFICATION_DEVICE_NOT_FOUND'
+                                | 'PUSH_REGISTRATION_NOT_FOUND';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description The request conflicts with the current state of the server. */
+            readonly 409: {
+                headers: {
+                    readonly 'Cache-Control': 'no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code:
+                                | 'MESSAGE_REVISION_CONFLICT'
+                                | 'IDEMPOTENCY_KEY_REUSED'
+                                | 'PREFERENCE_VERSION_CONFLICT';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+            /** @description Client error */
+            readonly 429: {
+                headers: {
+                    readonly 'Cache-Control': 'no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Non-negative whole seconds before the client should retry. */
+                    readonly 'Retry-After': number;
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': {
+                        readonly error: {
+                            /** @enum {string} */
+                            readonly code: 'RATE_LIMITED';
+                            readonly details?: readonly components['schemas']['ErrorDetail'][];
+                            readonly message: string;
+                        };
+                        readonly requestId: components['schemas']['RequestId'];
+                    };
+                };
+            };
+        };
+    };
     readonly submitSafetyReport: {
         readonly parameters: {
             readonly query?: never;
@@ -44976,12 +46747,12 @@ export interface operations {
                 /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
                 readonly 'Accept-Language'?: string;
                 readonly 'Idempotency-Key': components['parameters']['MutationKey'];
-                /** @description Exact browser origin from the configured allowlist; required even for anonymous mutations. Cross-site and missing origins are rejected. */
-                readonly Origin: components['parameters']['BrowserMutationHeaders.origin'];
+                /** @description Required with X-CSRF-Token for WEB/TMA sessions and rejected when missing or cross-origin. Omit for MOBILE sessions; the server derives the platform from the access credential and never trusts a caller platform header. */
+                readonly Origin?: components['parameters']['SessionMutationHeaders.origin'];
                 /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
                 readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
-                /** @description Secret bound to the HttpOnly browser context cookie from GET /auth/context. Never log. Validate origin, context cookie and token together before mutation. */
-                readonly 'X-CSRF-Token': components['parameters']['BrowserMutationHeaders.csrfToken'];
+                /** @description Required with Origin for WEB/TMA sessions and validated against the browser context cookie. Omit for MOBILE sessions, whose bearer credential is non-ambient. Supplying only one browser header is rejected. */
+                readonly 'X-CSRF-Token'?: components['parameters']['SessionMutationHeaders.csrfToken'];
                 /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
                 readonly 'X-Request-ID'?: components['schemas']['RequestId'];
             };
@@ -49771,12 +51542,12 @@ export interface operations {
                 /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
                 readonly 'Accept-Language'?: string;
                 readonly 'Idempotency-Key': components['parameters']['MutationKey'];
-                /** @description Exact browser origin from the configured allowlist; required even for anonymous mutations. Cross-site and missing origins are rejected. */
-                readonly Origin: components['parameters']['BrowserMutationHeaders.origin'];
+                /** @description Required with X-CSRF-Token for WEB/TMA sessions and rejected when missing or cross-origin. Omit for MOBILE sessions; the server derives the platform from the access credential and never trusts a caller platform header. */
+                readonly Origin?: components['parameters']['SessionMutationHeaders.origin'];
                 /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
                 readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
-                /** @description Secret bound to the HttpOnly browser context cookie from GET /auth/context. Never log. Validate origin, context cookie and token together before mutation. */
-                readonly 'X-CSRF-Token': components['parameters']['BrowserMutationHeaders.csrfToken'];
+                /** @description Required with Origin for WEB/TMA sessions and validated against the browser context cookie. Omit for MOBILE sessions, whose bearer credential is non-ambient. Supplying only one browser header is rejected. */
+                readonly 'X-CSRF-Token'?: components['parameters']['SessionMutationHeaders.csrfToken'];
                 /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
                 readonly 'X-Request-ID'?: components['schemas']['RequestId'];
             };
@@ -49966,12 +51737,12 @@ export interface operations {
                 /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
                 readonly 'Accept-Language'?: string;
                 readonly 'Idempotency-Key': components['parameters']['MutationKey'];
-                /** @description Exact browser origin from the configured allowlist; required even for anonymous mutations. Cross-site and missing origins are rejected. */
-                readonly Origin: components['parameters']['BrowserMutationHeaders.origin'];
+                /** @description Required with X-CSRF-Token for WEB/TMA sessions and rejected when missing or cross-origin. Omit for MOBILE sessions; the server derives the platform from the access credential and never trusts a caller platform header. */
+                readonly Origin?: components['parameters']['SessionMutationHeaders.origin'];
                 /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
                 readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
-                /** @description Secret bound to the HttpOnly browser context cookie from GET /auth/context. Never log. Validate origin, context cookie and token together before mutation. */
-                readonly 'X-CSRF-Token': components['parameters']['BrowserMutationHeaders.csrfToken'];
+                /** @description Required with Origin for WEB/TMA sessions and validated against the browser context cookie. Omit for MOBILE sessions, whose bearer credential is non-ambient. Supplying only one browser header is rejected. */
+                readonly 'X-CSRF-Token'?: components['parameters']['SessionMutationHeaders.csrfToken'];
                 /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
                 readonly 'X-Request-ID'?: components['schemas']['RequestId'];
             };
@@ -50161,12 +51932,12 @@ export interface operations {
                 /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
                 readonly 'Accept-Language'?: string;
                 readonly 'Idempotency-Key': components['parameters']['MutationKey'];
-                /** @description Exact browser origin from the configured allowlist; required even for anonymous mutations. Cross-site and missing origins are rejected. */
-                readonly Origin: components['parameters']['BrowserMutationHeaders.origin'];
+                /** @description Required with X-CSRF-Token for WEB/TMA sessions and rejected when missing or cross-origin. Omit for MOBILE sessions; the server derives the platform from the access credential and never trusts a caller platform header. */
+                readonly Origin?: components['parameters']['SessionMutationHeaders.origin'];
                 /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
                 readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
-                /** @description Secret bound to the HttpOnly browser context cookie from GET /auth/context. Never log. Validate origin, context cookie and token together before mutation. */
-                readonly 'X-CSRF-Token': components['parameters']['BrowserMutationHeaders.csrfToken'];
+                /** @description Required with Origin for WEB/TMA sessions and validated against the browser context cookie. Omit for MOBILE sessions, whose bearer credential is non-ambient. Supplying only one browser header is rejected. */
+                readonly 'X-CSRF-Token'?: components['parameters']['SessionMutationHeaders.csrfToken'];
                 /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
                 readonly 'X-Request-ID'?: components['schemas']['RequestId'];
             };
