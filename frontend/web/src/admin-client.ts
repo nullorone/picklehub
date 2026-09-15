@@ -67,6 +67,7 @@ export function createAdminClient(options: AdminClientOptions) {
         settings: {
             readonly body?: JsonBody;
             readonly idempotencyKey?: string | undefined;
+            readonly method?: 'GET' | 'POST' | 'PUT';
             readonly mutation?: boolean;
             readonly parameters?: Readonly<Record<string, unknown>>;
         } = {}
@@ -89,7 +90,7 @@ export function createAdminClient(options: AdminClientOptions) {
             cache: 'no-store',
             credentials: 'include',
             headers,
-            method: settings.body || settings.mutation ? 'POST' : 'GET',
+            method: settings.method ?? (settings.body || settings.mutation ? 'POST' : 'GET'),
         };
         if (settings.body) requestInit.body = JSON.stringify(settings.body);
         const response = await request(
@@ -169,6 +170,113 @@ export function createAdminClient(options: AdminClientOptions) {
             }),
         searchAudit: (parameters: operations['searchAdminAudit']['parameters']['query']) =>
             call<components['schemas']['AuditEntryPage']>('/admin/audit', { parameters }),
+        listContentSources: (parameters: Record<string, unknown> = { limit: 50 }) =>
+            call<components['schemas']['ContentSourcePage']>('/admin/content/sources', { parameters }),
+        createContentSource: (body: components['schemas']['ContentSourceInput'], idempotencyKey?: string) =>
+            call<components['schemas']['ContentSource']>('/admin/content/sources', {
+                body,
+                idempotencyKey,
+                mutation: true,
+            }),
+        updateContentSource: (
+            sourceId: string,
+            body: components['schemas']['ContentSourceInput'],
+            idempotencyKey?: string
+        ) =>
+            call<components['schemas']['ContentSource']>(`/admin/content/sources/${sourceId}`, {
+                body,
+                idempotencyKey,
+                method: 'PUT',
+                mutation: true,
+            }),
+        pauseContentSource: (
+            sourceId: string,
+            body: components['schemas']['PauseContentSource'],
+            idempotencyKey?: string
+        ) =>
+            call<components['schemas']['ContentSource']>(`/admin/content/sources/${sourceId}/pause`, {
+                body,
+                idempotencyKey,
+                mutation: true,
+            }),
+        changeContentSourceState: (
+            sourceId: string,
+            body: components['schemas']['ChangeContentSourceState'],
+            idempotencyKey?: string
+        ) =>
+            call<components['schemas']['ContentSource']>(`/admin/content/sources/${sourceId}/state`, {
+                body,
+                idempotencyKey,
+                mutation: true,
+            }),
+        listContentCandidates: (parameters: Record<string, unknown> = { limit: 50 }) =>
+            call<components['schemas']['IngestCandidatePage']>('/admin/content/candidates', { parameters }),
+        getContentCandidate: (candidateId: string) =>
+            call<components['schemas']['IngestCandidate']>(`/admin/content/candidates/${candidateId}`),
+        decideContentCandidate: (
+            candidateId: string,
+            body: components['schemas']['DecideIngestCandidate'],
+            idempotencyKey?: string
+        ) =>
+            call<components['schemas']['IngestCandidate']>(`/admin/content/candidates/${candidateId}/decision`, {
+                body,
+                idempotencyKey,
+                mutation: true,
+            }),
+        listContentArticles: (parameters: Record<string, unknown> = { limit: 50 }) =>
+            call<components['schemas']['AdminArticlePage']>('/admin/content/articles', { parameters }),
+        createContentArticle: (body: components['schemas']['CreateArticleInput'], idempotencyKey?: string) =>
+            call<components['schemas']['AdminArticle']>('/admin/content/articles', {
+                body,
+                idempotencyKey,
+                mutation: true,
+            }),
+        getContentArticle: (articleId: string) =>
+            call<components['schemas']['AdminArticle']>(`/admin/content/articles/${articleId}`),
+        listContentRevisions: (articleId: string, parameters: Record<string, unknown> = { limit: 50 }) =>
+            call<components['schemas']['ArticleRevisionPage']>(`/admin/content/articles/${articleId}/revisions`, {
+                parameters,
+            }),
+        getContentRevision: (articleId: string, revisionId: string) =>
+            call<components['schemas']['ArticleRevision']>(
+                `/admin/content/articles/${articleId}/revisions/${revisionId}`
+            ),
+        previewContentRevision: (articleId: string, revisionId: string) =>
+            call<components['schemas']['ArticleRevision']>(
+                `/admin/content/articles/${articleId}/revisions/${revisionId}/preview`
+            ),
+        createContentRevision: (
+            articleId: string,
+            body: components['schemas']['ArticleRevisionInput'],
+            idempotencyKey?: string
+        ) =>
+            call<components['schemas']['ArticleRevision']>(`/admin/content/articles/${articleId}/revisions`, {
+                body,
+                idempotencyKey,
+                mutation: true,
+            }),
+        decideContentArticle: (
+            articleId: string,
+            body: components['schemas']['ContentDecisionInput'],
+            idempotencyKey?: string
+        ) =>
+            call<components['schemas']['ContentPublicationDecision']>(
+                `/admin/content/articles/${articleId}/decisions`,
+                {
+                    body,
+                    idempotencyKey,
+                    mutation: true,
+                }
+            ),
+        emergencyUnpublishContentArticle: (
+            articleId: string,
+            body: components['schemas']['EmergencyUnpublishContentInput'],
+            idempotencyKey?: string
+        ) =>
+            call<components['schemas']['ContentPublicationDecision']>(
+                `/admin/content/articles/${articleId}/emergency-unpublish`,
+                { body, idempotencyKey, mutation: true }
+            ),
     } as const;
 }
 

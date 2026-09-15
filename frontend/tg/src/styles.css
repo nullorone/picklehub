@@ -1415,6 +1415,107 @@ fieldset {
     }
 }
 
+/* TMA editorial reading stays compact and uses typed rich text without HTML injection. */
+.news-screen,
+.article-screen,
+.article-header,
+.article-body {
+    display: grid;
+    gap: 1rem;
+}
+
+.news-search {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.75rem;
+    align-items: end;
+}
+
+.news-list {
+    display: grid;
+    gap: 1rem;
+}
+
+.news-card,
+.correction-note,
+.attribution {
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: 1rem;
+    background: var(--surface);
+}
+
+.news-card > div,
+.correction-note,
+.attribution {
+    padding: 1rem;
+}
+
+.news-card img,
+.article-header img {
+    width: 100%;
+    max-height: 24rem;
+    object-fit: cover;
+}
+
+.news-meta {
+    color: var(--text-muted);
+}
+
+.tag-list,
+.article-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 0;
+    list-style: none;
+}
+
+.tag-list li {
+    padding: 0.25rem 0.55rem;
+    border-radius: 999px;
+    background: var(--surface-strong);
+}
+
+.article-screen {
+    max-width: 48rem;
+}
+
+.article-header h1,
+.news-screen > h1 {
+    max-width: 18ch;
+    font-size: clamp(2.2rem, 10vw, 4rem);
+}
+
+.article-subtitle,
+.external-label {
+    color: var(--text-muted);
+}
+
+.article-body {
+    font-size: 1.06rem;
+    line-height: 1.7;
+}
+
+.article-body blockquote,
+.correction-note {
+    margin: 0;
+    padding-left: 1rem;
+    border-left: 0.3rem solid var(--primary);
+}
+
+.article-body code {
+    padding: 0.1rem 0.3rem;
+    border-radius: 0.3rem;
+    background: var(--surface-strong);
+}
+
+@media (max-width: 520px) {
+    .news-search {
+        grid-template-columns: 1fr;
+    }
+}
+
 .tournaments-screen,
 .tma-tournament-wizard form,
 .organizer-panel,

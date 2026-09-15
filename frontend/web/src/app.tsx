@@ -7,6 +7,7 @@ import { Link, Navigate, Route, Routes, useLocation, useParams } from 'react-rou
 
 import { useOnlineStatus } from './connectivity';
 import { AdminApp } from './admin-ui';
+import { ArticleScreen, BookmarksScreen, NewsFeed } from './content-ui';
 import { ChatScreen, NotificationBadge, NotificationsScreen } from './communications-ui';
 import { ClubDetailsScreen, ClubInvitationScreen, ClubsScreen } from './clubs-ui';
 import { ClubGamificationSettings, ClubProgressRoute, LeaderboardScreen, ProgressScreen } from './gamification-ui';
@@ -126,6 +127,9 @@ export function App({ config }: { readonly config: RuntimeConfig }) {
                     <span className="brand-mark" aria-hidden="true" />
                     <span>{t('appName')}</span>
                 </Link>
+                <nav aria-label="Открытые разделы">
+                    <Link to="/news">Новости</Link>
+                </nav>
                 {session?.user.onboardingStatus === 'COMPLETED' && (
                     <nav aria-label="Личный кабинет">
                         <Link to="/matches">Матчи</Link>
@@ -144,6 +148,27 @@ export function App({ config }: { readonly config: RuntimeConfig }) {
                 )}
             </header>
             <Routes>
+                <Route path="/news" element={<NewsFeed client={client} online={online} />} />
+                <Route
+                    path="/news/bookmarks"
+                    element={
+                        session && !requiresOnboarding ? (
+                            <BookmarksScreen client={client} online={online} />
+                        ) : (
+                            <Navigate to={session ? '/onboarding' : '/login'} replace />
+                        )
+                    }
+                />
+                <Route
+                    path="/news/:locale/:slug"
+                    element={
+                        <ArticleScreen
+                            client={client}
+                            online={online}
+                            signedIn={Boolean(session && !requiresOnboarding)}
+                        />
+                    }
+                />
                 <Route
                     path="/auth/email"
                     element={

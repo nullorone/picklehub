@@ -127,6 +127,7 @@ export function createApiClient(options: ApiClientOptions) {
 type JsonBody = Record<string, unknown>;
 interface RequestOptions {
     readonly auth?: boolean;
+    readonly cache?: RequestCache;
     readonly idempotent?: boolean;
     readonly idempotencyKey?: string | undefined;
     readonly method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
@@ -172,7 +173,7 @@ export function createIdentityClient(options: ApiClientOptions, platform: Client
         }
         if (settings.idempotent) requestHeaders['Idempotency-Key'] = settings.idempotencyKey ?? crypto.randomUUID();
         const requestInit: RequestInit = {
-            cache: 'no-store',
+            cache: settings.cache ?? 'no-store',
             credentials: 'include',
             headers: requestHeaders,
             method,
@@ -1096,6 +1097,48 @@ export function createIdentityClient(options: ApiClientOptions, platform: Client
                 undefined,
                 { auth: true }
             ),
+        listPublishedArticles: (
+            parameters: {
+                readonly category?: string;
+                readonly cursor?: string;
+                readonly limit?: number;
+                readonly locale?: string;
+                readonly tag?: string;
+            } = {}
+        ) =>
+            call<components['schemas']['PublicArticlePage']>('/content/articles', undefined, {
+                cache: 'default',
+                query: query({ limit: 20, ...parameters }),
+            }),
+        getPublishedArticle: (locale: string, slug: string) =>
+            call<components['schemas']['PublicArticle']>(
+                `/content/articles/${encodeURIComponent(locale)}/${encodeURIComponent(slug)}`,
+                undefined,
+                { cache: 'default' }
+            ),
+        searchPublishedArticles: (body: components['schemas']['ContentSearchInput']) =>
+            call<components['schemas']['PublicArticlePage']>('/content/search', body),
+        listOwnContentBookmarks: (cursor?: string, limit = 20) =>
+            call<components['schemas']['BookmarkPage']>('/content/bookmarks', undefined, {
+                auth: true,
+                query: query({ cursor, limit }),
+            }),
+        putOwnContentBookmark: (articleId: string, idempotencyKey?: string) =>
+            call<components['schemas']['BookmarkState']>(`/content/bookmarks/${articleId}`, undefined, {
+                auth: true,
+                idempotent: true,
+                idempotencyKey,
+                method: 'PUT',
+                mutation: true,
+            }),
+        deleteOwnContentBookmark: (articleId: string, idempotencyKey?: string) =>
+            call<undefined>(`/content/bookmarks/${articleId}`, undefined, {
+                auth: true,
+                idempotent: true,
+                idempotencyKey,
+                method: 'DELETE',
+                mutation: true,
+            }),
     } as const;
 }
 

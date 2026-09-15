@@ -3319,3 +3319,53 @@ contracts/scripts/content-backend-policy.test.mjs` — успешно, 3/3 tests
 - Попытка создать запрошенный commit `fix: harden content backend runtime gates` не изменила Git: sandbox запретил
   создание `.git/index.lock` с `Operation not permitted`. Изменения остаются в рабочем дереве; commit, push и запуск
   PR integration job должны быть выполнены в среде с правом записи в `.git` и доступом к GitHub.
+
+## 2026-09-15 — новости и контент, этап 04-tma-web
+
+- Активный промпт: `llm/12-content-news/04-tma-web.md`, запущенный по прямому запросу владельца. Ранее записанный
+  переходный gate этапа 03 с PostgreSQL/Redis не объявлен устранённым: UI реализован поверх утверждённого контракта,
+  но clean migration, scheduler/BullMQ redelivery и конкурентные runtime-сценарии backend всё ещё должны пройти в
+  integration job. К `llm/12-content-news/05-verification.md` не переходили.
+- Web/PWA и TMA получили публичные `/news` и `/news/:locale/:slug`, поиск через POST body, категории, теги,
+  атрибуцию, correction state, safe external links, canonical share и self-only `/news/bookmarks`. Снятая статья
+  показывает нейтральную недоступность, а недоступная bookmark не сохраняет title/body. Мутации закладок требуют
+  действующей player session, CSRF/idempotency и сети; false optimistic success отсутствует.
+- Единственный reader/preview renderer строит DOM только из закрытого `SAFE_RICH_TEXT_V1`: paragraph, heading,
+  list, quote, text, три marks и HTTPS link. `innerHTML`, raw HTML, embed и исполняемые атрибуты не используются;
+  внешние ссылки явно подписаны и открываются с `noopener noreferrer`.
+- Последние успешно полученные публичные feed/article сохраняются локально как read-only fallback. Offline и
+  network fallback всегда показывают stale notice; подтверждённый online `ARTICLE_NOT_AVAILABLE` очищает локальную
+  статью. Личные bookmarks не кешируются. Web service worker получил отдельный NetworkFirst cache только для GET
+  public articles; search/admin/bookmark остаются вне runtime cache.
+- Web-статья устанавливает title, description, canonical, robots, Open Graph, опубликованные `hreflang` и безопасно
+  сериализованный `Article` JSON-LD из public projection; stale copy получает `noindex`. Весь `/admin` принудительно
+  имеет `noindex,nofollow`. TMA использует ту же canonical URL через native Web Share или clipboard fallback.
+- Web-only CMS встроена в существующую отдельную admin session/capability boundary. Реализованы deny-by-default
+  source queue и proposal, fail-closed pause, candidate queue/detail/rights hold/dismiss/manual draft selection,
+  article list, append-only SAFE_RICH_TEXT revision editor, origin fields, exact staff preview, revision history и
+  все lifecycle decisions, включая schedule/publish/unpublish/archive с expected version, exact revision и полным
+  checklist. Preview не имеет публичного capability URL; offline administrative mutations выключены.
+- Handwritten API boundaries получили типизированные reader/bookmark и CMS methods поверх generated OpenAPI DTO;
+  TypeSpec и generated artifacts не менялись. Основные изменённые файлы: API client, web/TMA `app.tsx`, platform
+  `content-ui.tsx` и tests, web `content-admin-ui.tsx`, admin client/layout, platform styles, web PWA config и этот
+  журнал.
+
+### Проверки этапа content-news 04-tma-web
+
+- Targeted lint, strict typecheck, tests и production build успешны для `@picklehub/api-client`, `@picklehub/web` и
+  `@picklehub/tg`. API client: 1/1 suite и 6/6 tests; web: 13/13 suites и 53/53 tests; TMA: 10/10 suites и 31/31
+  tests. Новые suites проверяют текстовое отображение XSS canary без создания DOM-узла, маркировку внешних ссылок,
+  canonical share/SEO/JSON-LD, explicit stale offline copy, POST-only search query и закрытые CMS queues.
+- Targeted web/PWA и TMA builds успешны; PWA manifest/service worker присутствуют, TMA development Telegram mock
+  исключён. Сохраняются неблокирующие bundle warnings: web около 682 kB, TMA около 663 kB и MapLibre 924 kB.
+- Финальный `npm run verify` успешен полностью: восемь workspaces/один lockfile; TypeSpec/Redocly; 205 REST
+  operations/63 messages; 134/134 contract/data/backend policy tests; compatibility/generated drift/typecheck;
+  OpenAPI mock; format/docs; lint; strict typecheck; все unit/component tests и production builds. Backend regression
+  — 44/44 suites и 279/279 tests. Окружение по-прежнему задаёт небезопасный `NODE_TLS_REJECT_UNAUTHORIZED=0`.
+- Первые targeted Vitest-команды ошибочно получили Jest-флаг `--runInBand` и завершились до тестов с `Unknown
+option`; команды исправлены на штатный `npm test --workspace ...`, после чего оба полных client runs и общий
+  verify прошли. Проверки не ослаблялись и снимки не обновлялись.
+- Критерии этапа на уровне component/build evidence выполнены: share использует canonical URL, offline явно
+  показывает последнее известное состояние, а внешние ссылки безопасны и маркированы. Реальный browser viewport,
+  Web Share/clipboard, service-worker update и интеграция CMS с PostgreSQL/Redis остаются обязательными runtime
+  gates следующей доступной browser/integration среды; этап 05 не начат.

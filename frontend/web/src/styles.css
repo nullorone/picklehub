@@ -1723,6 +1723,206 @@ fieldset {
     }
 }
 
+/* Editorial content uses one readable, script-free rich-text renderer on reader and staff preview surfaces. */
+.news-screen,
+.article-screen,
+.content-admin,
+.editor-form,
+.content-admin section {
+    display: grid;
+    gap: 1rem;
+}
+
+.news-search {
+    display: grid;
+    grid-template-columns: minmax(14rem, 2fr) repeat(2, minmax(10rem, 1fr)) auto;
+    gap: 0.75rem;
+    align-items: end;
+}
+
+.news-list,
+.editorial-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr));
+    gap: 1rem;
+}
+
+.news-card,
+.editorial-card,
+.staff-preview,
+.correction-note,
+.attribution {
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: 1rem;
+    background: var(--surface);
+}
+
+.news-card > div,
+.editorial-card,
+.staff-preview,
+.correction-note,
+.attribution {
+    padding: 1rem;
+}
+
+.news-card img,
+.article-header img {
+    display: block;
+    width: 100%;
+    max-height: 28rem;
+    object-fit: cover;
+}
+
+.news-card h2,
+.article-body h2,
+.article-body h3,
+.attribution h2 {
+    margin: 0;
+}
+
+.news-meta,
+.editorial-card span,
+.editorial-card small {
+    color: var(--text-muted);
+}
+
+.tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    padding: 0;
+    list-style: none;
+}
+
+.tag-list li {
+    padding: 0.25rem 0.55rem;
+    border-radius: 999px;
+    background: var(--surface-strong);
+}
+
+.article-screen {
+    max-width: 54rem;
+}
+
+.article-header,
+.article-body {
+    display: grid;
+    gap: 1rem;
+}
+
+.article-header h1,
+.content-admin h1,
+.news-screen > h1 {
+    max-width: 18ch;
+    font-size: clamp(2.25rem, 6vw, 4.5rem);
+    line-height: 1.02;
+}
+
+.article-subtitle {
+    color: var(--text-muted);
+    font-size: 1.3rem;
+}
+
+.article-body {
+    font-size: 1.08rem;
+    line-height: 1.75;
+}
+
+.article-body p,
+.article-body li,
+.article-body blockquote {
+    max-width: 68ch;
+}
+
+.article-body blockquote,
+.correction-note {
+    margin: 0;
+    padding-left: 1.2rem;
+    border-left: 0.3rem solid var(--primary);
+}
+
+.article-body code {
+    padding: 0.1rem 0.3rem;
+    border-radius: 0.3rem;
+    background: var(--surface-strong);
+}
+
+.external-label {
+    font-size: 0.8em;
+}
+
+.article-actions,
+.revision-list li,
+.editorial-card {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.content-state {
+    margin: 0;
+}
+
+.content-admin {
+    max-width: 74rem;
+}
+
+.content-admin section {
+    margin-top: 1rem;
+}
+
+.editorial-card {
+    align-items: flex-start;
+    flex-direction: column;
+    color: inherit;
+    text-decoration: none;
+}
+
+.editor-form textarea {
+    width: 100%;
+    min-height: 7rem;
+    margin-top: 0.45rem;
+    padding: 0.7rem 0.8rem;
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+    color: var(--text);
+    background: var(--background);
+    font: inherit;
+}
+
+.editor-form details,
+.staff-preview {
+    padding: 1rem;
+    border: 1px solid var(--border);
+    border-radius: 1rem;
+}
+
+.revision-list {
+    display: grid;
+    gap: 0.75rem;
+    padding: 0;
+    list-style: none;
+}
+
+.revision-list li {
+    padding: 0.8rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.revision-list li > div {
+    display: grid;
+    gap: 0.25rem;
+}
+
+@media (max-width: 800px) {
+    .news-search {
+        grid-template-columns: 1fr;
+    }
+}
+
 /* Gamification is deliberately free of advertising and blocking celebration overlays. */
 .gamification-screen,
 .gamification-screen section,

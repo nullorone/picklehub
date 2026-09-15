@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type
 import { Link, Navigate, Route, Routes, useNavigate, useParams } from 'react-router-dom';
 
 import { createAdminClient, type AdminClient } from './admin-client';
+import { ArticleWorkspace, CandidateWorkspace, ContentDashboard, SourceProposal } from './content-admin-ui';
 
 type AdminSession = components['schemas']['AdminSessionContext'];
 type Capability = components['schemas']['AdminCapability'];
@@ -189,6 +190,7 @@ function AdminLayout({
                     {has(session, 'VENUE_MODERATE') && <Link to="/admin/venues">Площадки</Link>}
                     {has(session, 'USER_LOOKUP') && <Link to="/admin/users">Пользователи</Link>}
                     {has(session, 'AUDIT_SEARCH') && <Link to="/admin/audit">Аудит</Link>}
+                    {has(session, 'CONTENT_SOURCE_READ') && <Link to="/admin/content">Контент</Link>}
                 </nav>
                 <div className="admin-content">{children}</div>
             </div>
@@ -1093,8 +1095,16 @@ export function AdminApp({ config, online }: { readonly config: RuntimeConfig; r
     }, [client]);
     useEffect(() => {
         document.title = session ? `Операции · ${roleLabels[session.activeRole]}` : 'Вход сотрудников · PickleHub';
+        const robots = document.querySelector<HTMLMetaElement>('meta[name="robots"]') ?? document.createElement('meta');
+        const created = !robots.isConnected;
+        const previous = robots.content;
+        robots.name = 'robots';
+        robots.content = 'noindex,nofollow';
+        if (created) document.head.append(robots);
         return () => {
             document.title = 'PickleHub';
+            if (created) robots.remove();
+            else robots.content = previous;
         };
     }, [session]);
     if (!session) return <AdminAccess client={client} onSession={setSession} />;
@@ -1160,6 +1170,46 @@ export function AdminApp({ config, online }: { readonly config: RuntimeConfig; r
                             <AuditScreen client={client} />
                         ) : (
                             <Navigate replace to="/admin" />
+                        )
+                    }
+                />
+                <Route
+                    path="/admin/content"
+                    element={
+                        has(session, 'CONTENT_SOURCE_READ') ? (
+                            <ContentDashboard client={client} online={online} session={session} />
+                        ) : (
+                            <Navigate replace to="/admin" />
+                        )
+                    }
+                />
+                <Route
+                    path="/admin/content/sources/new"
+                    element={
+                        has(session, 'CONTENT_SOURCE_PROPOSE') ? (
+                            <SourceProposal client={client} online={online} />
+                        ) : (
+                            <Navigate replace to="/admin/content" />
+                        )
+                    }
+                />
+                <Route
+                    path="/admin/content/candidates/:candidateId"
+                    element={
+                        has(session, 'CONTENT_CANDIDATE_REVIEW') ? (
+                            <CandidateWorkspace client={client} online={online} />
+                        ) : (
+                            <Navigate replace to="/admin/content" />
+                        )
+                    }
+                />
+                <Route
+                    path="/admin/content/articles/:articleId"
+                    element={
+                        has(session, 'CONTENT_EDIT') ? (
+                            <ArticleWorkspace client={client} online={online} />
+                        ) : (
+                            <Navigate replace to="/admin/content" />
                         )
                     }
                 />

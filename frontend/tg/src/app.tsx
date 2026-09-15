@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { Link, Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom';
 
 import { useOnlineStatus } from './connectivity';
+import { ArticleScreen, BookmarksScreen, NewsFeed } from './content-ui';
 import { ChatScreen, NotificationBadge, NotificationsScreen } from './communications-ui';
 import { ClubDetailsScreen, ClubInvitationScreen, ClubsScreen } from './clubs-ui';
 import { ClubGamificationSettings, ClubProgressRoute, LeaderboardScreen, ProgressScreen } from './gamification-ui';
@@ -111,6 +112,9 @@ export function App({ config, initData }: { readonly config: RuntimeConfig; read
                     <span className="brand-mark" aria-hidden="true" />
                     <span>{t('appName')}</span>
                 </div>
+                <nav aria-label="Открытые разделы">
+                    <Link to="/news">Новости</Link>
+                </nav>
                 {session && !onboarding && (
                     <nav aria-label="Личный кабинет">
                         <Link to="/matches">Матчи</Link>
@@ -129,6 +133,23 @@ export function App({ config, initData }: { readonly config: RuntimeConfig; read
                 )}
             </header>
             <Routes>
+                <Route path="/news" element={<NewsFeed client={client} online={online} />} />
+                <Route
+                    path="/news/bookmarks"
+                    element={
+                        session && !onboarding ? (
+                            <BookmarksScreen client={client} online={online} />
+                        ) : (
+                            <Navigate to={session ? '/onboarding' : '/login'} replace />
+                        )
+                    }
+                />
+                <Route
+                    path="/news/:locale/:slug"
+                    element={
+                        <ArticleScreen client={client} online={online} signedIn={Boolean(session && !onboarding)} />
+                    }
+                />
                 <Route
                     path="/login"
                     element={

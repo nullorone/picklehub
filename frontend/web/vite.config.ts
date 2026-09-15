@@ -36,6 +36,16 @@ export default defineConfig({
                             networkTimeoutSeconds: 3,
                         },
                     },
+                    {
+                        urlPattern: /\/content\/articles(?:\/[^/?]+\/[^/?]+)?(?:\?.*)?$/u,
+                        handler: 'NetworkFirst',
+                        method: 'GET',
+                        options: {
+                            cacheName: 'picklehub-public-content-v1',
+                            expiration: { maxAgeSeconds: 86_400, maxEntries: 60 },
+                            networkTimeoutSeconds: 3,
+                        },
+                    },
                 ],
             },
         }),
