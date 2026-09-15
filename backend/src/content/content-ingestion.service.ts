@@ -13,6 +13,12 @@ interface Checkpoint {
     etag?: string;
     lastModified?: string;
     nextAllowedAt?: string;
+    failureCount?: number;
+}
+
+export function contentSourceBackoffDelay(baseMilliseconds: number, failureCount: number): number {
+    const exponent = Math.min(Math.max(Math.trunc(failureCount), 1), 8);
+    return Math.min(baseMilliseconds * 2 ** exponent, 24 * 60 * 60 * 1000);
 }
 
 @Injectable()
@@ -66,6 +72,7 @@ export class ContentIngestionService {
             nextAllowedAt: new Date(
                 Date.now() + (this.environment.CONTENT_SOURCE_MIN_INTERVAL_MS ?? 60_000)
             ).toISOString(),
+            failureCount: 0,
         });
         return true;
     }
@@ -98,28 +105,40 @@ export class ContentIngestionService {
         const sourceHash = this.hash(JSON.stringify(normalized));
         await this.prisma.$transaction(
             async (tx) => {
-                const candidates = await tx.ingestCandidate.findMany({
-                    where: { sourceId: source.id },
+                await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${source.id}, 0))`;
+                const identity = [
+                    { currentRevision: { is: { canonicalUrlHash } } },
+                    ...(item.providerId === null ? [] : [{ currentRevision: { is: { providerId: item.providerId } } }]),
+                ];
+                let candidate = await tx.ingestCandidate.findFirst({
+                    where: { sourceId: source.id, OR: identity },
                     include: { currentRevision: true },
                     orderBy: { createdAt: 'asc' },
                 });
-                let candidate = candidates.find(
-                    ({ currentRevision }) =>
-                        (item.providerId !== null && currentRevision?.providerId === item.providerId) ||
-                        currentRevision?.canonicalUrlHash === canonicalUrlHash
-                );
                 if (candidate?.currentRevision?.sourceHash === sourceHash) return;
                 candidate ??= await tx.ingestCandidate.create({
                     data: { id: uuidV7(), sourceId: source.id },
                     include: { currentRevision: true },
                 });
-                const duplicate = candidates.find(
-                    ({ id, currentRevision }) =>
-                        id !== candidate.id &&
-                        (currentRevision?.canonicalUrlHash === canonicalUrlHash ||
-                            (item.providerId !== null && currentRevision?.providerId === item.providerId) ||
-                            currentRevision?.fingerprint === fingerprint)
-                );
+                const duplicate = await tx.ingestCandidate.findFirst({
+                    where: {
+                        id: { not: candidate.id },
+                        OR: [
+                            { currentRevision: { is: { canonicalUrlHash } } },
+                            { currentRevision: { is: { fingerprint } } },
+                            ...(item.providerId === null
+                                ? []
+                                : [
+                                      {
+                                          sourceId: source.id,
+                                          currentRevision: { is: { providerId: item.providerId } },
+                                      },
+                                  ]),
+                        ],
+                    },
+                    include: { currentRevision: true },
+                    orderBy: { createdAt: 'asc' },
+                });
                 const revision = await tx.ingestCandidateRevision.create({
                     data: {
                         id: uuidV7(),
@@ -145,7 +164,7 @@ export class ContentIngestionService {
                         currentRevisionId: revision.id,
                         version: { increment: 1 },
                         updatedAt: new Date(),
-                        ...(duplicate === undefined
+                        ...(duplicate === null || candidate.state === 'SELECTED' || candidate.state === 'DISMISSED'
                             ? {}
                             : {
                                   state: 'DUPLICATE',
@@ -153,9 +172,12 @@ export class ContentIngestionService {
                                   duplicateKind:
                                       duplicate.currentRevision?.canonicalUrlHash === canonicalUrlHash
                                           ? 'CANONICAL_URL'
-                                          : duplicate.currentRevision?.providerId === item.providerId
+                                          : duplicate.sourceId === source.id &&
+                                              duplicate.currentRevision?.providerId === item.providerId
                                             ? 'PROVIDER_ID'
-                                            : 'FINGERPRINT',
+                                            : duplicate.sourceId === source.id
+                                              ? 'FINGERPRINT'
+                                              : 'CROSS_SOURCE_SIMILARITY',
                               }),
                     },
                 });
@@ -183,11 +205,12 @@ export class ContentIngestionService {
 
     private async defer(sourceId: string): Promise<void> {
         const checkpoint = await this.checkpoint(sourceId);
+        const failureCount = Math.min((checkpoint.failureCount ?? 0) + 1, 8);
+        const base = this.environment.CONTENT_SOURCE_MIN_INTERVAL_MS ?? 60_000;
         await this.writeCheckpoint(sourceId, {
             ...checkpoint,
-            nextAllowedAt: new Date(
-                Date.now() + (this.environment.CONTENT_SOURCE_MIN_INTERVAL_MS ?? 60_000) * 4
-            ).toISOString(),
+            failureCount,
+            nextAllowedAt: new Date(Date.now() + contentSourceBackoffDelay(base, failureCount)).toISOString(),
         });
     }
 

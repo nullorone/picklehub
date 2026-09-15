@@ -6,6 +6,19 @@ import { uuidV7 } from '../common/identifiers/uuid-v7';
 import { IdentityCryptoService } from '../identity/identity-crypto.service';
 import { contentError } from './content.errors';
 
+export function canonicalContentRequest(value: unknown): string {
+    if (value === null) return 'null';
+    if (typeof value === 'string') return JSON.stringify(value);
+    if (typeof value === 'number') return Number.isFinite(value) ? String(value) : 'null';
+    if (typeof value === 'boolean') return String(value);
+    if (typeof value !== 'object') return 'null';
+    if (Array.isArray(value)) return `[${value.map((item) => canonicalContentRequest(item)).join(',')}]`;
+    return `{${Object.entries(value as Record<string, unknown>)
+        .sort(([left], [right]) => left.localeCompare(right))
+        .map(([key, item]) => `${JSON.stringify(key)}:${canonicalContentRequest(item)}`)
+        .join(',')}}`;
+}
+
 @Injectable()
 export class ContentIdempotencyService {
     constructor(
@@ -22,7 +35,7 @@ export class ContentIdempotencyService {
         status: number,
         operation: (tx: Prisma.TransactionClient) => Promise<T>
     ): Promise<{ value: T; replayed: boolean }> {
-        const fingerprint = this.crypto.hash(`CONTENT_REQUEST:${method}:${path}:${JSON.stringify(body)}`);
+        const fingerprint = this.crypto.hash(`CONTENT_REQUEST:${method}:${path}:${canonicalContentRequest(body)}`);
         for (let attempt = 0; ; attempt += 1) {
             try {
                 return await this.prisma.$transaction(

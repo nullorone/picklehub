@@ -3236,3 +3236,86 @@ PRISMA_GENERATE_NO_ENGINE=1 npx prisma generate --schema backend/prisma/schema.p
   Unit, contract, static и build evidence зелёные, но полная приёмка остаётся заблокированной database/queue runtime
   gate. По правилам репозитория к следующему промпту `llm/12-content-news/04-tma-web.md` переходить нельзя до
   успешного прогона в среде с PostgreSQL, Redis и штатным Prisma engine.
+
+## 2026-09-14 — новости и контент, повторная реализация этапа 03-backend
+
+- Активный промпт: `llm/12-content-news/03-backend.md`. По запросу владельца прежняя backend-реализация была
+  повторно проверена и усилена без изменения TypeSpec, AsyncAPI, Prisma schema и миграции этапа 02. Все 23
+  утверждённые операции сохраняют прежний wire-контракт; к `12-content-news/04-tma-web.md` не переходили.
+- RSS regex-parser заменён ограниченным `fast-xml-parser`: DTD/entity declarations запрещены, content type и UTF-8
+  проверяются, response читается потоково не более 2 MiB и transient buffers очищаются. HTTPS endpoint и каждый из
+  максимум пяти redirects повторно проходят credential/port/DNS/private-network policy; API/RSS сохраняют только
+  разрешённые metadata и bounded excerpt.
+- BullMQ scheduler создаётся только в worker-процессе и ожидается при bootstrap. Job name/payload закрыты, payload
+  пуст; Redis checkpoint хранит ETag/Last-Modified, minimum interval и ограниченный exponential failure backoff.
+  Poll одного source сериализуется PostgreSQL advisory lock, повторный source hash не создаёт revision, provider/
+  URL/fingerprint dedupe не перезаписывает terminal candidate и различает cross-source similarity.
+- Public search теперь связан с подписанным snapshot; admin source/candidate/article/revision lists получили
+  filter-bound opaque keyset cursors. Все reader/admin/bookmark cache boundaries выставляют утверждённые public или
+  `private, no-store` headers, preview дополнительно остаётся `noindex`.
+- До SQL проверяются source/candidate/article transitions, closed decision reasons, UUID/policy/input bounds и
+  действующие source reviews/rights. Emergency endpoint принимает только `UNPUBLISH` и четыре разрешённые причины.
+  Idempotency fingerprint канонизирует JSON object keys; publication/search projection/outbox остаются одной
+  транзакцией, а retention очищает также excerpt выбранного candidate после публикации.
+- Media contract не расширялся: internal storage boundary принимает только verified media с server-generated UUID
+  object key, ограничениями типа/размера/dimensions, alt text и rights metadata. Default provider остаётся
+  fail-closed; реальный object storage, scanning/re-encode и upload/registration API не заявлены.
+- Добавлены unit suites для source parser/SSRF/ETag/limits, cursors, canonical idempotency, retry backoff и media
+  boundary, а также PostgreSQL integration suite для original article lifecycle, public search/projection,
+  body-free outbox, unpublish и concurrent bookmark uniqueness. Backend policy test закрепляет redirect/stream/XML,
+  advisory-lock/backoff, snapshot и cursor controls.
+
+### Проверки повторной реализации content-news 03-backend
+
+- `npm run prisma:validate --workspace @picklehub/backend` — успешно; Prisma schema валидна штатным engine.
+- `npm run lint --workspace @picklehub/backend`, `npm run typecheck --workspace @picklehub/backend`,
+  `npm test --workspace @picklehub/backend -- --runInBand` и `npm run build --workspace @picklehub/backend` —
+  успешно; backend unit run содержит 44/44 suites и 279/279 tests.
+- `node --test contracts/scripts/content-backend-policy.test.mjs` — успешно, 3/3 tests. Полный `npm run verify` —
+  успешно: восемь workspaces/один lockfile, 205 REST operations/63 messages, 134/134 contract policy tests,
+  compatibility/generated drift/typecheck/OpenAPI mock, format/docs, lint, strict typecheck, все unit/component tests
+  и production builds. Сохраняются прежние неблокирующие bundle warnings около 642/651/924 kB и внешняя настройка
+  `NODE_TLS_REJECT_UNAUTHORIZED=0`.
+- Первый промежуточный `npm run verify` получил sandbox `listen EPERM 127.0.0.1` на OpenAPI mock; отдельный
+  `npm run contracts:mock:check` и финальный полный verify прошли успешно.
+- Targeted `npm run test:integration --workspace @picklehub/backend -- --runInBand
+backend/test/integration/content-backend.integration-spec.ts` не выполнил runtime fixtures: sandbox запретил
+  Redis loopback (`connect EPERM 127.0.0.1:6379`), а `prisma migrate status` подтвердил недоступность PostgreSQL
+  (`P1001 localhost:5432`). Поэтому clean migration apply, реальная scheduler/BullMQ redelivery race и новые
+  publication/bookmark integration scenarios не выдаются за проверенные; suite остаётся обязательным CI gate.
+
+## 2026-09-15 — новости и контент, подготовка runtime-gate этапа 03-backend
+
+- Активный промпт остаётся `llm/12-content-news/03-backend.md`; к `04-tma-web.md` не переходили. PostgreSQL
+  integration suite расширена с трёх до шести сценариев: конкурентный запуск due scheduler с одной публикацией,
+  сбой источника с Redis backoff и последующим восстановлением без потери, повторная доставка одного source item
+  без второй candidate revision, единственный BullMQ job scheduler и успешная redelivery после transient failure.
+- BullMQ worker теперь принимает только закрытые job name/payload и использует отдельное blocking Redis connection
+  с `maxRetriesPerRequest: null`; соединение закрывается вместе с worker. Contract backend policy связывает эти
+  runtime-сценарии с обязательным `contracts:lint`.
+
+### Проверки подготовки runtime-gate content-news 03-backend
+
+- `npm run prisma:generate --workspace @picklehub/backend` и `npm run prisma:validate --workspace
+@picklehub/backend` — успешно со штатным Prisma engine. `npm run prisma:migrate --workspace @picklehub/backend`
+  с локальным `DATABASE_URL` — неуспешно: `P1001`, PostgreSQL на `127.0.0.1:5432` недоступен.
+- Backend lint, strict typecheck, unit tests и build — успешно; 44/44 suites и 279/279 unit tests. `node --test
+contracts/scripts/content-backend-policy.test.mjs` — успешно, 3/3 tests.
+- Первый `npm run verify` остановился на sandbox `listen EPERM 127.0.0.1` в OpenAPI mock. Немедленный отдельный
+  `npm run contracts:mock:check` и повторный полный `npm run verify` прошли: восемь workspaces/один lockfile,
+  205 REST operations/63 messages, 134/134 contract tests, format/docs/lint/typecheck, все unit/component tests и
+  production builds. Сохраняются прежние неблокирующие bundle warnings около 642/651/924 kB и внешняя настройка
+  `NODE_TLS_REJECT_UNAUTHORIZED=0`.
+- Targeted content integration run обнаружил все 6 tests, но fixtures не стартовали: PostgreSQL недоступен, Redis
+  получил `connect EPERM 127.0.0.1:6379`. Поэтому clean migration apply и фактический успех новых database/queue
+  race-сценариев по-прежнему не заявляются. Обязательный переходный gate — зелёный integration job
+  `.github/workflows/foundation.yml` с PostGIS и Redis; до него этап 03 и переход к `04-tma-web.md` остаются
+  заблокированными.
+- `npm ci` — успешно, 1622 packages установлены из root lockfile. После чистой установки Prisma generate/validate
+  повторены с явными штатными engine paths из read-only cache и успешны; обычный вызов не смог обновить timestamp
+  cache (`utime EPERM`). Повторные format/docs/lint/typecheck/test/build после `npm ci` успешны; OpenAPI mock один
+  раз прошёл до переустановки и затем дважды получил тот же sandbox `listen EPERM`, поэтому это ограничение не
+  выдаётся за regression.
+- Попытка создать запрошенный commit `fix: harden content backend runtime gates` не изменила Git: sandbox запретил
+  создание `.git/index.lock` с `Operation not permitted`. Изменения остаются в рабочем дереве; commit, push и запуск
+  PR integration job должны быть выполнены в среде с правом записи в `.git` и доступом к GitHub.

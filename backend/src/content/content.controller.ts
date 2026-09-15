@@ -64,7 +64,15 @@ const BODY_KEYS = {
         'correctionNote',
         'translationOfRevisionId',
     ],
-    decision: ['expectedArticleVersion', 'revisionId', 'decision', 'reason', 'checklist', 'scheduledFor'],
+    decision: [
+        'expectedArticleVersion',
+        'revisionId',
+        'decision',
+        'reason',
+        'checklist',
+        'scheduledFor',
+        'reauthenticationProof',
+    ],
     emergency: ['expectedArticleVersion', 'revisionId', 'decision', 'reason', 'reauthenticationProof'],
 } as const;
 
@@ -142,8 +150,10 @@ export class ContentController {
         @Headers('authorization') authorization: string | undefined,
         @Req() request: Request,
         @Query('limit') rawLimit = '20',
-        @Query('cursor') cursor?: string
+        @Query('cursor') cursor?: string,
+        @Res({ passthrough: true }) response?: Response
     ): Promise<object> {
+        if (response !== undefined) this.privateCache(response);
         return this.content.bookmarks(await this.user(authorization, request), {
             limit: this.limit(rawLimit, 50),
             ...(cursor === undefined ? {} : { cursor }),
@@ -184,10 +194,16 @@ export class ContentController {
     @Get('admin/content/sources')
     async sources(
         @Headers('authorization') authorization: string | undefined,
-        @Query('limit') limit = '20'
+        @Query('limit') limit = '20',
+        @Query('cursor') cursor?: string,
+        @Res({ passthrough: true }) response?: Response
     ): Promise<object> {
         await this.admin(authorization, 'CONTENT_SOURCE_READ');
-        return this.content.listSources({ limit: this.limit(limit, 100) });
+        if (response !== undefined) this.privateCache(response);
+        return this.content.listSources({
+            limit: this.limit(limit, 100),
+            ...(cursor === undefined ? {} : { cursor }),
+        });
     }
 
     @Post('admin/content/sources')
@@ -289,18 +305,26 @@ export class ContentController {
     async candidates(
         @Headers('authorization') authorization: string | undefined,
         @Query('limit') limit = '20',
-        @Query('state') state?: string
+        @Query('state') state?: string,
+        @Query('cursor') cursor?: string,
+        @Res({ passthrough: true }) response?: Response
     ): Promise<object> {
         await this.admin(authorization, 'CONTENT_CANDIDATE_REVIEW');
-        return this.content.listCandidates({ limit: this.limit(limit, 100) }, state);
+        if (response !== undefined) this.privateCache(response);
+        return this.content.listCandidates(
+            { limit: this.limit(limit, 100), ...(cursor === undefined ? {} : { cursor }) },
+            state
+        );
     }
 
     @Get('admin/content/candidates/:candidateId')
     async candidate(
         @Param('candidateId', new ParseUUIDPipe()) id: string,
-        @Headers('authorization') authorization: string | undefined
+        @Headers('authorization') authorization: string | undefined,
+        @Res({ passthrough: true }) response?: Response
     ): Promise<object> {
         await this.admin(authorization, 'CONTENT_CANDIDATE_REVIEW');
+        if (response !== undefined) this.privateCache(response);
         return this.content.candidateById(id);
     }
 
@@ -331,10 +355,16 @@ export class ContentController {
     async adminArticles(
         @Headers('authorization') authorization: string | undefined,
         @Query('limit') limit = '20',
-        @Query('state') state?: string
+        @Query('state') state?: string,
+        @Query('cursor') cursor?: string,
+        @Res({ passthrough: true }) response?: Response
     ): Promise<object> {
         await this.admin(authorization, 'CONTENT_EDIT');
-        return this.content.listArticles({ limit: this.limit(limit, 100) }, state);
+        if (response !== undefined) this.privateCache(response);
+        return this.content.listArticles(
+            { limit: this.limit(limit, 100), ...(cursor === undefined ? {} : { cursor }) },
+            state
+        );
     }
 
     @Post('admin/content/articles')
@@ -361,9 +391,11 @@ export class ContentController {
     @Get('admin/content/articles/:articleId')
     async adminArticle(
         @Param('articleId', new ParseUUIDPipe()) id: string,
-        @Headers('authorization') authorization: string | undefined
+        @Headers('authorization') authorization: string | undefined,
+        @Res({ passthrough: true }) response?: Response
     ): Promise<object> {
         await this.admin(authorization, 'CONTENT_EDIT');
+        if (response !== undefined) this.privateCache(response);
         return this.content.adminArticleById(id);
     }
 
@@ -371,10 +403,16 @@ export class ContentController {
     async revisions(
         @Param('articleId', new ParseUUIDPipe()) id: string,
         @Headers('authorization') authorization: string | undefined,
-        @Query('limit') limit = '20'
+        @Query('limit') limit = '20',
+        @Query('cursor') cursor?: string,
+        @Res({ passthrough: true }) response?: Response
     ): Promise<object> {
         await this.admin(authorization, 'CONTENT_EDIT');
-        return this.content.revisions(id, { limit: this.limit(limit, 100) });
+        if (response !== undefined) this.privateCache(response);
+        return this.content.revisions(id, {
+            limit: this.limit(limit, 100),
+            ...(cursor === undefined ? {} : { cursor }),
+        });
     }
 
     @Post('admin/content/articles/:articleId/revisions')
@@ -405,9 +443,11 @@ export class ContentController {
     async revision(
         @Param('articleId', new ParseUUIDPipe()) articleId: string,
         @Param('revisionId', new ParseUUIDPipe()) revisionId: string,
-        @Headers('authorization') authorization: string | undefined
+        @Headers('authorization') authorization: string | undefined,
+        @Res({ passthrough: true }) response?: Response
     ): Promise<object> {
         await this.admin(authorization, 'CONTENT_EDIT');
+        if (response !== undefined) this.privateCache(response);
         return this.content.revision(articleId, revisionId);
     }
 
@@ -419,6 +459,7 @@ export class ContentController {
         @Res({ passthrough: true }) response: Response
     ): Promise<object> {
         await this.admin(authorization, 'CONTENT_PREVIEW');
+        this.privateCache(response);
         response.setHeader('X-Robots-Tag', 'noindex, nofollow');
         return this.content.revision(articleId, revisionId);
     }
@@ -458,6 +499,12 @@ export class ContentController {
         this.exact(body, BODY_KEYS.emergency);
         const admin = await this.adminMutation(authorization, request, 'CONTENT_EMERGENCY_UNPUBLISH', true);
         this.reauthenticationProof(body);
+        if (
+            body.decision !== 'UNPUBLISH' ||
+            typeof body.reason !== 'string' ||
+            !['CORRECTION', 'RIGHTS_REVOKED', 'LEGAL_TAKEDOWN', 'SAFETY_REQUEST'].includes(body.reason)
+        )
+            throw contentError('VALIDATION_FAILED', 400);
         return this.mutation(
             admin.actorId,
             key,

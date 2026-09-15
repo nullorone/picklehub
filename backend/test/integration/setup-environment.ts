@@ -5,3 +5,4 @@ process.env.REDIS_URL ??= 'redis://localhost:6379/0';
 process.env.REDIS_NAMESPACE ??= 'test';
 process.env.LOG_LEVEL = 'silent';
 process.env.DEPENDENCY_TIMEOUT_MS = '1000';
+process.env.CONTENT_PUBLIC_BASE_URL ??= 'https://content.example.test/articles';

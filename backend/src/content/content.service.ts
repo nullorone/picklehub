@@ -79,6 +79,18 @@ interface DecisionInput extends JsonRecord {
 const ARTICLE_STATES = ['DRAFT', 'IN_REVIEW', 'APPROVED', 'SCHEDULED', 'PUBLISHED', 'UNPUBLISHED', 'ARCHIVED'];
 const SOURCE_STATES = ['PROPOSED', 'ENABLED', 'PAUSED', 'REVOKED'];
 const CANDIDATE_STATES = ['NEW', 'DUPLICATE', 'DISMISSED', 'SELECTED', 'RIGHTS_HOLD'];
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
+const DECISION_REASONS = new Set([
+    'EDITORIAL_READY',
+    'EDITORIAL_REVISION_REQUIRED',
+    'SCHEDULE_CHANGED',
+    'CORRECTION',
+    'RIGHTS_REVOKED',
+    'LEGAL_TAKEDOWN',
+    'SAFETY_REQUEST',
+    'SOURCE_UNAVAILABLE',
+    'ARCHIVE_POLICY',
+]);
 const USE_CLASSES = new Set([
     'FETCH_METADATA',
     'STORE_METADATA',
@@ -201,6 +213,7 @@ export class ContentService {
         const decoded = page.cursor === undefined ? undefined : this.cursor.decode(page.cursor, scope);
         const offset = decoded === undefined ? 0 : Number(decoded.id);
         if (!Number.isInteger(offset) || offset < 0) throw contentError('INVALID_CURSOR', 400);
+        const snapshotAt = decoded?.snapshot === undefined ? new Date() : new Date(decoded.snapshot);
         try {
             const ids = await this.prisma.$queryRaw<{ article_id: string }[]>`
                 SELECT p.article_id
@@ -208,6 +221,7 @@ export class ContentService {
                 JOIN article_revisions r ON r.id = p.article_revision_id
                 JOIN content_categories c ON c.id = r.category_id
                 WHERE p.locale = ${locale}
+                  AND p.published_at <= ${snapshotAt}
                   AND p.search_document @@ websearch_to_tsquery('simple', ${normalized})
                   AND (${category ?? null}::text IS NULL OR c.slug = ${category ?? null})
                   AND (${tag ?? null}::text IS NULL OR EXISTS (
@@ -234,10 +248,11 @@ export class ContentService {
                                   scope,
                                   at: new Date(0).toISOString(),
                                   id: String(offset + page.limit),
+                                  snapshot: snapshotAt.toISOString(),
                               })
                             : null,
                 },
-                snapshotAt: new Date().toISOString(),
+                snapshotAt: snapshotAt.toISOString(),
             };
         } catch (error) {
             if (error instanceof Prisma.PrismaClientKnownRequestError)
@@ -304,16 +319,34 @@ export class ContentService {
     }
 
     async listSources(page: PageInput): Promise<object> {
+        const scope = 'admin-content-sources';
+        const decoded = page.cursor === undefined ? undefined : this.cursor.decode(page.cursor, scope);
         const rows = await this.prisma.contentSource.findMany({
+            where:
+                decoded === undefined
+                    ? {}
+                    : {
+                          OR: [
+                              { createdAt: { lt: new Date(decoded.at) } },
+                              { createdAt: new Date(decoded.at), id: { lt: decoded.id } },
+                          ],
+                      },
             include: { currentPolicy: true },
             orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
             take: page.limit + 1,
         });
-        return this.offsetPage(rows, page.limit, (source) => this.source(source, source.currentPolicy));
+        return this.keysetPage(
+            rows,
+            page.limit,
+            scope,
+            (source) => source.createdAt,
+            (source) => source.id,
+            (source) => this.source(source, source.currentPolicy)
+        );
     }
 
     async createSource(actorId: string, input: SourceInput, tx: Prisma.TransactionClient): Promise<object> {
-        this.assertSourceInput(input, false);
+        this.assertSourceInput(input);
         const sourceId = uuidV7();
         const policyId = uuidV7();
         const source = await tx.contentSource.create({
@@ -341,7 +374,7 @@ export class ContentService {
         input: SourceInput,
         tx: Prisma.TransactionClient
     ): Promise<object> {
-        this.assertSourceInput(input, true);
+        this.assertSourceInput(input);
         const current = await tx.contentSource.findUnique({
             where: { id: sourceId },
             include: { currentPolicy: true },
@@ -380,12 +413,15 @@ export class ContentService {
         tx: Prisma.TransactionClient
     ): Promise<object> {
         if (!SOURCE_STATES.includes(state) || state === 'PROPOSED') throw contentError('INVALID_STATE_TRANSITION', 400);
+        this.assertReason(reason);
         const current = await tx.contentSource.findUnique({
             where: { id: sourceId },
             include: { currentPolicy: true },
         });
         if (!current?.currentPolicy) throw contentError('CONTENT_RESOURCE_NOT_FOUND', 404);
         if (Number(current.version) !== expectedVersion) throw contentError('REVISION_CONFLICT', 409);
+        this.assertSourceTransition(current.state, state);
+        if (state === 'ENABLED' && !this.currentRights(current.currentPolicy)) throw contentError('RIGHTS_HOLD', 409);
         if (state === 'REVOKED') await this.unpublishForSource(tx, actorId, sourceId, reason);
         const source = await tx.contentSource.update({
             where: { id: sourceId },
@@ -435,13 +471,32 @@ export class ContentService {
 
     async listCandidates(page: PageInput, state?: string): Promise<object> {
         if (state !== undefined && !CANDIDATE_STATES.includes(state)) throw contentError('VALIDATION_FAILED', 400);
+        const scope = this.scope('admin-content-candidates', state);
+        const decoded = page.cursor === undefined ? undefined : this.cursor.decode(page.cursor, scope);
         const rows = await this.prisma.ingestCandidate.findMany({
-            where: state === undefined ? {} : { state: state as IngestCandidate['state'] },
+            where: {
+                ...(state === undefined ? {} : { state: state as IngestCandidate['state'] }),
+                ...(decoded === undefined
+                    ? {}
+                    : {
+                          OR: [
+                              { createdAt: { lt: new Date(decoded.at) } },
+                              { createdAt: new Date(decoded.at), id: { lt: decoded.id } },
+                          ],
+                      }),
+            },
             include: { currentRevision: { include: { sourcePolicy: true } } },
             orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
             take: page.limit + 1,
         });
-        return this.offsetPage(rows, page.limit, (candidate) => this.candidate(candidate, candidate.currentRevision));
+        return this.keysetPage(
+            rows,
+            page.limit,
+            scope,
+            (candidate) => candidate.createdAt,
+            (candidate) => candidate.id,
+            (candidate) => this.candidate(candidate, candidate.currentRevision)
+        );
     }
 
     async candidateById(candidateId: string): Promise<object> {
@@ -472,8 +527,13 @@ export class ContentService {
             include: { currentRevision: { include: { sourcePolicy: true } } },
         });
         if (candidate === null) throw contentError('CONTENT_RESOURCE_NOT_FOUND', 404);
+        if (!Number.isInteger(input.expectedVersion) || Number(input.expectedVersion) < 0)
+            throw contentError('VALIDATION_FAILED', 400);
         if (Number(candidate.version) !== input.expectedVersion) throw contentError('REVISION_CONFLICT', 409);
+        if (candidate.state === 'SELECTED' || candidate.state === 'DISMISSED')
+            throw contentError('INVALID_STATE_TRANSITION', 400);
         const state = String(input.state);
+        this.assertReason(input.reason);
         if (!CANDIDATE_STATES.includes(state) || state === 'NEW') throw contentError('INVALID_STATE_TRANSITION', 400);
         if (state === 'SELECTED' && typeof input.selectedArticleId !== 'string')
             throw contentError('VALIDATION_FAILED', 400);
@@ -501,7 +561,7 @@ export class ContentService {
             'INGEST_CANDIDATE',
             candidateId,
             ['state'],
-            String(input.reason)
+            input.reason
         );
         return this.candidate(updated, candidate.currentRevision);
     }
@@ -513,6 +573,7 @@ export class ContentService {
         tx: Prisma.TransactionClient
     ): Promise<object> {
         if (originKind !== 'ORIGINAL' && originKind !== 'DERIVED') throw contentError('VALIDATION_FAILED', 400);
+        if (candidateId !== undefined && !UUID.test(candidateId)) throw contentError('VALIDATION_FAILED', 400);
         if (originKind === 'DERIVED' && candidateId === undefined) throw contentError('ORIGIN_REQUIRED', 422);
         const article = await tx.article.create({
             data: { id: uuidV7(), originKind, createdByUserId: actorId },
@@ -535,12 +596,31 @@ export class ContentService {
 
     async listArticles(page: PageInput, state?: string): Promise<object> {
         if (state !== undefined && !ARTICLE_STATES.includes(state)) throw contentError('VALIDATION_FAILED', 400);
+        const scope = this.scope('admin-content-articles', state);
+        const decoded = page.cursor === undefined ? undefined : this.cursor.decode(page.cursor, scope);
         const rows = await this.prisma.article.findMany({
-            where: state === undefined ? {} : { state: state as Article['state'] },
+            where: {
+                ...(state === undefined ? {} : { state: state as Article['state'] }),
+                ...(decoded === undefined
+                    ? {}
+                    : {
+                          OR: [
+                              { updatedAt: { lt: new Date(decoded.at) } },
+                              { updatedAt: new Date(decoded.at), id: { lt: decoded.id } },
+                          ],
+                      }),
+            },
             orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
             take: page.limit + 1,
         });
-        return this.offsetPage(rows, page.limit, (article) => this.adminArticle(article));
+        return this.keysetPage(
+            rows,
+            page.limit,
+            scope,
+            (article) => article.updatedAt,
+            (article) => article.id,
+            (article) => this.adminArticle(article)
+        );
     }
 
     async adminArticleById(articleId: string): Promise<object> {
@@ -550,12 +630,27 @@ export class ContentService {
     }
 
     async revisions(articleId: string, page: PageInput): Promise<object> {
+        const scope = this.scope('admin-content-revisions', articleId);
+        const decoded = page.cursor === undefined ? undefined : this.cursor.decode(page.cursor, scope);
+        if (decoded !== undefined && !/^[1-9][0-9]*$/u.test(decoded.id)) throw contentError('INVALID_CURSOR', 400);
+        const beforeRevision = decoded === undefined ? undefined : BigInt(decoded.id);
         const rows = await this.prisma.articleRevision.findMany({
-            where: { articleId },
+            where: { articleId, ...(beforeRevision === undefined ? {} : { revision: { lt: beforeRevision } }) },
             orderBy: { revision: 'desc' },
             take: page.limit + 1,
         });
-        return this.offsetPage(rows, page.limit, (revision) => this.revisionSummary(revision));
+        const items = rows.slice(0, page.limit);
+        const last = items.at(-1);
+        return {
+            items: items.map((revision) => this.revisionSummary(revision)),
+            pageInfo: {
+                hasNext: rows.length > page.limit,
+                nextCursor:
+                    rows.length > page.limit && last !== undefined
+                        ? this.cursor.encode({ scope, at: last.createdAt.toISOString(), id: String(last.revision) })
+                        : null,
+            },
+        };
     }
 
     async revision(articleId: string, revisionId: string): Promise<object> {
@@ -652,7 +747,25 @@ export class ContentService {
             'reason',
             'checklist',
             'scheduledFor',
+            'reauthenticationProof',
         ]);
+        this.assertReason(input.reason);
+        if (
+            !Number.isInteger(input.expectedArticleVersion) ||
+            input.expectedArticleVersion < 0 ||
+            !UUID.test(input.revisionId) ||
+            ![
+                'SUBMIT_REVIEW',
+                'RETURN_TO_DRAFT',
+                'APPROVE',
+                'SCHEDULE',
+                'CANCEL_SCHEDULE',
+                'PUBLISH',
+                'UNPUBLISH',
+                'ARCHIVE',
+            ].includes(input.decision)
+        )
+            throw contentError('VALIDATION_FAILED', 400);
         const article = await tx.article.findUnique({ where: { id: articleId } });
         const revision = await tx.articleRevision.findFirst({
             where: { id: input.revisionId, articleId },
@@ -793,8 +906,16 @@ export class ContentService {
                 UPDATE ingest_candidate_revisions r SET excerpt = NULL
                 FROM ingest_candidates c
                 WHERE r.candidate_id = c.id
-                  AND c.state IN ('DISMISSED', 'DUPLICATE')
-                  AND r.created_at <= ${cutoff}`,
+                  AND (
+                      (c.state IN ('DISMISSED', 'DUPLICATE') AND r.created_at <= ${cutoff})
+                      OR (
+                          c.state = 'SELECTED'
+                          AND EXISTS (
+                              SELECT 1 FROM content_articles a
+                              WHERE a.id = c.selected_article_id AND a.state = 'PUBLISHED'
+                          )
+                      )
+                  )`,
         ]);
         return { receipts: receipts.count, excerpts };
     }
@@ -941,6 +1062,32 @@ export class ContentService {
         return result;
     }
 
+    private assertSourceTransition(current: ContentSource['state'], next: string): void {
+        const transitions: Record<ContentSource['state'], readonly ContentSource['state'][]> = {
+            PROPOSED: ['ENABLED', 'PAUSED', 'REVOKED'],
+            ENABLED: ['PAUSED', 'REVOKED'],
+            PAUSED: ['ENABLED', 'REVOKED'],
+            REVOKED: [],
+        };
+        if (!transitions[current].includes(next as ContentSource['state']))
+            throw contentError('INVALID_STATE_TRANSITION', 400);
+    }
+
+    private currentRights(policy: ContentSourcePolicy): boolean {
+        const now = new Date();
+        return (
+            policy.validFrom <= now &&
+            (policy.validUntil === null || policy.validUntil > now) &&
+            policy.reviewDueAt > now &&
+            policy.legalReview === 'APPROVED' &&
+            policy.securityReview === 'APPROVED' &&
+            policy.privacyReview === 'APPROVED' &&
+            policy.commercialReview === 'APPROVED' &&
+            policy.useClasses.includes('FETCH_METADATA') &&
+            policy.useClasses.includes('STORE_METADATA')
+        );
+    }
+
     private checklist(decision: string, value?: JsonRecord): JsonRecord | null {
         if (!['APPROVE', 'SCHEDULE', 'PUBLISH'].includes(decision)) return null;
         const required = [
@@ -1008,7 +1155,7 @@ export class ContentService {
         return `${hash.slice(0, 8)}-${hash.slice(8, 12)}-4${hash.slice(13, 16)}-a${hash.slice(17, 20)}-${hash.slice(20, 32)}`;
     }
 
-    private assertSourceInput(input: SourceInput, requireExpected: boolean): void {
+    private assertSourceInput(input: SourceInput): void {
         this.assertExact(input, [
             'expectedVersion',
             'integrationKind',
@@ -1048,9 +1195,10 @@ export class ContentService {
             input.rights.commercialReview,
         ];
         if (
-            (requireExpected && (!Number.isInteger(input.expectedVersion) || input.expectedVersion < 0)) ||
+            !Number.isInteger(input.expectedVersion) ||
+            input.expectedVersion < 0 ||
             !['RSS', 'API'].includes(input.integrationKind) ||
-            !/^\d+\.\d+\.\d+$/u.test(input.policyVersion) ||
+            !/^[1-9][0-9]*\.[0-9]+\.[0-9]+$/u.test(input.policyVersion) ||
             typeof input.rights !== 'object' ||
             !Array.isArray(useClasses) ||
             useClasses.some((value) => typeof value !== 'string' || !USE_CLASSES.has(value)) ||
@@ -1146,6 +1294,8 @@ export class ContentService {
             'translationOfRevisionId',
         ]);
         this.assertExact(input.seo, ['title', 'description', 'canonicalUrl', 'indexable', 'openGraphImageUrl']);
+        if (!Array.isArray(input.tagIds) || !Array.isArray(input.origins) || !Array.isArray(input.media))
+            throw contentError('VALIDATION_FAILED', 400);
         for (const origin of input.origins)
             this.assertExact(origin, [
                 'id',
@@ -1165,13 +1315,25 @@ export class ContentService {
         if (
             !Number.isInteger(input.expectedArticleVersion) ||
             input.expectedArticleVersion < 0 ||
+            typeof input.locale !== 'string' ||
+            input.locale.length < 2 ||
+            input.locale.length > 35 ||
+            typeof input.slug !== 'string' ||
             !/^[a-z0-9]+(?:-[a-z0-9]+)*$/u.test(input.slug) ||
             input.slug.length > 96 ||
             input.tagIds.length > 20 ||
             input.origins.length > 20 ||
             input.media.length > 20 ||
+            input.tagIds.some((tagId) => typeof tagId !== 'string' || !UUID.test(tagId)) ||
             typeof input.seo.canonicalUrl !== 'string' ||
-            !input.seo.canonicalUrl.startsWith('https://')
+            !input.seo.canonicalUrl.startsWith('https://') ||
+            input.origins.some(
+                (origin) =>
+                    typeof origin.sourceId !== 'string' ||
+                    !UUID.test(origin.sourceId) ||
+                    typeof origin.sourcePolicyVersion !== 'string' ||
+                    !/^[1-9][0-9]*\.[0-9]+\.[0-9]+$/u.test(origin.sourcePolicyVersion)
+            )
         )
             throw contentError('VALIDATION_FAILED', 400);
     }
@@ -1451,8 +1613,26 @@ export class ContentService {
         return REVISION_INCLUDE;
     }
 
-    private offsetPage<T>(rows: T[], limit: number, map: (row: T) => object): object {
-        return { items: rows.slice(0, limit).map(map), pageInfo: { hasNext: rows.length > limit, nextCursor: null } };
+    private keysetPage<T>(
+        rows: T[],
+        limit: number,
+        scope: string,
+        date: (row: T) => Date,
+        id: (row: T) => string,
+        map: (row: T) => object
+    ): object {
+        const items = rows.slice(0, limit);
+        const last = items.at(-1);
+        return {
+            items: items.map(map),
+            pageInfo: {
+                hasNext: rows.length > limit,
+                nextCursor:
+                    rows.length > limit && last !== undefined
+                        ? this.cursor.encode({ scope, at: date(last).toISOString(), id: id(last) })
+                        : null,
+            },
+        };
     }
 
     private canonicalUrl(locale: string, slug: string): string {
@@ -1538,5 +1718,9 @@ export class ContentService {
 
     private checklistVersion(): string {
         return this.environment.CONTENT_CHECKLIST_VERSION ?? '1.0.0';
+    }
+
+    private assertReason(value: unknown): asserts value is string {
+        if (typeof value !== 'string' || !DECISION_REASONS.has(value)) throw contentError('VALIDATION_FAILED', 400);
     }
 }

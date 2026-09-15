@@ -30,7 +30,12 @@ export class ContentCursorService {
             )
                 throw new Error('signature');
             const value = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8')) as CursorValue;
-            if (value.scope !== scope || Number.isNaN(new Date(value.at).getTime()) || typeof value.id !== 'string')
+            if (
+                value.scope !== scope ||
+                Number.isNaN(new Date(value.at).getTime()) ||
+                typeof value.id !== 'string' ||
+                (value.snapshot !== undefined && Number.isNaN(new Date(value.snapshot).getTime()))
+            )
                 throw new Error('scope');
             return value;
         } catch {

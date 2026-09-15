@@ -6,6 +6,8 @@ import type { Environment } from '../common/config/environment';
 import { contentError } from './content.errors';
 
 const MEDIA_TYPES = new Set(['image/avif', 'image/jpeg', 'image/png', 'image/webp']);
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
+const POLICY_VERSION = /^[1-9][0-9]*\.[0-9]+\.[0-9]+$/u;
 
 export interface VerifiedContentMedia {
     bytes: Uint8Array;
@@ -43,6 +45,8 @@ export class ContentMediaService {
     async store(articleId: string, mediaId: string, input: VerifiedContentMedia): Promise<object> {
         if (
             this.environment.CONTENT_MEDIA_BASE_URL === undefined ||
+            !UUID.test(articleId) ||
+            !UUID.test(mediaId) ||
             !MEDIA_TYPES.has(input.mediaType) ||
             input.bytes.byteLength < 1 ||
             input.bytes.byteLength > 10 * 1024 * 1024 ||
@@ -50,7 +54,9 @@ export class ContentMediaService {
             input.height < 1 ||
             input.width * input.height > 40_000_000 ||
             input.altText.trim().length < 1 ||
-            input.altText.length > 500
+            input.altText.length > 500 ||
+            !POLICY_VERSION.test(input.rightsPolicyVersion) ||
+            !UUID.test(input.rightsEvidenceId)
         )
             throw contentError('CONTENT_FORMAT_REJECTED', 422);
         const extension = input.mediaType === 'image/jpeg' ? 'jpg' : input.mediaType.slice('image/'.length);
