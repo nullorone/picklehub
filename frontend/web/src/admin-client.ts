@@ -277,6 +277,80 @@ export function createAdminClient(options: AdminClientOptions) {
                 `/admin/content/articles/${articleId}/emergency-unpublish`,
                 { body, idempotencyKey, mutation: true }
             ),
+        listAdPlacements: (parameters: Record<string, unknown> = { limit: 100 }) =>
+            call<{
+                readonly items: readonly components['schemas']['AdPlacement'][];
+                readonly pageInfo: components['schemas']['PageInfo'];
+            }>('/admin/advertising/placements', { parameters }),
+        createAdPlacement: (body: components['schemas']['AdPlacementInput'], idempotencyKey?: string) =>
+            call<components['schemas']['AdPlacement']>('/admin/advertising/placements', {
+                body,
+                idempotencyKey,
+                mutation: true,
+            }),
+        updateAdPlacement: (
+            placementId: string,
+            body: components['schemas']['AdPlacementInput'],
+            idempotencyKey?: string
+        ) =>
+            call<components['schemas']['AdPlacement']>(`/admin/advertising/placements/${placementId}`, {
+                body,
+                idempotencyKey,
+                method: 'PUT',
+                mutation: true,
+            }),
+        listAdCampaigns: (parameters: Record<string, unknown> = { limit: 100 }) =>
+            call<{
+                readonly items: readonly components['schemas']['AdCampaign'][];
+                readonly pageInfo: components['schemas']['PageInfo'];
+            }>('/admin/advertising/campaigns', { parameters }),
+        createAdCampaign: (body: components['schemas']['AdCampaignInput'], idempotencyKey?: string) =>
+            call<components['schemas']['AdCampaign']>('/admin/advertising/campaigns', {
+                body,
+                idempotencyKey,
+                mutation: true,
+            }),
+        getAdCampaign: (campaignId: string) =>
+            call<components['schemas']['AdCampaign']>(`/admin/advertising/campaigns/${campaignId}`),
+        createAdCreative: (body: components['schemas']['AdCreativeInput'], idempotencyKey?: string) =>
+            call<components['schemas']['AdCreativeRecord']>('/admin/advertising/creatives', {
+                body,
+                idempotencyKey,
+                mutation: true,
+            }),
+        createAdCampaignRevision: (
+            campaignId: string,
+            body: components['schemas']['AdCampaignRevisionInput'],
+            idempotencyKey?: string
+        ) =>
+            call<components['schemas']['AdCampaignRevision']>(`/admin/advertising/campaigns/${campaignId}/revisions`, {
+                body,
+                idempotencyKey,
+                mutation: true,
+            }),
+        decideAdCampaign: (
+            campaignId: string,
+            body: components['schemas']['AdCampaignDecisionInput'],
+            idempotencyKey?: string
+        ) =>
+            call<components['schemas']['AdCampaign']>(`/admin/advertising/campaigns/${campaignId}/decisions`, {
+                body,
+                idempotencyKey,
+                mutation: true,
+            }),
+        changeAdCampaignState: (
+            campaignId: string,
+            action: 'pause' | 'resume',
+            body: components['schemas']['AdCampaignStateInput'],
+            idempotencyKey?: string
+        ) =>
+            call<components['schemas']['AdCampaign']>(`/admin/advertising/campaigns/${campaignId}/${action}`, {
+                body,
+                idempotencyKey,
+                mutation: true,
+            }),
+        getAdReport: (body: components['schemas']['AdReportInput']) =>
+            call<components['schemas']['AdReport']>('/admin/advertising/reports', { body, mutation: true }),
     } as const;
 }
 

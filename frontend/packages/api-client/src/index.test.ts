@@ -16,6 +16,49 @@ describe('createApiClient', () => {
 });
 
 describe('createIdentityClient', () => {
+    it('keeps advertising tokens and coarse context in protected mutation bodies', async () => {
+        const fetch = vi
+            .fn<typeof globalThis.fetch>()
+            .mockResolvedValueOnce(Response.json({ csrfToken: 'c'.repeat(43) }))
+            .mockResolvedValueOnce(
+                Response.json({ source: 'NO_FILL', reason: 'NO_ELIGIBLE_CAMPAIGN', retryAfterSeconds: null })
+            )
+            .mockResolvedValueOnce(
+                Response.json({
+                    accepted: true,
+                    duplicate: false,
+                    event: 'VIEWABLE_IMPRESSION',
+                    invalidReason: null,
+                    receiptId: crypto.randomUUID(),
+                    recordedAt: '2026-09-15T12:00:00.000Z',
+                })
+            );
+        const client = createIdentityClient({ baseUrl: '/v1', fetch }, 'WEB');
+        await client.selectAdvertisingDecision({
+            context: {
+                clientKind: 'WEB',
+                connectivity: 'REGULAR',
+                criticalState: false,
+                formFactor: 'WIDE',
+                locale: 'ru-RU',
+                placementCode: 'WEB_SCREEN_BOTTOM',
+                providerConsent: false,
+                surface: 'NEWS',
+            },
+        });
+        await client.recordViewableAdvertisingImpression({
+            continuousForegroundMilliseconds: 1000,
+            deliveryToken: 'd'.repeat(43),
+            visiblePercent: 50,
+        });
+
+        expect(fetch.mock.calls[1]?.[0]).toBe('/v1/advertising/decisions');
+        expect(fetch.mock.calls[2]?.[0]).toBe('/v1/advertising/impressions');
+        expect(fetch.mock.calls[2]?.[0]).not.toContain('d'.repeat(43));
+        expect(new Headers(fetch.mock.calls[2]?.[1]?.headers).get('X-CSRF-Token')).toBe('c'.repeat(43));
+        expect(new Headers(fetch.mock.calls[2]?.[1]?.headers).get('Idempotency-Key')).toMatch(/^[0-9a-f-]{36}$/u);
+    });
+
     it('reuses an explicit client key for a failed chat retry without exposing text in the URL', async () => {
         const session = {
             accessExpiresAt: '2026-09-11T12:05:00.000Z',

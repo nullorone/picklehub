@@ -1139,6 +1139,27 @@ export function createIdentityClient(options: ApiClientOptions, platform: Client
                 method: 'DELETE',
                 mutation: true,
             }),
+        selectAdvertisingDecision: (body: components['schemas']['AdDecisionRequest'], idempotencyKey?: string) =>
+            call<components['schemas']['AdDecision']>('/advertising/decisions', body, {
+                idempotent: true,
+                idempotencyKey,
+                mutation: true,
+            }),
+        recordViewableAdvertisingImpression: (
+            body: components['schemas']['AdViewableImpressionInput'],
+            idempotencyKey?: string
+        ) =>
+            call<components['schemas']['AdMeasurementReceipt']>('/advertising/impressions', body, {
+                idempotent: true,
+                idempotencyKey,
+                mutation: true,
+            }),
+        recordAdvertisingClick: (body: components['schemas']['AdClickInput'], idempotencyKey?: string) =>
+            call<components['schemas']['AdClickReceipt']>('/advertising/clicks', body, {
+                idempotent: true,
+                idempotencyKey,
+                mutation: true,
+            }),
     } as const;
 }
 

@@ -141,6 +141,109 @@ describe('web administration', () => {
         expect(screen.queryByRole('link', { name: 'Аудит' })).not.toBeInTheDocument();
     });
 
+    it('gives an ads manager campaign, creative, targeting, approval and aggregate report controls', async () => {
+        const placementId = crypto.randomUUID();
+        const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation((input, init) => {
+            const url = requestUrl(input);
+            if (url === '/v1/admin/session')
+                return Promise.resolve(
+                    json(
+                        session('ADS_MANAGER', [
+                            'ADMIN_SESSION_ACCESS',
+                            'AD_CAMPAIGN_MANAGE',
+                            'AD_CREATIVE_MANAGE',
+                            'AD_PLACEMENT_MANAGE',
+                            'AD_CAMPAIGN_REVIEW',
+                            'AD_CAMPAIGN_PAUSE',
+                            'AD_REPORT_READ',
+                        ])
+                    )
+                );
+            if (url.startsWith('/v1/admin/advertising/placements') && init?.method === 'GET')
+                return Promise.resolve(
+                    json({
+                        items: [
+                            {
+                                code: 'WEB_SCREEN_BOTTOM',
+                                enabled: true,
+                                fallbackEnabled: false,
+                                format: 'TEXT_IMAGE_CARD',
+                                id: placementId,
+                                minimumHeight: 100,
+                                minimumWidth: 320,
+                                surface: 'NEWS',
+                                updatedAt: '2026-09-15T12:00:00.000Z',
+                                version: 1,
+                            },
+                        ],
+                        pageInfo: { hasMore: false, nextCursor: null },
+                    })
+                );
+            if (url.startsWith('/v1/admin/advertising/campaigns') && init?.method === 'GET')
+                return Promise.resolve(json({ items: [], pageInfo: { hasMore: false, nextCursor: null } }));
+            if (url === '/v1/auth/context') return Promise.resolve(json({ csrfToken: 'c'.repeat(43) }));
+            if (url === '/v1/admin/advertising/campaigns' && init?.method === 'POST')
+                return Promise.resolve(
+                    json(
+                        {
+                            advertiserName: 'Пикл Спорт',
+                            approvedRevisionId: null,
+                            budgetMinor: 100000,
+                            createdAt: '2026-09-15T12:00:00.000Z',
+                            currency: 'RUB',
+                            currentRevisionId: null,
+                            endsAt: '2026-09-22T12:00:00.000Z',
+                            id: crypto.randomUUID(),
+                            reservedMinor: 0,
+                            spentMinor: 0,
+                            startsAt: '2026-09-15T13:00:00.000Z',
+                            state: 'DRAFT',
+                            updatedAt: '2026-09-15T12:00:00.000Z',
+                            version: 1,
+                        },
+                        201
+                    )
+                );
+            return Promise.resolve(json({}, 404));
+        });
+        vi.stubGlobal('fetch', fetch);
+        renderAdmin('/admin/advertising');
+        enterCredential();
+
+        expect(await screen.findByRole('heading', { name: 'Рекламный инвентарь' })).toBeInTheDocument();
+        expect(screen.getByRole('heading', { name: 'Места' })).toBeInTheDocument();
+        expect(screen.getByRole('heading', { name: 'Кампании' })).toBeInTheDocument();
+        expect(screen.getByRole('heading', { name: 'Агрегированный отчёт' })).toBeInTheDocument();
+        await screen.findByRole('option', { name: /WEB_SCREEN_BOTTOM/ });
+
+        fireEvent.change(screen.getByLabelText('Рекламодатель'), { target: { value: 'Пикл Спорт' } });
+        fireEvent.change(screen.getByLabelText('Юридический ID'), { target: { value: 'LEGAL-TEST' } });
+        fireEvent.change(screen.getByLabelText('Placement'), { target: { value: placementId } });
+        fireEvent.change(screen.getByLabelText('Разрешённый код значения'), { target: { value: 'NEWS' } });
+        const createCampaign = screen.getByRole('button', { name: 'Создать кампанию' });
+        const campaignForm = createCampaign.closest('form');
+        expect(campaignForm).not.toBeNull();
+        if (campaignForm) fireEvent.submit(campaignForm);
+
+        await waitFor(() => {
+            expect(
+                fetch.mock.calls.some(
+                    ([url, request]) => requestUrl(url).endsWith('/campaigns') && request?.method === 'POST'
+                )
+            ).toBe(true);
+        });
+        const request = fetch.mock.calls.find(
+            ([url, options]) => requestUrl(url).endsWith('/campaigns') && options?.method === 'POST'
+        );
+        const body = JSON.parse(requestBody(request?.[1]?.body)) as Record<string, unknown>;
+        expect(body).toMatchObject({
+            placementIds: [placementId],
+            targetRules: [{ dimension: 'SURFACE', operator: 'INCLUDE', values: ['NEWS'] }],
+        });
+        expect(body).not.toHaveProperty('coordinates');
+        expect(body).not.toHaveProperty('searchText');
+    });
+
     it('requires a second confirmation before recording a case decision', async () => {
         const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation((input, init) => {
             const url = requestUrl(input);

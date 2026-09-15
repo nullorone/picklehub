@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { Link, Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom';
 
 import { useOnlineStatus } from './connectivity';
+import { AdvertisingSlot } from './advertising-ui';
 import { AdminApp } from './admin-ui';
 import { ArticleScreen, BookmarksScreen, NewsFeed } from './content-ui';
 import { ChatScreen, NotificationBadge, NotificationsScreen } from './communications-ui';
@@ -19,6 +20,12 @@ import { TournamentDetailsScreen, TournamentsScreen } from './tournaments-ui';
 import { VenuesScreen } from './venues-ui';
 
 type Session = components['schemas']['AuthenticatedSession'];
+
+function isPublicAdvertisingPath(pathname: string): boolean {
+    return ['/clubs', '/match-invites', '/matches', '/news', '/players', '/tournaments'].some(
+        (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
+    );
+}
 
 function MatchRoute({
     client,
@@ -468,6 +475,16 @@ export function App({ config }: { readonly config: RuntimeConfig }) {
                     }
                 />
             </Routes>
+            <AdvertisingSlot
+                key={routeLocation.pathname}
+                client={client}
+                clientKind="WEB"
+                online={
+                    online &&
+                    (Boolean(session && !requiresOnboarding) || isPublicAdvertisingPath(routeLocation.pathname))
+                }
+                pathname={routeLocation.pathname}
+            />
         </div>
     );
 }

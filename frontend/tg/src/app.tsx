@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { Link, Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom';
 
 import { useOnlineStatus } from './connectivity';
+import { AdvertisingSlot } from './advertising-ui';
 import { ArticleScreen, BookmarksScreen, NewsFeed } from './content-ui';
 import { ChatScreen, NotificationBadge, NotificationsScreen } from './communications-ui';
 import { ClubDetailsScreen, ClubInvitationScreen, ClubsScreen } from './clubs-ui';
@@ -18,6 +19,12 @@ import { TournamentDetailsScreen, TournamentsScreen } from './tournaments-ui';
 import { VenuesScreen } from './venues-ui';
 
 type Session = components['schemas']['AuthenticatedSession'];
+
+function isPublicAdvertisingPath(pathname: string): boolean {
+    return ['/clubs', '/match-invites', '/matches', '/news', '/players', '/tournaments'].some(
+        (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
+    );
+}
 
 function MatchRoute({
     client,
@@ -424,6 +431,13 @@ export function App({ config, initData }: { readonly config: RuntimeConfig; read
                 />
                 <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
+            <AdvertisingSlot
+                key={routeLocation.pathname}
+                client={client}
+                clientKind="TMA"
+                online={online && (Boolean(session && !onboarding) || isPublicAdvertisingPath(routeLocation.pathname))}
+                pathname={routeLocation.pathname}
+            />
         </div>
     );
 }

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type
 import { Link, Navigate, Route, Routes, useNavigate, useParams } from 'react-router-dom';
 
 import { createAdminClient, type AdminClient } from './admin-client';
+import { AdvertisingCampaignWorkspace, AdvertisingDashboard } from './advertising-admin-ui';
 import { ArticleWorkspace, CandidateWorkspace, ContentDashboard, SourceProposal } from './content-admin-ui';
 
 type AdminSession = components['schemas']['AdminSessionContext'];
@@ -191,6 +192,7 @@ function AdminLayout({
                     {has(session, 'USER_LOOKUP') && <Link to="/admin/users">Пользователи</Link>}
                     {has(session, 'AUDIT_SEARCH') && <Link to="/admin/audit">Аудит</Link>}
                     {has(session, 'CONTENT_SOURCE_READ') && <Link to="/admin/content">Контент</Link>}
+                    {has(session, 'AD_CAMPAIGN_MANAGE') && <Link to="/admin/advertising">Реклама</Link>}
                 </nav>
                 <div className="admin-content">{children}</div>
             </div>
@@ -1094,7 +1096,9 @@ export function AdminApp({ config, online }: { readonly config: RuntimeConfig; r
         };
     }, [client]);
     useEffect(() => {
-        document.title = session ? `Операции · ${roleLabels[session.activeRole]}` : 'Вход сотрудников · PickleHub';
+        const title = session ? `Операции · ${roleLabels[session.activeRole]}` : 'Вход сотрудников · PickleHub';
+        const previousTitle = document.title;
+        document.title = title;
         const robots = document.querySelector<HTMLMetaElement>('meta[name="robots"]') ?? document.createElement('meta');
         const created = !robots.isConnected;
         const previous = robots.content;
@@ -1102,7 +1106,7 @@ export function AdminApp({ config, online }: { readonly config: RuntimeConfig; r
         robots.content = 'noindex,nofollow';
         if (created) document.head.append(robots);
         return () => {
-            document.title = 'PickleHub';
+            if (document.title === title) document.title = previousTitle;
             if (created) robots.remove();
             else robots.content = previous;
         };
@@ -1168,6 +1172,26 @@ export function AdminApp({ config, online }: { readonly config: RuntimeConfig; r
                     element={
                         has(session, 'AUDIT_SEARCH') ? (
                             <AuditScreen client={client} />
+                        ) : (
+                            <Navigate replace to="/admin" />
+                        )
+                    }
+                />
+                <Route
+                    path="/admin/advertising"
+                    element={
+                        has(session, 'AD_CAMPAIGN_MANAGE') ? (
+                            <AdvertisingDashboard client={client} online={online} session={session} />
+                        ) : (
+                            <Navigate replace to="/admin" />
+                        )
+                    }
+                />
+                <Route
+                    path="/admin/advertising/campaigns/:campaignId"
+                    element={
+                        has(session, 'AD_CAMPAIGN_MANAGE') ? (
+                            <AdvertisingCampaignWorkspace client={client} online={online} session={session} />
                         ) : (
                             <Navigate replace to="/admin" />
                         )

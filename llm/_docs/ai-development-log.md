@@ -3582,3 +3582,56 @@ npx prisma validate --schema backend/prisma/schema.prisma` — успешно; �
 - `git diff --check` был успешен до записи журнала; после записи повторяются docs/format/whitespace checks. Runtime
   PostgreSQL/Redis suite, чистое и upgrade-применение migration, legal/ОРД/ЕРИР/residency, реальные creative assets и
   provider review остаются gates. Следующий промпт — `llm/13-advertising/04-tma-web.md`; этап 04 не начат.
+
+## 2026-09-15 — реклама, этап 04-tma-web
+
+- Активный промпт: `llm/13-advertising/04-tma-web.md`. Web/PWA и TMA получили отдельные платформенные нижние
+  placements `WEB_SCREEN_BOTTOM` и `TMA_SCREEN_BOTTOM` в общей оболочке экранов. Decision строится только из
+  закрытого route surface, client kind, locale, крупного form factor и connectivity; URL/query, object ID,
+  координаты, поисковый текст, identity/profile/history и advertising/device identifier не собираются. Provider
+  consent остаётся false, внешний SDK/provider не добавлен.
+- Slot находится в обычном потоке после content, резервирует фиксированные 7.5–10 rem до decision и схлопывается
+  при no-fill, request failure или broken asset. Креатив имеет явную метку «Реклама», рекламодателя, registration
+  token и доступное имя ссылки; image использует только server-approved static asset. Overlay, popup, iframe,
+  script, pixel, autoplay, countdown и animation отсутствуют; reduced-motion учтён существующей web policy и
+  отдельным TMA guard.
+- Auth/onboarding, создание матча, feedback и safety report не делают decision. Динамический fail-closed guard
+  скрывает slot и отменяет viewability timer при `data-ad-free`, `data-ad-critical`, result form, dialog/modal,
+  `aria-busy` и фокусе любой формы; MutationObserver учитывает состояния, появившиеся после async render. Так ввод
+  счёта, подтверждение/оспаривание результата, жалоба, blocking state и admin mutations остаются без рекламы.
+- Viewability вынесена в детерминированный tracker: пересечение не менее 50% непрерывно одну foreground-секунду
+  отправляет ровно один impression с server delivery token. Background, падение ниже порога, critical state,
+  route change и unmount отменяют таймер; отсутствие IntersectionObserver не блокирует content. Click требует
+  trusted activation, отправляет token только в body и использует exact HTTPS redirect из принятой server receipt.
+- Общий API client получил типизированные decision/impression/click methods с CSRF, cookie Origin context,
+  `no-store` и UUIDv4 idempotency. Web-only ADS_MANAGER backoffice получил placements create/enable/disable,
+  campaign list/create, immutable creative/revision, закрытый targeting rule, UTC schedule/budget/caps, независимое
+  submit/approve/reject, pause/resume и daily aggregate report с отображением server suppression floor 20. Каждый
+  control дополнительно ограничен соответствующей capability, а mutation запрещена offline.
+- Добавлены platform component tests, чистый one-shot viewability scheduler test, API transport test и admin
+  capability/body test; решения и незакрытые production-предпосылки записаны в
+  `llm/_docs/advertising-frontend.md`. TypeSpec/generated contracts и backend не менялись.
+
+### Проверки этапа advertising 04-tma-web
+
+- Финальная targeted цепочка `npm run lint --workspace @picklehub/web && npm run lint --workspace @picklehub/tg &&
+npm run typecheck --workspace @picklehub/web && npm run typecheck --workspace @picklehub/tg && npm test
+--workspace @picklehub/web && npm test --workspace @picklehub/tg && npm run build --workspace @picklehub/web &&
+npm run build --workspace @picklehub/tg` — успешно: web 14/14 suites и 57/57 tests, TMA 11/11 suites и 33/33
+  tests, оба production build checks зелёные. Отдельно `@picklehub/api-client` прошёл lint/typecheck и 7/7 tests.
+- `npm run verify` — успешно полностью: восемь workspaces/один root lockfile; TypeSpec/Redocly; 223 REST
+  operations/66 messages; 149/149 contract/data/backend policy tests; compatibility/generated drift/typecheck;
+  OpenAPI mock; format/docs; lint; strict typecheck; все unit/component tests и production builds. Backend regression
+  — 45/45 suites и 281/281 tests. Web PWA manifest/service worker присутствуют, TMA development Telegram mock
+  исключён.
+- В промежуточных targeted запусках были исправлены ESLint purity/void-expression замечания, exact optional
+  property type, discriminated union narrowing и тест, который выбирал placement до async загрузки. Один полный web
+  test run выявил пересечение глобального fake timer с соседней suite; viewability выделена в чистый scheduler test,
+  а повторный запуск выявил старое безусловное восстановление admin `document.title`, способное затронуть SEO effect
+  reader; cleanup теперь восстанавливает только собственный title. После этого web suite дважды прошла 57/57, TMA —
+  33/33, и финальный полный `npm run verify` успешен. Проверки не ослаблялись, snapshots не обновлялись.
+- Сохраняются неблокирующие build warnings: web bundle около 706 KiB, TMA около 667 KiB и MapLibre 924 KiB, а также
+  внешняя небезопасная настройка `NODE_TLS_REJECT_UNAUTHORIZED=0`. Реальный browser/WebView CLS, 320/360 px,
+  keyboard/screen reader, foreground/background, trusted navigation и live asset failure требуют browser E2E.
+  PostgreSQL/Redis runtime-gates этапа 03 и legal/маркировка/ОРД/ЕРИР/residency/provider review не заявляются
+  закрытыми; реальные campaign/placement не создавались. К `llm/13-advertising/05-verification.md` не переходили.

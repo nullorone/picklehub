@@ -1435,6 +1435,90 @@ fieldset {
         transition: none !important;
     }
 }
+
+.ad-slot {
+    position: relative;
+    display: grid;
+    width: min(100% - 2rem, 40rem);
+    min-height: 8rem;
+    max-height: 10rem;
+    margin: 2rem auto;
+    padding: 1.35rem 0.75rem 0.75rem;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: 1rem;
+    background: var(--surface);
+    contain: layout paint;
+}
+
+.ad-label {
+    position: absolute;
+    top: 0.35rem;
+    left: 0.75rem;
+    color: var(--text-muted);
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.ad-slot-placeholder {
+    visibility: hidden;
+}
+
+.ad-link {
+    display: grid;
+    grid-template-columns: minmax(7rem, 10rem) 1fr;
+    gap: 0.75rem;
+    align-items: center;
+    min-width: 0;
+    text-decoration: none;
+}
+
+.ad-link img {
+    display: block;
+    width: 100%;
+    height: 5.25rem;
+    object-fit: contain;
+    border-radius: 0.5rem;
+}
+
+.ad-copy {
+    display: grid;
+    gap: 0.25rem;
+    min-width: 0;
+}
+
+.ad-copy span,
+.ad-disclosure {
+    overflow: hidden;
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ad-disclosure {
+    position: absolute;
+    right: 0.75rem;
+    bottom: 0.25rem;
+    max-width: calc(100% - 1.5rem);
+}
+
+@media (max-width: 479px) {
+    .ad-slot {
+        min-height: 7.5rem;
+        max-height: 8.5rem;
+    }
+
+    .ad-link {
+        grid-template-columns: 7rem 1fr;
+    }
+
+    .ad-link img {
+        height: 4.5rem;
+    }
+}
 .matches-main {
     width: min(100% - 2rem, 72rem);
     margin: 0 auto;
