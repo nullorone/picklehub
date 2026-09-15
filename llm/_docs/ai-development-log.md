@@ -3689,3 +3689,48 @@ test/integration/advertising-backend.integration-spec.ts` не дошёл до f
   `NODE_TLS_REJECT_UNAUTHORIZED=0`. Доступные доказательства подтверждают отсутствие чувствительного targeting,
   blocking placement и включённого fallback; полная runtime/legal приёмка остаётся закрыта перечисленными gates. К
   `14-mobile-parity` не переходили.
+
+## 2026-09-15 — функциональный паритет mobile, этап 01-requirements
+
+- Активный промпт: `llm/14-mobile-parity/01-requirements.md`. Выполнен аудит фактических web/PWA и TMA
+  маршрутов, продуктовых требований Match MVP, TypeSpec identity boundary и analytics taxonomy. Изменения
+  ограничены требованиями; `frontend/mobile`, Expo dependencies, TypeSpec/AsyncAPI, generated clients, Prisma,
+  backend и существующие клиенты не создавались и не менялись. К следующему промпту не переходили.
+- Добавлен `llm/_docs/mobile-parity-requirements.md`: scope первого native release, tab/stack navigation,
+  universal/app-link resolver и матрица identity/onboarding, площадок, матчей, чата/уведомлений, профиля/статистики
+  и trust/safety с native screens, состояниями, deep links и offline policy. Admin, клубы, турниры, геймификация,
+  новости, реклама и мини-игра явно оставлены вне Match MVP, а не представлены скрытыми возможностями.
+- Зафиксирован блокирующий contract gap: текущий `ClientPlatform` допускает только `WEB`/`TMA`, browser mutations
+  требуют Origin/CSRF cookie, refresh credential выдаётся только через `HttpOnly` cookie. До отдельного native
+  session/proof/rotation/revocation contract запрещены WebView cookie bridge, AsyncStorage и создание Expo auth.
+  Magic link определён основным входом; Telegram link остаётся optional/unavailable до server-bound proof и
+  provider review, без приёма clipboard/initData или неявного merge.
+- Определены lifecycle/realtime reconnect и REST resync, foreground reconciliation, отсутствие background socket и
+  общей offline mutation queue; зашифрованный user-partitioned read-cache, очистка при logout/delete/account switch,
+  online-only mutations и запрет хранения secret/restricted/location data. Push permission следует contextual
+  pre-prompt; payload нейтрален, tap только открывает allowlisted экран и refetches, provider/registration contract
+  остаются следующему этапу. Location только `when in use` по кнопке с locality/manual fallback.
+- Зафиксированы все текущие client-owned и server-owned analytics events Match MVP без новой behavioral taxonomy;
+  `MOBILE` требует contract review, permission/push/lifecycle/location health остаётся агрегированной operational
+  telemetry. Установлены iOS 16+/Android 10 API 29+ как минимальная продуктовая матрица с обязательной повторной
+  проверкой актуальных Expo/store требований, VoiceOver/TalkBack, 200% text, reduced motion, реальные устройства,
+  privacy manifests/labels, deletion и SDK/provider/legal gates.
+- Сквозные ссылки и mobile boundaries добавлены в `product-requirements.md`, `analytics-plan.md`, `architecture.md`
+  и `security-privacy.md`. Созданы 14 критериев приёмки и семь явных gates для
+  `14-mobile-parity/02-contract-data.md`; API не менялся ради локального удобства.
+
+### Проверки этапа mobile parity 01-requirements
+
+- `npx prettier --write llm/_docs/mobile-parity-requirements.md llm/_docs/product-requirements.md
+llm/_docs/analytics-plan.md llm/_docs/architecture.md llm/_docs/security-privacy.md` — успешно.
+- `npm run docs:check`, `npm run format:check` и `git diff --check` — успешно: 137 Markdown-файлов, 13 TypeSpec
+  файлов и отсутствие whitespace errors.
+- `npm run verify` — успешно полностью: восемь workspaces и один root lockfile; TypeSpec/Redocly, 223 REST
+  operations/66 AsyncAPI messages, 155/155 contract/data/backend/verification policy tests, compatibility,
+  generated drift/typecheck и OpenAPI mock; format/docs, lint, strict typecheck, unit/component tests и production
+  builds. Backend — 46/46 suites и 284/284 tests, web — 14/14 и 59/59, TMA — 11/11 и 34/34; shared package suites
+  зелёные.
+- Сохраняются прежние неблокирующие build warnings о chunks web около 706 KiB, TMA около 667 KiB и MapLibre
+  924 KiB, а также внешняя небезопасная настройка `NODE_TLS_REJECT_UNAUTHORIZED=0`; она не добавлена в репозиторий.
+  Store/provider/legal/residency, OS/device/accessibility и runtime mobile evidence не проверялись и не заявляются,
+  поскольку Expo-клиент ещё не создан. Следующий промпт — `llm/14-mobile-parity/02-contract-data.md`; он не начат.

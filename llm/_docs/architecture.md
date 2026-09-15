@@ -240,6 +240,13 @@ consumer не выбирает исход автоматически. Resume т�
 
 ## Общие frontend-пакеты
 
+React Native/Expo использует общие API-типы, domain, validation, i18n и analytics taxonomy, но имеет собственные
+navigation, UI, secure storage, lifecycle, cache, deep-link и push adapters. DOM/browser cookie, Telegram WebApp и
+web service-worker abstractions не импортируются. Архитектурная граница и выявленные contract gates описаны в
+[требованиях mobile parity](mobile-parity-requirements.md). В частности, текущую browser-only refresh/CSRF модель
+нельзя переносить через WebView cookie bridge: native credential protocol сначала определяется в TypeSpec и
+security review.
+
 Разрешены framework-neutral пакеты `api-client`, `domain`, `validation`, `i18n` и `analytics`. Они не импортируют
 React, DOM, Telegram SDK, Expo/React Native и код приложений. `web` и `tg` могут зависеть от них; общие пакеты не
 зависят от приложений или backend. UI, маршрутизация, состояние экрана и platform adapters принадлежат конкретному

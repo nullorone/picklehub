@@ -1,5 +1,20 @@
 # Базовые требования безопасности, конфиденциальности и права
 
+## Политика мобильного клиента
+
+Первый React Native/Expo-клиент следует [матрице mobile parity](mobile-parity-requirements.md). Native refresh
+credential допускается только после отдельного contract/threat review и хранится в Keychain/Keystore-backed
+secure storage; access token остаётся в памяти. AsyncStorage, SQLite, URL, clipboard, backup, logs, analytics и
+crash reports не являются хранилищем credentials. Browser cookie/CSRF contract нельзя эмулировать WebView bridge.
+
+Location запрашивается только `when in use` по явному действию, не образует историю и не попадает в cache key,
+analytics или log. Background location, contacts, ad ID, fingerprint и tracking запрещены. Push payload нейтрален
+на lock screen, не содержит chat/safety text, email, точное место или secret link и никогда не авторизует мутацию.
+User-scoped encrypted read-cache исключается из backup и очищается при logout/delete/account switch; restricted
+safety evidence и proof tokens не кешируются. Любой SDK, store disclosure, privacy manifest, data transfer,
+retention и РФ-residency требуют фактической проверки до beta/production, а не считаются разрешёнными по факту
+наличия Expo package.
+
 Этот документ задаёт обязательный baseline. Он не является заключением о соответствии закону: публичный запуск
 блокируется до юридической и security-проверки обработки данных и каждого внешнего провайдера.
 

@@ -1,5 +1,15 @@
 # Базовый план продуктовой аналитики
 
+## Мобильный клиент
+
+React Native/Expo повторяет существующую consent policy, дедупликацию и closed enum taxonomy Match MVP согласно
+[матрице mobile parity](mobile-parity-requirements.md). Server-owned события не дублируются клиентом; mobile
+реализует только уже определённые client-owned события соответствующего сценария. До contract review значение
+`MOBILE` нельзя подставлять в текущий allowlist `WEB`/`TMA`, а новые события разрешений, lifecycle, push receipt или
+location не являются behavioral analytics. Техническое качество этих функций измеряется только агрегированными
+operational counters без user/device/push token, route target или координат. Отсутствие consent не создаёт offline
+буфер и не влияет на доменную операцию или immutable marker подтверждённого матча.
+
 ## Воронка
 
 1. `app_opened`
