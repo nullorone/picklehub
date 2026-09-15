@@ -128,4 +128,52 @@ describe('web advertising placement', () => {
         await act(async () => Promise.resolve());
         expect(screen.queryByLabelText('Рекламное объявление')).not.toBeInTheDocument();
     });
+
+    it('removes a loaded creative when a critical form gains focus without removing the form', async () => {
+        const api = client();
+        const { container } = render(
+            <>
+                <form aria-label="Подтверждение результата">
+                    <label>
+                        Счёт
+                        <input name="score" />
+                    </label>
+                    <button type="submit">Подтвердить</button>
+                </form>
+                <AdvertisingSlot client={api} clientKind="WEB" online pathname="/matches/match-id" />
+            </>
+        );
+        await act(async () => Promise.resolve());
+        expect(screen.getByLabelText('Рекламное объявление')).toBeInTheDocument();
+
+        act(() => {
+            screen.getByRole('textbox', { name: 'Счёт' }).focus();
+        });
+
+        expect(screen.queryByLabelText('Рекламное объявление')).not.toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Подтвердить' })).toBeEnabled();
+        expect(container.querySelector('form')).toContainElement(document.activeElement as HTMLElement);
+    });
+
+    it('renders creative copy as text and collapses a broken static asset', async () => {
+        const hostile = {
+            ...creative,
+            creative: {
+                ...creative.creative,
+                altText: '<img src=x onerror=alert(1)>',
+                body: '<script>window.__ad_xss = true</script>',
+                headline: '<iframe src="https://tracker.example.test">',
+            },
+        };
+        render(<AdvertisingSlot client={client(hostile)} clientKind="WEB" online pathname="/news" />);
+        await act(async () => Promise.resolve());
+
+        expect(screen.getByText(hostile.creative.body)).toBeVisible();
+        expect(document.querySelector('script')).toBeNull();
+        expect(document.querySelector('iframe')).toBeNull();
+        const image = screen.getByRole('img', { name: hostile.creative.altText });
+        image.dispatchEvent(new Event('error'));
+        await act(async () => Promise.resolve());
+        expect(screen.queryByLabelText('Рекламное объявление')).not.toBeInTheDocument();
+    });
 });

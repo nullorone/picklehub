@@ -67,4 +67,46 @@ describe('TMA advertising placement', () => {
         render(<AdvertisingSlot client={api} clientKind="TMA" online pathname="/matches/new" />);
         expect(api.selectAdvertisingDecision).not.toHaveBeenCalled();
     });
+
+    it('hides an already loaded placement when a blocking state appears', async () => {
+        const api = client({
+            campaignId: crypto.randomUUID(),
+            campaignRevisionId: crypto.randomUUID(),
+            clickToken: 'c'.repeat(43),
+            creative: {
+                altText: 'Проверочный креатив',
+                assetUrl: 'https://assets.example.test/ad.webp',
+                body: null,
+                byteLength: 100,
+                format: 'STATIC_IMAGE',
+                headline: null,
+                mediaType: 'image/webp',
+            },
+            creativeId: crypto.randomUUID(),
+            deliveryToken: 'd'.repeat(43),
+            expiresAt: '2026-09-15T12:15:00.000Z',
+            legal: { advertiserName: 'Корт', disclosure: null, label: 'Реклама', registrationToken: null },
+            placementId: crypto.randomUUID(),
+            refreshAfterSeconds: 300,
+            source: 'DIRECT',
+        });
+        const { rerender } = render(
+            <>
+                <main>Матчи</main>
+                <AdvertisingSlot client={api} clientKind="TMA" online pathname="/matches" />
+            </>
+        );
+        await act(async () => Promise.resolve());
+        expect(screen.getByLabelText('Рекламное объявление')).toBeInTheDocument();
+
+        rerender(
+            <>
+                <main aria-busy="true">Загрузка критического состояния</main>
+                <AdvertisingSlot client={api} clientKind="TMA" online pathname="/matches" />
+            </>
+        );
+        await act(async () => Promise.resolve());
+        expect(screen.queryByLabelText('Рекламное объявление')).not.toBeInTheDocument();
+        expect(screen.getByText('Загрузка критического состояния')).toBeVisible();
+    });
 });

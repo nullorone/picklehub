@@ -70,26 +70,32 @@ describe('advertising backend delivery invariants', () => {
 
     async function activeCampaign(
         budgetMinor = 10_000,
-        rateMinor = 1_000
-    ): Promise<{ campaignId: string; placementCode: string }> {
-        const placementCode = `TEST_${uuidV7().replaceAll('-', '').toUpperCase()}`;
-        const placement = (await transaction((tx) =>
-            advertising.createPlacement(
-                managerId,
-                {
-                    expectedVersion: 0,
-                    code: placementCode,
-                    surface: 'NEWS_FEED',
-                    format: 'STATIC_IMAGE',
-                    enabled: true,
-                    fallbackEnabled: false,
-                    minimumWidth: 300,
-                    minimumHeight: 120,
-                },
-                tx
-            )
-        )) as { id: string };
-        const input = campaignInput(budgetMinor, rateMinor);
+        rateMinor = 1_000,
+        options: {
+            readonly input?: Partial<CampaignInput>;
+            readonly placement?: { readonly code: string; readonly id: string };
+        } = {}
+    ): Promise<{ campaignId: string; placementCode: string; placementId: string }> {
+        const placementCode = options.placement?.code ?? `TEST_${uuidV7().replaceAll('-', '').toUpperCase()}`;
+        const placement =
+            options.placement ??
+            ((await transaction((tx) =>
+                advertising.createPlacement(
+                    managerId,
+                    {
+                        expectedVersion: 0,
+                        code: placementCode,
+                        surface: 'NEWS_FEED',
+                        format: 'STATIC_IMAGE',
+                        enabled: true,
+                        fallbackEnabled: false,
+                        minimumWidth: 300,
+                        minimumHeight: 120,
+                    },
+                    tx
+                )
+            )) as { id: string });
+        const input = { ...campaignInput(budgetMinor, rateMinor), ...options.input };
         input.placementIds = [placement.id];
         const campaign = (await transaction((tx) => advertising.createCampaign(managerId, input, tx))) as {
             id: string;
@@ -154,7 +160,7 @@ describe('advertising backend delivery invariants', () => {
                 tx
             )
         );
-        return { campaignId: campaign.id, placementCode };
+        return { campaignId: campaign.id, placementCode, placementId: placement.id };
     }
 
     function context(placementCode: string, capToken = 'A'.repeat(43)): DecisionContext {
@@ -191,6 +197,42 @@ describe('advertising backend delivery invariants', () => {
         ]);
         const campaign = await prisma.campaign.findUniqueOrThrow({ where: { id: fixture.campaignId } });
         expect(campaign.reservedMinor + campaign.spentMinor).toBeLessThanOrEqual(campaign.budgetMinor);
+    });
+
+    it('selects the highest priority eligible approved snapshot', async () => {
+        const standard = await activeCampaign(10_000, 1_000, {
+            input: { priorityTier: 'STANDARD_DIRECT' },
+        });
+        const emergency = await activeCampaign(10_000, 1_000, {
+            input: { priorityTier: 'HOUSE_EMERGENCY' },
+            placement: { code: standard.placementCode, id: standard.placementId },
+        });
+
+        await expect(
+            transaction((tx) =>
+                advertising.decide(context(standard.placementCode, 'P'.repeat(43)), 'priority-order', tx)
+            )
+        ).resolves.toMatchObject({ source: 'HOUSE', campaignId: emergency.campaignId });
+    });
+
+    it('normalizes offset timestamps to UTC and excludes a not-yet-started approved campaign', async () => {
+        const scheduled = await activeCampaign(10_000, 1_000, {
+            input: {
+                timezone: 'Europe/Berlin',
+                startsAt: '2026-10-25T02:30:00+02:00',
+                endsAt: '2026-10-25T02:30:00+01:00',
+            },
+        });
+        const stored = await prisma.campaign.findUniqueOrThrow({ where: { id: scheduled.campaignId } });
+
+        expect(stored.state).toBe('SCHEDULED');
+        expect(stored.startsAt.toISOString()).toBe('2026-10-25T00:30:00.000Z');
+        expect(stored.endsAt.toISOString()).toBe('2026-10-25T01:30:00.000Z');
+        await expect(
+            transaction((tx) =>
+                advertising.decide(context(scheduled.placementCode, 'Q'.repeat(43)), 'scheduled-boundary', tx)
+            )
+        ).resolves.toMatchObject({ source: 'NO_FILL', reason: 'NO_ELIGIBLE_CAMPAIGN' });
     });
 
     it('enforces rolling viewable caps and stops delivery immediately after pause', async () => {
@@ -232,5 +274,101 @@ describe('advertising backend delivery invariants', () => {
         await expect(
             transaction((tx) => advertising.decide(context(fixture.placementCode, 'E'.repeat(43)), 'paused', tx))
         ).resolves.toMatchObject({ source: 'NO_FILL' });
+    });
+
+    it('records one trusted click and returns a replay receipt without a second charge', async () => {
+        const fixture = await activeCampaign(10_000, 1_000);
+        const decision = (await transaction((tx) =>
+            advertising.decide(context(fixture.placementCode, 'F'.repeat(43)), 'click-replay', tx)
+        )) as { clickToken: string };
+
+        const first = await transaction((tx) =>
+            advertising.click({ clickToken: decision.clickToken, trustedActivation: true }, tx)
+        );
+        const replay = await transaction((tx) =>
+            advertising.click({ clickToken: decision.clickToken, trustedActivation: true }, tx)
+        );
+
+        expect(first).toMatchObject({
+            accepted: true,
+            duplicate: false,
+            redirectUrl: 'https://ads.example.test/landing',
+        });
+        expect(replay).toMatchObject({
+            accepted: true,
+            duplicate: true,
+            redirectUrl: 'https://ads.example.test/landing',
+        });
+        await expect(
+            prisma.adDeliveryEvent.count({ where: { campaignId: fixture.campaignId, kind: 'VALID_CLICK' } })
+        ).resolves.toBe(1);
+        const campaign = await prisma.campaign.findUniqueOrThrow({ where: { id: fixture.campaignId } });
+        expect(campaign.spentMinor).toBe(1_000n);
+    });
+
+    it('never redirects or charges an untrusted click, including its replay', async () => {
+        const fixture = await activeCampaign(10_000, 1_000);
+        const decision = (await transaction((tx) =>
+            advertising.decide(context(fixture.placementCode, 'G'.repeat(43)), 'invalid-click', tx)
+        )) as { clickToken: string };
+
+        const first = await transaction((tx) =>
+            advertising.click({ clickToken: decision.clickToken, trustedActivation: false }, tx)
+        );
+        const replay = await transaction((tx) =>
+            advertising.click({ clickToken: decision.clickToken, trustedActivation: true }, tx)
+        );
+
+        expect(first).toMatchObject({
+            accepted: false,
+            duplicate: false,
+            invalidReason: 'UNTRUSTED_ACTIVATION',
+            redirectUrl: null,
+        });
+        expect(replay).toMatchObject({
+            accepted: false,
+            duplicate: true,
+            invalidReason: 'UNTRUSTED_ACTIVATION',
+            redirectUrl: null,
+        });
+        await expect(
+            prisma.adDeliveryEvent.count({ where: { campaignId: fixture.campaignId, kind: 'INVALID_CLICK' } })
+        ).resolves.toBe(1);
+        const campaign = await prisma.campaign.findUniqueOrThrow({ where: { id: fixture.campaignId } });
+        expect(campaign.spentMinor).toBe(0n);
+    });
+
+    it('stores reporting facts consistently and suppresses a small API cohort', async () => {
+        const fixture = await activeCampaign(10_000, 1_000);
+        const decision = (await transaction((tx) =>
+            advertising.decide(context(fixture.placementCode, 'H'.repeat(43)), 'report-reconcile', tx)
+        )) as { deliveryToken: string; clickToken: string };
+        await transaction((tx) =>
+            advertising.impression(
+                {
+                    deliveryToken: decision.deliveryToken,
+                    visiblePercent: 50,
+                    continuousForegroundMilliseconds: 1000,
+                },
+                tx
+            )
+        );
+        await transaction((tx) => advertising.click({ clickToken: decision.clickToken, trustedActivation: true }, tx));
+
+        const stored = await prisma.adReportDaily.findFirstOrThrow({ where: { campaignId: fixture.campaignId } });
+        expect(stored).toMatchObject({
+            served: 1n,
+            viewable: 1n,
+            validClicks: 1n,
+            invalidEvents: 0n,
+            spendMinor: 1_000n,
+        });
+        const report = (await advertising.report({
+            campaignId: fixture.campaignId,
+            from: new Date(Date.now() - 86_400_000).toISOString(),
+            until: new Date(Date.now() + 86_400_000).toISOString(),
+        })) as { minimumCohortSize: number; rows: { served: number; suppressed: boolean; spendMinor: number }[] };
+        expect(report.minimumCohortSize).toBe(20);
+        expect(report.rows).toEqual([expect.objectContaining({ served: 1, suppressed: true, spendMinor: 0 })]);
     });
 });

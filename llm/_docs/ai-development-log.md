@@ -3635,3 +3635,57 @@ npm run build --workspace @picklehub/tg` — успешно: web 14/14 suites и
   keyboard/screen reader, foreground/background, trusted navigation и live asset failure требуют browser E2E.
   PostgreSQL/Redis runtime-gates этапа 03 и legal/маркировка/ОРД/ЕРИР/residency/provider review не заявляются
   закрытыми; реальные campaign/placement не создавались. К `llm/13-advertising/05-verification.md` не переходили.
+
+## 2026-09-15 — реклама, этап 05-verification
+
+- Активный промпт: `llm/13-advertising/05-verification.md`. Добавлен исполняемый verification policy, который
+  связывает закрытые OpenAPI/AsyncAPI поля, targeting enum, UTC selection, priority/tie-break, hard budget/caps,
+  replay/anti-fraud, independent approval, media/redirect/XSS policy, fixed role capabilities, aggregate suppression,
+  общий client slot, critical-state guards, reduced motion, product holdout и deny-by-default provider. Root
+  `contracts:lint` теперь всегда запускает эти 6 негативных/static проверок.
+- Backend unit suite получил детерминированные anti-fraud проверки: click допускает пять policy retries и закрывает
+  следующий, недоступный Redis закрывает impression/click measurement, но не превращает decision limiter outage в
+  отказ основного продукта. PostgreSQL/Redis integration suite расширен проверками priority, IANA timezone и
+  неоднозначного DST offset→UTC, scheduled no-fill, trusted/untrusted click replay без второго расхода и сверки
+  `served/viewable/validClicks/invalidEvents/spend` с подавленным API-report.
+- Web component suite теперь доказывает, что фокус в форме скрывает уже загруженный slot, не удаляя форму/фокус и не
+  блокируя кнопку. Добавлены XSS canaries как обычный текст и схлопывание broken asset. TMA suite проверяет
+  динамически появившийся `aria-busy` critical state. Snapshot tests не добавлялись и существующие snapshots не
+  обновлялись.
+- Новый `test/e2e/advertising.spec.ts` собирает production web/TMA и проверяет coarse decision body без точной
+  географии/identity/URL/query/device ID, маркировку и доступное имя, one-shot foreground viewability, исчезновение
+  рекламы во время form action, trusted click только через server receipt, no-fill с доступным контентом и отсутствие
+  advertising decision на auth. Suite компилируется; browser runtime не объявляется пройденным.
+- `llm/_docs/advertising-verification.md` содержит реестр из нуля включённых provider/SDK/реальных campaigns,
+  матрицу доказательств, точную семантику сверки aggregate report, placement-level holdout с match-funnel,
+  accessibility/performance/privacy stop rules и незакрытые database/browser/asset/legal/residency/deletion gates.
+  Внешний provider/SDK не выбран и не включён; contract/generated clients и product runtime не менялись.
+
+### Проверки этапа advertising 05-verification
+
+- `npm run test:e2e:typecheck` — успешно. `node --test
+contracts/scripts/advertising-verification-policy.test.mjs` — 6/6 успешно. Targeted backend advertising policy и
+  rate-limit unit suites — 5/5 tests успешно; targeted web advertising component suite — 5/5, TMA — 3/3. Backend,
+  web и TMA lint/strict typecheck успешны.
+- `npm run contracts:lint` — успешно: TypeSpec, Redocly, 223 REST operations/66 AsyncAPI messages и 155/155
+  policy/data/backend/verification tests. Полные unit/component regressions успешны: backend 46/46 suites и 284/284
+  tests, web 14/14 и 59/59, TMA 11/11 и 34/34.
+- `npm run test:e2e:build` — успешно, production web PWA и TMA собраны. `npx playwright test
+test/e2e/advertising.spec.ts` не дошёл до assertions: все 5 workers завершились при запуске локального Chrome с
+  `SIGABRT`, cleanup получил `kill EPERM`. Сценарии не выдаются за пройденные; реальный Chromium/Telegram WebView
+  accessibility, CLS, viewability/background и trusted navigation остаются gates.
+- `npm run test:integration --workspace @picklehub/backend -- --runInBand
+test/integration/advertising-backend.integration-spec.ts` не дошёл до fixtures: sandbox запретил Redis loopback
+  (`connect EPERM 127.0.0.1:6379`), а доступная test DB не содержит применённых advertising migrations; общий
+  `beforeAll` сделал 7 cases failed. SQL syntax/runtime triggers, concurrent budget, cap windows/DST, pause,
+  click replay и aggregate reconciliation не объявляются проверенными.
+- Первый `npm run verify` — успешно полностью: восемь workspaces/один root lockfile, contracts compatibility/
+  generated drift/typecheck и OpenAPI mock, format/docs, lint, strict typecheck, unit/component tests и production
+  builds. Финальный повтор после записи журнала дошёл до того же OpenAPI mock, где sandbox на этот раз запретил
+  `listen EPERM 127.0.0.1`; это не contract assertion failure. Оставшаяся точная цепочка `format:check`, `docs:check`,
+  lint, strict typecheck, unit/component tests и production builds после этого выполнена отдельно и успешна;
+  `git diff --check` также успешен.
+- Сохраняются прежние bundle warnings около 706/667/924 KiB и внешняя небезопасная настройка
+  `NODE_TLS_REJECT_UNAUTHORIZED=0`. Доступные доказательства подтверждают отсутствие чувствительного targeting,
+  blocking placement и включённого fallback; полная runtime/legal приёмка остаётся закрыта перечисленными gates. К
+  `14-mobile-parity` не переходили.
