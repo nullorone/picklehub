@@ -466,3 +466,31 @@ link разрешается через canonical article identity. Events public
 
 Точные TypeSpec/AsyncAPI, SQL constraints, content sanitizer, adapter protocol, TTL и event payload принадлежат
 этапу `12-content-news/02-contract-data.md`; этот этап не выбирает внешние источники и не заявляет их разрешёнными.
+
+## Реклама
+
+`advertising` — отдельный bounded context с admin commands, decision service, first-party renderer contract,
+measurement endpoint, reporting projection и scheduler/maintenance worker. Он читает staff capability через
+administration port и только минимальные contextual projections через owning ports. Matches, profiles, content,
+clubs, tournaments и venues не читают campaign state и не зависят от доступности рекламы.
+
+PostgreSQL — источник campaign/creative/provider policy revisions, approval, hard budget, reservations, delivery
+facts, cap state, fraud decision, audit link и operation receipts. Redis допустим для короткого pacing/frequency
+cache, но не является источником cap или spend. Worker активирует только approved exact revision по UTC schedule,
+освобождает истёкшие reservations и строит агрегаты идемпотентно. Outbox доставляется at-least-once; уникальные
+delivery/fact keys не допускают второго impression/click/spend.
+
+Placement registry и critical-state matrix поставляются кодом клиентов и сверяются с server policy. Decision API
+возвращает no-ad быстро и без provider wait на критическом пути; creative media хранится в собственном проверенном
+object storage/CDN namespace без third-party executable resource. Ошибка advertising, Redis, media, reporting или
+provider не меняет результат продуктовой операции, не блокирует render и не вызывает бесконечный retry.
+
+Внешняя сеть подключается только через versioned provider adapter после legal/security/privacy/commercial review.
+Adapter deny-by-default, не получает raw request/IP/URL/identity/coordinate и не загружает SDK/iframe/pixel в
+клиент. Если договорные или технические ограничения нельзя выразить общим policy, provider несовместим. Terms
+expiry и emergency switch прекращают вызовы; direct/house/no-ad продолжают работать независимо.
+
+Behavioral analytics получает consented coarse events отдельно от authoritative delivery/reporting. Rollout
+использует placement-level holdout и emergency pause при ухудшении match-funnel, accessibility или performance
+guardrail. Точные API, SQL constraints, provider protocol, cap key/TTL и event allowlist принадлежат
+`13-advertising/02-contract-data.md`; этот этап не выбирает сеть и не включает SDK.

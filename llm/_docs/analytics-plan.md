@@ -433,3 +433,36 @@ audit failure. Labels не содержат source/article/staff IDs, endpoint, 
 free-text reason. Dashboard не ранжирует редакторов и не восстанавливает историю их работы; audit остаётся
 отдельным security record. Fetch/analytics outage не может автоматически опубликовать либо сохранить запрещённый
 контент.
+
+## Реклама
+
+Campaign delivery, budget, frequency и fraud decisions — доменные/операционные records и работают независимо от
+behavioral analytics consent. Consented события не содержат campaign/creative/advertiser/placement/user/session/
+device/ad/object IDs, URL/query, profile/activity history, exact time/place, IP, coordinates, cap subject, creative
+content, spend или fraud evidence. Разрешены только surface/client/locale, coarse geo/form-factor, context/priority
+class и крупные count/time/result buckets; малые когорты подавляются.
+
+| Событие                        | Условие                                              | Разрешённые свойства                                                       | Дедупликация               |
+| ------------------------------ | ---------------------------------------------------- | -------------------------------------------------------------------------- | -------------------------- |
+| `ad_slot_resolved`             | Client применил direct/fallback/house/no-ad decision | `surface`, `client`, `sourceClass`, `resultBucket`, `contextClass`         | Placement resolve session  |
+| `ad_viewable_presented`        | Viewability fact принят при consent actor            | `surface`, `sourceClass`, `formatClass`, `coarseGeo`, `frequencyBucket`    | Delivery fact marker       |
+| `ad_click_intent_accepted`     | Trusted click fact принят при consent actor          | `surface`, `sourceClass`, `formatClass`, `destinationClass`                | Delivery click marker      |
+| `ad_external_fallback_outcome` | Проверенный adapter вернул terminal outcome          | `surface`, `outcomeClass`, `latencyBucket`; без provider/campaign identity | Provider request operation |
+
+Revenue, served/viewable/click/spend и invalid traffic отчёт строится из restricted authoritative facts, а не из
+этих событий. Viewable означает ≥50% creative в foreground не менее 1 секунды; fetch/render/background/preview не
+считаются. CTR использует valid click / viewable impression и показывается рядом с absolute suppressed counts,
+invalid share и consent coverage; он не оптимизирует targeting или priority.
+
+Rollout выполняется на read-only placements с заранее закреплённым placement-level holdout. Сравниваются зрелые
+когорты и одинаковые периоды: published match → eligible join intent, intent → confirmed participant, match create,
+score entry/confirmation, report completion и confirmed matches per active player. Performance/accessibility
+guardrails: LCP, CLS, client error, no-fill/timeout, focus loss, screen-reader/keyboard failure и critical-state ad
+leak. Privacy guardrails: forbidden targeting, provider without consent, exact geo, cap bypass и over-budget имеют
+target zero. Статистически значимое ухудшение основной воронки либо любое privacy/safety нарушение требует pause;
+доход, CTR и impressions вред не компенсируют. Недостаточная выборка означает inconclusive, не success.
+
+Operational metrics не требуют behavioral consent: campaign state/age, approval latency/outcome, budget reserve/
+finalize/release, pacing, cap/duplicate suppression, served/viewable/valid-invalid buckets, no-fill reason, provider
+review expiry/latency/error, media/policy reject, audit failure, reporting lag и emergency pause. Labels не содержат
+IDs, content, exact money/time/geo или actor. Dashboard не ранжирует staff и не восстанавливает user journey.

@@ -257,7 +257,7 @@ final authoritative effects, поддерживает retract/rebuild и не и
 ## Административная панель
 
 Граница `administration` владеет доступом сотрудников и координирует use cases, но не копирует и не редактирует
-authoritative таблицы `identity`, `trust-safety`, `venues`, `matches` или будущих `content`/`advertising` напрямую:
+authoritative таблицы `identity`, `trust-safety`, `venues`, `matches`, `content-news` или `advertising` напрямую:
 
 - `platform_role_grants` — versioned grant одной из четырёх code-defined ролей с actor/subject, reason code,
   approval reference, validity/review timestamps и revoke revision; wildcard/custom permission отсутствует;
@@ -439,3 +439,34 @@ Content events несут opaque article/revision/source IDs, lifecycle/outcome 
 slug/source URL, search query, author name, rights evidence и bookmark/user graph в generic outbox отсутствуют.
 Analytics получает отдельную минимизированную projection только при consent и не является источником publication,
 поиска, закладок или истории редакций.
+
+## Рекламный контекст
+
+`advertising` владеет `Advertiser`, versioned `Campaign`/`CampaignRevision`, `CreativeRevision`, `PlacementPolicy`,
+`ProviderPolicy`, `DeliveryDecision`, append-only `DeliveryFact`, `FrequencyCapState`, `BudgetReservation`,
+`FraudReview` и `AdvertisingOperationReceipt`. Administration владеет staff identity/capability, identity —
+пользователем, venues/content/matches — своим контекстом; advertising получает лишь allowlisted contextual
+projection без копирования профиля, истории или координат.
+
+Approved campaign revision неизменяемо связывает advertiser, schedule, budget/rate, targeting allowlist, priority,
+frequency, creatives, placements и legal-label snapshot. Изменение создаёт новую revision и снимает approval.
+Delivery decision фиксирует выбранные revisions и opaque nonce; viewable impression/click — отдельные
+идемпотентные факты. Reservation/finalization/release и жёсткий budget cap защищаются PostgreSQL transaction и
+constraints, а Redis может лишь ускорять cap/pacing. Cache miss или сбой Redis применяет conservative cap/no-ad,
+но не разрешает перерасход.
+
+Placement policy — code-owned registration поверхности и её critical-state guard. Экран передаёт только placement,
+client/locale/form-factor, public object kind/category и coarse locality. Locality вычисляется owning boundary из
+выбранного города либо публичной площадки и покидает его только как город/регион; venue ID, координата и search
+origin не входят в advertising record/event. Frequency subject — purpose-bound keyed псевдоним либо случайный
+first-party session key, не reusable user/device/ad identity.
+
+Provider policy deny-by-default и versioned: адаптер получает минимальный contextual request и возвращает
+неисполняемый creative candidate, повторно проверяемый общей политикой. Прямой и внешний inventory используют одно
+определение viewability, click, critical state, frequency и label; response не становится trusted HTML/iframe/
+script. Нет provider — допустимый terminal no-fill, а не ошибка продуктового use case.
+
+Advertising events содержат opaque campaign/creative/placement revisions, state/outcome enum, coarse time/geo/
+count buckets и amount minor units только внутри restricted billing boundary. Generic outbox, logs и analytics не
+содержат cap subject, user/session/device/ad ID, IP, координаты, URL/query/object ID, profile/match/content history,
+creative body или fraud evidence. Behavioral analytics не является источником delivery, spend, cap или recovery.

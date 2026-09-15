@@ -775,3 +775,46 @@ receipt. Точные сроки, РФ-residency, legal hold и физическ
 Behavioral analytics допускается только по общему consent и не содержит body/title/excerpt, URL/slug/query,
 article/source/user/bookmark ID, автора, правовое evidence, recipient/contact, точное время или device/ad ID.
 Просмотры и поиск не используются для чувствительного профилирования, персональной рекламы или staff monitoring.
+
+## Политика рекламы
+
+Direct inventory использует только текущий placement/context и coarse locality не точнее города. Запрещены GPS,
+search origin, координаты/история мест, IP-derived targeting, sensitive traits, profile/DUPR/XP, membership,
+roster/opponent graph, chat/report/block/no-show/payment, history views/search/bookmarks/matches/clicks, inferred
+interest, lookalike, retargeting, cross-device link, advertising ID и fingerprint. Эти данные нельзя хешировать или
+псевдонимизировать с целью обойти запрет.
+
+Frequency state содержит только campaign scope, purpose-bound keyed subject, rolling counters и expiry; он не
+экспортируется и не используется для сегментации. Анонимный ключ first-party/session-only. При недоступности
+безопасного счётчика применяется conservative cap, внешний fallback закрывается. Delivery nonce и measurement
+проверяют revision, expiry, replay, visibility и trusted activation без raw IP/device graph. Fraud signal может
+исключить факт или отправить его на review, но не применяет account sanction и не раскрывает обвинение.
+
+Creative media — статический проверенный first-party asset. Executable HTML/script/iframe/pixel, remote resource,
+cookie sync, redirect tracker, autoplay/audio, download и маскировка под системный control запрещены. Landing URL и
+redirect chain входят в approval, используют HTTPS и безопасную referrer policy. Placement никогда не перекрывает
+критическое действие, не крадёт focus и не мешает screen reader; no-fill/timeout/blocker оставляют продукт
+полностью работоспособным.
+
+`ADS_MANAGER` получает только campaign/creative/placement/report capabilities; user lookup, content drafts,
+safety evidence и security audit недоступны. Approval выполняет другой допустимый reviewer либо явно аудированный
+small-team exception по утверждённой policy; advertiser conflict запрещает self-approval. `SUPERADMIN` имеет только
+provider governance и emergency pause с re-auth, reason и audit, не повседневное редактирование. Fraud evidence и
+legal/contract records хранятся отдельно с purpose-bound access; raw delivery trail не доступен через UI/export.
+
+Внешний provider/SDK выключен до документированной проверки terms, data roles/fields, sub-processors,
+cross-border/РФ-residency, storage/consent, retention/deletion, brand/age policy, incident process и стоимости.
+Provider получает только allowlisted context и не может независимо расширить сбор. Unknown executable response,
+expired review или отсутствие отдельного consent там, где оно необходимо, означает direct-only/no-ad. Общее
+analytics consent не является согласием на персонализированную рекламу.
+
+До production legal review подтверждает основание direct delivery/storage, notice, маркировку «Реклама» и
+рекламодателя, применимость токена/ОРД/ЕРИР, отчётность, категории и территорию. По умолчанию cap state хранится до
+8 суток после показа, nonce/raw delivery/fraud features — 30 суток, агрегированный report/approved snapshot/legal
+receipt — до 3 лет; обязательный legal hold меняет лишь свой класс. Бессрочный user-level trail запрещён. Данные
+размещаются в РФ либо функция выключена; deletion охватывает primary, Redis, queue/DLQ, CDN и backup cycle.
+
+Logs/traces/analytics не содержат cap subject, user/session/device/ad ID, IP/coordinate, URL/query/object identity,
+creative/landing content, exact time, fraud evidence или малую geo cohort. Operational labels ограничены enums и
+buckets. Advertising outage не блокирует продукт, analytics outage не ослабляет cap/budget/audit, а пропущенные
+behavioral events не восстанавливаются из delivery records.

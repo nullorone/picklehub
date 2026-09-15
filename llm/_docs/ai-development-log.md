@@ -3420,3 +3420,60 @@ test/integration/content-backend.integration-spec.ts` — неуспешно д�
   AST, role/cache/event boundaries и клиентское отсутствие XSS/ложного offline success. Полная приёмка утечек и
   гонок остаётся заблокированной browser и PostgreSQL/Redis runtime-gates; к `13-advertising` переходить нельзя до
   их успешного запуска в разрешённой CI/integration среде.
+
+## 2026-09-15 — реклама, этап 01-requirements
+
+- Активный промпт: `llm/13-advertising/01-requirements.md`, запущенный по прямому запросу владельца несмотря на
+  записанные browser/PostgreSQL/Redis runtime-gates content-news. Этот документационный этап их не устраняет и не
+  выдаёт за устранённые. TypeSpec/AsyncAPI, OpenAPI, Prisma, migrations, backend, worker и клиенты не менялись; к
+  `13-advertising/02-contract-data.md` не переходили.
+- Определены 8 пользовательских историй и 14 сценариев «Дано/Когда/Тогда». Кампания использует immutable approved
+  revision для рекламодателя, креатива, placement, расписания, hard budget/rate, targeting, frequency и legal label;
+  изменение требует новой проверки. Schedule хранится в UTC, pause/resume аудируется, а budget reservation,
+  finalization и release должны быть идемпотентны и защищены database constraint от перерасхода.
+- Разрешены только контекст текущей поверхности, locale/client/form-factor, публичный object/category class и
+  география не точнее города из явно выбранного региона либо публичной площадки. Точные координаты/search origin,
+  IP-derived location, чувствительные признаки, профиль/DUPR/XP, club/opponent graph, история матчей/просмотров/
+  поиска/кликов, inferred interest, retargeting, lookalike, cross-device link, ad ID и fingerprint запрещены.
+- Зафиксированы product frequency defaults: не более 3 viewable impressions за 24 часа и 10 за 7 суток на campaign,
+  refresh placement не чаще 5 минут. Purpose-bound first-party cap key не является targeting dimension; при
+  недоступности безопасного счётчика действует один показ за session и внешний fallback закрывается.
+- Viewable impression требует ≥50% креатива непрерывно в foreground 1 секунду; valid click — trusted activation и
+  dedupe. Fetch/render/background/preview не считаются. Invalid-traffic policy использует nonce/replay/visibility/
+  coarse buckets без IP, fingerprint и device graph; автоматический сигнал не применяет account sanction.
+- Critical-state matrix запрещает запрос/показ во время auth/onboarding, форм и мутаций, join/check-in, ввода и
+  подтверждения результата, dispute/report/block/appeal, ошибок/recovery, offline mutation, dialog и admin/CMS.
+  No-fill, timeout, blocker и недоступный creative схлопывают место, не блокируют контент, CTA, focus или screen
+  reader. Interstitial/popup/overlay/countdown/autoplay и исполняемые HTML/script/iframe/pixel запрещены.
+- Внешняя сеть deny-by-default и допускается только через versioned adapter после legal/security/privacy/commercial
+  review условий, data roles, SDK permissions, sub-processors, трансграничной передачи/РФ-residency, consent,
+  retention/deletion, brand/age policy и стоимости. Ни один provider/SDK не выбран. Неисполняемый response проходит
+  общую маркировку, creative, accessibility, frequency, critical-state и visibility policy; иначе используется no-ad.
+- Direct contextual delivery отделён от behavioral analytics consent, но его основание/notice/essential storage
+  остаются legal gate. Внешний identifier/storage или provider transfer требует отдельного opt-in. До production
+  проверяются российская маркировка, рекламодатель, применимость токена/ОРД/ЕРИР, отчётность, категории и территория;
+  отсутствие обязательного evidence закрывает кампанию.
+- Retention defaults: cap state — 8 суток после показа, nonce/raw delivery/dedupe/fraud features — 30 суток,
+  агрегированный отчёт/approved snapshot/legal receipt — до 3 лет с отдельным legal-hold gate. Raw user delivery
+  trail/export запрещён. Rollout начинается с read-only placement holdout и останавливается при ухудшении match
+  funnel, accessibility/performance либо privacy/safety; доход и CTR не компенсируют вред.
+- Изменённые файлы: `llm/_docs/product-requirements.md`, `llm/_docs/domain-model.md`,
+  `llm/_docs/architecture.md`, `llm/_docs/security-privacy.md`, `llm/_docs/analytics-plan.md` и этот журнал.
+
+### Проверки этапа advertising 01-requirements
+
+- `npx prettier --write llm/_docs/product-requirements.md llm/_docs/domain-model.md llm/_docs/architecture.md
+llm/_docs/security-privacy.md llm/_docs/analytics-plan.md` — успешно; изменённые документы отформатированы.
+- `npm run docs:check` — успешно, 132 Markdown-файла и 0 ошибок; `npm run format:check` и `git diff --check` —
+  успешно, включая 12 TypeSpec-файлов и отсутствие whitespace errors.
+- `npm run verify` — успешно полностью: восемь workspaces/один root lockfile; 205 REST operations/63 messages;
+  TypeSpec/Redocly, 138/138 contract/data/backend/verification policy tests, compatibility с `HEAD`, generated
+  drift/typecheck и OpenAPI mock; format/docs, lint, strict typecheck, unit/component tests и production builds.
+  Backend — 44/44 suites и 279/279 tests; web — 13/53, TMA — 10/31; shared package suites зелёные.
+- Сохраняются прежние неблокирующие build warnings о chunks web около 682 KiB, TMA около 663 KiB и MapLibre 924 KiB,
+  а также внешняя небезопасная настройка `NODE_TLS_REJECT_UNAUTHORIZED=0`. Реальные provider terms, legal basis,
+  маркировка/ОРД/ЕРИР, РФ-residency и deletion не проверялись и не заявлены.
+- Критерии текущего этапа выполнены на уровне требований: поведенческий/чувствительный targeting и точная география
+  запрещены, отсутствие рекламы не блокирует продукт, а внешний SDK не выбран. Точные DTO/state enum, SQL
+  constraints, cap/nonce/TTL, provider protocol и event allowlist принадлежат `13-advertising/02-contract-data.md`.
+  Ранее записанные content-news runtime-gates остаются отдельным незакрытым риском.

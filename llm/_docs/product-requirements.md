@@ -1151,20 +1151,20 @@ Wire contracts, SQL-модели, AsyncAPI, административная о�
 `SUPERADMIN` управляет доступом и эксплуатационными исключениями, но не получает постоянного чтения safety evidence.
 Player-, club- и tournament-роли не дают административных прав.
 
-| Возможность                                                | `SUPERADMIN`                                                   | `MODERATOR`                                                                | `EDITOR`                               | `ADS_MANAGER`                                |
-| ---------------------------------------------------------- | -------------------------------------------------------------- | -------------------------------------------------------------------------- | -------------------------------------- | -------------------------------------------- |
-| Вход в отдельную admin surface                             | Да, после усиленной проверки                                   | Да, после усиленной проверки                                               | Да, после усиленной проверки           | Да, после усиленной проверки                 |
-| Назначить/отозвать платформенную роль                      | Да, кроме self-grant; повышение — с независимым подтверждением | Нет                                                                        | Нет                                    | Нет                                          |
-| Точный поиск пользователя и минимальная account projection | Да, для заявленной support/security цели                       | Только из case или по exact receipt/user ID для triage                     | Нет                                    | Нет                                          |
-| Очередь safety cases, assignment и безопасные metadata     | Только routing/oversight без narrative/evidence                | Да, в своей очереди и доступном triage scope                               | Нет                                    | Нет                                          |
-| Описание обращения, evidence, response и appeal            | Нет по роли; только адресный break-glass                       | Только назначенный case без конфликта; appeal — не автор исходного решения | Нет                                    | Нет                                          |
-| Решение case и ограничение пользователя                    | Нет без отдельной moderator capability                         | Да, по policy, assignment и expected revision, с обязательной причиной     | Нет                                    | Нет                                          |
-| Очередь venue candidates/revisions/reports                 | Только контроль доступности и переназначение                   | Да                                                                         | Нет                                    | Нет                                          |
-| Одобрить, отклонить или слить venue candidate              | Нет по роли                                                    | Да, с reason, подтверждением merge и expected revision                     | Нет                                    | Нет                                          |
-| Поиск security audit                                       | Да, по allowlist-фильтрам; поиск сам аудируется                | Только события назначенного case и собственных решений                     | Только квитанции будущих CMS-изменений | Только квитанции будущих ad-изменений        |
-| CMS                                                        | Source governance и emergency unpublish, без редактирования    | Маршрутизация нарушения без чтения draft и редактирования                  | Draft/review/schedule/publish/history  | Нет                                          |
-| Реклама                                                    | Будущий emergency pause, не управление кампанией               | Нет                                                                        | Нет                                    | Будущие campaign/creative/placement операции |
-| Административный экспорт                                   | Нет в MVP                                                      | Нет                                                                        | Нет                                    | Нет                                          |
+| Возможность                                                | `SUPERADMIN`                                                   | `MODERATOR`                                                                | `EDITOR`                                   | `ADS_MANAGER`                             |
+| ---------------------------------------------------------- | -------------------------------------------------------------- | -------------------------------------------------------------------------- | ------------------------------------------ | ----------------------------------------- |
+| Вход в отдельную admin surface                             | Да, после усиленной проверки                                   | Да, после усиленной проверки                                               | Да, после усиленной проверки               | Да, после усиленной проверки              |
+| Назначить/отозвать платформенную роль                      | Да, кроме self-grant; повышение — с независимым подтверждением | Нет                                                                        | Нет                                        | Нет                                       |
+| Точный поиск пользователя и минимальная account projection | Да, для заявленной support/security цели                       | Только из case или по exact receipt/user ID для triage                     | Нет                                        | Нет                                       |
+| Очередь safety cases, assignment и безопасные metadata     | Только routing/oversight без narrative/evidence                | Да, в своей очереди и доступном triage scope                               | Нет                                        | Нет                                       |
+| Описание обращения, evidence, response и appeal            | Нет по роли; только адресный break-glass                       | Только назначенный case без конфликта; appeal — не автор исходного решения | Нет                                        | Нет                                       |
+| Решение case и ограничение пользователя                    | Нет без отдельной moderator capability                         | Да, по policy, assignment и expected revision, с обязательной причиной     | Нет                                        | Нет                                       |
+| Очередь venue candidates/revisions/reports                 | Только контроль доступности и переназначение                   | Да                                                                         | Нет                                        | Нет                                       |
+| Одобрить, отклонить или слить venue candidate              | Нет по роли                                                    | Да, с reason, подтверждением merge и expected revision                     | Нет                                        | Нет                                       |
+| Поиск security audit                                       | Да, по allowlist-фильтрам; поиск сам аудируется                | Только события назначенного case и собственных решений                     | Только квитанции собственных CMS-изменений | Только квитанции собственных ad-изменений |
+| CMS                                                        | Source governance и emergency unpublish, без редактирования    | Маршрутизация нарушения без чтения draft и редактирования                  | Draft/review/schedule/publish/history      | Нет                                       |
+| Реклама                                                    | Provider governance и emergency pause, без routine-управления  | Нет                                                                        | Нет                                        | Campaign/creative/placement/report/pause  |
+| Административный экспорт                                   | Нет в MVP                                                      | Нет                                                                        | Нет                                        | Нет                                       |
 
 Один человек может иметь несколько ролей только по документированной служебной необходимости. Выдача и отзыв роли
 требуют target, закрытого reason code, заявки/основания, срока или даты пересмотра, свежей повторной аутентификации
@@ -1246,8 +1246,8 @@ packet и прямого доступа к базе из UI. Будущий lega
 короткоживущую download capability, watermark, audit скачивания и подтверждённую очистку всех copies. Safety
 narrative никогда не входит в общий audit/user export.
 
-`EDITOR` получает CMS draft/review/schedule/publish/history в требованиях этапа 12; `ADS_MANAGER` остаётся
-зарезервирован для будущих campaign/creative/placement/pause. Ни одна роль не получает user search, safety queue,
+`EDITOR` получает CMS draft/review/schedule/publish/history по требованиям этапа 12; `ADS_MANAGER` получает
+campaign/creative/placement/report/pause по требованиям этапа 13. Ни одна роль не получает user search, safety queue,
 case description/evidence, venue moderation или security audit. `MODERATOR` может только маршрутизировать
 нарушающий article через trust/safety, не читая draft и не редактируя материал. Source governance и emergency
 unpublish для `SUPERADMIN` требуют узкой capability, reason, re-auth и audit. Контракты, таблицы и экраны CMS
@@ -2106,3 +2106,188 @@ Wire contracts, состояния хранения, точные лимиты/T
 принадлежат `12-content-news/02-contract-data.md`; backend и UI этим этапом не заявлены. Владение уточнено в
 [доменной модели](domain-model.md), безопасность и retention — в [безопасности](security-privacy.md), зависимости —
 в [архитектуре](architecture.md), измерения — в [плане аналитики](analytics-plan.md).
+
+## Реклама
+
+Источник объёма — [обзор функции](../13-advertising/00-overview.md); правила ниже определены
+[этапом требований](../13-advertising/01-requirements.md). Это спецификация собственного рекламного инвентаря, а
+не подтверждение готовности ad serving, договора с рекламодателем, регистрации рекламы, выбора внешней сети или
+правового основания обработки. Внешний fallback и все сторонние SDK выключены по умолчанию.
+
+### Цели, границы и пользовательские истории
+
+Реклама финансирует продукт, не становясь условием доступа к матчу, контенту или критическому действию. Первая
+версия поддерживает direct campaign и необязательный внешний fallback через единый placement policy. Аукциона,
+real-time bidding, продажи данных, персонализированной рекламы, ретаргетинга и межприложенческого профиля нет.
+
+| ID   | История                                        | Ожидаемый результат                                                                                                  |
+| ---- | ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| A-01 | Как игрок, я вижу рекламу на безопасном экране | Реклама явно маркирована, не сдвигает действие, доступна с клавиатуры и исчезает в критическом состоянии.            |
+| A-02 | Как игрок, я не могу загрузить рекламу         | Контент и действие доступны; пустое место схлопывается без ошибки, перекрытия интерфейса и трекинга.                 |
+| A-03 | Как ads manager, я создаю кампанию             | Задаю рекламодателя, расписание, жёсткий бюджет, разрешённый контекст, географию и частоту до проверки.              |
+| A-04 | Как ads manager, я добавляю креатив            | Добавляю безопасный статический материал, посадочную ссылку, маркировку и alt text; новая revision требует проверки. |
+| A-05 | Как независимый reviewer, я проверяю запуск    | Вижу точную revision, правовые сведения и preview placement; approve/reject имеет причину и аудит.                   |
+| A-06 | Как ads manager, я приостанавливаю кампанию    | Новые решения о показе прекращаются сразу; retry не расходует бюджет и не создаёт второй переход.                    |
+| A-07 | Как ads manager, я читаю отчёт                 | Получаю агрегированные видимые показы, допустимые клики, расход и invalid traffic без пользовательских журналов.     |
+| A-08 | Как оператор, я включаю внешний fallback       | Только проверенный адаптер получает минимум контекста и никогда не блокирует продукт.                                |
+
+### Кампания, креатив, расписание и бюджет
+
+Кампания принадлежит одному проверенному рекламодателю и проходит состояния `DRAFT → IN_REVIEW → APPROVED →
+SCHEDULED/ACTIVE → PAUSED/EXHAUSTED/COMPLETED`; `REJECTED` возвращает её в новый draft только новой revision.
+Креатив, targeting, placement allowlist, расписание, бюджет, модель учёта и обязательная маркировка входят в
+неизменяемый approved snapshot. Любое содержательное изменение после approval создаёт revision и снимает допуск.
+
+Расписание — полуоткрытый UTC-интервал `[startsAt, endsAt)` с отображением в выбранном IANA timezone рекламодателя.
+Нельзя начать в прошлом, завершить раньше начала или продлить активную кампанию без новой проверки. Ручная пауза
+доступна `ADS_MANAGER`, аварийная global/advertiser/placement pause — `SUPERADMIN` после re-auth; обе требуют
+закрытой причины и аудита. Возобновление не компенсирует пропущенные показы и не продлевает срок автоматически.
+
+Бюджет задаётся целым числом minor units в одной валюте и имеет жёсткий campaign cap; это учёт кампании, а не приём
+платежа PickleHub. Разрешены заранее утверждённые `CPM`, `CPC` либо fixed sponsorship, причём snapshot фиксирует
+модель и ставку. Решение резервирует максимум допустимого расхода атомарно; подтверждение видимости/клика
+финализирует его, timeout освобождает один раз. Database constraint и idempotent delivery key не допускают
+отрицательного остатка, перерасхода или двойного списания. Исчерпание бюджета, расписания, частоты или инвентаря
+даёт no-ad, а не обход ограничения.
+
+Креатив первой версии — собственно размещённое статическое изображение или текстово-графическая карточка без
+исполняемого HTML, script, iframe, pixel, autoplay, звука, canvas fingerprinting и удалённых ресурсов. Проверяются
+формат, размеры, вес, malware/decompression risk, права, читаемая маркировка, alt text и HTTPS landing URL. Redirect
+chain, домен и параметры ссылки входят в approval; подмена, credential, download, deceptive control и маскировка
+под системный интерфейс запрещены.
+
+### Разрешённый таргетинг и приоритет
+
+Eligibility строится только по allowlist текущего запроса, не по истории человека:
+
+- placement/surface, client kind (`WEB`, `TMA`, позднее `MOBILE`), locale и крупный viewport/form-factor class;
+- публичный тип текущего объекта или редакционная категория страницы без URL, query, title и object ID;
+- страна, регион или город из явно выбранного региона поиска либо locality публичной площадки;
+- calendar window кампании и coarse connectivity class только для выбора веса креатива.
+
+География не может быть точнее населённого пункта. GPS, search origin, точные координаты, история мест, маршрут,
+IP-derived locality и proximity к пользователю не передаются в advertising. Public venue ID/координата могут
+определить locality внутри owning server boundary, но не входят в targeting/delivery/report payload. Без coarse
+geography применяется нетаргетированная кампания либо no-ad.
+
+Запрещены user/account/session/device/advertising ID как targeting dimension; возраст, пол, здоровье, религия,
+этничность, политика, доход и иные чувствительные признаки; профиль, DUPR, XP, рейтинг, роли, клуб/команда,
+контакты, соперники, чат, жалобы, блокировки, no-show и payment state; история матчей, просмотров, поиска, закладок,
+кликов/показов и inferred interests; lookalike, retargeting, cross-device matching и fingerprinting. Частотный
+счётчик используется только для ограничения, не для eligibility, сегментации или экспорта.
+
+Среди eligible direct campaigns выбирается наивысший явно заданный priority tier: аварийная общественно значимая
+house-информация, гарантированное прямое размещение, затем стандартное прямое размещение. Внутри tier
+детерминированное fair rotation учитывает только pacing, оставшийся бюджет и delivery sequence; ставка, профиль,
+ожидаемый CTR и скрытый bidder порядок не меняют. Далее допустим проверенный внешний fallback, затем house creative
+или no-ad. House campaign проходит те же placement, accessibility и frequency rules.
+
+### Placement, критические действия и доступность
+
+Экран регистрирует placement с постоянным code, форматом, размером и состояниями, но server eligibility и клиентский
+guard должны одновременно разрешить показ. Запрещены interstitial, popup, prestitial, sticky overlay, countdown,
+принудительное ожидание, autoplay и имитация навигации. Место резервирует размер только после безопасного решения;
+при timeout/error/no-fill оно схлопывается без layout shift критического control и бесконечного retry.
+
+Реклама не запрашивается либо немедленно скрывается при authentication/onboarding/consent, создании или изменении
+матча/турнира/клуба, join/request/invite/check-in, вводе и подтверждении результата, dispute, report/block/appeal,
+платёжной информационной отметке, сохранении формы, system error/recovery, offline mutation, dialog, критическом
+toast и admin/CMS. На read-only ленте, статье, карте, публичной карточке и завершённом success state placement
+допустим, если не перекрывает основную CTA. Скрытие не считается impression и не мешает screen reader или фокусу.
+
+Сторонний креатив имеет постоянную метку «Реклама», имя рекламодателя и предусмотренные применимым правом сведения/
+идентификатор. Семантическая область имеет доступное имя, содержательный alt либо корректно декоративное
+изображение, достаточный контраст и логичный keyboard focus. Animation по умолчанию отсутствует;
+`prefers-reduced-motion`, zoom 200%, narrow viewport и screen reader не теряют label или основной контент. Клик
+требует явного pointer/keyboard activation, обозначает внешний переход и не меняет текущую форму.
+
+### Частота, видимость, клики и invalid traffic
+
+Product default для одной кампании: не более 3 видимых показов за скользящие 24 часа и 10 за 7 суток одному
+first-party cap subject; placement не обновляет рекламу чаще раза за 5 минут активного просмотра. Рекламодатель
+может только снизить пределы. Для вошедшего пользователя cap subject — purpose-bound keyed псевдоним; для
+анонимного — first-party случайный session key. Нет cookie sync, advertising ID, fingerprint или объединения
+web/TMA/mobile. Если счётчик недоступен либо нет допустимого хранилища, действует максимум один показ кампании за
+session; внешний fallback закрывается.
+
+`VIEWABLE_IMPRESSION` фиксируется один раз, когда не менее 50% креатива непрерывно видимы 1 секунду в foreground
+document, label и creative отрисованы, а placement не скрыт. Fetch/render, prefetch, background tab, occlusion,
+staff preview, bot и время до выполнения условия показом не являются. `VALID_CLICK` требует trusted activation на
+уже отрисованном creative, один раз в коротком dedupe window; programmatic event, keyboard repeat, overlay click,
+prefetch и redirect callback не считаются. Отчёт отдельно показывает served, viewable, valid click и invalid.
+
+Антифрод применяет rate limit, signed delivery nonce, campaign/creative/placement revision, coarse timing buckets,
+visibility, duplicate/replay и allowlist crawler/test traffic. Он не собирает fingerprint, IP/GPS, device graph,
+текст/историю пользователя и не применяет account sanction. Подозрительный факт исключается из billing/report
+либо остаётся `PENDING`; автоматический сигнал не обвиняет человека. Ручное решение требует purpose-bound
+capability, reason, policy version и audit. При недоступности антифрода CPC/CPM spend не финализируется.
+
+### Внешний fallback, согласие и правовая маркировка
+
+Внешняя сеть реализуется только provider adapter, выключенным глобально и для каждого placement. До включения
+фиксируются юридическое лицо, версия/URL условий, data processing roles, передаваемые/получаемые поля, SDK/network
+permissions, sub-processors, трансграничная передача и РФ-residency, retention/deletion, storage/consent signal,
+brand safety, age assumptions, incident/takedown process, стоимость и право аудита. Изменение условий или
+просроченный review автоматически переводит адаптер в pause.
+
+Adapter получает только placement code, format, locale, coarse locality и contextual taxonomy из allowlist. Он не
+получает identity, IP от backend как поле, точную географию, URL/query/object ID, match/profile/content history,
+чужой consent или direct-campaign cap key. Ответ проходит тот же creative, URL, label, critical-state,
+accessibility, frequency и visibility policy. Неизвестный script/iframe/pixel либо невозможность обеспечить
+ограничения означает no-ad; основной интерфейс не ждёт provider.
+
+Direct contextual delivery и обязательный operational/fraud учёт не используют общий analytics consent; их
+конкретное правовое основание, notice и essential-storage статус подтверждаются legal review до запуска. Любой
+внешний identifier/storage, measurement сверх необходимого first-party delivery или передача provider требуют
+отдельного информированного opt-in, выключенного по умолчанию и отзываемого без потери функций. Отказ означает
+direct-only/no-ad. Analytics consent никогда не разрешает персонализированную рекламу, advertising ID или
+чувствительный таргетинг.
+
+До production юридическая проверка определяет применимость и процесс российского рекламного законодательства:
+идентификацию рекламодателя, токен/реестр интернет-рекламы и ОРД/ЕРИР, содержание маркировки, отчётность,
+договорные доказательства, запрещённые/ограниченные категории и территорию показа. Отсутствие обязательного поля,
+регистрации, права на креатив или актуального policy snapshot закрывает кампанию; техническая готовность не
+считается соответствием законодательству.
+
+### Отчётность, хранение и защита матчевой воронки
+
+Отчёт агрегирует по campaign/creative/placement и дню: eligible/served/viewable, valid/invalid click, расход,
+pacing и no-fill reason buckets. Он не отдаёт raw delivery log, cap subject, user/session/device, exact timestamp,
+IP/географию точнее города, URL/object, match/content identity или малую когорту. `ADS_MANAGER` видит только ads
+records; advertiser export/API отсутствует. Создание, approval/reject, schedule, budget/priority/targeting revision,
+pause/resume, provider enable и fraud override аудируются без creative body, landing query и delivery trail.
+
+Product defaults до legal review: cap state удаляется через 8 суток после последнего показа; nonce, raw
+delivery/dedupe и fraud features — через 30 суток; агрегированный report, approved creative snapshot, маркировка и
+campaign decisions — до 3 лет после завершения; security audit — по общей политике. Creative binary удаляется
+после campaign/legal retention из cache/CDN/backup. Contract, ОРД/ЕРИР evidence или legal hold могут изменить
+только соответствующий класс, но не разрешают бессрочный user-level trail. Advertising personal data и identifiers
+до production размещаются в РФ либо функция выключена; provider подтверждает deletion и backup expiry.
+
+Rollout начинается с read-only поверхностей и placement-level holdout. Нельзя включать рекламу на критических
+экранах, повышать частоту или расширять таргетинг ради бюджета. Guardrails: published match → eligible join intent,
+intent → confirmed participant, создание матча, ввод/подтверждение результата, report completion, confirmed matches
+per active player, page error, LCP и CLS. При статистически значимом ухудшении основной конверсии/доступности либо
+privacy/safety нарушении placement paused; доход, CTR или impressions вред не компенсируют.
+
+| ID     | Дано                                                       | Когда                                           | Тогда                                                                                     |
+| ------ | ---------------------------------------------------------- | ----------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| A-AC1  | Нет eligible direct campaign или fallback                  | Экран запрашивает placement                     | Контент доступен, no-ad не считается ошибкой и не создаёт внешний запрос.                 |
+| A-AC2  | Пользователь начал критическое действие                    | Creative загружен или viewability timer идёт    | Реклама скрыта, timer отменён, impression/spend нет, фокус и форма сохранены.             |
+| A-AC3  | Достигнут бюджет либо frequency cap                        | Параллельные delivery requests проходят отбор   | Ни один не обходит cap; перерасхода нет, допустим no-ad.                                  |
+| A-AC4  | Creative/landing/targeting изменён после approval          | Наступает расписание                            | Revision не показывается до новой проверки; прежний snapshot не подменяется.              |
+| A-AC5  | Tab background, creative виден менее 50% или менее секунды | Получен render callback                         | Viewable impression и CPM spend отсутствуют.                                              |
+| A-AC6  | Нет trusted activation или click доставлен повторно        | Обрабатывается CPC                              | Valid click/spend создаётся не более одного раза; автоматического перехода нет.           |
+| A-AC7  | Нет consent для требуемого provider/storage                | Direct campaign не заполнила placement          | External fallback не вызывается; функции доступны в режиме direct-only/no-ad.             |
+| A-AC8  | Provider review истёк, SDK нарушает policy или timeout     | Запрашивается fallback                          | Adapter fail-closed, tracker не исполняется, место схлопывается без блокировки контента.  |
+| A-AC9  | Targeting содержит координату или запрещённый сигнал       | Кампания проходит review/eligibility            | Кампания отклонена; сигнал не хранится, не хешируется для обхода и не попадает в отчёт.   |
+| A-AC10 | Пользователь исчерпал cap на web                           | Открывает TMA без допустимой общей связи        | Cap не объединяется fingerprinting; применяется отдельный conservative session cap.       |
+| A-AC11 | Analytics consent отсутствует/provider недоступен          | Идёт direct contextual delivery                 | Доменный учёт работает по отдельному основанию; behavioral event пропускается без replay. |
+| A-AC12 | Match funnel/accessibility guardrail ухудшился             | Rollout monitor достигает порога                | Затронутый placement paused; бюджет/CTR не являются основанием продолжить показ.          |
+| A-AC13 | Creative недоступен, заблокирован или не прошёл a11y       | Загружается экран                               | Нет overlay/error/retry loop; контент и основное действие полностью доступны.             |
+| A-AC14 | Ads manager читает отчёт                                   | Запрашивает малую когорту или raw delivery data | Доступен только подавленный aggregate; user/session trail и export отсутствуют.           |
+
+Wire contracts, SQL-модели, точные enum, policy schemas, nonce/cursor/TTL и события принадлежат
+`13-advertising/02-contract-data.md`; backend, provider adapter и UI этим этапом не заявлены. Владение уточнено в
+[доменной модели](domain-model.md), безопасность — в [безопасности](security-privacy.md), зависимости — в
+[архитектуре](architecture.md), измерения — в [плане аналитики](analytics-plan.md).
