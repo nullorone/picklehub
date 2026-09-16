@@ -16,12 +16,11 @@ import { ENVIRONMENT } from '../common/config/config.module';
 import type { Environment } from '../common/config/environment';
 import { uuidV7 } from '../common/identifiers/uuid-v7';
 import { RedisService } from '../common/redis/redis.service';
-import { IdentityCryptoService } from '../identity/identity-crypto.service';
-import { IdentityService } from '../identity/identity.service';
 import { CommunicationException, communicationError } from './communication.errors';
 import { CommunicationIdempotencyService } from './communication-idempotency.service';
 import { CommunicationMetricsService } from './communication-metrics.service';
 import { CommunicationService } from './communication.service';
+import { RealtimeTicketService } from './realtime-ticket.service';
 
 interface Envelope {
     messageId?: unknown;
@@ -46,9 +45,8 @@ export class CommunicationGateway
 
     constructor(
         @Inject(ENVIRONMENT) private readonly environment: Environment,
-        private readonly identity: IdentityService,
-        private readonly crypto: IdentityCryptoService,
-        private readonly redis: RedisService,
+        redis: RedisService,
+        private readonly tickets: RealtimeTicketService,
         private readonly communications: CommunicationService,
         private readonly idempotency: CommunicationIdempotencyService,
         private readonly metrics: CommunicationMetricsService
@@ -81,7 +79,7 @@ export class CommunicationGateway
 
     handleConnection(client: WebSocket, request: IncomingMessage): void {
         const origin = request.headers.origin;
-        if (origin === undefined || !this.origins.has(origin)) {
+        if (origin !== undefined && !this.origins.has(origin)) {
             client.close(1008, 'REQUEST_NOT_ALLOWED');
         }
     }
@@ -95,16 +93,8 @@ export class CommunicationGateway
         await this.respond(client, envelope, async () => {
             if (this.states.has(client)) throw communicationError('VALIDATION_FAILED', 400);
             const ticket = envelope.data?.ticket;
-            if (typeof ticket !== 'string' || ticket.length !== 43) throw communicationError('SESSION_INVALID', 401);
-            const claimed = await this.redis.client.set(
-                `${this.environment.REDIS_NAMESPACE}:ws-ticket:${this.crypto.hash(ticket)}`,
-                '1',
-                'EX',
-                60,
-                'NX'
-            );
-            if (claimed !== 'OK') throw communicationError('SESSION_INVALID', 401);
-            const authenticated = await this.identity.authenticate(`Bearer ${ticket}`);
+            if (typeof ticket !== 'string') throw communicationError('SESSION_INVALID', 401);
+            const authenticated = await this.tickets.consume(ticket);
             this.states.set(client, { userId: authenticated.session.userId, conversations: new Set() });
             return this.envelope(envelope, 'session.authenticated.v1', {
                 connectionId: uuidV7(),

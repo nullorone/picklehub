@@ -72,6 +72,7 @@ const environmentSchema = z
             .string()
             .regex(/^[a-f0-9]{64}$/u)
             .default('abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789'),
+        COMMUNICATION_HMAC_KEY: z.string().min(32).default('local-communication-hmac-key-0001'),
         SAFETY_ENCRYPTION_KEY: z
             .string()
             .regex(/^[a-f0-9]{64}$/u)
@@ -119,7 +120,8 @@ const environmentSchema = z
         }
         if (
             environment.NODE_ENV === 'production' &&
-            environment.COMMUNICATION_ENCRYPTION_KEY.startsWith('abcdef0123456789')
+            (environment.COMMUNICATION_ENCRYPTION_KEY.startsWith('abcdef0123456789') ||
+                environment.COMMUNICATION_HMAC_KEY.startsWith('local-'))
         ) {
             context.addIssue({
                 code: 'custom',

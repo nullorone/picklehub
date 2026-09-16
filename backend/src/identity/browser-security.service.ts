@@ -91,6 +91,27 @@ export class BrowserSecurityService {
         }
     }
 
+    async assertSessionMutation(request: Request, platform: string): Promise<void> {
+        const origin = request.header('Origin');
+        const csrf = request.header('X-CSRF-Token');
+        if (platform === 'MOBILE') {
+            if (origin !== undefined || csrf !== undefined) throw identityError('REQUEST_NOT_ALLOWED', 403);
+            return;
+        }
+        await this.assertMutation(request);
+    }
+
+    assertNativeMutation(request: Request): void {
+        if (
+            request.header('Origin') !== undefined ||
+            request.header('X-CSRF-Token') !== undefined ||
+            cookies(request).has(CONTEXT_COOKIE) ||
+            cookies(request).has(REFRESH_COOKIE)
+        ) {
+            throw identityError('REQUEST_NOT_ALLOWED', 403);
+        }
+    }
+
     refreshToken(request: Request): string | undefined {
         return cookies(request).get(REFRESH_COOKIE);
     }

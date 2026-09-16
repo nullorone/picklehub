@@ -19,6 +19,7 @@ import type { Request, Response } from 'express';
 import { BrowserSecurityService } from './browser-security.service';
 import {
     CompleteOnboardingDto,
+    ClientPlatform,
     ConsentChangeDto,
     DeleteAccountDto,
     EmailProofConsumeDto,
@@ -27,6 +28,9 @@ import {
     EmptyDto,
     FinishAttemptDto,
     MagicConsumeDto,
+    NativeEmailRequestDto,
+    NativeMagicConsumeDto,
+    NativeRefreshDto,
     StartAttemptDto,
     TelegramLoginDto,
     TelegramProofDto,
@@ -38,6 +42,7 @@ import { IdentityCryptoService } from './identity-crypto.service';
 import { IdempotencyService } from './idempotency.service';
 import { IdentityRateLimitService } from './rate-limit.service';
 import { IdentityService, type AuthenticatedIdentity } from './identity.service';
+import { IdentityMetricsService } from './identity-metrics.service';
 import { NoStoreInterceptor } from './no-store.interceptor';
 import { TelegramVerifierService } from './telegram-verifier.service';
 
@@ -56,7 +61,8 @@ export class IdentityController {
         private readonly telegram: TelegramVerifierService,
         private readonly limits: IdentityRateLimitService,
         private readonly crypto: IdentityCryptoService,
-        private readonly idempotency: IdempotencyService
+        private readonly idempotency: IdempotencyService,
+        private readonly metrics: IdentityMetricsService
     ) {}
 
     @Get('auth/context')
@@ -105,6 +111,51 @@ export class IdentityController {
         return this.credentialResponse(await this.identity.consumeLoginEmail(body.token, body.platform), response);
     }
 
+    @Post('auth/mobile/magic-links/request')
+    @HttpCode(202)
+    async requestNativeMagic(@Req() request: Request, @Body() body: NativeEmailRequestDto): Promise<object> {
+        this.metrics.increment('mobile_auth_total', { action: 'request' });
+        this.browser.assertNativeMutation(request);
+        await this.limitIp(request, 'magic-request-10m', 10, 600);
+        await this.limitIp(request, 'magic-request-hour', 30, 3600);
+        const email = this.identity.normalizeEmail(body.email);
+        const allowed =
+            (await this.limits.consume(`magic-login-address-minute:${this.crypto.hash(email)}`, 1, 60, true)) &&
+            (await this.limits.consume(`magic-login-address-hour:${this.crypto.hash(email)}`, 5, 3600, true));
+        await this.identity.requestNativeLoginEmail(email, body.codeChallenge, body.destination, allowed);
+        return MAGIC_ACCEPTED;
+    }
+
+    @Post('auth/mobile/magic-links/consume')
+    @HttpCode(200)
+    async consumeNativeMagic(@Req() request: Request, @Body() body: NativeMagicConsumeDto): Promise<object> {
+        this.metrics.increment('mobile_auth_total', { action: 'consume' });
+        this.browser.assertNativeMutation(request);
+        await this.limitIp(request, 'magic-consume', 10, 300);
+        const result = await this.identity.consumeNativeLoginEmail(body.token, body.codeVerifier);
+        return this.identity.nativeResponse(result.auth, result.destination);
+    }
+
+    @Post('auth/mobile/refresh')
+    @HttpCode(200)
+    async refreshNative(@Req() request: Request, @Body() body: NativeRefreshDto): Promise<object> {
+        this.metrics.increment('mobile_auth_total', { action: 'refresh' });
+        this.browser.assertNativeMutation(request);
+        await this.limitIp(request, 'refresh', 120, 300);
+        await this.limits.consume(`refresh:family:${this.crypto.hash(body.refreshToken)}`, 30, 300);
+        return this.identity.nativeResponse(await this.identity.refresh(body.refreshToken, [ClientPlatform.MOBILE]));
+    }
+
+    @Post('auth/mobile/logout')
+    @HttpCode(200)
+    async logoutNative(@Req() request: Request, @Body() body: NativeRefreshDto): Promise<object> {
+        this.metrics.increment('mobile_auth_total', { action: 'logout' });
+        this.browser.assertNativeMutation(request);
+        await this.limitIp(request, 'logout', 30, 60);
+        await this.identity.logout(body.refreshToken, [ClientPlatform.MOBILE]);
+        return { status: 'SIGNED_OUT' };
+    }
+
     @Post('auth/refresh')
     @HttpCode(200)
     async refresh(
@@ -119,7 +170,10 @@ export class IdentityController {
         if (refreshToken !== undefined) {
             await this.limits.consume(`refresh:family:${this.crypto.hash(refreshToken)}`, 30, 300);
         }
-        return this.credentialResponse(await this.identity.refresh(refreshToken), response);
+        return this.credentialResponse(
+            await this.identity.refresh(refreshToken, [ClientPlatform.WEB, ClientPlatform.TMA]),
+            response
+        );
     }
 
     @Post('auth/logout')
@@ -132,7 +186,7 @@ export class IdentityController {
         void _body;
         await this.browser.assertMutation(request);
         await this.limitIp(request, 'logout', 30, 60);
-        await this.identity.logout(this.browser.refreshToken(request));
+        await this.identity.logout(this.browser.refreshToken(request), [ClientPlatform.WEB, ClientPlatform.TMA]);
         this.browser.clearRefresh(response);
         return { status: 'SIGNED_OUT' };
     }
@@ -146,8 +200,7 @@ export class IdentityController {
         @Body() _body: EmptyDto
     ): Promise<object> {
         void _body;
-        await this.browser.assertMutation(request);
-        const auth = await this.identity.authenticate(authorization);
+        const auth = await this.authenticateMutation(request, authorization);
         await this.identity.logoutAll(auth);
         this.browser.clearRefresh(response);
         return { status: 'SIGNED_OUT' };
@@ -179,9 +232,11 @@ export class IdentityController {
         @Headers('idempotency-key') idempotencyKey: string | undefined,
         @Body() body: StartAttemptDto
     ): Promise<object> {
-        await this.browser.assertMutation(request);
         const key = this.assertIdempotencyKey(idempotencyKey);
-        const auth = await this.identity.authenticate(authorization);
+        const auth = await this.authenticateMutation(request, authorization);
+        if (auth.session.platform === 'MOBILE' && body.action === 'LINK' && body.targetProvider === 'TELEGRAM') {
+            throw identityError('REQUEST_NOT_ALLOWED', 403);
+        }
         await this.limitIp(request, 'identity-attempt', 20, 3600);
         await this.limits.consume(`identity-attempt:user:${auth.session.userId}`, 5, 3600);
         const result = await this.idempotency.execute(
@@ -212,16 +267,12 @@ export class IdentityController {
         @Param('attemptId', new ParseUUIDPipe()) attemptId: string,
         @Body() body: TelegramProofDto
     ): Promise<object> {
-        await this.browser.assertMutation(request);
+        const auth = await this.authenticateMutation(request, authorization);
+        if (auth.session.platform === 'MOBILE') throw identityError('REQUEST_NOT_ALLOWED', 403);
         await this.limitIp(request, 'telegram', 20, 300);
         const proof = this.telegram.verify(body.initData);
         await this.limits.consume(`telegram-subject:${proof.subjectKey}`, 10, 300);
-        return this.attempts.proveTelegram(
-            await this.identity.authenticate(authorization),
-            attemptId,
-            body.side,
-            proof
-        );
+        return this.attempts.proveTelegram(auth, attemptId, body.side, proof);
     }
 
     @Post('me/identity-attempts/:attemptId/email/request')
@@ -232,9 +283,8 @@ export class IdentityController {
         @Param('attemptId', new ParseUUIDPipe()) attemptId: string,
         @Body() body: EmailProofRequestDto
     ): Promise<object> {
-        await this.browser.assertMutation(request);
         await this.limitIp(request, 'magic-request-10m', 10, 600);
-        const auth = await this.identity.authenticate(authorization);
+        const auth = await this.authenticateMutation(request, authorization);
         const email = this.identity.normalizeEmail(body.email);
         const allowed =
             (await this.limits.consume(`magic-proof-address-minute:${this.crypto.hash(email)}`, 1, 60, true)) &&
@@ -251,9 +301,9 @@ export class IdentityController {
         @Param('attemptId', new ParseUUIDPipe()) attemptId: string,
         @Body() body: EmailProofConsumeDto
     ): Promise<object> {
-        await this.browser.assertMutation(request);
+        const auth = await this.authenticateMutation(request, authorization);
         await this.limitIp(request, 'magic-consume', 10, 300);
-        return this.attempts.consumeEmailProof(await this.identity.authenticate(authorization), attemptId, body.token);
+        return this.attempts.consumeEmailProof(auth, attemptId, body.token);
     }
 
     @Post('me/identities/link')
@@ -264,11 +314,8 @@ export class IdentityController {
         @Headers('authorization') authorization: string | undefined,
         @Body() body: FinishAttemptDto
     ): Promise<object> {
-        await this.browser.assertMutation(request);
-        return this.credentialResponse(
-            await this.attempts.link(await this.identity.authenticate(authorization), body.attemptId),
-            response
-        );
+        const auth = await this.authenticateMutation(request, authorization);
+        return this.sessionCredentialResponse(await this.attempts.link(auth, body.attemptId), response);
     }
 
     @Post('me/identities/:identityId/unlink')
@@ -280,11 +327,8 @@ export class IdentityController {
         @Param('identityId', new ParseUUIDPipe()) identityId: string,
         @Body() body: FinishAttemptDto
     ): Promise<object> {
-        await this.browser.assertMutation(request);
-        return this.credentialResponse(
-            await this.attempts.unlink(await this.identity.authenticate(authorization), identityId, body.attemptId),
-            response
-        );
+        const auth = await this.authenticateMutation(request, authorization);
+        return this.sessionCredentialResponse(await this.attempts.unlink(auth, identityId, body.attemptId), response);
     }
 
     @Get('me/onboarding')
@@ -300,9 +344,8 @@ export class IdentityController {
         @Headers('idempotency-key') idempotencyKey: string | undefined,
         @Body() body: UpdateDraftDto
     ): Promise<object> {
-        await this.browser.assertMutation(request);
         const key = this.assertIdempotencyKey(idempotencyKey);
-        const auth = await this.identity.authenticate(authorization);
+        const auth = await this.authenticateMutation(request, authorization);
         await this.mutationLimit(request, auth);
         const result = await this.idempotency.execute(
             auth.session.userId,
@@ -325,9 +368,8 @@ export class IdentityController {
         @Headers('idempotency-key') idempotencyKey: string | undefined,
         @Body() body: CompleteOnboardingDto
     ): Promise<object> {
-        await this.browser.assertMutation(request);
         const key = this.assertIdempotencyKey(idempotencyKey);
-        const auth = await this.identity.authenticate(authorization);
+        const auth = await this.authenticateMutation(request, authorization);
         await this.mutationLimit(request, auth);
         const result = await this.idempotency.execute(
             auth.session.userId,
@@ -363,9 +405,8 @@ export class IdentityController {
         @Headers('idempotency-key') idempotencyKey: string | undefined,
         @Body() body: ConsentChangeDto
     ): Promise<object> {
-        await this.browser.assertMutation(request);
         const key = this.assertIdempotencyKey(idempotencyKey);
-        const auth = await this.identity.authenticate(authorization);
+        const auth = await this.authenticateMutation(request, authorization);
         await this.mutationLimit(request, auth);
         const result = await this.idempotency.execute(
             auth.session.userId,
@@ -387,8 +428,7 @@ export class IdentityController {
         @Headers('authorization') authorization: string | undefined,
         @Body() body: DeleteAccountDto
     ): Promise<object> {
-        await this.browser.assertMutation(request);
-        const auth = await this.identity.authenticate(authorization);
+        const auth = await this.authenticateMutation(request, authorization);
         await this.limitIp(request, 'deletion', 10, 3600);
         await this.limits.consume(`deletion:user:${auth.session.userId}`, 3, 3600);
         const requestedAt = await this.attempts.deleteAccount(auth, body.attemptId);
@@ -435,6 +475,12 @@ export class IdentityController {
         return { ...this.identity.response(auth), csrfToken: context.csrfToken };
     }
 
+    private async sessionCredentialResponse(auth: AuthenticatedIdentity, response: Response): Promise<object> {
+        return auth.session.platform === 'MOBILE'
+            ? this.identity.nativeResponse(auth)
+            : await this.credentialResponse(auth, response);
+    }
+
     private async limitIp(request: Request, name: string, count: number, seconds: number): Promise<void> {
         await this.limits.consume(`${name}:ip:${this.crypto.hash(request.ip ?? 'unknown')}`, count, seconds);
     }
@@ -456,6 +502,15 @@ export class IdentityController {
     private async mutationLimit(request: Request, auth: AuthenticatedIdentity): Promise<void> {
         await this.limitIp(request, 'self-mutation', 120, 60);
         await this.limits.consume(`self-mutation:user:${auth.session.userId}`, 30, 60);
+    }
+
+    private async authenticateMutation(
+        request: Request,
+        authorization: string | undefined
+    ): Promise<AuthenticatedIdentity> {
+        const auth = await this.identity.authenticate(authorization);
+        await this.browser.assertSessionMutation(request, auth.session.platform);
+        return auth;
     }
 
     private parseLimit(value: string): number {

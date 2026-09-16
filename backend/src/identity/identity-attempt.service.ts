@@ -371,6 +371,10 @@ export class IdentityAttemptService {
                 where: { userId: auth.session.userId, consumedAt: null, revokedAt: null },
                 data: { revokedAt: now },
             });
+            await transaction.notificationDevice.updateMany({
+                where: { userId: auth.session.userId, revokedAt: null },
+                data: { revokedAt: now },
+            });
             await this.record(
                 transaction,
                 'identity.account.deletion.requested.v1',

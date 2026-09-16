@@ -8,6 +8,7 @@ import { PrismaService } from '../../src/common/database/prisma.service';
 import { uuidV7 } from '../../src/common/identifiers/uuid-v7';
 import { RedisService } from '../../src/common/redis/redis.service';
 import { CommunicationEventWorkerService } from '../../src/communications/communication-event-worker.service';
+import { MobileOperatingSystemDto, PushEnvironmentDto } from '../../src/communications/communication.dto';
 import type { CommunicationException } from '../../src/communications/communication.errors';
 import { CommunicationService } from '../../src/communications/communication.service';
 import { OutboxService } from '../../src/outbox/outbox.service';
@@ -82,6 +83,59 @@ describe('chat and notification backend workflows', () => {
             prisma.chatMessage.count({ where: { conversation: { matchId }, sourceEventId: rosterId } })
         ).resolves.toBe(1);
         await expect(prisma.notification.count({ where: { sourceEventId: rosterId } })).resolves.toBe(2);
+    });
+
+    it('rotates and revokes encrypted mobile push registrations without exposing tokens', async () => {
+        const userId = uuidV7();
+        const installationId = '11111111-2222-4333-8444-555555555555';
+        await prisma.user.create({ data: { id: userId } });
+        await prisma.$transaction((tx) =>
+            communications.bindDevice(userId, { installationId, platform: 'MOBILE' }, tx)
+        );
+        const first = (await prisma.$transaction((tx) =>
+            communications.registerPushToken(
+                userId,
+                installationId,
+                {
+                    operatingSystem: MobileOperatingSystemDto.IOS,
+                    environment: PushEnvironmentDto.SANDBOX,
+                    appVersion: '1.0.0',
+                    token: 'privacy-canary-first-push-token',
+                },
+                tx
+            )
+        )) as { id: string };
+        const storedFirst = await prisma.pushRegistration.findUniqueOrThrow({ where: { id: first.id } });
+        expect(Buffer.from(storedFirst.tokenCiphertext ?? []).toString('utf8')).not.toContain('privacy-canary');
+        expect(storedFirst.tokenKey).toMatch(/^[a-f0-9]{64}$/u);
+
+        const second = (await prisma.$transaction((tx) =>
+            communications.registerPushToken(
+                userId,
+                installationId,
+                {
+                    operatingSystem: MobileOperatingSystemDto.IOS,
+                    environment: PushEnvironmentDto.SANDBOX,
+                    appVersion: '1.0.1',
+                    token: 'privacy-canary-second-push-token',
+                },
+                tx
+            )
+        )) as { id: string };
+        expect(second.id).not.toBe(first.id);
+        await expect(prisma.pushRegistration.findUniqueOrThrow({ where: { id: first.id } })).resolves.toMatchObject({
+            revokeReasonCode: 'TOKEN_ROTATED',
+            tokenCiphertext: null,
+            tokenKey: null,
+        });
+        expect(JSON.stringify(await communications.listDevices(userId))).not.toContain('privacy-canary');
+
+        await prisma.$transaction((tx) => communications.revokePushRegistration(userId, installationId, second.id, tx));
+        await expect(prisma.pushRegistration.findUniqueOrThrow({ where: { id: second.id } })).resolves.toMatchObject({
+            revokeReasonCode: 'USER_REVOKED',
+            tokenCiphertext: null,
+            tokenKey: null,
+        });
     });
 });
 

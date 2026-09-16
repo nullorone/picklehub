@@ -1,4 +1,4 @@
-import { createCipheriv, createDecipheriv, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
+import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 
 import { Inject, Injectable } from '@nestjs/common';
 
@@ -19,6 +19,16 @@ export class IdentityCryptoService {
 
     hash(value: string): string {
         return createHmac('sha256', this.environment.IDENTITY_HMAC_KEY).update(value, 'utf8').digest('hex');
+    }
+
+    codeChallenge(verifier: string): string {
+        return createHash('sha256').update(verifier, 'ascii').digest('base64url');
+    }
+
+    equalSecret(left: string, right: string): boolean {
+        const a = Buffer.from(left, 'ascii');
+        const b = Buffer.from(right, 'ascii');
+        return a.length === b.length && timingSafeEqual(a, b);
     }
 
     equalHash(left: string, right: string): boolean {

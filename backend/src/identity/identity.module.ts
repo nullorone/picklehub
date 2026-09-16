@@ -14,6 +14,7 @@ import { IdentityController } from './identity.controller';
 import { IdentityCryptoService } from './identity-crypto.service';
 import { IdentityRateLimitService } from './rate-limit.service';
 import { IdentityService } from './identity.service';
+import { IdentityMetricsService } from './identity-metrics.service';
 import { IdempotencyService } from './idempotency.service';
 import { NoStoreInterceptor } from './no-store.interceptor';
 import { TelegramVerifierService } from './telegram-verifier.service';
@@ -23,6 +24,7 @@ import { TelegramVerifierService } from './telegram-verifier.service';
     controllers: [IdentityController],
     providers: [
         IdentityService,
+        IdentityMetricsService,
         IdentityAttemptService,
         IdentityCryptoService,
         TelegramVerifierService,
@@ -36,6 +38,7 @@ import { TelegramVerifierService } from './telegram-verifier.service';
     ],
     exports: [
         IdentityService,
+        IdentityMetricsService,
         IdentityCryptoService,
         TelegramVerifierService,
         BrowserSecurityService,

@@ -36,6 +36,7 @@ export enum NotificationChannelDto {
     IN_APP = 'IN_APP',
     TELEGRAM = 'TELEGRAM',
     EMAIL = 'EMAIL',
+    PUSH = 'PUSH',
 }
 
 export class SendMessageDto {
@@ -119,8 +120,36 @@ export class BindNotificationDeviceDto {
     @IsUUID('4')
     installationId!: string;
 
-    @IsEnum({ WEB: 'WEB', TMA: 'TMA' })
-    platform!: 'WEB' | 'TMA';
+    @IsEnum({ WEB: 'WEB', TMA: 'TMA', MOBILE: 'MOBILE' })
+    platform!: 'WEB' | 'TMA' | 'MOBILE';
+}
+
+export enum MobileOperatingSystemDto {
+    IOS = 'IOS',
+    ANDROID = 'ANDROID',
+}
+
+export enum PushEnvironmentDto {
+    SANDBOX = 'SANDBOX',
+    PRODUCTION = 'PRODUCTION',
+}
+
+export class RegisterPushTokenDto {
+    @IsEnum(MobileOperatingSystemDto)
+    operatingSystem!: MobileOperatingSystemDto;
+
+    @IsEnum(PushEnvironmentDto)
+    environment!: PushEnvironmentDto;
+
+    @IsString()
+    @Matches(/^[0-9A-Za-z][0-9A-Za-z.+_-]*$/u)
+    @MaxLength(64)
+    appVersion!: string;
+
+    @IsString()
+    @MinLength(1)
+    @MaxLength(4096)
+    token!: string;
 }
 
 export class CommunicationPageDto {

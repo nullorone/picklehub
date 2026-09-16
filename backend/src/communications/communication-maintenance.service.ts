@@ -30,18 +30,31 @@ export class CommunicationMaintenanceService implements OnApplicationBootstrap, 
     }
 
     async run(now = new Date()): Promise<void> {
-        const [closed, idempotency, notifications, deliveries, conversations] = await this.prisma.$transaction([
-            this.prisma.conversation.updateMany({
-                where: { state: 'WRITABLE', writeClosesAt: { lte: now } },
-                data: { state: 'READ_ONLY', updatedAt: now },
-            }),
-            this.prisma.communicationIdempotencyRecord.deleteMany({ where: { expiresAt: { lte: now } } }),
-            this.prisma.notification.deleteMany({ where: { expiresAt: { lte: now } } }),
-            this.prisma.notificationDelivery.deleteMany({ where: { expiresAt: { lte: now } } }),
-            this.prisma.conversation.deleteMany({ where: { retentionExpiresAt: { lte: now } } }),
-        ]);
+        const [closed, idempotency, notifications, deliveries, conversations, pushRegistrations] =
+            await this.prisma.$transaction([
+                this.prisma.conversation.updateMany({
+                    where: { state: 'WRITABLE', writeClosesAt: { lte: now } },
+                    data: { state: 'READ_ONLY', updatedAt: now },
+                }),
+                this.prisma.communicationIdempotencyRecord.deleteMany({ where: { expiresAt: { lte: now } } }),
+                this.prisma.notification.deleteMany({ where: { expiresAt: { lte: now } } }),
+                this.prisma.notificationDelivery.deleteMany({ where: { expiresAt: { lte: now } } }),
+                this.prisma.conversation.deleteMany({ where: { retentionExpiresAt: { lte: now } } }),
+                this.prisma.pushRegistration.updateMany({
+                    where: { revokedAt: null, expiresAt: { lte: now } },
+                    data: {
+                        revokedAt: now,
+                        revokeReasonCode: 'INACTIVITY_EXPIRED',
+                        tokenKey: null,
+                        tokenCiphertext: null,
+                    },
+                }),
+            ]);
         if (closed.count > 0) this.metrics.increment('chat_closed_total');
-        if (idempotency.count + notifications.count + deliveries.count + conversations.count > 0)
+        if (
+            idempotency.count + notifications.count + deliveries.count + conversations.count + pushRegistrations.count >
+            0
+        )
             this.metrics.increment('communication_retention_cleanup_total');
     }
 

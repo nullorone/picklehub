@@ -423,8 +423,9 @@ export class MatchController {
     }
 
     private async mutationAuth(authorization: string | undefined, request: Request) {
-        await this.browser.assertMutation(request);
-        return this.identity.authenticate(authorization);
+        const auth = await this.identity.authenticate(authorization);
+        await this.browser.assertSessionMutation(request, auth.session.platform);
+        return auth;
     }
     private async execute<T>(
         userId: string,

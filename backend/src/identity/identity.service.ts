@@ -12,7 +12,13 @@ import { RequestContextService } from '../common/request-context/request-context
 import { OutboxService } from '../outbox/outbox.service';
 import { Clock } from './clock';
 import { CursorService } from './cursor.service';
-import type { ClientPlatform, CompleteOnboardingDto, ConsentChangeDto, UpdateDraftDto } from './identity.dto';
+import {
+    ClientPlatform,
+    type CompleteOnboardingDto,
+    type ConsentChangeDto,
+    type MobileDeepLinkTargetDto,
+    type UpdateDraftDto,
+} from './identity.dto';
 import { identityError } from './identity.errors';
 import { IdentityCryptoService } from './identity-crypto.service';
 import { EmailProvider } from './email-provider';
@@ -107,7 +113,30 @@ export class IdentityService {
         return { session };
     }
 
+    async authenticateSessionBinding(
+        sessionId: string,
+        userId: string,
+        authEpoch: number
+    ): Promise<AuthenticatedIdentity> {
+        const now = this.clock.now();
+        const session = await this.prisma.session.findUnique({ where: { id: sessionId }, include: sessionInclude });
+        if (
+            session === null ||
+            session.userId !== userId ||
+            session.authEpoch !== authEpoch ||
+            session.revokedAt !== null ||
+            session.idleExpiresAt <= now ||
+            session.absoluteExpiresAt <= now ||
+            session.user.status !== 'ACTIVE' ||
+            session.authEpoch !== session.user.authEpoch
+        ) {
+            throw identityError('SESSION_INVALID', 401);
+        }
+        return { session };
+    }
+
     async loginTelegram(proof: VerifiedTelegramProof, platform: ClientPlatform): Promise<AuthenticatedIdentity> {
+        if (platform === ClientPlatform.MOBILE) throw identityError('REQUEST_NOT_ALLOWED', 403);
         const now = this.clock.now();
         try {
             return await this.prisma.$transaction(
@@ -194,6 +223,7 @@ export class IdentityService {
                     subjectCiphertext: this.crypto.encrypt(address),
                     encryptionKeyVersion: 1,
                     tokenHash: this.crypto.hash(secret),
+                    clientPlatform: platform,
                     createdAt: now,
                     expiresAt: plus(now, MAGIC_MS),
                 },
@@ -209,17 +239,19 @@ export class IdentityService {
         } catch {
             // The public response remains neutral. The raw secret is not queued or logged.
         }
-        void platform;
     }
 
     async consumeLoginEmail(token: string, platform: ClientPlatform): Promise<AuthenticatedIdentity> {
         const now = this.clock.now();
+        const requestedPlatform: string = platform;
         const result = await this.prisma.$transaction(
             async (transaction) => {
                 const link = await transaction.magicLink.findUnique({ where: { tokenHash: this.crypto.hash(token) } });
                 if (
                     link === null ||
                     link.purpose !== 'LOGIN' ||
+                    (link.clientPlatform !== null && link.clientPlatform !== requestedPlatform) ||
+                    link.nativeCodeChallenge !== null ||
                     link.expiresAt <= now ||
                     link.consumedAt !== null ||
                     link.revokedAt !== null
@@ -280,7 +312,132 @@ export class IdentityService {
         return result;
     }
 
-    async refresh(rawToken: string | undefined): Promise<AuthenticatedIdentity> {
+    async requestNativeLoginEmail(
+        addressInput: string,
+        codeChallenge: string,
+        destination: MobileDeepLinkTargetDto | undefined,
+        deliver = true
+    ): Promise<void> {
+        this.assertMobileDestination(destination);
+        const address = this.normalizeEmail(addressInput);
+        const now = this.clock.now();
+        const secret = this.crypto.secret();
+        const subjectKey = this.crypto.hash(`EMAIL:${address}`);
+        const scopeKey = this.crypto.hash(`MAGIC:LOGIN:MOBILE:${subjectKey}`);
+        await this.prisma.$transaction(async (transaction) => {
+            const identity = await transaction.identity.findUnique({
+                where: { provider_subjectKey: { provider: IdentityProvider.EMAIL, subjectKey } },
+                include: { user: true },
+            });
+            await transaction.magicLink.updateMany({
+                where: { scopeKey, consumedAt: null, revokedAt: null },
+                data: { revokedAt: now },
+            });
+            await transaction.magicLink.create({
+                data: {
+                    id: uuidV7(),
+                    userId: identity?.user.status === 'ACTIVE' ? identity.userId : null,
+                    purpose: 'LOGIN',
+                    scopeKey,
+                    subjectKey,
+                    subjectCiphertext: this.crypto.encrypt(address),
+                    encryptionKeyVersion: 1,
+                    tokenHash: this.crypto.hash(secret),
+                    clientPlatform: ClientPlatform.MOBILE,
+                    nativeCodeChallenge: codeChallenge,
+                    ...(destination === undefined
+                        ? {}
+                        : { mobileDestination: destination as unknown as Prisma.InputJsonObject }),
+                    createdAt: now,
+                    expiresAt: plus(now, MAGIC_MS),
+                },
+            });
+        });
+        if (!deliver) return;
+        try {
+            await this.emailProvider.sendMagicLink({
+                address,
+                link: `${this.environment.MAGIC_LINK_BASE_URL}#token=${secret}`,
+                purpose: 'LOGIN',
+            });
+        } catch {
+            // The public response remains neutral. The raw secret is not queued or logged.
+        }
+    }
+
+    async consumeNativeLoginEmail(
+        token: string,
+        codeVerifier: string
+    ): Promise<{ auth: AuthenticatedIdentity; destination: MobileDeepLinkTargetDto | null }> {
+        const now = this.clock.now();
+        const result = await this.prisma.$transaction(
+            async (transaction) => {
+                const link = await transaction.magicLink.findUnique({ where: { tokenHash: this.crypto.hash(token) } });
+                const challenge = this.crypto.codeChallenge(codeVerifier);
+                if (
+                    link === null ||
+                    link.purpose !== 'LOGIN' ||
+                    link.clientPlatform !== ClientPlatform.MOBILE ||
+                    link.nativeCodeChallenge === null ||
+                    !this.crypto.equalSecret(link.nativeCodeChallenge, challenge) ||
+                    link.expiresAt <= now ||
+                    link.consumedAt !== null ||
+                    link.revokedAt !== null
+                ) {
+                    return null;
+                }
+                const consumed = await transaction.magicLink.updateMany({
+                    where: { id: link.id, consumedAt: null, revokedAt: null, expiresAt: { gt: now } },
+                    data: { consumedAt: now },
+                });
+                if (consumed.count !== 1) return null;
+                let identity = await transaction.identity.findUnique({
+                    where: { provider_subjectKey: { provider: IdentityProvider.EMAIL, subjectKey: link.subjectKey } },
+                    include: { user: true },
+                });
+                if (identity === null) {
+                    const userId = uuidV7(now.getTime());
+                    await transaction.user.create({
+                        data: {
+                            id: userId,
+                            createdAt: now,
+                            lastLoginAt: now,
+                            identities: {
+                                create: {
+                                    id: uuidV7(),
+                                    provider: IdentityProvider.EMAIL,
+                                    subjectKey: link.subjectKey,
+                                    subjectCiphertext: link.subjectCiphertext,
+                                    encryptionKeyVersion: link.encryptionKeyVersion,
+                                    linkedAt: now,
+                                },
+                            },
+                            draft: { create: { updatedAt: now } },
+                        },
+                    });
+                    identity = await transaction.identity.findUniqueOrThrow({
+                        where: {
+                            provider_subjectKey: { provider: IdentityProvider.EMAIL, subjectKey: link.subjectKey },
+                        },
+                        include: { user: true },
+                    });
+                }
+                await transaction.$queryRaw`SELECT id FROM identity_users WHERE id = ${identity.userId}::uuid FOR UPDATE`;
+                const lockedUser = await transaction.user.findUniqueOrThrow({ where: { id: identity.userId } });
+                if (lockedUser.status !== 'ACTIVE') return null;
+                await transaction.user.update({ where: { id: identity.userId }, data: { lastLoginAt: now } });
+                return {
+                    auth: await this.issueSession(transaction, identity.userId, ClientPlatform.MOBILE, now),
+                    destination: (link.mobileDestination as MobileDeepLinkTargetDto | null) ?? null,
+                };
+            },
+            { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
+        );
+        if (result === null) throw identityError('MAGIC_LINK_INVALID', 401);
+        return result;
+    }
+
+    async refresh(rawToken: string | undefined, expectedPlatforms?: readonly string[]): Promise<AuthenticatedIdentity> {
         if (rawToken === undefined || rawToken.length !== 43) {
             throw identityError('SESSION_INVALID', 401);
         }
@@ -294,6 +451,9 @@ export class IdentityService {
                 return { kind: 'invalid' as const };
             }
             const session = credential.session;
+            if (expectedPlatforms !== undefined && !expectedPlatforms.includes(session.platform)) {
+                return { kind: 'invalid' as const };
+            }
             if (credential.rotatedAt !== null) {
                 if (await this.revokeSession(transaction, session.id, now)) {
                     await this.sessionRevokedEvent(transaction, session.userId, 'CURRENT', 'REPLAY', now);
@@ -354,7 +514,7 @@ export class IdentityService {
         return result;
     }
 
-    async logout(rawToken: string | undefined): Promise<void> {
+    async logout(rawToken: string | undefined, expectedPlatforms?: readonly string[]): Promise<void> {
         if (rawToken === undefined) {
             return;
         }
@@ -365,7 +525,17 @@ export class IdentityService {
             });
             if (credential !== null) {
                 const session = await transaction.session.findUnique({ where: { id: credential.sessionId } });
-                if (session !== null && (await this.revokeSession(transaction, credential.sessionId, now))) {
+                if (
+                    session !== null &&
+                    (expectedPlatforms === undefined || expectedPlatforms.includes(session.platform)) &&
+                    (await this.revokeSession(transaction, credential.sessionId, now))
+                ) {
+                    if (session.platform === 'MOBILE') {
+                        await transaction.notificationDevice.updateMany({
+                            where: { userId: session.userId, platform: 'MOBILE', revokedAt: null },
+                            data: { revokedAt: now },
+                        });
+                    }
                     await this.sessionRevokedEvent(transaction, session.userId, 'CURRENT', 'LOGOUT', now);
                 }
             }
@@ -385,6 +555,10 @@ export class IdentityService {
             });
             await transaction.magicLink.updateMany({
                 where: { userId, consumedAt: null, revokedAt: null },
+                data: { revokedAt: now },
+            });
+            await transaction.notificationDevice.updateMany({
+                where: { userId, revokedAt: null },
                 data: { revokedAt: now },
             });
             await this.outbox.enqueue(transaction, {
@@ -544,6 +718,8 @@ export class IdentityService {
         operationId: string,
         owningTransaction?: Transaction
     ): Promise<object> {
+        const requestPlatform: string = body.platform;
+        if (requestPlatform !== auth.session.platform) throw identityError('REQUEST_NOT_ALLOWED', 403);
         const now = this.clock.now();
         const operation = async (transaction: Transaction): Promise<object> => {
             const document = await transaction.consentDocument.findUnique({
@@ -755,6 +931,27 @@ export class IdentityService {
         };
     }
 
+    nativeResponse(auth: AuthenticatedIdentity, destination: MobileDeepLinkTargetDto | null = null): object {
+        if (
+            auth.accessToken === undefined ||
+            auth.refreshToken === undefined ||
+            auth.accessExpiresAt === undefined ||
+            auth.session.platform !== 'MOBILE'
+        ) {
+            throw new Error('A native credential response requires a newly issued mobile token family');
+        }
+        return {
+            tokenType: 'Bearer',
+            accessToken: auth.accessToken,
+            accessExpiresAt: auth.accessExpiresAt.toISOString(),
+            refreshToken: auth.refreshToken,
+            refreshExpiresAt: auth.session.absoluteExpiresAt.toISOString(),
+            destination,
+            session: this.sessionProjection(auth.session),
+            user: this.userProjectionSync(auth.session.user),
+        };
+    }
+
     async replaceAllSessions(
         transaction: Transaction,
         userId: string,
@@ -807,6 +1004,25 @@ export class IdentityService {
         });
         await transaction.accessCredential.deleteMany({ where: { sessionId } });
         return revoked.count === 1;
+    }
+
+    private assertMobileDestination(destination: MobileDeepLinkTargetDto | undefined): void {
+        if (destination === undefined) return;
+        const identifiers = ['matchId', 'venueId', 'playerId', 'receiptId'] as const;
+        const expected: Partial<Record<MobileDeepLinkTargetDto['kind'], (typeof identifiers)[number]>> = {
+            MATCH: 'matchId',
+            MATCH_CHAT: 'matchId',
+            VENUE: 'venueId',
+            PLAYER: 'playerId',
+            SAFETY_RECEIPT: 'receiptId',
+        };
+        const required = expected[destination.kind];
+        if (
+            (required !== undefined && destination[required] === undefined) ||
+            identifiers.some((field) => field !== required && destination[field] !== undefined)
+        ) {
+            throw identityError('VALIDATION_FAILED', 400);
+        }
     }
 
     private async sessionRevokedEvent(

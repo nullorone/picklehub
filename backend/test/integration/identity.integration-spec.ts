@@ -158,6 +158,58 @@ describe('identity transaction invariants', () => {
         expect(repeated.headers['cache-control']).toBe(requested.headers['cache-control']);
     });
 
+    it('proof-binds, rotates and revokes a body-only mobile session', async () => {
+        const server = application.getHttpServer() as unknown as Server;
+        const verifier = `${crypto.secret()}native-verifier`;
+        const address = `native-${crypto.secret().slice(0, 8)}@example.test`;
+        await request(server)
+            .post('/v1/auth/mobile/magic-links/request')
+            .send({
+                email: address,
+                platform: 'MOBILE',
+                codeChallenge: crypto.codeChallenge(verifier),
+                destination: { kind: 'MATCH', matchId: uuidV7() },
+            })
+            .expect(202);
+        const delivered = email.messages.at(-1);
+        if (delivered === undefined) throw new Error('Fake email provider did not receive a native link');
+        const token = new URL(delivered.link).hash.replace('#token=', '');
+
+        await request(server)
+            .post('/v1/auth/mobile/magic-links/consume')
+            .send({ token, platform: 'MOBILE', codeVerifier: `${verifier}wrong` })
+            .expect(401);
+        const consumed = await request(server)
+            .post('/v1/auth/mobile/magic-links/consume')
+            .send({ token, platform: 'MOBILE', codeVerifier: verifier })
+            .expect(200);
+        const body = consumed.body as {
+            accessToken: string;
+            refreshToken: string;
+            session: { id: string };
+            destination: { kind: string; matchId: string };
+        };
+        expect(body.refreshToken).toMatch(/^[A-Za-z0-9_-]{43}$/u);
+        expect(body.destination).toMatchObject({ kind: 'MATCH' });
+        expect(consumed.headers['set-cookie']).toBeUndefined();
+        await expect(prisma.session.findUniqueOrThrow({ where: { id: body.session.id } })).resolves.toMatchObject({
+            platform: 'MOBILE',
+        });
+        await expect(
+            identity.refresh(body.refreshToken, [ClientPlatform.WEB, ClientPlatform.TMA])
+        ).rejects.toMatchObject({ code: 'SESSION_INVALID' });
+
+        const rotated = await request(server)
+            .post('/v1/auth/mobile/refresh')
+            .send({ refreshToken: body.refreshToken })
+            .expect(200);
+        const rotatedBody = rotated.body as { accessToken: string; refreshToken: string; destination: null };
+        expect(rotatedBody.refreshToken).not.toBe(body.refreshToken);
+        expect(rotatedBody.destination).toBeNull();
+        await request(server).post('/v1/auth/mobile/refresh').send({ refreshToken: body.refreshToken }).expect(401);
+        await request(server).get('/v1/me').set('Authorization', `Bearer ${rotatedBody.accessToken}`).expect(401);
+    });
+
     it('revokes the family when a rotated refresh credential is replayed', async () => {
         const subject = `refresh-${crypto.secret()}`;
         const login = await identity.loginTelegram(

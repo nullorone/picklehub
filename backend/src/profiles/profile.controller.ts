@@ -240,8 +240,8 @@ export class ProfileController {
     }
 
     private async mutationAuth(authorization: string | undefined, request: Request): Promise<string> {
-        await this.browser.assertMutation(request);
         const auth = await this.identity.authenticate(authorization);
+        await this.browser.assertSessionMutation(request, auth.session.platform);
         await this.limits.consume(`profile-mutation:user:${auth.session.userId}`, 30, 60);
         await this.limits.consume(`profile-mutation:ip:${this.ip(request)}`, 120, 60);
         return auth.session.userId;

@@ -234,8 +234,9 @@ export class TrustSafetyController {
         response: Response,
         operation: (userId: string, tx: Prisma.TransactionClient) => Promise<T>
     ): Promise<T> {
-        await this.browser.assertMutation(request);
-        const userId = await this.user(authorization);
+        const auth = await this.identity.authenticate(authorization);
+        await this.browser.assertSessionMutation(request, auth.session.platform);
+        const userId = auth.session.userId;
         if (key === undefined || !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu.test(key))
             throw trustSafetyError('VALIDATION_FAILED', 400);
         await this.limits.consume(`safety-command:user:${userId}`, 20, 60);

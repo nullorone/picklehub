@@ -1,4 +1,4 @@
-import { createCipheriv, createDecipheriv, createHash, randomBytes } from 'node:crypto';
+import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes } from 'node:crypto';
 
 import { Inject, Injectable } from '@nestjs/common';
 
@@ -9,12 +9,19 @@ import type { Environment } from '../common/config/environment';
 export class CommunicationCryptoService {
     private readonly key: Buffer;
 
-    constructor(@Inject(ENVIRONMENT) environment: Environment) {
+    constructor(@Inject(ENVIRONMENT) private readonly environment: Environment) {
         this.key = Buffer.from(environment.COMMUNICATION_ENCRYPTION_KEY, 'hex');
     }
 
     fingerprint(value: string): string {
         return createHash('sha256').update(value, 'utf8').digest('hex');
+    }
+
+    tokenKey(environment: string, value: string): string {
+        const subkey = createHmac('sha256', this.environment.COMMUNICATION_HMAC_KEY)
+            .update(`push-token:${environment}`, 'ascii')
+            .digest();
+        return createHmac('sha256', subkey).update(value, 'utf8').digest('hex');
     }
 
     encrypt(value: string): Buffer {

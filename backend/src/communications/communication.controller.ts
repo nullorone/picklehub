@@ -28,12 +28,14 @@ import {
     EditMessageDto,
     MarkConversationReadDto,
     ReportMessageDto,
+    RegisterPushTokenDto,
     SendMessageDto,
     UpdateNotificationPreferenceDto,
 } from './communication.dto';
 import { communicationError } from './communication.errors';
 import { CommunicationIdempotencyService } from './communication-idempotency.service';
 import { CommunicationService } from './communication.service';
+import { RealtimeTicketService } from './realtime-ticket.service';
 
 @Controller()
 @UseInterceptors(NoStoreInterceptor)
@@ -43,7 +45,8 @@ export class CommunicationController {
         private readonly identity: IdentityService,
         private readonly browser: BrowserSecurityService,
         private readonly limits: IdentityRateLimitService,
-        private readonly idempotency: CommunicationIdempotencyService
+        private readonly idempotency: CommunicationIdempotencyService,
+        private readonly realtimeTickets: RealtimeTicketService
     ) {}
 
     @Get('matches/:matchId/conversation') async snapshot(
@@ -291,6 +294,12 @@ export class CommunicationController {
         );
     }
 
+    @Get('notification-devices') async devices(
+        @Headers('authorization') authorization: string | undefined
+    ): Promise<object> {
+        return this.communications.listDevices(await this.user(authorization));
+    }
+
     @Delete('notification-devices/:installationId') @HttpCode(204) async unbindDevice(
         @Param('installationId', new ParseUUIDPipe({ version: '4' })) installationId: string,
         @Headers('authorization') authorization: string | undefined,
@@ -311,6 +320,78 @@ export class CommunicationController {
         );
     }
 
+    @Post('notification-devices/:installationId/push-registrations')
+    @HttpCode(201)
+    async registerPushToken(
+        @Param('installationId', new ParseUUIDPipe({ version: '4' })) installationId: string,
+        @Body() body: RegisterPushTokenDto,
+        @Headers('authorization') authorization: string | undefined,
+        @Headers('idempotency-key') key: string | undefined,
+        @Req() request: Request,
+        @Res({ passthrough: true }) response: Response
+    ): Promise<object> {
+        return this.command(
+            authorization,
+            key,
+            'POST',
+            `/v1/notification-devices/${installationId}/push-registrations`,
+            body,
+            201,
+            request,
+            response,
+            (userId, tx) => this.communications.registerPushToken(userId, installationId, body, tx)
+        );
+    }
+
+    @Delete('notification-devices/:installationId/push-registrations/:registrationId')
+    @HttpCode(204)
+    async revokePushToken(
+        @Param('installationId', new ParseUUIDPipe({ version: '4' })) installationId: string,
+        @Param('registrationId', new ParseUUIDPipe()) registrationId: string,
+        @Headers('authorization') authorization: string | undefined,
+        @Headers('idempotency-key') key: string | undefined,
+        @Req() request: Request,
+        @Res({ passthrough: true }) response: Response
+    ): Promise<void> {
+        await this.command(
+            authorization,
+            key,
+            'DELETE',
+            `/v1/notification-devices/${installationId}/push-registrations/${registrationId}`,
+            {},
+            204,
+            request,
+            response,
+            (userId, tx) => this.communications.revokePushRegistration(userId, installationId, registrationId, tx)
+        );
+    }
+
+    @Post('realtime/tickets')
+    @HttpCode(201)
+    async createRealtimeTicket(
+        @Headers('authorization') authorization: string | undefined,
+        @Headers('idempotency-key') key: string | undefined,
+        @Req() request: Request,
+        @Res({ passthrough: true }) response: Response
+    ): Promise<object> {
+        const auth = await this.identity.authenticate(authorization);
+        await this.browser.assertSessionMutation(request, auth.session.platform);
+        if (key === undefined || !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu.test(key))
+            throw communicationError('VALIDATION_FAILED', 400);
+        await this.limits.consume(`realtime-ticket:user:${auth.session.userId}`, 30, 60);
+        const result = await this.idempotency.execute(
+            auth.session.userId,
+            key,
+            'POST',
+            '/v1/realtime/tickets',
+            {},
+            201,
+            () => this.realtimeTickets.issue(auth)
+        );
+        response.setHeader('Idempotency-Replayed', String(result.replayed));
+        return result.value;
+    }
+
     private async command<T>(
         authorization: string | undefined,
         key: string | undefined,
@@ -322,8 +403,9 @@ export class CommunicationController {
         response: Response,
         operation: (userId: string, transaction: Prisma.TransactionClient, operationId: string) => Promise<T>
     ): Promise<T> {
-        await this.browser.assertMutation(request);
-        const userId = await this.user(authorization);
+        const auth = await this.identity.authenticate(authorization);
+        await this.browser.assertSessionMutation(request, auth.session.platform);
+        const userId = auth.session.userId;
         if (key === undefined || !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu.test(key))
             throw communicationError('VALIDATION_FAILED', 400);
         await this.limits.consume(`communication-command:user:${userId}`, path.includes('/messages') ? 60 : 120, 60);

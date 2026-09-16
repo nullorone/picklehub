@@ -3786,3 +3786,52 @@ llm/_docs/analytics-plan.md llm/_docs/architecture.md llm/_docs/security-privacy
   `NODE_TLS_REJECT_UNAUTHORIZED=0`. Expo build, secure-store/backup, real WebSocket/lifecycle/cursor gap, object PUT,
   AASA/assetlinks, push provider/token invalidation, store/legal/residency, PostgreSQL races и реальные устройства
   остаются gates. Следующий промпт — `llm/14-mobile-parity/03-backend.md`; он не начат.
+
+## 2026-09-16 — функциональный паритет mobile, этап 03-backend
+
+- Активный промпт: `llm/14-mobile-parity/03-backend.md`. Реализован отдельный native identity flow: request/consume
+  magic link с S256 verifier binding и constant-time comparison, body-only rotating refresh, logout, session family
+  reuse detection/revocation и закрытый `MobileDeepLinkTarget`. Browser и native refresh families взаимно не
+  принимаются; browser Origin/context-cookie/CSRF защита сохранена. Native Telegram linking остаётся fail-closed
+  unavailable без server-bound proof и provider review.
+- Общий mutation boundary теперь определяет `MOBILE` только по server-known access session, отвергает browser
+  headers для native и продолжает требовать Origin/context cookie/CSRF для `WEB`/`TMA`. Boundary применён к
+  identity, venues, matches, communications, profiles и trust/safety; доверие к клиентскому platform header не
+  добавлено. Добавлены low-cardinality mobile/rate/push/realtime metrics без verifier, fingerprint и иных секретных
+  labels.
+- Реализован `POST /realtime/tickets`: 60-секундный HMAC-keyed `ws1_…` ticket хранится в Redis, поглощается атомарно
+  через `GETDEL`, привязан к session/auth epoch и повторно проверяет revoke state. WebSocket gateway допускает
+  отсутствие Origin только для подтверждённой native session с single-use ticket; browser origin policy сохранена.
+- Реализованы self-device list/bind/revoke и register/rotate/revoke push token. Raw token не возвращается и хранится
+  как AES-GCM ciphertext с отдельными HMAC subkeys; rotation/revoke опираются на database invariants этапа 02,
+  inactivity cleanup равен 90 дням, invalid-token response отзывает регистрацию, а logout/delete/logout-all
+  прекращают delivery. Payload нейтрален — только `schemaVersion`, `notificationId`, `action`; notification target
+  закрыт `MATCH`/`MATCH_CHAT`. Provider port добавлен, но production adapter намеренно disabled/fail-closed: provider,
+  SDK и внешняя передача данных не выбраны и не разрешены.
+- Добавлены unit tests для realtime ticket и S256 crypto, native identity integration flow, push
+  rotation/revoke integration flow и исполняемый `mobile-backend-policy` с четырьмя static/negative проверками;
+  root `contracts:lint` запускает новый policy. Решения, data flow, observability, threat boundaries и открытые gates
+  записаны в `llm/_docs/mobile-parity-backend.md`, со ссылками из architecture, security/privacy и contract/data.
+  Добавлен обязательный `COMMUNICATION_HMAC_KEY`; generated clients и продуктовый mobile/Expo code не менялись.
+
+### Проверки этапа mobile parity 03-backend
+
+- `npm run lint --workspace @picklehub/backend`, `npm run typecheck --workspace @picklehub/backend`,
+  `npm test --workspace @picklehub/backend -- --runInBand` и `npm run build --workspace @picklehub/backend` — успешно:
+  backend 47/47 suites и 286/286 tests. `node --test contracts/scripts/mobile-backend-policy.test.mjs` — 4/4
+  успешно.
+- `npm run contracts:lint` — успешно: TypeSpec/Redocly, 231 REST operations, 66 AsyncAPI messages и 165/165
+  policy/data/backend tests. `npm run contracts:breaking`, `npm run contracts:generated:check`,
+  `npm run contracts:typecheck` и OpenAPI mock — успешно. Prisma client generation успешна с локально заданными
+  schema/query engine paths; `prisma validate` успешен с локальными cached engine paths и синтетическим local URL.
+- Финальный `npm run verify` — успешно полностью: восемь workspaces/один root lockfile, contract lint/compatibility/
+  generated drift/typecheck/OpenAPI mock, format/docs, lint, strict typecheck, unit/component tests и production
+  builds. Backend regression — 47/47 suites и 286/286 tests; все 13 test tasks и 8 build tasks успешны.
+- Targeted integration suite не дошёл до fixtures/assertions: BullMQ/Redis сообщил `Connection is closed`.
+  `prisma migrate deploy` не подключился к PostgreSQL (`P1001`, local port 5432). Поэтому atomic Redis consume,
+  реальные PostgreSQL migration/runtime constraints, concurrent refresh/push races и cleanup cascades не
+  объявляются интеграционно проверенными; unit/static доказательства не подменяют эти gates.
+- Production push provider/SDK, terms/privacy/security/legal review, российская residency и срок 90 дней остаются
+  незакрытыми, поэтому delivery adapter остаётся выключенным. Expo/client secure storage, lifecycle/background,
+  реальные APNs/FCM invalid-token responses, AASA/assetlinks, store privacy labels и реальные устройства также
+  остаются gates следующих этапов. Следующий промпт — `llm/14-mobile-parity/04-tma-web.md`; он не начат.

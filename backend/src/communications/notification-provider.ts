@@ -16,6 +16,21 @@ export interface ProviderResult {
     readonly providerMessageKey?: string;
 }
 
+export interface PushProviderNotification {
+    readonly recipient: Uint8Array;
+    readonly payload: {
+        readonly schemaVersion: 1;
+        readonly notificationId: string;
+        readonly action: 'OPEN_NOTIFICATION';
+    };
+    readonly environment: 'SANDBOX' | 'PRODUCTION';
+    readonly idempotencyKey: string;
+}
+
+export interface PushProviderResult extends ProviderResult {
+    readonly invalidToken?: boolean;
+}
+
 export abstract class TelegramNotificationProvider {
     abstract readonly enabled: boolean;
     abstract send(message: ProviderNotification): Promise<ProviderResult>;
@@ -24,6 +39,21 @@ export abstract class TelegramNotificationProvider {
 export abstract class EmailNotificationProvider {
     abstract readonly enabled: boolean;
     abstract send(message: ProviderNotification): Promise<ProviderResult>;
+}
+
+export abstract class PushNotificationProvider {
+    abstract readonly enabled: boolean;
+    abstract send(message: PushProviderNotification): Promise<PushProviderResult>;
+}
+
+@Injectable()
+export class DisabledPushNotificationProvider extends PushNotificationProvider {
+    readonly enabled = false;
+
+    send(_message: PushProviderNotification): Promise<PushProviderResult> {
+        void _message;
+        return Promise.reject(new Error('PROVIDER_DISABLED'));
+    }
 }
 
 function template(type: string, locale: string): string {

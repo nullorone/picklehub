@@ -512,4 +512,5 @@ TLS body и хранится Keychain/Keystore-backed; bearer mutations опре
 Installation/push registration принадлежит communications, а не identity или клиентскому SDK. Push token хранится
 только encrypted/keyed backend record; payload — нейтральный opaque refetch signal. Provider adapter выключен до
 review. Closed deep-link targets и cache/data boundaries описаны в
-[mobile contract/data policy](mobile-parity-contract-data.md).
+[mobile contract/data policy](mobile-parity-contract-data.md) и фактической
+[backend-реализации](mobile-parity-backend.md).

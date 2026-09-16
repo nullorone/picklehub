@@ -844,5 +844,6 @@ session. Reuse rotating credential отзывает family без grace.
 Installation UUID не является hardware/ad ID или authentication. Push token HMAC-keyed для dedupe, encrypted at
 rest и стирается при revoke; lost device отзывается из другой session. Lock-screen payload нейтрален и tap только
 инициирует authorized refetch. Cache partition, closed deep links, 90-day registration review и threat model
-зафиксированы в [mobile contract/data policy](mobile-parity-contract-data.md); provider, residency и store privacy
+зафиксированы в [mobile contract/data policy](mobile-parity-contract-data.md) и
+[backend-реализации](mobile-parity-backend.md); provider, residency и store privacy
 review остаются production gates.

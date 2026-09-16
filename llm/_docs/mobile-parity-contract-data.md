@@ -147,8 +147,9 @@ partition, media и local push state. Offline logout локален немедл
 
 Web/TMA wire behavior сохраняется: browser cookie/CSRF endpoints и DTO остаются, additive enums/paths не требуют
 перевода существующих clients, а условные headers backend обязан продолжать строго требовать по session platform.
-Backend реализации новых endpoints и SQL migration принадлежат этапу 03; до него native auth/push нельзя считать
-работающими. Expo package/app, secure storage, cache, link resolver и platform UI принадлежат этапу 04.
+Backend-реализация новых endpoints, session boundary, realtime tickets и fail-closed push port описана в
+[mobile parity backend](mobile-parity-backend.md). Expo package/app, secure storage, cache, link resolver и platform
+UI принадлежат этапу 04; наличие backend port не означает выбранного или разрешённого push provider.
 
 До production остаются gates: clean/upgrade PostgreSQL migration и race tests; refresh loss/reuse/session revoke;
 real iOS/Android Keychain/Keystore/backup checks; provider/legal/residency/retention review и invalid-token feedback;

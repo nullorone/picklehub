@@ -1,4 +1,4 @@
-import { Transform } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
     ArrayMaxSize,
     ArrayUnique,
@@ -12,13 +12,51 @@ import {
     IsString,
     IsUUID,
     Length,
+    Matches,
     MaxLength,
     MinLength,
+    ValidateNested,
 } from 'class-validator';
 
 export enum ClientPlatform {
     WEB = 'WEB',
     TMA = 'TMA',
+    MOBILE = 'MOBILE',
+}
+
+export enum MobileDeepLinkKind {
+    MATCHES = 'MATCHES',
+    MATCH = 'MATCH',
+    MATCH_CHAT = 'MATCH_CHAT',
+    VENUES = 'VENUES',
+    VENUE = 'VENUE',
+    NOTIFICATIONS = 'NOTIFICATIONS',
+    PROFILE = 'PROFILE',
+    PLAYER = 'PLAYER',
+    ACCOUNT = 'ACCOUNT',
+    SAFETY = 'SAFETY',
+    SAFETY_RECEIPT = 'SAFETY_RECEIPT',
+}
+
+export class MobileDeepLinkTargetDto {
+    @IsEnum(MobileDeepLinkKind)
+    kind!: MobileDeepLinkKind;
+
+    @IsOptional()
+    @IsUUID()
+    matchId?: string;
+
+    @IsOptional()
+    @IsUUID()
+    venueId?: string;
+
+    @IsOptional()
+    @IsUUID()
+    playerId?: string;
+
+    @IsOptional()
+    @IsUUID()
+    receiptId?: string;
 }
 
 export enum ProofSide {
@@ -32,8 +70,8 @@ export class TelegramLoginDto {
     @MaxLength(8192)
     initData!: string;
 
-    @IsEnum(ClientPlatform)
-    platform!: ClientPlatform;
+    @IsIn([ClientPlatform.WEB, ClientPlatform.TMA])
+    platform!: ClientPlatform.WEB | ClientPlatform.TMA;
 }
 
 export class EmailRequestDto {
@@ -42,8 +80,8 @@ export class EmailRequestDto {
     @MaxLength(320)
     email!: string;
 
-    @IsEnum(ClientPlatform)
-    platform!: ClientPlatform;
+    @IsIn([ClientPlatform.WEB, ClientPlatform.TMA])
+    platform!: ClientPlatform.WEB | ClientPlatform.TMA;
 }
 
 export class MagicConsumeDto {
@@ -51,8 +89,49 @@ export class MagicConsumeDto {
     @Length(43, 43)
     token!: string;
 
-    @IsEnum(ClientPlatform)
-    platform!: ClientPlatform;
+    @IsIn([ClientPlatform.WEB, ClientPlatform.TMA])
+    platform!: ClientPlatform.WEB | ClientPlatform.TMA;
+}
+
+export class NativeEmailRequestDto {
+    @Transform(({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value))
+    @IsEmail({ allow_utf8_local_part: false })
+    @MaxLength(320)
+    email!: string;
+
+    @IsIn([ClientPlatform.MOBILE])
+    platform!: ClientPlatform.MOBILE;
+
+    @IsString()
+    @Length(43, 43)
+    @Matches(/^[A-Za-z0-9_-]{43}$/u)
+    codeChallenge!: string;
+
+    @IsOptional()
+    @ValidateNested()
+    @Type(() => MobileDeepLinkTargetDto)
+    destination?: MobileDeepLinkTargetDto;
+}
+
+export class NativeMagicConsumeDto {
+    @IsString()
+    @Length(43, 43)
+    token!: string;
+
+    @IsIn([ClientPlatform.MOBILE])
+    platform!: ClientPlatform.MOBILE;
+
+    @IsString()
+    @MinLength(43)
+    @MaxLength(128)
+    @Matches(/^[A-Za-z0-9._~-]+$/u)
+    codeVerifier!: string;
+}
+
+export class NativeRefreshDto {
+    @IsString()
+    @Length(43, 43)
+    refreshToken!: string;
 }
 
 export class EmptyDto {}

@@ -20,6 +20,7 @@ import {
     NotificationChannelDto,
     type BindNotificationDeviceDto,
     type ChatReportReasonDto,
+    type RegisterPushTokenDto,
     type UpdateNotificationPreferenceDto,
 } from './communication.dto';
 import { CommunicationCursorService, type ChatCursor, type NotificationCursor } from './communication-cursor.service';
@@ -400,23 +401,128 @@ export class CommunicationService {
     async bindDevice(userId: string, body: BindNotificationDeviceDto, tx: Transaction): Promise<object> {
         const existing = await tx.notificationDevice.findUnique({ where: { installationId: body.installationId } });
         if (existing !== null && existing.userId !== userId) throw communicationError('VALIDATION_FAILED', 400);
+        if (existing?.revokedAt) throw communicationError('VALIDATION_FAILED', 400);
         const row = await tx.notificationDevice.upsert({
             where: { installationId: body.installationId },
             create: { installationId: body.installationId, userId, platform: body.platform },
-            update: { platform: body.platform, revokedAt: null, lastSeenAt: this.clock.now() },
+            update: { platform: body.platform, lastSeenAt: this.clock.now() },
+            include: {
+                pushRegistrations: {
+                    where: { revokedAt: null, expiresAt: { gt: this.clock.now() } },
+                    orderBy: { createdAt: 'desc' },
+                    take: 1,
+                },
+            },
         });
-        return {
-            installationId: row.installationId,
-            platform: row.platform,
-            createdAt: row.createdAt.toISOString(),
-            lastSeenAt: row.lastSeenAt.toISOString(),
-        };
+        return this.projectDevice(row, row.pushRegistrations[0] ?? null);
     }
 
     async unbindDevice(userId: string, installationId: string, tx: Transaction): Promise<void> {
-        await tx.notificationDevice.updateMany({
+        const revoked = await tx.notificationDevice.updateMany({
             where: { installationId, userId, revokedAt: null },
             data: { revokedAt: this.clock.now() },
+        });
+        if (revoked.count !== 1) throw communicationError('NOTIFICATION_DEVICE_NOT_FOUND', 404);
+    }
+
+    async listDevices(userId: string): Promise<object> {
+        const rows = await this.prisma.notificationDevice.findMany({
+            where: { userId },
+            include: {
+                pushRegistrations: {
+                    where: { revokedAt: null, expiresAt: { gt: this.clock.now() } },
+                    orderBy: { createdAt: 'desc' },
+                    take: 1,
+                },
+            },
+            orderBy: [{ createdAt: 'desc' }, { installationId: 'desc' }],
+        });
+        return {
+            items: rows.map((row) => this.projectDevice(row, row.pushRegistrations[0] ?? null)),
+        };
+    }
+
+    async registerPushToken(
+        userId: string,
+        installationId: string,
+        body: RegisterPushTokenDto,
+        tx: Transaction
+    ): Promise<object> {
+        const now = this.clock.now();
+        const device = await tx.notificationDevice.findFirst({
+            where: { installationId, userId, platform: 'MOBILE', revokedAt: null },
+        });
+        if (device === null) throw communicationError('NOTIFICATION_DEVICE_NOT_FOUND', 404);
+        const tokenKey = this.crypto.tokenKey(body.environment, body.token);
+        const active = await tx.pushRegistration.findFirst({
+            where: { installationId, environment: body.environment, revokedAt: null },
+        });
+        const expiresAt = new Date(now.getTime() + 90 * 24 * 60 * 60_000);
+        if (active?.tokenKey === tokenKey) {
+            const updated = await tx.pushRegistration.update({
+                where: { id: active.id },
+                data: { appVersion: body.appVersion, lastSeenAt: now, expiresAt },
+            });
+            await tx.notificationDevice.update({ where: { installationId }, data: { lastSeenAt: now } });
+            return this.projectPushRegistration(updated);
+        }
+        if (active !== null) {
+            await tx.pushRegistration.update({
+                where: { id: active.id },
+                data: {
+                    revokedAt: now,
+                    revokeReasonCode: 'TOKEN_ROTATED',
+                    tokenKey: null,
+                    tokenCiphertext: null,
+                },
+            });
+        }
+        try {
+            const created = await tx.pushRegistration.create({
+                data: {
+                    id: uuidV7(),
+                    installationId,
+                    operatingSystem: body.operatingSystem,
+                    environment: body.environment,
+                    appVersion: body.appVersion,
+                    tokenKey,
+                    tokenCiphertext: this.crypto.encrypt(body.token),
+                    encryptionKeyVersion: 1,
+                    createdAt: now,
+                    lastSeenAt: now,
+                    expiresAt,
+                },
+            });
+            await tx.notificationDevice.update({ where: { installationId }, data: { lastSeenAt: now } });
+            return this.projectPushRegistration(created);
+        } catch (error) {
+            if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+                throw communicationError('VALIDATION_FAILED', 400);
+            }
+            throw error;
+        }
+    }
+
+    async revokePushRegistration(
+        userId: string,
+        installationId: string,
+        registrationId: string,
+        tx: Transaction,
+        reason = 'USER_REVOKED'
+    ): Promise<void> {
+        const registration = await tx.pushRegistration.findFirst({
+            where: { id: registrationId, installationId, device: { userId } },
+        });
+        if (registration === null) throw communicationError('PUSH_REGISTRATION_NOT_FOUND', 404);
+        if (registration.revokedAt !== null) return;
+        await tx.pushRegistration.update({
+            where: { id: registrationId },
+            data: {
+                revokedAt: this.clock.now(),
+                revokeReasonCode: reason,
+                tokenKey: null,
+                tokenCiphertext: null,
+            },
         });
     }
 
@@ -700,6 +806,7 @@ export class CommunicationService {
             type: notification.type,
             category: notification.category,
             route: notification.route,
+            mobileTarget: this.mobileTarget(notification.route),
             readAt: notification.readAt?.toISOString() ?? null,
             createdAt: notification.createdAt.toISOString(),
             deliveries: notification.deliveries.map((delivery) => ({
@@ -711,6 +818,46 @@ export class CommunicationService {
                 terminalAt: delivery.terminalAt?.toISOString() ?? null,
             })),
         };
+    }
+
+    private projectDevice(
+        device: {
+            installationId: string;
+            platform: string;
+            createdAt: Date;
+            lastSeenAt: Date;
+        },
+        registration: Prisma.PushRegistrationGetPayload<object> | null
+    ): object {
+        return {
+            installationId: device.installationId,
+            platform: device.platform,
+            createdAt: device.createdAt.toISOString(),
+            lastSeenAt: device.lastSeenAt.toISOString(),
+            activePushRegistration: registration === null ? null : this.projectPushRegistration(registration),
+        };
+    }
+
+    private projectPushRegistration(registration: Prisma.PushRegistrationGetPayload<object>): object {
+        return {
+            id: registration.id,
+            installationId: registration.installationId,
+            operatingSystem: registration.operatingSystem,
+            environment: registration.environment,
+            appVersion: registration.appVersion,
+            createdAt: registration.createdAt.toISOString(),
+            lastSeenAt: registration.lastSeenAt.toISOString(),
+            expiresAt: registration.expiresAt.toISOString(),
+            revokedAt: registration.revokedAt?.toISOString() ?? null,
+        };
+    }
+
+    private mobileTarget(route: string): object | null {
+        const chat = /^matches\/([0-9a-f-]{36})\/chat$/iu.exec(route);
+        if (chat?.[1] !== undefined) return { kind: 'MATCH_CHAT', matchId: chat[1] };
+        const match = /^matches\/([0-9a-f-]{36})$/iu.exec(route);
+        if (match?.[1] !== undefined) return { kind: 'MATCH', matchId: match[1] };
+        return null;
     }
 
     private assertText(text: string): void {

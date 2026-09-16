@@ -78,8 +78,8 @@ export class VenueController {
         @Res({ passthrough: true }) response: Response,
         @Body() body: CreateVenueCandidateDto
     ): Promise<object> {
-        await this.browser.assertMutation(request);
         const auth = await this.identity.authenticate(authorization);
+        await this.browser.assertSessionMutation(request, auth.session.platform);
         const result = await this.execute(auth.session.userId, key, '/v1/venues/candidates', body, (transaction) =>
             this.venues.createCandidate(auth, body, transaction)
         );
@@ -105,8 +105,8 @@ export class VenueController {
         @Res({ passthrough: true }) response: Response,
         @Body() body: ProposeVenueRevisionDto
     ): Promise<object> {
-        await this.browser.assertMutation(request);
         const auth = await this.identity.authenticate(authorization);
+        await this.browser.assertSessionMutation(request, auth.session.platform);
         const result = await this.execute(
             auth.session.userId,
             key,
@@ -128,8 +128,8 @@ export class VenueController {
         @Res({ passthrough: true }) response: Response,
         @Body() body: CreateVenueReportDto
     ): Promise<object> {
-        await this.browser.assertMutation(request);
         const auth = await this.identity.authenticate(authorization);
+        await this.browser.assertSessionMutation(request, auth.session.platform);
         try {
             const result = await this.execute(
                 auth.session.userId,

@@ -16,11 +16,14 @@ import { NotificationDeliveryDispatcherService } from './notification-delivery-d
 import { NotificationDeliveryQueueService } from './notification-delivery-queue.service';
 import { NotificationDeliverySchedulerService } from './notification-delivery-scheduler.service';
 import { NotificationDeliveryWorkerService } from './notification-delivery-worker.service';
+import { RealtimeTicketService } from './realtime-ticket.service';
 import {
     ConfiguredEmailNotificationProvider,
     ConfiguredTelegramNotificationProvider,
+    DisabledPushNotificationProvider,
     EmailNotificationProvider,
     TelegramNotificationProvider,
+    PushNotificationProvider,
 } from './notification-provider';
 
 @Module({
@@ -39,8 +42,10 @@ import {
         NotificationDeliveryDispatcherService,
         NotificationDeliverySchedulerService,
         NotificationDeliveryWorkerService,
+        RealtimeTicketService,
         { provide: TelegramNotificationProvider, useClass: ConfiguredTelegramNotificationProvider },
         { provide: EmailNotificationProvider, useClass: ConfiguredEmailNotificationProvider },
+        { provide: PushNotificationProvider, useClass: DisabledPushNotificationProvider },
     ],
     exports: [CommunicationService, CommunicationMetricsService],
 })

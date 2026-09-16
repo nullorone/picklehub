@@ -10,6 +10,7 @@ import type { NotificationDeliveryQueueService } from '../../src/communications/
 import { NotificationDeliveryWorkerService } from '../../src/communications/notification-delivery-worker.service';
 import type {
     EmailNotificationProvider,
+    PushNotificationProvider,
     TelegramNotificationProvider,
 } from '../../src/communications/notification-provider';
 
@@ -152,6 +153,7 @@ function worker(prisma: PrismaService, send: jest.Mock, applicationLogger: Appli
         prisma,
         { enabled: true, send: jest.fn() } as unknown as TelegramNotificationProvider,
         { enabled: true, send } as unknown as EmailNotificationProvider,
+        { enabled: false, send: jest.fn() } as unknown as PushNotificationProvider,
         applicationLogger,
         metrics() as unknown as CommunicationMetricsService
     );

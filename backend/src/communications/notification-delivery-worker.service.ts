@@ -5,11 +5,17 @@ import { Worker } from 'bullmq';
 import { ENVIRONMENT } from '../common/config/config.module';
 import type { Environment } from '../common/config/environment';
 import { PrismaService } from '../common/database/prisma.service';
+import { uuidV7 } from '../common/identifiers/uuid-v7';
 import { ApplicationLogger } from '../common/logging/application-logger.service';
 import { RedisService } from '../common/redis/redis.service';
 import { CommunicationMetricsService } from './communication-metrics.service';
 import type { NotificationDeliveryJob } from './notification-delivery-queue.service';
-import { EmailNotificationProvider, TelegramNotificationProvider, type ProviderResult } from './notification-provider';
+import {
+    EmailNotificationProvider,
+    PushNotificationProvider,
+    TelegramNotificationProvider,
+    type ProviderResult,
+} from './notification-provider';
 
 type Delivery = Prisma.NotificationDeliveryGetPayload<{
     include: { notification: { include: { recipient: { include: { identities: true } } } } };
@@ -25,6 +31,7 @@ export class NotificationDeliveryWorkerService implements OnApplicationBootstrap
         private readonly prisma: PrismaService,
         private readonly telegram: TelegramNotificationProvider,
         private readonly email: EmailNotificationProvider,
+        private readonly push: PushNotificationProvider,
         private readonly logger: ApplicationLogger,
         private readonly metrics: CommunicationMetricsService
     ) {}
@@ -84,6 +91,10 @@ export class NotificationDeliveryWorkerService implements OnApplicationBootstrap
             await this.suppress(deliveryId, 'PREFERENCE_DISABLED');
             return;
         }
+        if (delivery.channel === NotificationChannel.PUSH) {
+            await this.processPush(delivery);
+            return;
+        }
         const identityProvider =
             delivery.channel === NotificationChannel.TELEGRAM ? IdentityProvider.TELEGRAM : IdentityProvider.EMAIL;
         const identity = delivery.notification.recipient.identities.find((item) => item.provider === identityProvider);
@@ -109,6 +120,114 @@ export class NotificationDeliveryWorkerService implements OnApplicationBootstrap
             await this.accept(delivery, result);
         } catch (error) {
             await this.retry(delivery, this.safeError(error));
+        }
+    }
+
+    private async processPush(delivery: Delivery): Promise<void> {
+        if (!this.push.enabled) {
+            await this.suppress(delivery.id, 'PROVIDER_DISABLED');
+            return;
+        }
+        const now = new Date();
+        const registrations = await this.prisma.pushRegistration.findMany({
+            where: {
+                device: { userId: delivery.notification.recipientId, revokedAt: null },
+                revokedAt: null,
+                expiresAt: { gt: now },
+            },
+        });
+        if (registrations.length === 0) {
+            await this.suppress(delivery.id, 'PUSH_REGISTRATION_MISSING');
+            return;
+        }
+        let accepted = false;
+        let retryableFailure = false;
+        let providerCode = 'push';
+        for (const registration of registrations) {
+            const attempt = await this.prisma.pushDeliveryAttempt.upsert({
+                where: {
+                    deliveryId_registrationId: { deliveryId: delivery.id, registrationId: registration.id },
+                },
+                create: { id: uuidV7(), deliveryId: delivery.id, registrationId: registration.id },
+                update: {},
+            });
+            if (attempt.status === NotificationDeliveryStatus.ACCEPTED) {
+                accepted = true;
+                continue;
+            }
+            const claimed = await this.prisma.pushDeliveryAttempt.updateMany({
+                where: {
+                    id: attempt.id,
+                    status: { in: [NotificationDeliveryStatus.PENDING, NotificationDeliveryStatus.DEFERRED] },
+                },
+                data: { status: NotificationDeliveryStatus.PROCESSING, attempts: { increment: 1 } },
+            });
+            if (claimed.count !== 1 || registration.tokenCiphertext === null) continue;
+            try {
+                const result = await this.push.send({
+                    recipient: registration.tokenCiphertext,
+                    payload: {
+                        schemaVersion: 1,
+                        notificationId: delivery.notificationId,
+                        action: 'OPEN_NOTIFICATION',
+                    },
+                    environment: registration.environment,
+                    idempotencyKey: `${delivery.id}:${registration.id}`,
+                });
+                providerCode = result.providerCode;
+                if (result.invalidToken === true) {
+                    await this.prisma.$transaction([
+                        this.prisma.pushRegistration.update({
+                            where: { id: registration.id },
+                            data: {
+                                revokedAt: now,
+                                revokeReasonCode: 'PROVIDER_INVALID_TOKEN',
+                                tokenKey: null,
+                                tokenCiphertext: null,
+                            },
+                        }),
+                        this.prisma.pushDeliveryAttempt.update({
+                            where: { id: attempt.id },
+                            data: {
+                                status: NotificationDeliveryStatus.SUPPRESSED,
+                                lastErrorCode: 'PROVIDER_INVALID_TOKEN',
+                                terminalAt: now,
+                            },
+                        }),
+                    ]);
+                    this.metrics.increment('push_registration_invalidated_total');
+                    continue;
+                }
+                await this.prisma.pushDeliveryAttempt.update({
+                    where: { id: attempt.id },
+                    data: {
+                        status: NotificationDeliveryStatus.ACCEPTED,
+                        ...(result.providerMessageKey === undefined
+                            ? {}
+                            : { providerMessageKey: result.providerMessageKey }),
+                        terminalAt: now,
+                    },
+                });
+                accepted = true;
+            } catch (error) {
+                const terminal = attempt.attempts + 1 >= this.environment.COMMUNICATION_DELIVERY_MAX_ATTEMPTS;
+                await this.prisma.pushDeliveryAttempt.update({
+                    where: { id: attempt.id },
+                    data: {
+                        status: terminal ? NotificationDeliveryStatus.FAILED : NotificationDeliveryStatus.DEFERRED,
+                        lastErrorCode: this.safeError(error),
+                        terminalAt: terminal ? now : null,
+                    },
+                });
+                retryableFailure ||= !terminal;
+            }
+        }
+        if (accepted) {
+            await this.accept(delivery, { providerCode });
+        } else if (retryableFailure) {
+            await this.retry(delivery, 'PUSH_PROVIDER_FAILED');
+        } else {
+            await this.suppress(delivery.id, 'PUSH_REGISTRATION_INVALID');
         }
     }
 
