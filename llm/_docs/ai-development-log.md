@@ -4338,3 +4338,52 @@ npm exec --workspace @picklehub/backend -- prisma validate --schema prisma/schem
   Prometheus/Compose YAML проверены. `npm run format:check`, `npm run docs:check`, `npm run workspace:check` и
   `git diff --check` успешны. `docker info` не получил доступ к Docker Desktop socket (`operation not permitted`),
   поэтому фактическая сборка/инспекция image и restore drill с живыми PostgreSQL/Redis не заявляются пройденными.
+
+## 2026-09-16 — production readiness, этап 04-tma-web
+
+- Активный промпт: `llm/16-production-readiness/04-tma-web.md`. PR workflow разделён на обязательные contracts,
+  affected workspaces, PostgreSQL/PostGIS+Redis integration, browser E2E, Compose/Docker, dependency/license/secret
+  supply-chain и unsigned mobile export jobs. PR имеет только `contents: read` и не содержит deploy. Ручной release
+  workflow требует semantic version и полный reviewed commit SHA, повторяет gates, создаёт отдельные web/TMA static
+  и OCI image archives, SHA-256, GitHub build provenance и не выполняет production deployment.
+- Web/PWA и TMA получили commit-bound release build с `release.json`, полным файловым digest inventory, REST/AsyncAPI
+  compatibility и OCI labels. Проверка отклоняет незаписанные файлы, source maps, development endpoints/mock,
+  private-key markers, `.invalid` и TON Connect. Runtime production config закреплён на same-origin `/v1`; backend
+  production startup отклоняет wildcard, localhost, `.invalid` и неполный список точных web/TMA HTTPS origins.
+- Nginx задаёт отдельные CSP: web запрещает embedding, TMA допускает только Telegram frame ancestors; оба добавляют
+  HSTS/nosniff/referrer/permissions policy. HTML/runtime/release config не кешируются, PWA manifest/SW revalidate,
+  только хешированные assets immutable. Примеры с нерабочим map provider вынесены из public artifacts; production
+  map delivery ограничен reviewed `tiles.picklehub.ru` origin.
+- `deploy/client-production.json` документирует web/TMA/magic/invite URLs без выдуманного bot username. BotFather
+  остаётся ручным внешним gate, TON отсутствует. Provider-neutral rollout orchestration требует immutable image
+  digests, 1–10% canary и absolute-path adapters; smoke проверяет headers/config/release/backend compatibility и
+  readiness, любая ошибка вызывает rollback, после promote очищаются только mutable shell paths.
+- Поскольку функция 14 завершена, CI добавлен production-mode Expo export/audit iOS и Android. Store credentials,
+  signing material, `eas.json` и автоматическая публикация не добавлены. Каноническая реализация и незакрытые gates
+  описаны в `llm/_docs/production-readiness-frontend.md`; внешний deploy, BotFather/DNS/CDN и store submission не
+  выполнялись.
+
+### Проверки этапа production-readiness 04-tma-web
+
+- Targeted validation 7/7 и backend environment 8/8 tests успешны; release policy 4/4. Две release-сборки
+  `0.1.0-rc.1` с synthetic full SHA успешны, artifact verifier сверил все digests и отсутствие лишних файлов,
+  atomic canary switch/rollback drill успешен. Web/TMA lazy mini-game chunks — 14 509/14 514 bytes; сохраняются
+  прежние неблокирующие warnings основных/map chunks около 708/669/924 KiB.
+- `npm run workspace:check`, `npm run format:check`, `npm run docs:check`, `npm run lint`, `npm run typecheck`,
+  `npm test`, `EXPO_NO_TELEMETRY=1 npm run build -- --env-mode=loose` и `git diff --check` успешны: 9 workspaces,
+  149 Markdown-файлов, lint/typecheck 10/10, tests 16/16 tasks, backend 53/53 suites и 309/309 tests, builds 10/10.
+- Contracts TypeSpec/Redocly, 238 REST operations, 69 AsyncAPI messages, 194/194 policy tests, mobile contract,
+  breaking compatibility, generated drift и typecheck успешны. Общий `contracts:check` остановился только на
+  `contracts:mock:check`: sandbox запретил `listen 127.0.0.1` (`EPERM`); mock не выдан за пройденный.
+- `npm run test:e2e:typecheck` и production web/TMA E2E builds успешны. Все 41 Playwright scenarios заблокированы до
+  первого шага: локальный Chrome завершался `SIGABRT`, sandbox также отклонял kill с `EPERM`; функциональные browser
+  assertions не заявлены успешными. Ubuntu CI устанавливает собственный Chromium и оставляет этот job обязательным.
+- Production mobile audit успешно проверил 38 iOS/Android export files. License gate проверил 945 production
+  dependencies, CycloneDX SBOM содержит 625 components, workflow/Compose YAML parse и production Compose config
+  успешны. Локальный `npm audit` не получил DNS-доступ к configured registry, поэтому vulnerability gate остаётся
+  обязательным в сетевом CI и не выдан за локально пройденный.
+- Docker CLI доступен, но daemon socket запрещён sandbox (`operation not permitted`), поэтому image build/non-root
+  inspection и реальный Nginx smoke локально не выполнены. Фактические CI jobs, provenance attestation, secret scan,
+  provider canary/cache purge/rollback, branch protection, CDN/DNS/TLS, Telegram configuration и release approval
+  требуют внешней среды и остаются release evidence gates. Публичный production по-прежнему `NO-GO` из-за gates
+  этапов 01–03, включая пять `BLOCKED` migration paths, РФ/legal/provider/capacity/restore evidence.

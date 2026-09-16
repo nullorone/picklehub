@@ -20,6 +20,23 @@ describe('parseRuntimeConfig', () => {
         expect(() => parseRuntimeConfig({ apiBaseUrl: '/v1', environment: 'production', token: 'secret' })).toThrow();
     });
 
+    it('pins production API and map delivery to reviewed origins', () => {
+        expect(() =>
+            parseRuntimeConfig({ apiBaseUrl: 'https://api.example.test/v1', environment: 'production' })
+        ).toThrow();
+        expect(() =>
+            parseRuntimeConfig({
+                apiBaseUrl: '/v1',
+                environment: 'production',
+                map: {
+                    attributionText: 'Unreviewed',
+                    attributionUrl: 'https://tiles.example.invalid/terms',
+                    styleUrl: 'https://tiles.example.invalid/style.json',
+                },
+            })
+        ).toThrow();
+    });
+
     it('accepts only an HTTPS MapLibre style and attribution link', () => {
         expect(
             parseRuntimeConfig({
@@ -27,14 +44,14 @@ describe('parseRuntimeConfig', () => {
                 environment: 'production',
                 map: {
                     attributionText: 'Approved tile provider',
-                    attributionUrl: 'https://tiles.example.test/terms',
-                    styleUrl: 'https://tiles.example.test/style.json',
+                    attributionUrl: 'https://tiles.picklehub.ru/terms',
+                    styleUrl: 'https://tiles.picklehub.ru/style.json',
                 },
             }).map
         ).toEqual({
             attributionText: 'Approved tile provider',
-            attributionUrl: 'https://tiles.example.test/terms',
-            styleUrl: 'https://tiles.example.test/style.json',
+            attributionUrl: 'https://tiles.picklehub.ru/terms',
+            styleUrl: 'https://tiles.picklehub.ru/style.json',
         });
         expect(() =>
             parseRuntimeConfig({

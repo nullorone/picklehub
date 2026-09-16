@@ -1,0 +1,122 @@
+name: Build release candidate
+
+on:
+    workflow_dispatch:
+        inputs:
+            version:
+                description: Immutable semantic release version
+                required: true
+                type: string
+            commit:
+                description: Full reviewed commit SHA
+                required: true
+                type: string
+
+permissions:
+    actions: read
+    checks: read
+    contents: read
+    id-token: write
+    attestations: write
+
+concurrency:
+    group: release-${{ inputs.version }}
+    cancel-in-progress: false
+
+jobs:
+    verified-client-artifacts:
+        environment: release-candidate
+        runs-on: ubuntu-24.04
+        timeout-minutes: 30
+        steps:
+            - name: Validate immutable inputs
+              env:
+                  RELEASE_VERSION: ${{ inputs.version }}
+                  RELEASE_COMMIT: ${{ inputs.commit }}
+              run: |
+                  printf '%s' "$RELEASE_VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$'
+                  printf '%s' "$RELEASE_COMMIT" | grep -Eq '^[0-9a-f]{40}$'
+            - name: Require successful mandatory workflow for this commit
+              uses: actions/github-script@v7
+              env:
+                  RELEASE_COMMIT: ${{ inputs.commit }}
+              with:
+                  script: |
+                      const response = await github.rest.actions.listWorkflowRuns({
+                          owner: context.repo.owner,
+                          repo: context.repo.repo,
+                          workflow_id: 'foundation.yml',
+                          status: 'completed',
+                          per_page: 100,
+                      });
+                      const passed = response.data.workflow_runs.some(
+                          (run) => run.head_sha === process.env.RELEASE_COMMIT && run.conclusion === 'success',
+                      );
+                      if (!passed) core.setFailed('Required verification has not passed for the reviewed commit.');
+            - uses: actions/checkout@v4
+              with:
+                  ref: ${{ inputs.commit }}
+                  fetch-depth: 0
+            - name: Bind checkout to reviewed commit
+              env:
+                  RELEASE_COMMIT: ${{ inputs.commit }}
+              run: test "$(git rev-parse HEAD)" = "$RELEASE_COMMIT"
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 22.19.0
+                  cache: npm
+            - run: npm ci --ignore-scripts
+            - name: Required release gates
+              run: npm run contracts:check && npm run release:policy && npm run lint && npm run typecheck && npm test
+            - name: Build separate commit-bound web and TMA artifacts
+              env:
+                  RELEASE_VERSION: ${{ inputs.version }}
+                  VCS_REF: ${{ inputs.commit }}
+              run: |
+                  export SOURCE_DATE_EPOCH="$(git show -s --format=%ct HEAD)"
+                  npm run build:release --workspace @picklehub/web
+                  npm run build:release --workspace @picklehub/tg
+                  node scripts/release/verify-client-artifact.mjs frontend/web/dist web "$VCS_REF"
+                  node scripts/release/verify-client-artifact.mjs frontend/tg/dist tg "$VCS_REF"
+            - name: Rehearse atomic canary switch and rollback
+              run: npm run release:rollback:drill
+            - name: Build deployable OCI client images without pushing
+              env:
+                  RELEASE_VERSION: ${{ inputs.version }}
+                  VCS_REF: ${{ inputs.commit }}
+              run: |
+                  epoch="$(git show -s --format=%ct HEAD)"
+                  docker buildx build --build-arg RELEASE_VERSION="$RELEASE_VERSION" --build-arg VCS_REF="$VCS_REF" --build-arg SOURCE_DATE_EPOCH="$epoch" --tag "picklehub/web:$RELEASE_VERSION" --output type=oci,dest=picklehub-web.oci.tar -f frontend/web/Dockerfile .
+                  docker buildx build --build-arg RELEASE_VERSION="$RELEASE_VERSION" --build-arg VCS_REF="$VCS_REF" --build-arg SOURCE_DATE_EPOCH="$epoch" --tag "picklehub/tma:$RELEASE_VERSION" --output type=oci,dest=picklehub-tma.oci.tar -f frontend/tg/Dockerfile .
+            - name: Package immutable client artifacts
+              run: |
+                  tar --sort=name --mtime="@$(git show -s --format=%ct HEAD)" --owner=0 --group=0 --numeric-owner -czf picklehub-web.tgz -C frontend/web/dist .
+                  tar --sort=name --mtime="@$(git show -s --format=%ct HEAD)" --owner=0 --group=0 --numeric-owner -czf picklehub-tma.tgz -C frontend/tg/dist .
+                  sha256sum picklehub-web.tgz picklehub-tma.tgz picklehub-web.oci.tar picklehub-tma.oci.tar > SHA256SUMS
+            - uses: actions/upload-artifact@v4
+              with:
+                  name: clients-${{ inputs.version }}-${{ inputs.commit }}
+                  path: |
+                      picklehub-web.tgz
+                      picklehub-tma.tgz
+                      picklehub-web.oci.tar
+                      picklehub-tma.oci.tar
+                      SHA256SUMS
+                  if-no-files-found: error
+                  retention-days: 30
+            - name: Attest web provenance
+              uses: actions/attest-build-provenance@v2
+              with:
+                  subject-path: picklehub-web.tgz
+            - name: Attest TMA provenance
+              uses: actions/attest-build-provenance@v2
+              with:
+                  subject-path: picklehub-tma.tgz
+            - name: Attest web image provenance
+              uses: actions/attest-build-provenance@v2
+              with:
+                  subject-path: picklehub-web.oci.tar
+            - name: Attest TMA image provenance
+              uses: actions/attest-build-provenance@v2
+              with:
+                  subject-path: picklehub-tma.oci.tar

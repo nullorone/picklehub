@@ -5,6 +5,8 @@ x-backend-environment: &backend-environment
     DATABASE_URL: ${DATABASE_URL:?managed PostgreSQL/PostGIS URL is required}
     REDIS_URL: ${REDIS_URL:?managed Redis URL is required}
     REDIS_NAMESPACE: ${REDIS_NAMESPACE:?release-specific Redis namespace is required}
+    IDENTITY_ALLOWED_ORIGINS: ${IDENTITY_ALLOWED_ORIGINS:?exact web and TMA HTTPS origins are required}
+    MAGIC_LINK_BASE_URL: ${MAGIC_LINK_BASE_URL:?exact production magic-link URL is required}
     RU_DATA_RESIDENCY_CONFIRMED: ${RU_DATA_RESIDENCY_CONFIRMED:?approval gate is required}
     OPERATIONS_METRICS_KEY: ${OPERATIONS_METRICS_KEY:?scrape credential is required}
     IDENTITY_HMAC_KEY: ${IDENTITY_HMAC_KEY:?secret is required}

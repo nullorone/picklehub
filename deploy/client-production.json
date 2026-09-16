@@ -1,0 +1,12 @@
+{
+    "allowedBrowserOrigins": ["https://picklehub.ru", "https://tma.picklehub.ru"],
+    "apiBaseUrl": "/v1",
+    "deepLinks": {
+        "magicLink": "https://picklehub.ru/auth/email",
+        "matchInvite": "https://picklehub.ru/match-invites"
+    },
+    "telegram": {
+        "miniAppUrl": "https://tma.picklehub.ru/"
+    },
+    "webOrigin": "https://picklehub.ru"
+}

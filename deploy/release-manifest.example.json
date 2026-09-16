@@ -1,0 +1,18 @@
+{
+    "canaryPercent": 5,
+    "canaryUrls": {
+        "tma": "https://canary-tma.picklehub.ru",
+        "web": "https://canary.picklehub.ru"
+    },
+    "commit": "replace-with-reviewed-40-character-commit-sha",
+    "images": {
+        "tma": "sha256:replace-with-tma-image-digest",
+        "web": "sha256:replace-with-web-image-digest"
+    },
+    "release": "0.0.0-replace-me",
+    "urls": {
+        "api": "https://api.picklehub.ru",
+        "tma": "https://tma.picklehub.ru",
+        "web": "https://picklehub.ru"
+    }
+}

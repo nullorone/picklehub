@@ -9,25 +9,49 @@ const apiBaseUrlSchema = z
         'apiBaseUrl must be an absolute URL or a root-relative path'
     );
 
-export const runtimeConfigSchema = z.strictObject({
-    apiBaseUrl: apiBaseUrlSchema,
-    environment: z.enum(['development', 'test', 'production']),
-    map: z
-        .strictObject({
-            attributionText: z.string().trim().min(1).max(200),
-            attributionUrl: z.url().refine((value) => new URL(value).protocol === 'https:', 'Use an HTTPS link'),
-            styleUrl: z
-                .string()
-                .trim()
-                .min(1)
-                .refine(
-                    (value) => value.startsWith('/') || (URL.canParse(value) && new URL(value).protocol === 'https:'),
-                    'map.styleUrl must be an HTTPS URL or a root-relative path'
-                ),
-        })
-        .optional(),
-    release: z.string().trim().min(1).optional(),
-});
+export const runtimeConfigSchema = z
+    .strictObject({
+        apiBaseUrl: apiBaseUrlSchema,
+        environment: z.enum(['development', 'test', 'production']),
+        map: z
+            .strictObject({
+                attributionText: z.string().trim().min(1).max(200),
+                attributionUrl: z.url().refine((value) => new URL(value).protocol === 'https:', 'Use an HTTPS link'),
+                styleUrl: z
+                    .string()
+                    .trim()
+                    .min(1)
+                    .refine(
+                        (value) =>
+                            value.startsWith('/') || (URL.canParse(value) && new URL(value).protocol === 'https:'),
+                        'map.styleUrl must be an HTTPS URL or a root-relative path'
+                    ),
+            })
+            .optional(),
+        release: z.string().trim().min(1).optional(),
+    })
+    .superRefine((config, context) => {
+        if (config.environment !== 'production') return;
+        if (config.apiBaseUrl !== '/v1') {
+            context.addIssue({
+                code: 'custom',
+                path: ['apiBaseUrl'],
+                message: 'Production browsers must use the reviewed same-origin /v1 API path',
+            });
+        }
+        if (
+            config.map !== undefined &&
+            (config.map.attributionUrl.includes('.invalid') ||
+                (!config.map.styleUrl.startsWith('/') &&
+                    new URL(config.map.styleUrl).hostname !== 'tiles.picklehub.ru'))
+        ) {
+            context.addIssue({
+                code: 'custom',
+                path: ['map'],
+                message: 'Production maps must use the reviewed tiles.picklehub.ru delivery origin',
+            });
+        }
+    });
 
 export type RuntimeConfig = z.infer<typeof runtimeConfigSchema>;
 

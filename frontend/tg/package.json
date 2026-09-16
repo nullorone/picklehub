@@ -5,6 +5,7 @@
     "type": "module",
     "scripts": {
         "build": "vite build && node scripts/check-build.mjs",
+        "build:release": "node ../../scripts/release/build-client.mjs tg",
         "dev": "vite",
         "lint": "eslint src vite.config.ts --max-warnings=0",
         "preview": "vite preview",

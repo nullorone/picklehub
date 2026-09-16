@@ -133,6 +133,24 @@ const environmentSchema = z
                 message: 'Production must use an explicit non-local Redis namespace',
             });
         }
+        const allowedOrigins = environment.IDENTITY_ALLOWED_ORIGINS.split(',').map((origin) => origin.trim());
+        if (
+            environment.NODE_ENV === 'production' &&
+            (allowedOrigins.length < 2 ||
+                allowedOrigins.some(
+                    (origin) =>
+                        !/^https:\/\/[^/?#*]+$/u.test(origin) ||
+                        origin.includes('*') ||
+                        origin === 'https://localhost' ||
+                        origin.endsWith('.invalid')
+                ))
+        ) {
+            context.addIssue({
+                code: 'custom',
+                path: ['IDENTITY_ALLOWED_ORIGINS'],
+                message: 'Production requires exact HTTPS web and TMA origins without wildcards',
+            });
+        }
         if (environment.NODE_ENV === 'production' && environment.OPERATIONS_METRICS_KEY === undefined) {
             context.addIssue({
                 code: 'custom',

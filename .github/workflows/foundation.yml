@@ -1,4 +1,4 @@
-name: Foundation verification
+name: Required verification
 
 on:
     pull_request:
@@ -9,30 +9,56 @@ permissions:
     contents: read
 
 concurrency:
-    group: foundation-${{ github.ref }}
+    group: verification-${{ github.ref }}
     cancel-in-progress: true
 
 jobs:
-    quality:
+    contracts:
         runs-on: ubuntu-24.04
-        timeout-minutes: 20
+        timeout-minutes: 15
         steps:
             - uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
             - uses: actions/setup-node@v4
               with:
                   node-version: 22.19.0
                   cache: npm
             - run: npm ci --ignore-scripts
-            - run: npm audit --omit=dev --audit-level=high
+            - run: npm run contracts:check
+
+    affected-workspaces:
+        runs-on: ubuntu-24.04
+        timeout-minutes: 25
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 22.19.0
+                  cache: npm
+            - run: npm ci --ignore-scripts
             - run: npm run prisma:generate --workspace @picklehub/backend
               env:
                   PRISMA_SCHEMA_ENGINE_BINARY: /usr/bin/true
                   PRISMA_QUERY_ENGINE_LIBRARY: /usr/bin/true
-            - run: npm run verify
+            - name: Repository policy and formatting
+              run: npm run workspace:check && npm run format:check && npm run docs:check && npm run release:policy
+            - name: Affected workspace gates
+              if: github.event_name == 'pull_request'
+              run: npm exec -- turbo run lint typecheck test build --affected
+              env:
+                  EXPO_NO_TELEMETRY: '1'
+            - name: Full main-branch gates
+              if: github.event_name != 'pull_request'
+              run: npm run lint && npm run typecheck && npm test && npm run build
+              env:
+                  EXPO_NO_TELEMETRY: '1'
 
     integration:
         runs-on: ubuntu-24.04
-        timeout-minutes: 15
+        timeout-minutes: 20
         services:
             postgres:
                 image: postgis/postgis:16-3.4
@@ -57,7 +83,7 @@ jobs:
         env:
             DATABASE_URL: postgresql://picklehub:picklehub@localhost:5432/picklehub?schema=public
             REDIS_URL: redis://localhost:6379/0
-            REDIS_NAMESPACE: ci
+            REDIS_NAMESPACE: ci-${{ github.run_id }}
             NODE_ENV: test
         steps:
             - uses: actions/checkout@v4
@@ -72,7 +98,7 @@ jobs:
 
     browser:
         runs-on: ubuntu-24.04
-        timeout-minutes: 15
+        timeout-minutes: 20
         steps:
             - uses: actions/checkout@v4
             - uses: actions/setup-node@v4
@@ -83,9 +109,72 @@ jobs:
             - run: npx playwright install --with-deps chromium
             - run: npm run test:e2e
 
-    compose:
+    containers:
+        runs-on: ubuntu-24.04
+        timeout-minutes: 35
+        steps:
+            - uses: actions/checkout@v4
+            - name: Compose runtime smoke
+              run: npm run compose:smoke
+            - name: Build commit-bound images
+              env:
+                  RELEASE_VERSION: 0.0.0-ci.${{ github.run_number }}
+              run: |
+                  epoch="$(git show -s --format=%ct HEAD)"
+                  docker build --build-arg RELEASE_VERSION="$RELEASE_VERSION" --build-arg VCS_REF="$GITHUB_SHA" --build-arg SOURCE_DATE_EPOCH="$epoch" -t picklehub/backend:ci -f backend/Dockerfile .
+                  docker build --build-arg RELEASE_VERSION="$RELEASE_VERSION" --build-arg VCS_REF="$GITHUB_SHA" --build-arg SOURCE_DATE_EPOCH="$epoch" -t picklehub/web:ci -f frontend/web/Dockerfile .
+                  docker build --build-arg RELEASE_VERSION="$RELEASE_VERSION" --build-arg VCS_REF="$GITHUB_SHA" --build-arg SOURCE_DATE_EPOCH="$epoch" -t picklehub/tma:ci -f frontend/tg/Dockerfile .
+            - name: Verify runtime users
+              run: |
+                  test "$(docker image inspect picklehub/backend:ci --format '{{.Config.User}}')" = node
+                  test "$(docker image inspect picklehub/web:ci --format '{{.Config.User}}')" = nginx
+                  test "$(docker image inspect picklehub/tma:ci --format '{{.Config.User}}')" = nginx
+
+    supply-chain:
+        runs-on: ubuntu-24.04
+        timeout-minutes: 15
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 22.19.0
+                  cache: npm
+            - run: npm ci --ignore-scripts
+            - name: Production dependency vulnerabilities
+              run: npm audit --omit=dev --audit-level=high
+            - name: Production dependency licenses
+              run: npm run ci:licenses
+            - name: Secret history scan
+              uses: gitleaks/gitleaks-action@v2
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            - name: Generate CycloneDX inventory
+              run: npm sbom --omit=dev --sbom-format cyclonedx > picklehub.cdx.json
+            - uses: actions/upload-artifact@v4
+              with:
+                  name: dependency-inventory-${{ github.sha }}
+                  path: picklehub.cdx.json
+                  if-no-files-found: error
+                  retention-days: 14
+
+    mobile-export:
         runs-on: ubuntu-24.04
         timeout-minutes: 25
         steps:
             - uses: actions/checkout@v4
-            - run: npm run compose:smoke
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 22.19.0
+                  cache: npm
+            - run: npm ci --ignore-scripts
+            - name: Audited unsigned iOS and Android exports
+              run: npm run build:release:audit --workspace @picklehub/mobile
+              env:
+                  APP_ENV: production
+                  EXPO_NO_TELEMETRY: '1'
+                  EXPO_PUBLIC_API_URL: https://api.picklehub.ru/v1
+                  EXPO_PUBLIC_MINI_GAME_ORIGIN: https://game.picklehub.ru
+            - name: Store publication is deliberately not configured
+              run: test ! -f frontend/mobile/eas.json

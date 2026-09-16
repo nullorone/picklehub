@@ -33,6 +33,17 @@ describe('parseEnvironment', () => {
         ).toThrow('Invalid environment configuration: REDIS_NAMESPACE');
     });
 
+    it('rejects wildcard browser origins in production', () => {
+        expect(() =>
+            parseEnvironment({
+                ...validEnvironment,
+                IDENTITY_ALLOWED_ORIGINS: 'https://*.picklehub.ru,https://picklehub.ru',
+                NODE_ENV: 'production',
+                REDIS_NAMESPACE: 'production-test',
+            })
+        ).toThrow('IDENTITY_ALLOWED_ORIGINS');
+    });
+
     it('keeps venue providers disabled by default', () => {
         const environment = parseEnvironment(validEnvironment);
 
