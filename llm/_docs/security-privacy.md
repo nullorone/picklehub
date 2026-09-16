@@ -886,3 +886,12 @@ Bridge валидирует origin, schema version, message kind/size и lifecyc
 native action. `OPEN_SAFE_ROUTE` принимает только закрытый route enum и после выхода выполняет native authorization/
 refetch, но не доменную мутацию. Точные TTL, CSP и allowlists зафиксированы в
 [контракте и политике данных мини-игры](mini-game-data-policy.md), но ещё не считаются проверенными runtime.
+
+## Итоговая карта production evidence
+
+Сводная карта authoritative storage, производных sinks, backup/telemetry границ, ответственных ролей и незакрытых
+privacy/legal/residency gates находится в
+[итоговом production-аудите](production-readiness-verification.md). Она является индексом к field-level правилам
+этого документа, а не новым правовым основанием или подтверждением физического удаления. До письменного legal
+approval все предлагаемые сроки остаются проектными, неизвестный sink блокирует сбор, а трансграничная передача
+запрещена.

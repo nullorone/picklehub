@@ -4387,3 +4387,52 @@ npm exec --workspace @picklehub/backend -- prisma validate --schema prisma/schem
   provider canary/cache purge/rollback, branch protection, CDN/DNS/TLS, Telegram configuration и release approval
   требуют внешней среды и остаются release evidence gates. Публичный production по-прежнему `NO-GO` из-за gates
   этапов 01–03, включая пять `BLOCKED` migration paths, РФ/legal/provider/capacity/restore evidence.
+
+## 2026-09-16 — production readiness, этап 05-verification
+
+- Активный промпт: `llm/16-production-readiness/05-verification.md`. Создан итоговый независимый аудит
+  `llm/_docs/production-readiness-verification.md`: трассировка критериев этапов 01–04, фактические локальные
+  evidence, нагрузочная и recovery-матрица, deployment/incident handbook, карта приватности и данных, сценарий
+  внутренней демонстрации, граница AI evidence и launch decision matrix. Публичный и invited production имеют
+  итог `NO-GO`; внешнее развёртывание не выполнялось.
+- Каждому открытому security/legal/РФ-residency/provider/SLO/capacity/migration/recovery/on-call/CI/privacy/pilot
+  gate назначена ответственная роль и конкретный способ получения evidence. Конкретные люди и независимые approvals
+  отсутствуют. Пять ранее выявленных `BLOCKED` migration paths, live restore/PITR, Redis/outbox/object recovery и
+  production-like load/race не переименованы в успешные проверки.
+- Новый `production-readiness-verification-policy.test.mjs` закрепляет fail-closed решение, evidence states,
+  владельцев/способ закрытия и сохранение инфраструктурных пробелов; он включён в `contracts:lint`. README,
+  architecture, operations и security/privacy связаны с каноническим аудитом.
+
+### Проверки этапа production-readiness 05-verification
+
+- `env -u NODE_TLS_REJECT_UNAUTHORIZED npm_config_strict_ssl=true npm ci --ignore-scripts` — успешно: чисто
+  установлено 2 109 packages. Первый прогон не принят как evidence, потому что обнаружил унаследованные
+  `NODE_TLS_REJECT_UNAUTHORIZED=0` и npm `strict-ssl=false`; безопасный повтор явно включил TLS verification.
+  Infrastructure owner должен удалить небезопасные настройки и добавить fail-fast assertion в доверенный runner.
+- `npm run workspace:check`, `npm run format:check`, `npm run docs:check` и `git diff --check` — успешно: 9
+  workspaces/один root lockfile, 15 TypeSpec-файлов, 150 Markdown-файлов и отсутствие whitespace errors.
+- `npm run contracts:check` — успешно полностью, включая локальный Prism mock: TypeSpec/Redocly, 238 REST operations,
+  69 AsyncAPI messages, 199/199 policy tests, mobile contract, breaking compatibility, generated drift и contract
+  typecheck. Новый audit policy — 5/5; client release policy — 4/4.
+- `EXPO_NO_TELEMETRY=1 npm exec -- turbo run lint typecheck test build --force --env-mode=loose` — успешно, 40/40
+  задач без Turbo cache. Backend: 53/53 suites и 309/309 tests; web: 14/14 и 59/59; TMA: 11/11 и 34/34; mobile:
+  4/4 и 17/17; mini-game: 2/2 и 7/7. Все 10 builds, включая iOS/Android Expo export, успешны. Сохраняются warnings
+  chunks около 708/669/924 KiB и deprecated dependency warnings, требующие последующего triage.
+- Release build web/TMA `0.1.0-rc.audit` для полного исходного SHA
+  `72cdb606b00d49fc2e555c69b9fb3f18b44d885d` и epoch `1789583961` успешен; local atomic canary switch/rollback
+  drill успешен. Он не является provider rollout, cache purge, registry signing или provenance attestation.
+- `npm run test:e2e`: TypeScript и production web/TMA builds успешны; все 41 Playwright-сценарий заблокированы до
+  первого assertion, потому что локальный Chrome завершался `SIGABRT`, а sandbox отклонял kill с `EPERM`.
+  Browser E2E не выдан за успешный; обязательный Ubuntu CI job должен повторить его для итогового SHA.
+- После успешного Prisma client generation integration suite с живыми PostgreSQL/Redis не смог подключиться:
+  sandbox вернул `connect EPERM 127.0.0.1:5432` и закрыл Redis connection. Поэтому clean migrations, реальные
+  concurrency/race assertions, Redis/provider/outbox failure и reconciliation не пройдены.
+- `docker compose --profile foundation config --quiet`, shell syntax operations/Compose scripts и Grafana JSON —
+  успешно. `npm run compose:smoke`, image inspection и restore drill заблокированы запретом Docker daemon socket;
+  backup/PITR, RTO/RPO и graceful restart evidence отсутствуют.
+- `npm run ci:licenses` — успешно для 945 production dependencies; CycloneDX SBOM успешно создан во временном
+  каталоге и содержит 625 components. `npm audit --omit=dev --audit-level=high` заблокирован DNS
+  `ENOTFOUND` для настроенного registry; `gitleaks` отсутствует. Vulnerability и secret-history gates остаются
+  обязательными сетевыми CI checks и не выданы за пройденные.
+- Следующего prompt нет: последовательность `16-production-readiness` завершена документально, но проект остаётся
+  `NO-GO` до закрытия матрицы внешних и live-infrastructure evidence.

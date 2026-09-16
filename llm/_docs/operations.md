@@ -7,6 +7,10 @@
 [требованиях к production readiness](production-readiness-requirements.md). Пока перечисленные там evidence и
 critical gates не закрыты, общий статус публичного запуска — `NO-GO`.
 
+Итоговая трассировка локальных evidence, незавершённых live drills, ответственных ролей и условий смены решения
+находится в [production-readiness verification](production-readiness-verification.md). Наличие этого handbook или
+скрипта не считается выполнением описанной проверки.
+
 ## Требования
 
 - Node.js `22.19.0` или совместимая версия `>=22 <23`, npm `10.9.3` и единственный root `package-lock.json`;

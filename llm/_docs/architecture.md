@@ -544,3 +544,12 @@ critical shell. Offline cache запускает только явно обоз�
 стоит в общей offline queue. Background/visibility transition останавливает clock/input/audio, а resume не зависит
 от фонового WebView execution. Advertising разрешён только до раунда или после terminal result через общий
 placement boundary; provider/analytics не являются зависимостями correctness.
+
+## Production evidence boundary
+
+Архитектурное описание, контракт или наличие runbook не подтверждают production readiness сами по себе. Health,
+metrics, migration, outbox, backup, Redis/object recovery, client rollback и privacy lifecycle считаются
+проверенными только в явно указанном слое. Итоговая матрица локального evidence, live infrastructure gaps и
+решения `NO-GO` находится в
+[production-readiness verification](production-readiness-verification.md). Внешняя инфраструктура, provider
+accounts, российское размещение и legal approval не выводятся из конфигурации репозитория.

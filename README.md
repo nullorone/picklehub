@@ -88,3 +88,20 @@ npm run compose:smoke
 Обычный `docker compose up -d postgres redis` по-прежнему запускает только локальные зависимости. Ручной запуск
 всего foundation-профиля и эксплуатационные ограничения описаны в
 [`llm/_docs/operations.md`](llm/_docs/operations.md).
+
+## Итоговый production-аудит
+
+Каноническая трассировка критериев, фактических проверок, учебных сбоев, карты данных и решения о запуске находится
+в [`llm/_docs/production-readiness-verification.md`](llm/_docs/production-readiness-verification.md). Текущий
+статус публичного и приглашённого production — `NO-GO`: не закрыты migration, live load/recovery, security/legal,
+РФ-локализация, provider, on-call и SLO gates. Этот репозиторий не подтверждает внешнее развёртывание.
+
+Связанные документы:
+
+- [архитектура](llm/_docs/architecture.md) и [эксплуатация](llm/_docs/operations.md);
+- [production SLO и выпуск](llm/_docs/production-readiness-requirements.md);
+- [контракты, миграции и секреты](llm/_docs/production-readiness-contract-data.md);
+- [backend, recovery и incident runbooks](llm/_docs/production-readiness-backend.md);
+- [клиентские артефакты и CI/CD](llm/_docs/production-readiness-frontend.md);
+- [безопасность и приватность](llm/_docs/security-privacy.md) и [аналитика](llm/_docs/analytics-plan.md);
+- [фактический журнал AI-разработки](llm/_docs/ai-development-log.md).
