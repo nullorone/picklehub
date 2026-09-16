@@ -470,3 +470,28 @@ Advertising events содержат opaque campaign/creative/placement revisions
 count buckets и amount minor units только внутри restricted billing boundary. Generic outbox, logs и analytics не
 содержат cap subject, user/session/device/ad ID, IP, координаты, URL/query/object ID, profile/match/content history,
 creative body или fraud evidence. Behavioral analytics не является источником delivery, spend, cap или recovery.
+
+## Мини-игра
+
+Контекст `mini-game` владеет versioned `GameConfiguration`, непересекающимся 84-дневным `GameSeason`,
+короткоживущим одноразовым `GameSessionChallenge`, terminal `GameSessionReceipt`, append-only
+`PracticeMarkLedger`, `CosmeticGrant` и их reversal/reinstatement links. Клиент владеет только временным состоянием
+раунда и локальным best score; клиентский score, clock, trajectory outcome и input trace не становятся
+authoritative спортивным фактом.
+
+Game configuration неизменяемо фиксирует режим, число/длительность ходов, дискретные направления, score formula,
+дневные цели и cosmetic thresholds. `STANDARD` и `CALM` используют одну reward eligibility, но несравнимые локальные
+score projections. Challenge привязан к user, configuration, mode и сроку; его атомарное поглощение создаёт не
+более одного receipt. Receipt может подтвердить только bounded low-value reward eligibility, а не честность score
+или спортивный навык.
+
+Один receipt может породить не более одной отметки каждого дневного типа, одного cosmetic grant каждого порога и
+одной XP source chain по отдельным уникальным ключам. Reversal и reinstatement append-only и ограничены исходным
+grant. Mini-game запрашивает global XP через публичный порт gamification с новым versioned source; gamification
+владеет XP ledger/caps и не отдаёт игре возможность писать balance. Matches, profiles/statistics, tournaments,
+trust score и matchmaking не читают game records или cosmetics.
+
+Identity подтверждает actor, analytics получает только consented минимизированные события, advertising видит
+только зарегистрированный некритический placement, administration/trust-safety — purpose-bound reason/audit без
+score или input trace. Offline session не создаёт challenge/receipt и остаётся локальной. Точные модели, ключи,
+TTL, события и delete policy принадлежат `15-mini-game/02-contract-data.md`.

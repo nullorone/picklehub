@@ -514,3 +514,28 @@ Installation/push registration принадлежит communications, а не id
 review. Closed deep-link targets и cache/data boundaries описаны в
 [mobile contract/data policy](mobile-parity-contract-data.md) и фактической
 [backend-реализации](mobile-parity-backend.md).
+
+## Мини-игра и WebView
+
+Игровой runtime — отдельный лениво загружаемый web bundle с детерминированной дискретной state machine. Canvas или
+WebGL отвечает только за представление `STANDARD`; доступный DOM-режим `CALM` является первой-class реализацией той
+же конфигурации. Ни один режим не зависит от websocket, multiplayer coordinator или серверного physics tick.
+Ошибка bundle/runtime не входит в dependency graph Match MVP и не может нарушить основную навигацию либо мутацию.
+
+Backend boundary мини-игры выдаёт короткоживущий signed challenge, атомарно создаёт terminal receipt и через
+отдельные порты запрашивает practice/cosmetic projections и global XP. Сервер проверяет одноразовость, version,
+duration/order/rate bounds, но не воспроизводит траекторию и не доверяет score. PostgreSQL — источник receipt,
+reward ledger и caps; Redis может ускорять rate limit, но его отказ означает reward unavailable, а не разрешение
+replay или остановку игры. At-least-once outbox защищён уникальными source/receipt keys.
+
+Web/PWA и TMA монтируют bundle в своём shell. Native открывает только выделенный allowlisted HTTPS origin в
+изолированном WebView с ephemeral launch capability. Native refresh/cookie/init data и общий JS bridge туда не
+передаются; navigation, permissions, storage и bridge deny-by-default. Versioned bridge допускает только readiness,
+close, safe-route intent и coarse health. Точные origin, CSP, sandbox, capability exchange и messages сначала
+фиксируются в TypeSpec/политиках следующего этапа.
+
+Game assets имеют отдельный manifest/cache namespace и budget, поэтому deploy/rollback игры не инвалидирует
+critical shell. Offline cache запускает только явно обозначенную тренировку без server rewards; reward mutation не
+стоит в общей offline queue. Background/visibility transition останавливает clock/input/audio, а resume не зависит
+от фонового WebView execution. Advertising разрешён только до раунда или после terminal result через общий
+placement boundary; provider/analytics не являются зависимостями correctness.

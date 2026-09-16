@@ -487,3 +487,41 @@ Push permission/registration/provider outcome, session refresh/reuse, lifecycle/
 агрегированные operational counters по OS/app-version/reason class без user/installation/session/object IDs.
 Delivery/open не означает read или доменный success; confirmed match по-прежнему считается только immutable
 server marker. Подробная граница — в [mobile contract/data policy](mobile-parity-contract-data.md).
+
+## Мини-игра
+
+Game session receipt, reward ledger, practice marks и cosmetics — доменные records, не behavioral analytics.
+Награды, caps, replay protection и reversal работают без analytics consent/provider. Consented события не содержат
+user/session/challenge/config/cosmetic/campaign/match IDs, score, accuracy, streak, input/timing trace, trajectory,
+reward amount, XP/balance, navigation URL/source, exact time, device/ad ID или fingerprint. Разрешены только client,
+mode, coarse duration/result/performance buckets и closed reason enums; малые когорты подавляются.
+
+| Событие                 | Условие после факта                                                | Разрешённые свойства                                                          | Дедупликация               |
+| ----------------------- | ------------------------------------------------------------------ | ----------------------------------------------------------------------------- | -------------------------- |
+| `mini_game_started`     | Tutorial/offline исключены; первый input eligible раунда принят    | `client`, `mode`: standard/calm; `connectivity`: online; `entryClass`         | Локальная session instance |
+| `mini_game_completed`   | Показан terminal result завершённого, не abandoned раунда          | `client`, `mode`, `durationBucket`, `rewardOutcomeClass`; без score/reward    | Локальная session instance |
+| `mini_game_returned`    | Новый eligible start через 2–7 либо 8–28 суток после первого start | `client`, `mode`, `returnWindow`; без identity/точного elapsed                | Первая return window       |
+| `mini_game_exit_intent` | Пользователь явно закрыл entry/pause/result                        | `client`, `stage`: entry/active/paused/result; `reasonClass`: user/navigation | Одна interaction instance  |
+
+Start — не открытие route и не asset prefetch, а первый принятый игровой input. Completion не включает tutorial,
+offline, crash, timeout или abandon. Return считается только агрегатором по consented purpose-bound subject с
+ограниченным 28-дневным окном и не создаёт cross-client/device profile. Отзыв consent удаляет subject linkage и
+прекращает collection; пропущенные события не восстанавливаются из receipt/ledger/access log.
+
+Главная оценка — incremental 28-day retained confirmed player и confirmed matches per active player в заранее
+закреплённом rollout/holdout, а не game starts, score, XP или ad revenue. Для того же mature cohort/window
+сравниваются published match → eligible join, join → confirmed participant, match create, result confirmation,
+no-show/report rates и время в основных сценариях. Рост game completion/return не является успехом при ухудшении
+любой матчевой ступени; недостаточная выборка означает inconclusive.
+
+Operational metrics не требуют behavioral consent: bundle load/cache outcome, ready/first-input latency bucket,
+mode support/fallback, crash/error class, frame/long-task/memory bucket, background pause/abandon, challenge/claim
+outcome, replay/cap/reversal/invariant count и WebView origin/message reject. Labels не содержат IDs, score/input,
+capability, URL, exact device/time, user agent или free text. Targets: duplicate grant, cap bypass, XP-to-sporting
+mutation, offline reward, unknown bridge action и ad-in-critical-state — ноль; crash-free sessions ≥99.5%, ready p75
+≤2.5 s на целевой матрице. Metrics outage не ослабляет invariants и не блокирует игру/MVP.
+
+Реклама измеряется только существующей taxonomy и не связывается на user/session уровне с game score/reward.
+Placement rollout отдельно контролирует focus/screen-reader, long-task и match-funnel guardrails. Любое privacy,
+reward или WebView invariant violation останавливает rewards/rollout; engagement, XP, impressions и CTR вред не
+компенсируют.

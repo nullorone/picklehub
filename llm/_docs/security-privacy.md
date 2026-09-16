@@ -847,3 +847,38 @@ rest и стирается при revoke; lost device отзывается из 
 зафиксированы в [mobile contract/data policy](mobile-parity-contract-data.md) и
 [backend-реализации](mobile-parity-backend.md); provider, residency и store privacy
 review остаются production gates.
+
+## Политика мини-игры и WebView
+
+Счёт, траектория, timing и client outcome недоверенные и не дают спортивных либо денежных прав. Online reward
+требует короткоживущий user/config/mode-bound challenge, атомарное одноразовое поглощение и идемпотентный receipt.
+Допустимы только дискретные counters, monotonic duration и закрытые outcome/reason enums. Pointer coordinates,
+keystroke timing trace, frame capture, video/audio, biometric, fingerprint, IP-derived identity, advertising ID,
+точное место, match/opponent graph и данные устройства для доказательства честности не собираются.
+
+Anti-abuse проверяет signature/expiry, ownership, config version, duration/order/rate bounds, replay и ограниченные
+coarse frequency buckets. Клиентский score не верифицируется серверной физикой и не публикуется в leaderboard;
+неустранимая неопределённость компенсируется низкой ценностью и caps награды. Эвристика, высокий score,
+accessibility mode, старое/слабое устройство, WebView или потеря сети сами по себе не создают account ban, trust
+penalty или ограничение Match MVP. Hold/reversal требуют reason class и audit, существенная санкция — общей
+moderator/appeal policy.
+
+Challenge и raw claim очищаются после terminal receipt либо короткого replay window, который должен быть точно
+утверждён contract/privacy review. Receipt, reward/reversal chain и season progress хранятся только на срок
+integrity/appeal и затем удаляются либо необратимо обезличиваются; бессрочная input/session history запрещена.
+Локальный best/game settings не синхронизируются и очищаются при logout/account switch/delete либо пользователем.
+Logs, traces, errors, analytics и audit не содержат challenge/capability, session/user ID, score, input trace,
+cosmetic inventory, exact time или navigation source. Данные production размещаются в РФ либо rewards выключены.
+
+Offline не буферизует claim. Повтор/потерянный ответ возвращает тот же receipt и не меняет UTC window. XP идёт
+только через существующий append-only gamification ledger с отдельной versioned source policy; game service не
+пишет balance, profile, statistics или DUPR. Cosmetics непокупаемы, непередаваемы, предопределены и не дают
+преимущества; rewarded ads, gambling, loot box и восстановление missed day запрещены.
+
+Mobile WebView использует отдельный allowlisted HTTPS origin и ephemeral purpose-bound launch capability без
+native refresh, browser cookie, Telegram init data или произвольного bridge. CSP/sandbox/navigation deny download,
+popup, arbitrary URL/script, third-party storage и camera/microphone/location/contacts/clipboard/payment permissions.
+Bridge валидирует origin, schema version, message kind/size и lifecycle; неизвестное сообщение закрывается без
+native action. `OPEN_SAFE_ROUTE` принимает только закрытый route enum и после выхода выполняет native authorization/
+refetch, но не доменную мутацию. Точные TTL, CSP и allowlists принадлежат contract/data этапу и не считаются сейчас
+проверенными runtime.

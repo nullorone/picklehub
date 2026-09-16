@@ -3931,3 +3931,60 @@ contracts/scripts/mobile-verification-policy.test.mjs` — успешно: 8/8; 
   signed IPA/AAB audit, privacy manifests/store disclosures, account deletion/support pages, provider/legal/
   residency review и вся physical device/accessibility matrix остаются обязательными release gates. Следующий
   промпт `llm/15-mini-game/01-requirements.md` не начат.
+
+## 2026-09-16 — мини-игра, этап 01-requirements
+
+- Активный промпт: `llm/15-mini-game/01-requirements.md`. Изменения ограничены продуктовой, доменной,
+  архитектурной, privacy и аналитической спецификацией; TypeSpec/AsyncAPI, OpenAPI, Prisma, migrations, backend,
+  game engine и клиенты не менялись. К `15-mini-game/02-contract-data.md` не переходили.
+- Определена завершённая однопользовательская игра «Ралли на точность»: `STANDARD` длится 90 секунд активного
+  времени, использует три дискретных направления и удар, три ограниченные ступени сложности и локальную формулу
+  очков. Обучение состоит из трёх подач, pause/background останавливает clock/input/audio, resume доступен в том же
+  runtime 10 минут, а abandon не создаёт награду или штраф.
+- `CALM` — равноправный доступный DOM-режим из 20 дискретных ходов без движущегося мяча и ограничения реакции.
+  Keyboard/touch/pointer, reduced motion, screen reader, 200% zoom, текстовый эквивалент и выход предусмотрены;
+  completion и награды не хуже `STANDARD`, а scores режимов не сравниваются.
+- Заданы три дневные UTC-цели, 84-дневный сезон и четыре фиксированных cosmetic thresholds. Practice marks и
+  косметика непокупаемы, непередаваемы, неслучайны, действуют только внутри игры и не меняют hit window, score,
+  подбор, профиль или спортивные данные. Leaderboard, paid pass, energy, loot box и missed-day recovery исключены.
+- Будущий `MINI_GAME_DAILY_COMPLETION` не изменяет закрытый `GLOBAL_V1`: новая versioned global policy может дать
+  только 10 XP за первый eligible online completion/UTC day, максимум 50/UTC week и 300/season, без club XP и
+  зависимости от score, точности, режима, рекламы или оплаты. Receipt/mark/cosmetic/XP имеют отдельные
+  идемпотентные append-only grant, reversal и ограниченный reinstatement; concurrent/replay не обходят caps.
+- Сервер не доверяет client score/clock/outcomes и не симулирует физику. Короткоживущий одноразовый challenge
+  проверяет config/mode/ownership/duration/order/rate и создаёт один terminal receipt; неустранимая client-trust
+  граница компенсируется низкой ценностью, caps и отсутствием score leaderboard/спортивных прав. Fingerprint,
+  pointer/keystroke trace, video, точная география и device/ad IDs запрещены; эвристика не применяет account sanction.
+- Offline bundle/обучение/оба режима дают только явно отмеченную тренировку: reward claim не буферизуется и не
+  оживает после reconnect. Реклама допустима только до старта и под terminal result, но не в tutorial/round/pause/
+  recovery/claim/reward; rewarded/interstitial/overlay запрещены, а no-fill не блокирует игру или Match MVP.
+- Web/PWA и TMA используют ленивый game bundle, mobile — allowlisted isolated WebView с ephemeral launch capability
+  и закрытым bridge `READY`/`CLOSE`/`OPEN_SAFE_ROUTE`/coarse health. Cookie/native refresh/Telegram init data,
+  произвольный URL/JS bridge, permissions и доменные мутации не передаются. Точные capability/CSP/TTL/messages
+  оставлены следующему contract/data этапу.
+- Аналитика определяет consented start, completion, 2–7/8–28-day return и exit без score/input/IDs; operational
+  crash/load/performance/challenge counters минимизированы. Rollout оценивает 28-day retained confirmed players и
+  match funnel относительно holdout; рост game engagement, XP или рекламы не компенсирует ухудшение Match MVP.
+- Определены 10 пользовательских историй и 15 сценариев «Дано/Когда/Тогда». Изменённые файлы:
+  `llm/_docs/product-requirements.md`, `llm/_docs/domain-model.md`, `llm/_docs/architecture.md`,
+  `llm/_docs/security-privacy.md`, `llm/_docs/analytics-plan.md` и этот журнал.
+
+### Проверки этапа mini-game 01-requirements
+
+- `npx prettier --write llm/_docs/product-requirements.md llm/_docs/domain-model.md llm/_docs/architecture.md
+llm/_docs/security-privacy.md llm/_docs/analytics-plan.md` — успешно. `npm run docs:check`,
+  `npm run format:check` и `git diff --check` — успешно: 141 Markdown-файл, 13 TypeSpec-файлов и отсутствие
+  whitespace errors.
+- `EXPO_NO_TELEMETRY=1 npm run verify -- --env-mode=loose` прошёл workspace check, TypeSpec/Redocly,
+  231 REST operations/66 AsyncAPI messages, 173/173 contract/policy tests, compatibility, generated drift и
+  contract typecheck, но был остановлен sandbox-запретом `listen EPERM 127.0.0.1` на `contracts:mock:check`.
+  Немедленный отдельный `npm run contracts:mock:check` успешен по всем опубликованным примерам.
+- Оставшиеся стадии выполнены отдельно и успешно: `npm run lint` — 9/9 tasks, `npm run typecheck` — 9/9,
+  `npm test` — 14/14, включая backend 47/47 suites и 286/286 tests, web 14/14 и 59/59, TMA 11/11 и 34/34,
+  mobile 3/3 и 12/12. `EXPO_NO_TELEMETRY=1 npm run build -- --env-mode=loose` — 9/9 builds, включая iOS/Android
+  Hermes exports. Сохраняются прежние неблокирующие warnings о web/TMA/MapLibre chunks около 706/667/924 KiB.
+- Критерии текущего этапа выполнены на уровне требований: цикл не требует multiplayer/game server или physics,
+  reward policy задаёт caps/replay/reversal, а любой сбой игры/rewards/ads изолирован от Match MVP. Реальные game
+  runtime, challenge/receipt database constraints, WebView isolation, device accessibility/performance и rollout
+  evidence этим этапом не проверялись и не заявляются. Следующий промпт — `llm/15-mini-game/02-contract-data.md`;
+  он не начат.
