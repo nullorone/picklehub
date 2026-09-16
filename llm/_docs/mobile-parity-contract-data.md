@@ -149,7 +149,8 @@ Web/TMA wire behavior сохраняется: browser cookie/CSRF endpoints и D
 перевода существующих clients, а условные headers backend обязан продолжать строго требовать по session platform.
 Backend-реализация новых endpoints, session boundary, realtime tickets и fail-closed push port описана в
 [mobile parity backend](mobile-parity-backend.md). Expo package/app, secure storage, cache, link resolver и platform
-UI принадлежат этапу 04; наличие backend port не означает выбранного или разрешённого push provider.
+UI реализованы и описаны в [mobile parity frontend](mobile-parity-frontend.md); наличие backend port и client kill
+switch не означает выбранного или разрешённого push provider.
 
 До production остаются gates: clean/upgrade PostgreSQL migration и race tests; refresh loss/reuse/session revoke;
 real iOS/Android Keychain/Keystore/backup checks; provider/legal/residency/retention review и invalid-token feedback;

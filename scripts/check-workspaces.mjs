@@ -7,6 +7,7 @@ const expectedWorkspaces = new Map([
     ['backend', '@picklehub/backend'],
     ['frontend/web', '@picklehub/web'],
     ['frontend/tg', '@picklehub/tg'],
+    ['frontend/mobile', '@picklehub/mobile'],
     ['frontend/packages/analytics', '@picklehub/analytics'],
     ['frontend/packages/api-client', '@picklehub/api-client'],
     ['frontend/packages/domain', '@picklehub/domain'],

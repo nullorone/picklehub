@@ -3835,3 +3835,54 @@ llm/_docs/analytics-plan.md llm/_docs/architecture.md llm/_docs/security-privacy
   незакрытыми, поэтому delivery adapter остаётся выключенным. Expo/client secure storage, lifecycle/background,
   реальные APNs/FCM invalid-token responses, AASA/assetlinks, store privacy labels и реальные устройства также
   остаются gates следующих этапов. Следующий промпт — `llm/14-mobile-parity/04-tma-web.md`; он не начат.
+
+## 2026-09-16 — функциональный паритет mobile, этап 04-tma-web
+
+- Активный промпт: `llm/14-mobile-parity/04-tma-web.md`. Создан отдельный `@picklehub/mobile` Expo/React Native
+  workspace с environment-separated config/EAS profiles, iOS 16+/Android API 29 baseline, native stack/tab
+  navigation и Match MVP surfaces: email auth, onboarding, match/venue list/detail/create, native map и location,
+  chat, inbox, profile/statistics, account/device и safety receipts. WebView, admin, clubs, tournaments,
+  gamification, content, advertising и mini-game не добавлены.
+- Реализован native transport поверх generated DTO: S256 verifier, body-only single-flight refresh rotation,
+  memory-only access token, device-only SecureStore и browser-cookie/Origin/CSRF separation. Deep link/push resolver
+  принимает exact host/closed targets; magic/invite secrets остаются в памяти. Logout/account switch очищают
+  credential, encrypted user cache partition и local push state до сетевого результата.
+- Read-cache использует versioned sensitivity envelope, user partition, TTL 24h/1h/30m и XChaCha20-Poly1305 с
+  SecureStore key. Safety/email/secrets/location не имеют persistent path. Мутации отключены offline без общей
+  очереди или optimistic success. Realtime получает single-use ticket, закрывается в background, reconnects с
+  bounded backoff/jitter и восстанавливается canonical REST snapshot. Push остаётся за runtime kill switch до
+  provider/legal/privacy/residency review; in-app inbox независим.
+- Добавлены 5 unit tests native transport/link resolver и 4 executable mobile client policy tests; root contract
+  lint включает policy. Решения и release gates записаны в `mobile-parity-frontend.md`, workspace README и
+  cross-link contract/data doc. `scripts/check-workspaces.mjs` теперь ожидает девять workspaces.
+
+### Проверки этапа mobile parity 04-tma-web
+
+- `npm test --workspace @picklehub/mobile` — успешно: 2/2 files, 5/5 tests. `node --test
+contracts/scripts/mobile-client-policy.test.mjs` — успешно: 4/4. `npm run contracts:lint` — успешно: TypeSpec,
+  Redocly, 231 REST operations/66 messages, 169/169 contract/policy tests и DOM-free mobile contract typecheck.
+- `npm run workspace:check`, `npm run docs:check` и `npm run format:check` — успешно; девять workspaces, один root
+  lockfile, 140 markdown files и форматирование проходят. Web regression: `npm test --workspace @picklehub/web
+--workspace @picklehub/tg` — успешно, web 14/14 suites и 59/59 tests, TMA 11/11 и 34/34.
+- После восстановления доступа `npm install --ignore-scripts` успешно добавил native dependency graph в единый
+  root lockfile. `npx expo install --check` выявил и после pinning подтвердил совместимые с Expo 55 версии
+  React Native, screens, gesture handler, safe area, maps и location. Слишком широкий исходный semver разрешал
+  `react-native-screens@4.28.0`, из-за чего Metro не компилировал Fabric SearchBar против RN 0.83.
+- Исправлены строгие lint/typecheck ошибки mobile-клиента без ослабления правил: типы React Navigation остаются
+  закрытыми mapped param lists, Expo config не передаёт optional `undefined`, DUPR использует structured link,
+  async cleanup защищён AbortSignal, а shared non-component exports вынесены из Fast Refresh modules.
+  `npm run lint --workspace @picklehub/mobile`, `npm run typecheck --workspace @picklehub/mobile` и
+  `npm test --workspace @picklehub/mobile` успешны: 2/2 files, 5/5 tests.
+- Mobile build теперь экспортирует только целевые native platforms, а не несуществующий web-клиент.
+  `npm run build --workspace @picklehub/mobile` успешно создал отдельные iOS/Android Hermes bundles и проверил
+  оба metadata trees. `npm run build -- --env-mode=loose` успешно выполнил все 9 workspace builds; loose mode нужен
+  только песочнице агента для передачи временного Expo home, поскольку запись в `~/.expo` запрещена.
+- Контракты (231 REST operations/66 messages, 169/169 tests), OpenAPI mock, format, docs (140 файлов), lint,
+  strict typecheck и все 14 test tasks успешны; backend — 47/47 suites и 286/286 tests, web — 14/14 и 59/59,
+  TMA — 11/11 и 34/34. Единый `npm run verify` дважды прерывался только ограничениями песочницы агента:
+  сначала transient `listen EPERM 127.0.0.1` (targeted mock сразу прошёл), затем запретом записи Expo в `~/.expo`;
+  все его стадии успешно повторены отдельно, включая 9/9 builds.
+- Simulator и physical iOS/Android smoke, cold/warm links, lifecycle/cursor gap, backup exclusion,
+  VoiceOver/TalkBack и 200% font scale ещё не проверены. AASA/assetlinks ownership, signing, push/map provider
+  approval, store privacy metadata и legal/residency review также остаются production gates. Следующий промпт
+  `05-verification` не начат.
