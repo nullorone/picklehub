@@ -18,6 +18,10 @@ retention и РФ-residency требуют фактической проверк
 Этот документ задаёт обязательный baseline. Он не является заключением о соответствии закону: публичный запуск
 блокируется до юридической и security-проверки обработки данных и каждого внешнего провайдера.
 
+Консолидированная матрица legal/provider gates, incident severity, RTO/RPO, release stages и текущий `NO-GO`
+описаны в [требованиях к production readiness](production-readiness-requirements.md). Численные сроки этого
+документа остаются предложениями до юридического утверждения и проверяемой реализации очистки во всех хранилищах.
+
 ## Классификация и минимизация данных
 
 - `secret`: session credentials, Telegram init data, magic links, ключи подписи и credentials провайдеров. Они не

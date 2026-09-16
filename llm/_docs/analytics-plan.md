@@ -1,5 +1,11 @@
 # Базовый план продуктовой аналитики
 
+Operational SLI не являются продуктовой аналитикой и не зависят от behavioral consent, но подчиняются
+минимизации, legal basis, РФ-размещению, retention и low-cardinality allowlist. Канонические определения пяти
+критических SLI, предварительные SLO и правила малой выборки находятся в
+[требованиях к production readiness](production-readiness-requirements.md); synthetic traffic всегда отделён от
+реальных попыток и не улучшает пользовательский показатель.
+
 ## Мобильный клиент
 
 React Native/Expo повторяет существующую consent policy, дедупликацию и closed enum taxonomy Match MVP согласно

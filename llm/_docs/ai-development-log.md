@@ -4181,3 +4181,48 @@ test/e2e/mini-game.spec.ts` скомпилировал два сценария, 
   `pg_isready`/`redis-cli` отсутствуют. Поэтому применение mini-game migrations, реальные result/nonce/claim/XP
   races, Redis outage, outbox restart/reconciliation и reward ledger сверка остаются runtime gates и не заявлены
   пройденными. Следующий промпт — `llm/16-production-readiness/01-requirements.md`; он не начат.
+
+## 2026-09-16 — production readiness, этап 01-requirements
+
+- Активный промпт: `llm/16-production-readiness/01-requirements.md`. Создан канонический документ
+  `llm/_docs/production-readiness-requirements.md`; код, TypeSpec/AsyncAPI, generated contracts, Prisma и
+  инфраструктура не менялись. К `16-production-readiness/02-contract-data.md` не переходили.
+- Критический путь разделён на `C0` (аутентификация, вступление, завершение матча), `C1` (поиск, чат) и независимо
+  выключаемый `C2`. Для пяти сценариев определены server-side SLI, предварительные 30-дневные SLO доступности,
+  latency/freshness и бюджеты ошибок. Все цели помечены `PROVISIONAL`: production baseline отсутствует, малая
+  выборка обязана показывать числитель, знаменатель и доверительный интервал. Security/privacy и доменные
+  инварианты имеют нулевой бюджет ошибок.
+- Заданы правила burn-rate и заморозки выпуска, capacity-гипотезы для приглашённого и ограниченного широкого
+  релиза, обязательный тест 2× sustained/4× burst, запас ресурсов и еженедельная сверка фактического роста.
+  Предварительные RTO/RPO разделены по authoritative и rebuildable данным; ни одна цель не считается
+  подтверждённой без restore/reconciliation drill на выбранной инфраструктуре в РФ.
+- Определены export/deletion flow поверх существующего предлагаемого retention registry, severity `SEV-0`–`SEV-3`,
+  реалистичная модель дежурства для малой команды, incident review и деградация Telegram, email, карт, Redis,
+  PostgreSQL, WebSocket, уведомлений, object storage, telemetry и `C2`-функций. Законные сроки не выданы за
+  установленные: их обязан подтвердить юрист по актуальной редакции требований.
+- Rollout проходит внутренний этап, до трёх приглашённых Telegram-сообществ/100 допущенных пользователей,
+  контроль пилота с исходным критерием ≥50% на ≥30 подходящих матчах и ступени 10/25/50/100%. Определены
+  stop/rollback условия, forward-fix граница миграций и совместимость соседних артефактов.
+- Legal/provider checklist охватывает РФ/152-ФЗ, возрастной риск, Telegram, OSM/Overpass, tiles/geocoder, email,
+  контент, рекламу и observability. Все не подтверждённые фактическими evidence строки имеют статус `BLOCKED`;
+  итоговая матрица честно фиксирует `NO-GO` публичного production-запуска. Operations, security/privacy и analytics
+  документы ссылаются на новый источник требований.
+
+### Проверки этапа production-readiness 01-requirements
+
+- `npx prettier --write llm/_docs/production-readiness-requirements.md llm/_docs/operations.md
+llm/_docs/security-privacy.md llm/_docs/analytics-plan.md`, `npm run docs:check` и `git diff --check` — успешно;
+  Markdown lint проверил 146 файлов без ошибок. Финальный `npm run format:check` — успешно, включая 14 TypeSpec
+  файлов.
+- `EXPO_NO_TELEMETRY=1 npm run verify -- --env-mode=loose` успешно прошёл workspace, TypeSpec/Redocly,
+  237 REST operations, 69 AsyncAPI messages, 191/191 policy tests, mobile contract check, compatibility,
+  generated drift и contract typecheck, затем остановился на sandbox `listen EPERM 127.0.0.1` в
+  `contracts:mock:check`. Немедленный отдельный `npm run contracts:mock:check` успешно проверил все опубликованные
+  примеры; исходный общий процесс не выдан за полностью успешный.
+- Оставшаяся цепочка `npm run lint && npm run typecheck && npm test && EXPO_NO_TELEMETRY=1 npm run build --
+--env-mode=loose` — успешно: lint и typecheck 10/10, tests 16/16, builds 10/10, включая iOS/Android Expo exports.
+  Сохраняются прежние неблокирующие warnings web/TMA/MapLibre chunks около 707/668/924 KiB.
+- Критерии этапа выполнены на уровне требований: неизвестные показатели названы гипотезами для измерения, а
+  критические security/legal/provider пробелы запрещают публичный запуск. Нагрузочные измерения, production SLI,
+  backup/restore, incident drill, фактическая РФ-локализация, legal approvals и provider checks этим этапом не
+  выполнялись и остаются `NO-GO`. Следующий промпт — `llm/16-production-readiness/02-contract-data.md`; он не начат.
