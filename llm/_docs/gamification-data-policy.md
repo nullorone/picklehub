@@ -41,9 +41,13 @@ reinstatement ссылается только на reversal. Partial unique inde
 Миграция публикует `GLOBAL_V1` (`1.0.0`): подтверждённая фактическая игра — 100 XP, организация подтверждённого
 обычного матча — 40 XP, допустимый structured review — 15 XP. Для каждого источника максимум три события за UTC
 сутки и десять за UTC неделю. Source enum закрыт: victory, score, payment, login, streak, advertising, complaint и
-неподтверждённый факт не могут быть записаны как источник.
+неподтверждённый факт не могут быть записаны как источник. Этап mini-game аддитивно добавляет отдельный
+`MINI_GAME_DAILY_COMPLETION` только в global rule `2.0.0`: 10 XP, один event/UTC day, пять/UTC week и 30 за
+84-дневный game season. Он не меняет `GLOBAL_V1`, не доступен club configuration/achievement и принимает только
+committed opaque game receipt через gamification port; подробности — в
+[mini-game data policy](mini-game-data-policy.md).
 
-Club definition выбирает те же три source types, enabled/off и coefficient `5..20` десятых, то есть `0.5..2.0` с
+Club definition выбирает только исходные три source types, enabled/off и coefficient `5..20` десятых, то есть `0.5..2.0` с
 шагом `0.1`; XP округляется вниз. Caps неизменны. Level set содержит 1–20 записей, имя 1–30 символов и строго
 возрастающие ordinal/threshold. Backend пропускает имя через NFC/trim и запрещает имитацию staff capability,
 денежные, призовые и азартные обещания; owner/admin проверяется внутри конкретного клуба. SQL не пытается заменить

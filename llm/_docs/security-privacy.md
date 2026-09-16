@@ -880,5 +880,5 @@ native refresh, browser cookie, Telegram init data или произвольно
 popup, arbitrary URL/script, third-party storage и camera/microphone/location/contacts/clipboard/payment permissions.
 Bridge валидирует origin, schema version, message kind/size и lifecycle; неизвестное сообщение закрывается без
 native action. `OPEN_SAFE_ROUTE` принимает только закрытый route enum и после выхода выполняет native authorization/
-refetch, но не доменную мутацию. Точные TTL, CSP и allowlists принадлежат contract/data этапу и не считаются сейчас
-проверенными runtime.
+refetch, но не доменную мутацию. Точные TTL, CSP и allowlists зафиксированы в
+[контракте и политике данных мини-игры](mini-game-data-policy.md), но ещё не считаются проверенными runtime.

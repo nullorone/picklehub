@@ -128,6 +128,17 @@
 [`contracts/README.md`](../../contracts/README.md). Общие security-требования находятся в
 [`security-privacy.md`](security-privacy.md), а направления зависимостей — в [`architecture.md`](architecture.md).
 
+## Mini-game proofs и bounded rewards
+
+- Challenge/result/WebView capability — bearer secrets только в TLS body/header. В database сохраняется keyed
+  SHA-256 hash, а raw value запрещён в URL, log, audit, analytics, outbox и idempotency fingerprint.
+- Session challenge живёт 15 минут, WebView launch capability 60 секунд, restricted game bearer 15 минут,
+  result claim 24 часа. Server/database clock определяет expiry; retry не переносит UTC day/week/season.
+- `GameResult` хранит bounded aggregate counters, но не authoritative score/input trace. Terminal session, receipt,
+  processed task/nonce и outbox commit атомарны; reward/cosmetic compensation append-only.
+- Полные модели, caps, retention, CSP и privacy allowlists описаны в
+  [mini-game data policy](mini-game-data-policy.md).
+
 ## Native credential, push и cache
 
 - Native refresh хранится raw только в secure storage клиента и передаётся в TLS body; database хранит прежний

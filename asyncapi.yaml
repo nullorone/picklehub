@@ -237,6 +237,19 @@ channels:
             AchievementAwardChanged: { $ref: '#/components/messages/AchievementAwardChanged' }
             LeaderboardConsentChanged: { $ref: '#/components/messages/LeaderboardConsentChanged' }
             LeaderboardProjectionChanged: { $ref: '#/components/messages/LeaderboardProjectionChanged' }
+    miniGameEvents:
+        address: mini-game.events.v1
+        title: Internal privacy-minimized mini-game receipt and reward events
+        description: Transactional outbox only, delivered at least once and deduplicated by messageId. Payloads
+            contain opaque receipt/grant/unlock references and closed outcomes only; user/session/task, challenge,
+            nonce, score, counters, mode, timing, cosmetic inventory and abuse reasons are forbidden. The XP
+            consumer reloads an authorized GLOBAL-only grant and applies MINI_GAME_DAILY_COMPLETION policy.
+        servers:
+            - $ref: '#/servers/outbox'
+        messages:
+            MiniGameResultRecorded: { $ref: '#/components/messages/MiniGameResultRecorded' }
+            MiniGameRewardGrantChanged: { $ref: '#/components/messages/MiniGameRewardGrantChanged' }
+            MiniGameCosmeticUnlockChanged: { $ref: '#/components/messages/MiniGameCosmeticUnlockChanged' }
     contentEvents:
         address: content.events.v1
         title: Internal privacy-minimized content publication events
@@ -451,6 +464,17 @@ operations:
             - $ref: '#/channels/gamificationEvents/messages/AchievementAwardChanged'
             - $ref: '#/channels/gamificationEvents/messages/LeaderboardConsentChanged'
             - $ref: '#/channels/gamificationEvents/messages/LeaderboardProjectionChanged'
+    publishMiniGameEvents:
+        action: send
+        title: Publish committed mini-game receipt and reward changes
+        summary: Publish opaque terminal and append-only reward references through the internal outbox.
+        description: Each event commits with its owning record. Consumers deduplicate by messageId, reload through
+            an authorized port and never infer sporting skill or trust from a mini-game outcome.
+        channel: { $ref: '#/channels/miniGameEvents' }
+        messages:
+            - $ref: '#/channels/miniGameEvents/messages/MiniGameResultRecorded'
+            - $ref: '#/channels/miniGameEvents/messages/MiniGameRewardGrantChanged'
+            - $ref: '#/channels/miniGameEvents/messages/MiniGameCosmeticUnlockChanged'
     publishContentEvents:
         action: send
         title: Publish committed article visibility changes
@@ -939,6 +963,37 @@ components:
             contentType: application/json
             correlationId: { location: $message.payload#/correlationId }
             payload: { $ref: '#/components/schemas/LeaderboardProjectionChangedEnvelope' }
+        MiniGameResultRecorded:
+            name: mini-game.result.recorded.v1
+            title: MiniGameResultRecorded
+            summary: One terminal bounded eligibility receipt was committed.
+            contentType: application/json
+            correlationId: { location: $message.payload#/correlationId }
+            payload: { $ref: '#/components/schemas/MiniGameResultRecordedEnvelope' }
+            examples:
+                - name: acceptedResult
+                  payload:
+                      messageId: c181f32c-7b4a-4f35-8f30-c358f278d121
+                      type: mini-game.result.recorded.v1
+                      occurredAt: 2026-09-16T12:00:00.000Z
+                      correlationId: 142f1089-c4e5-4594-8b8d-208d861ba762
+                      data:
+                          receiptId: d181f32c-7b4a-4f35-8f30-c358f278d122
+                          outcome: ACCEPTED
+        MiniGameRewardGrantChanged:
+            name: mini-game.reward-grant.changed.v1
+            title: MiniGameRewardGrantChanged
+            summary: One append-only reward outcome or compensation was committed.
+            contentType: application/json
+            correlationId: { location: $message.payload#/correlationId }
+            payload: { $ref: '#/components/schemas/MiniGameRewardGrantChangedEnvelope' }
+        MiniGameCosmeticUnlockChanged:
+            name: mini-game.cosmetic-unlock.changed.v1
+            title: MiniGameCosmeticUnlockChanged
+            summary: One private fixed cosmetic state transition was committed.
+            contentType: application/json
+            correlationId: { location: $message.payload#/correlationId }
+            payload: { $ref: '#/components/schemas/MiniGameCosmeticUnlockChangedEnvelope' }
         ContentArticlePublished:
             name: content.article.published.v1
             title: ContentArticlePublished
@@ -2616,3 +2671,58 @@ components:
                         generationId: { $ref: '#/components/schemas/Uuid' }
                         snapshotRevision: { type: integer, format: int64, minimum: 0 }
                         outcome: { type: string, enum: [ACTIVATED, FAILED] }
+        MiniGameResultRecordedEnvelope:
+            type: object
+            additionalProperties: false
+            required: [messageId, type, occurredAt, correlationId, data]
+            properties:
+                messageId: { $ref: '#/components/schemas/Uuid' }
+                type: { type: string, const: mini-game.result.recorded.v1 }
+                occurredAt: { $ref: '#/components/schemas/Timestamp' }
+                correlationId: { $ref: '#/components/schemas/Uuid' }
+                causationId:
+                    oneOf: [{ $ref: '#/components/schemas/Uuid' }, { type: 'null' }]
+                data:
+                    type: object
+                    additionalProperties: false
+                    required: [receiptId, outcome]
+                    properties:
+                        receiptId: { $ref: '#/components/schemas/Uuid' }
+                        outcome: { type: string, enum: [ACCEPTED, REJECTED] }
+        MiniGameRewardGrantChangedEnvelope:
+            type: object
+            additionalProperties: false
+            required: [messageId, type, occurredAt, correlationId, data]
+            properties:
+                messageId: { $ref: '#/components/schemas/Uuid' }
+                type: { type: string, const: mini-game.reward-grant.changed.v1 }
+                occurredAt: { $ref: '#/components/schemas/Timestamp' }
+                correlationId: { $ref: '#/components/schemas/Uuid' }
+                causationId:
+                    oneOf: [{ $ref: '#/components/schemas/Uuid' }, { type: 'null' }]
+                data:
+                    type: object
+                    additionalProperties: false
+                    required: [grantId, kind, state]
+                    properties:
+                        grantId: { $ref: '#/components/schemas/Uuid' }
+                        kind: { type: string, enum: [PRACTICE_MARK, COSMETIC, GLOBAL_XP] }
+                        state: { type: string, enum: [PENDING, GRANTED, CAPPED, REJECTED, REVERSED, REINSTATED] }
+        MiniGameCosmeticUnlockChangedEnvelope:
+            type: object
+            additionalProperties: false
+            required: [messageId, type, occurredAt, correlationId, data]
+            properties:
+                messageId: { $ref: '#/components/schemas/Uuid' }
+                type: { type: string, const: mini-game.cosmetic-unlock.changed.v1 }
+                occurredAt: { $ref: '#/components/schemas/Timestamp' }
+                correlationId: { $ref: '#/components/schemas/Uuid' }
+                causationId:
+                    oneOf: [{ $ref: '#/components/schemas/Uuid' }, { type: 'null' }]
+                data:
+                    type: object
+                    additionalProperties: false
+                    required: [unlockId, state]
+                    properties:
+                        unlockId: { $ref: '#/components/schemas/Uuid' }
+                        state: { type: string, enum: [UNLOCKED, REVOKED, REINSTATED] }

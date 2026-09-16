@@ -12,6 +12,7 @@ enum XpSourceKind {
     CONFIRMED_PLAY,
     CONFIRMED_MATCH_ORGANIZED,
     ELIGIBLE_STRUCTURED_REVIEW,
+    MINI_GAME_DAILY_COMPLETION,
 }
 
 enum XpLedgerEntryKind {
@@ -190,7 +191,9 @@ model LeaderboardConsentInput {
 }
 
 model ClubXpTemplate {
+    @doc("Only the three match/contribution sources are valid for CLUB. MINI_GAME_DAILY_COMPLETION is global-only and is rejected in club configuration.")
     sourceKind: XpSourceKind;
+
     enabled: boolean;
     @minValue(5) @maxValue(20) coefficientTenths: int32;
     baseXp: XpAmount;

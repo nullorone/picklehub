@@ -494,4 +494,5 @@ trust score и matchmaking не читают game records или cosmetics.
 Identity подтверждает actor, analytics получает только consented минимизированные события, advertising видит
 только зарегистрированный некритический placement, administration/trust-safety — purpose-bound reason/audit без
 score или input trace. Offline session не создаёт challenge/receipt и остаётся локальной. Точные модели, ключи,
-TTL, события и delete policy принадлежат `15-mini-game/02-contract-data.md`.
+TTL, события и delete policy зафиксированы в
+[контрактах и политике данных мини-игры](mini-game-data-policy.md).

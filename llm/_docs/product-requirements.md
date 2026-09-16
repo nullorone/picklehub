@@ -2477,8 +2477,9 @@ Web/PWA открывает канонический внутренний route �
 Mobile WebView использует ephemeral server-minted game launch capability, а не browser cookies, native refresh,
 Telegram init data или общий JavaScript bridge. Разрешены только versioned сообщения `READY`, `CLOSE`,
 `OPEN_SAFE_ROUTE` и агрегированные health signals; произвольная навигация, download/upload, clipboard, camera,
-microphone, location, contacts, payment и third-party storage запрещены. Точный transport и CSP/sandbox принадлежат
-следующему contract/data этапу.
+microphone, location, contacts, payment и third-party storage запрещены. Точный transport, CSP/sandbox,
+60-секундный capability и 15-минутный game-only bearer зафиксированы в
+[контракте и политике данных](mini-game-data-policy.md).
 
 Assets имеют versioned manifest и budget; game chunk не входит в critical Match MVP bundle. На слабом устройстве
 доступен `CALM`, а автоматическое снижение visual quality не меняет правила. Цели до контрактного этапа: p75
@@ -2513,8 +2514,8 @@ Behavioral start/complete/return и связь с матчевой воронк�
 | MG-AC14 | Analytics consent отсутствует/отозван                      | Идёт игровой раунд и reward claim               | Behavioral events не создаются/не replay; игра, ledger invariants и агрегированный health продолжают работать.        |
 | MG-AC15 | Rollout увеличил game completion, но ухудшил match funnel  | Проверяется заданное окно и зрелая выборка      | Релиз приостанавливается; game engagement, реклама и XP не считаются компенсирующим успехом.                          |
 
-Этап требований завершён после покрытия MG-01–MG-10 и MG-AC1–MG-AC15. Точные DTO, challenge/receipt TTL,
-конфигурационные enum, SQL ledger constraints, XP rule migration, WebView capability/CSP и event schemas принадлежат
-`15-mini-game/02-contract-data.md`; game engine, backend и UI этим этапом не заявлены. Владение уточнено в
+Этап требований завершён после покрытия MG-01–MG-10 и MG-AC1–MG-AC15. DTO, challenge/receipt TTL,
+конфигурационные enum, SQL ledger constraints, XP rule migration, WebView capability/CSP и event schemas теперь
+зафиксированы [этапом contract/data](mini-game-data-policy.md); game engine, backend и UI ещё не заявлены. Владение уточнено в
 [доменной модели](domain-model.md), зависимости — в [архитектуре](architecture.md), данные и abuse boundary — в
 [безопасности](security-privacy.md), измерения — в [плане аналитики](analytics-plan.md).

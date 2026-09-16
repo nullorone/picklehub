@@ -840,6 +840,63 @@ export namespace MatchStartedMessage {
     export type DataRoster = 'MINIMUM' | 'FULL';
 }
 
+export namespace MiniGameCosmeticUnlockChangedMessage {
+    export interface MiniGameCosmeticUnlockChangedEnvelope {
+        messageId: string;
+        type: 'mini-game.cosmetic-unlock.changed.v1';
+        occurredAt: string;
+        correlationId: string;
+        causationId?: string | null;
+        data: Data;
+    }
+
+    export interface Data {
+        unlockId: string;
+        state: DataState;
+    }
+
+    export type DataState = 'UNLOCKED' | 'REVOKED' | 'REINSTATED';
+}
+
+export namespace MiniGameResultRecordedMessage {
+    export interface MiniGameResultRecordedEnvelope {
+        messageId: string;
+        type: 'mini-game.result.recorded.v1';
+        occurredAt: string;
+        correlationId: string;
+        causationId?: string | null;
+        data: Data;
+    }
+
+    export interface Data {
+        receiptId: string;
+        outcome: DataOutcome;
+    }
+
+    export type DataOutcome = 'ACCEPTED' | 'REJECTED';
+}
+
+export namespace MiniGameRewardGrantChangedMessage {
+    export interface MiniGameRewardGrantChangedEnvelope {
+        messageId: string;
+        type: 'mini-game.reward-grant.changed.v1';
+        occurredAt: string;
+        correlationId: string;
+        causationId?: string | null;
+        data: Data;
+    }
+
+    export interface Data {
+        grantId: string;
+        kind: DataKind;
+        state: DataState;
+    }
+
+    export type DataKind = 'PRACTICE_MARK' | 'COSMETIC' | 'GLOBAL_XP';
+
+    export type DataState = 'PENDING' | 'GRANTED' | 'CAPPED' | 'REJECTED' | 'REVERSED' | 'REINSTATED';
+}
+
 export namespace NotificationCreatedMessage {
     export interface NotificationCreatedEnvelope {
         messageId: string;
@@ -1373,6 +1430,10 @@ export type MatchResultDisputedEnvelope = MatchResultDisputedMessage.MatchResult
 export type MatchResultProposedEnvelope = MatchResultProposedMessage.MatchResultProposedEnvelope;
 export type MatchRosterChangedEnvelope = MatchRosterChangedMessage.MatchRosterChangedEnvelope;
 export type MatchStartedEnvelope = MatchStartedMessage.MatchStartedEnvelope;
+export type MiniGameCosmeticUnlockChangedEnvelope =
+    MiniGameCosmeticUnlockChangedMessage.MiniGameCosmeticUnlockChangedEnvelope;
+export type MiniGameResultRecordedEnvelope = MiniGameResultRecordedMessage.MiniGameResultRecordedEnvelope;
+export type MiniGameRewardGrantChangedEnvelope = MiniGameRewardGrantChangedMessage.MiniGameRewardGrantChangedEnvelope;
 export type NotificationCreatedEnvelope = NotificationCreatedMessage.NotificationCreatedEnvelope;
 export type NotificationDeliveryRequestedEnvelope =
     NotificationDeliveryRequestedMessage.NotificationDeliveryRequestedEnvelope;
@@ -1441,6 +1502,9 @@ export type WebSocketMessage =
     | MatchResultProposedEnvelope
     | MatchRosterChangedEnvelope
     | MatchStartedEnvelope
+    | MiniGameCosmeticUnlockChangedEnvelope
+    | MiniGameResultRecordedEnvelope
+    | MiniGameRewardGrantChangedEnvelope
     | NotificationCreatedEnvelope
     | NotificationDeliveryRequestedEnvelope
     | NotificationFanoutRequestedEnvelope

@@ -24,6 +24,10 @@ const sourceCopy: Record<Source, { readonly title: string; readonly reason: stri
         title: 'Полезный отзыв',
         reason: 'За допустимый структурированный отзыв, а не за его оценку или текст.',
     },
+    MINI_GAME_DAILY_COMPLETION: {
+        title: 'Ежедневная мини-игра',
+        reason: 'За первый допустимый раунд дня — без зависимости от счёта, режима или внешних факторов.',
+    },
 };
 
 const globalTemplates: readonly Template[] = [

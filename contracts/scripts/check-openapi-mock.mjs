@@ -280,6 +280,26 @@ try {
             `Unexpected gamification progress mock: ${gamificationProgress.status} ${JSON.stringify(gamificationBody)}`
         );
     }
+
+    const miniGameProgress = await fetch(`http://${host}:${port}/mini-game/progress`, {
+        headers: {
+            'accept-language': 'ru-RU',
+            authorization: `Bearer ${'A'.repeat(43)}`,
+        },
+    });
+    const miniGameBody = await miniGameProgress.json();
+    requireNoStore(miniGameProgress, 'Mini-game progress response');
+    if (
+        miniGameProgress.status !== 200 ||
+        !miniGameBody.season ||
+        !Array.isArray(miniGameBody.goals) ||
+        !Array.isArray(miniGameBody.cosmetics)
+    ) {
+        throw new Error(
+            `Unexpected mini-game progress mock: ${miniGameProgress.status} ${JSON.stringify(miniGameBody)}`
+        );
+    }
+
     const contentFeed = await fetch(`http://${host}:${port}/content/articles?locale=ru-RU&limit=20`, {
         headers: { 'accept-language': 'ru-RU' },
     });
@@ -358,7 +378,7 @@ try {
         );
     }
     console.log(
-        'OpenAPI mock passed: health, identity, venue, match, communication, profile, trust/safety, administration, club, tournament, gamification, content and advertising examples are valid.'
+        'OpenAPI mock passed: health, identity, venue, match, communication, profile, trust/safety, administration, club, tournament, gamification, content, advertising and mini-game examples are valid.'
     );
 } finally {
     child.kill('SIGTERM');

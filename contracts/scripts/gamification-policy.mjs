@@ -67,9 +67,15 @@ export function checkGamificationContract(openApi, asyncApi) {
         assert(openApi.components.schemas[model], `Missing ${model} wire model.`);
     }
     const sources = dereference(openApi, openApi.components.schemas.XpSourceKind).enum;
-    assert.deepEqual(sources, ['CONFIRMED_PLAY', 'CONFIRMED_MATCH_ORGANIZED', 'ELIGIBLE_STRUCTURED_REVIEW']);
+    assert.deepEqual(sources, [
+        'CONFIRMED_PLAY',
+        'CONFIRMED_MATCH_ORGANIZED',
+        'ELIGIBLE_STRUCTURED_REVIEW',
+        'MINI_GAME_DAILY_COMPLETION',
+    ]);
     assert.match(openApi.paths['/gamification/seasons/{seasonId}/leaderboard'].get.description, /explicitly opted-in/u);
     assert.match(openApi.paths['/clubs/{clubId}/gamification/progress'].get.description, /independent/u);
+    assert.match(openApi.components.schemas.ClubXpTemplate.properties.sourceKind.description, /global-only/u);
 
     const channel = asyncApi.channels.gamificationEvents;
     assert.equal(channel?.address, 'gamification.events.v1');

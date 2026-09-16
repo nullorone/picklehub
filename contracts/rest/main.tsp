@@ -13,6 +13,7 @@ import "./tournaments.tsp";
 import "./gamification.tsp";
 import "./content.tsp";
 import "./advertising.tsp";
+import "./mini-game.tsp";
 
 using TypeSpec.Http;
 using TypeSpec.OpenAPI;
@@ -37,7 +38,8 @@ using TypeSpec.OpenAPI;
     #{ name: "Tournaments", description: "Tournament discovery, registration and versioned format execution." },
     #{ name: "Gamification", description: "Private XP progress, achievements and consented seasonal leaderboards." },
     #{ name: "Content", description: "Published editorial articles, self-only bookmarks and staff CMS workflows." },
-    #{ name: "Advertising", description: "Contextual ad decisions, accountable measurement and governed inventory." }
+    #{ name: "Advertising", description: "Contextual ad decisions, accountable measurement and governed inventory." },
+    #{ name: "MiniGame", description: "Short-lived single-player game sessions and capped private rewards." }
 ])
 namespace PickleHub;
 

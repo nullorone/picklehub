@@ -3988,3 +3988,49 @@ llm/_docs/security-privacy.md llm/_docs/analytics-plan.md` — успешно. `
   runtime, challenge/receipt database constraints, WebView isolation, device accessibility/performance и rollout
   evidence этим этапом не проверялись и не заявляются. Следующий промпт — `llm/15-mini-game/02-contract-data.md`;
   он не начат.
+
+## 2026-09-16 — мини-игра, этап 02-contract-data
+
+- Активный промпт: `llm/15-mini-game/02-contract-data.md`. Добавлены platform-neutral TypeSpec-контракты выдачи
+  WebView capability, короткой игровой сессии и immutable task, приёма bounded result, чтения private progress и
+  идемпотентного reward claim. Challenge действует 15 минут, launch capability — 60 секунд, non-refreshable
+  game-only bearer — 15 минут, result proof и replay receipts — 24 часа. Score, input trace, coordinates, device
+  fingerprint и signing secret в DTO отсутствуют; серверная подпись подтверждает только ограниченную low-value
+  eligibility и не выдаётся за доказательство честной client physics.
+- В `asyncapi.yaml` зарегистрирован канал `mini-game.events.v1` с тремя закрытыми событиями для terminal receipt,
+  reward grant и cosmetic unlock. Payload содержит только opaque reference и ограниченный outcome/state; actor,
+  session/task, proof/nonce, counters, amount и cosmetic inventory не публикуются. Сгенерированные OpenAPI,
+  AsyncAPI и TypeScript-типы обновлены генераторами, вручную не редактировались.
+- Prisma schema и migration `20260916130000_mini_game_contract_data` задают immutable конфигурации, непересекающиеся
+  84-дневные сезоны, session/result, processed task/nonce, encrypted idempotency receipts, append-only reward и
+  cosmetic compensation chains. Constraints и deferred triggers обеспечивают single-use/terminal atomic bundle,
+  TTL, арифметику/mode bounds и replay protection; advisory transaction locks сериализуют daily issuance/result и
+  XP caps. Static policy tests не считаются доказательством реальных PostgreSQL races.
+- В закрытый `XpSourceKind` аддитивно добавлен global-only `MINI_GAME_DAILY_COMPLETION`. Immutable rule `2.0.0`
+  начисляет 10 XP не чаще одного раза за UTC-сутки, пяти раз за UTC-неделю и 30 раз за 84-дневный сезон
+  (10/50/300 XP); исторический `GLOBAL_V1` не менялся. Club configuration отклоняет этот source. Mini-game создаёт
+  grant и передаёт opaque reference в gamification port/outbox, но не меняет XP ledger/balance напрямую.
+- Политика данных и WebView boundary описаны в `llm/_docs/mini-game-data-policy.md`; также обновлены architecture,
+  domain model, security/privacy, data conventions, product requirements, gamification policy, contract registry,
+  mobile compatibility и UI-копирайтинг источника XP. Runtime backend, game engine и клиенты относятся к следующим
+  этапам и не создавались. Следующий промпт `llm/15-mini-game/03-backend.md` не начат.
+
+### Проверки этапа mini-game 02-contract-data
+
+- `npm run contracts:lint` — успешно: 237 REST operations, 69 AsyncAPI messages и 179/179 contract/policy tests.
+  `npm run contracts:breaking`, `npm run contracts:generated:check`, `npm run contracts:typecheck`,
+  `npm run contracts:mobile:check` и отдельный `npm run contracts:mock:check` — успешно; mock включает пример
+  mini-game progress.
+- `DATABASE_URL=postgresql://picklehub:picklehub@127.0.0.1:5432/picklehub PRISMA_SCHEMA_ENGINE_BINARY=/private/tmp/picklehub-prisma-engine.UFwKg6/schema-engine
+PRISMA_QUERY_ENGINE_LIBRARY=/usr/bin/true npm exec --workspace @picklehub/backend -- prisma validate --schema
+prisma/schema.prisma` — успешно. `prisma migrate deploy` не смог подключиться к PostgreSQL: `P1001` на
+  `127.0.0.1:5432`; поэтому применение/upgrade SQL и concurrent race tests на реальной БД остаются runtime gate.
+- Targeted lint/typecheck/tests/build backend, API client, web, TMA и mobile успешны. Backend: 47/47 suites и
+  286/286 tests; web: 14/14 files и 59/59 tests; TMA: 11/11 и 34/34; mobile: 3/3 и 12/12.
+- `EXPO_NO_TELEMETRY=1 npm run verify -- --env-mode=loose` прошёл workspace/contract lint, breaking,
+  generated drift и contract typecheck, затем остановился только на sandbox `listen EPERM 127.0.0.1` во время
+  mock. Немедленный отдельный `npm run contracts:mock:check` успешен. Оставшиеся стадии повторены отдельно:
+  `npm run format:check && npm run docs:check && npm run lint && npm run typecheck && npm test &&
+EXPO_NO_TELEMETRY=1 npm run build -- --env-mode=loose` — успешно: 142 Markdown-файла, 9/9 lint, 9/9 typecheck,
+  14/14 test и 9/9 build tasks, включая iOS/Android Expo exports. Сохраняются неблокирующие warnings о web,
+  TMA и MapLibre chunks около 706/667/924 KiB.

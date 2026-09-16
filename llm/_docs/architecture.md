@@ -531,8 +531,9 @@ replay или остановку игры. At-least-once outbox защищён �
 Web/PWA и TMA монтируют bundle в своём shell. Native открывает только выделенный allowlisted HTTPS origin в
 изолированном WebView с ephemeral launch capability. Native refresh/cookie/init data и общий JS bridge туда не
 передаются; navigation, permissions, storage и bridge deny-by-default. Versioned bridge допускает только readiness,
-close, safe-route intent и coarse health. Точные origin, CSP, sandbox, capability exchange и messages сначала
-фиксируются в TypeSpec/политиках следующего этапа.
+close, safe-route intent и coarse health. Exact origin, CSP/sandbox, 60-second single-use capability,
+15-minute game-only bearer и versioned messages зафиксированы в
+[контракте и политике данных](mini-game-data-policy.md).
 
 Game assets имеют отдельный manifest/cache namespace и budget, поэтому deploy/rollback игры не инвалидирует
 critical shell. Offline cache запускает только явно обозначенную тренировку без server rewards; reward mutation не

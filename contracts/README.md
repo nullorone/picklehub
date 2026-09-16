@@ -25,7 +25,7 @@ npm run contracts:check
   operation/message IDs, версионированные envelopes, UTC timestamps, `no-store`, browser CSRF/cookie и безопасный
   payload внутренних identity/venue/match/communication/profile/club/tournament/gamification/content/advertising events,
   admin capability registry и
-  notification jobs.
+  notification jobs и privacy-minimized mini-game receipt/reward events.
   Статические data-policy тесты
   дополнительно удерживают
   обязательные migration constraints, GiST-стратегию, provenance, постоянные merge aliases, вместимость/FIFO и
@@ -44,7 +44,7 @@ npm run contracts:check
   является backend или production fallback.
 - `contracts:mock:check` запускает mock на свободном localhost port, запрашивает representative endpoints health,
   identity, venues, matches, communications, profiles, trust/safety, administration, clubs, tournaments,
-  gamification, content и advertising,
+  gamification, content, advertising и mini-game,
   проверяет status,
   JSON shape и
   `no-store`, включая private progress геймификации.
@@ -167,6 +167,20 @@ finalization/release и cross-session frequency; raw delivery живёт не б
 Provider policy выключен до четырёх актуальных review и передаёт только тот же coarse allowlist. `advertising.events.v1`
 не содержит cap subject, identity, IP/coordinates, URL/query, creative body или fraud evidence. Полное решение — в
 [`advertising-data-policy.md`](../llm/_docs/advertising-data-policy.md).
+
+## Мини-игра
+
+[`rest/mini-game.tsp`](rest/mini-game.tsp) задаёт platform-neutral выдачу 15-минутного signed challenge, bounded
+result без authoritative score, self-only goals/cosmetics и идемпотентный reward claim. Отдельная mobile WebView
+capability одноразова за 60 секунд и обменивается на non-refreshable game-only bearer; raw proof/nonce не входят в
+URL, storage events или logs.
+
+Migration связывает terminal session, receipt, processed task и keyed nonce deferred constraint, сериализует
+daily/weekly/84-day caps и хранит reward/cosmetic reversal/reinstatement append-only. Новый XP source
+`MINI_GAME_DAILY_COMPLETION` доступен только global policy `2.0.0`; игра не пишет balance напрямую.
+`mini-game.events.v1` несёт только opaque receipt/grant/unlock references и closed outcomes. Полное решение,
+retention, CSP и bridge allowlist — в
+[`mini-game-data-policy.md`](../llm/_docs/mini-game-data-policy.md).
 
 ## Административная панель
 

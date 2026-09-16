@@ -2912,6 +2912,7 @@ enum XpSourceKind {
   CONFIRMED_PLAY
   CONFIRMED_MATCH_ORGANIZED
   ELIGIBLE_STRUCTURED_REVIEW
+  MINI_GAME_DAILY_COMPLETION
 
   @@map("xp_source_kind")
 }
@@ -3893,4 +3894,233 @@ model AdvertisingOperationReceipt {
   @@unique([actorScopeHash, method, canonicalPath, idempotencyKey], map: "advertising_operation_receipts_scope_key")
   @@index([expiresAt], map: "advertising_operation_receipts_expiry_idx")
   @@map("advertising_operation_receipts")
+}
+
+// Mini-game data contract. SQL owns challenge/nonce replay safety, terminal receipts and append-only reward chains.
+enum GameMode {
+  STANDARD
+  CALM
+
+  @@map("game_mode")
+}
+
+enum GameSessionState {
+  ISSUED
+  COMPLETED
+  REJECTED
+  EXPIRED
+
+  @@map("game_session_state")
+}
+
+enum GameResultOutcome {
+  ACCEPTED
+  REJECTED
+
+  @@map("game_result_outcome")
+}
+
+enum GameRewardKind {
+  PRACTICE_MARK
+  COSMETIC
+  GLOBAL_XP
+
+  @@map("game_reward_kind")
+}
+
+enum GameRewardState {
+  PENDING
+  GRANTED
+  CAPPED
+  REJECTED
+  REVERSED
+  REINSTATED
+
+  @@map("game_reward_state")
+}
+
+enum GameCosmeticState {
+  UNLOCKED
+  REVOKED
+  REINSTATED
+
+  @@map("game_cosmetic_state")
+}
+
+model GameConfiguration {
+  id                         String   @id @db.Uuid
+  version                    String   @db.VarChar(32)
+  mode                       GameMode
+  activeDurationMilliseconds Int?     @map("active_duration_milliseconds")
+  turnCount                  Int?     @map("turn_count") @db.SmallInt
+  pauseResumeTtlSeconds      Int      @default(600) @map("pause_resume_ttl_seconds") @db.SmallInt
+  definitionSnapshot         Json     @map("definition_snapshot")
+  snapshotHash               String   @map("snapshot_hash") @db.Char(64)
+  publishedAt                DateTime @map("published_at") @db.Timestamptz(3)
+  createdAt                  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@unique([version, mode], map: "game_configurations_version_mode_key")
+  @@map("game_configurations")
+}
+
+model GameSeason {
+  id                     String   @id @db.Uuid
+  version                String   @unique(map: "game_seasons_version_key") @db.VarChar(32)
+  configurationVersion   String   @map("configuration_version") @db.VarChar(32)
+  startsAt               DateTime @map("starts_at") @db.Timestamptz(3)
+  endsAt                 DateTime @map("ends_at") @db.Timestamptz(3)
+  goalSnapshot           Json     @map("goal_snapshot")
+  cosmeticSnapshot       Json     @map("cosmetic_snapshot")
+  definitionSnapshotHash String   @map("definition_snapshot_hash") @db.Char(64)
+  createdAt              DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([startsAt, endsAt], map: "game_seasons_window_idx")
+  @@map("game_seasons")
+}
+
+model GameSession {
+  id                   String           @id @db.Uuid
+  userId               String           @map("user_id") @db.Uuid
+  configurationId      String           @map("configuration_id") @db.Uuid
+  seasonId             String           @map("season_id") @db.Uuid
+  taskId               String           @unique(map: "game_sessions_task_key") @map("task_id") @db.Uuid
+  mode                 GameMode
+  state                GameSessionState @default(ISSUED)
+  challengeHash        String           @unique(map: "game_sessions_challenge_key") @map("challenge_hash") @db.Char(64)
+  signatureKeyVersion  Int              @map("signature_key_version")
+  dailyWindowStartedAt DateTime         @map("daily_window_started_at") @db.Timestamptz(3)
+  issuedAt             DateTime         @default(now()) @map("issued_at") @db.Timestamptz(3)
+  expiresAt            DateTime         @map("expires_at") @db.Timestamptz(3)
+  terminalAt           DateTime?        @map("terminal_at") @db.Timestamptz(3)
+
+  @@index([userId, dailyWindowStartedAt, issuedAt], map: "game_sessions_daily_cap_idx")
+  @@index([expiresAt, state], map: "game_sessions_expiry_idx")
+  @@map("game_sessions")
+}
+
+model GameLaunchCapability {
+  id                   String    @id @db.Uuid
+  userId               String    @map("user_id") @db.Uuid
+  nativeSessionId      String    @map("native_session_id") @db.Uuid
+  origin               String    @db.VarChar(255)
+  capabilityHash       String    @unique(map: "game_launch_capabilities_capability_key") @map("capability_hash") @db.Char(64)
+  signatureKeyVersion  Int       @map("signature_key_version")
+  issuedAt             DateTime  @default(now()) @map("issued_at") @db.Timestamptz(3)
+  expiresAt            DateTime  @map("expires_at") @db.Timestamptz(3)
+  consumedAt           DateTime? @map("consumed_at") @db.Timestamptz(3)
+  accessTokenHash      String?   @unique(map: "game_launch_capabilities_access_token_key") @map("access_token_hash") @db.Char(64)
+  accessTokenExpiresAt DateTime? @map("access_token_expires_at") @db.Timestamptz(3)
+
+  @@index([expiresAt, consumedAt], map: "game_launch_capabilities_expiry_idx")
+  @@map("game_launch_capabilities")
+}
+
+model GameResult {
+  id                         String            @id @db.Uuid
+  sessionId                  String            @unique(map: "game_results_session_key") @map("session_id") @db.Uuid
+  userId                     String            @map("user_id") @db.Uuid
+  taskId                     String            @map("task_id") @db.Uuid
+  outcome                    GameResultOutcome
+  reasonCode                 String            @map("reason_code") @db.VarChar(48)
+  mode                       GameMode
+  configurationVersion       String            @map("configuration_version") @db.VarChar(32)
+  activeDurationMilliseconds Int               @map("active_duration_milliseconds")
+  pausedDurationMilliseconds Int               @map("paused_duration_milliseconds")
+  attempts                   Int               @db.SmallInt
+  successfulReturns          Int               @map("successful_returns") @db.SmallInt
+  targetHits                 Int               @map("target_hits") @db.SmallInt
+  streakBonuses              Int               @map("streak_bonuses") @db.SmallInt
+  leftTargetHits             Int               @map("left_target_hits") @db.SmallInt
+  centerTargetHits           Int               @map("center_target_hits") @db.SmallInt
+  rightTargetHits            Int               @map("right_target_hits") @db.SmallInt
+  resultProofHash            String?           @unique(map: "game_results_proof_key") @map("result_proof_hash") @db.Char(64)
+  acceptedAt                 DateTime?         @map("accepted_at") @db.Timestamptz(3)
+  rewardClaimExpiresAt       DateTime?         @map("reward_claim_expires_at") @db.Timestamptz(3)
+  retentionExpiresAt         DateTime          @map("retention_expires_at") @db.Timestamptz(3)
+  createdAt                  DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([userId, acceptedAt], map: "game_results_daily_cap_idx")
+  @@index([retentionExpiresAt], map: "game_results_retention_idx")
+  @@map("game_results")
+}
+
+model RewardGrant {
+  id                    String          @id @db.Uuid
+  userId                String          @map("user_id") @db.Uuid
+  receiptId             String          @map("receipt_id") @db.Uuid
+  seasonId              String          @map("season_id") @db.Uuid
+  kind                  GameRewardKind
+  state                 GameRewardState
+  semanticKey           String          @map("semantic_key") @db.VarChar(96)
+  goalCode              String?         @map("goal_code") @db.VarChar(40)
+  cosmeticCode          String?         @map("cosmetic_code") @db.VarChar(40)
+  amount                Int
+  windowStartedAt       DateTime        @map("window_started_at") @db.Timestamptz(3)
+  compensationOfGrantId String?         @map("compensation_of_grant_id") @db.Uuid
+  reasonCode            String?         @map("reason_code") @db.VarChar(48)
+  createdAt             DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  retentionExpiresAt    DateTime        @map("retention_expires_at") @db.Timestamptz(3)
+
+  @@unique([userId, seasonId, semanticKey, state], map: "reward_grants_semantic_state_key")
+  @@index([receiptId, createdAt], map: "reward_grants_receipt_idx")
+  @@index([compensationOfGrantId], map: "reward_grants_compensation_idx")
+  @@index([retentionExpiresAt], map: "reward_grants_retention_idx")
+  @@map("reward_grants")
+}
+
+model CosmeticUnlock {
+  id                 String            @id @db.Uuid
+  userId             String            @map("user_id") @db.Uuid
+  seasonId           String            @map("season_id") @db.Uuid
+  cosmeticCode       String            @map("cosmetic_code") @db.VarChar(40)
+  state              GameCosmeticState
+  sourceGrantId      String            @map("source_grant_id") @db.Uuid
+  supersedesUnlockId String?           @map("supersedes_unlock_id") @db.Uuid
+  createdAt          DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@unique([sourceGrantId], map: "cosmetic_unlocks_source_grant_key")
+  @@index([userId, seasonId, cosmeticCode, createdAt], map: "cosmetic_unlocks_owner_idx")
+  @@map("cosmetic_unlocks")
+}
+
+model ProcessedGameTask {
+  taskId      String   @id @map("task_id") @db.Uuid
+  sessionId   String   @unique(map: "processed_game_tasks_session_key") @map("session_id") @db.Uuid
+  receiptId   String   @unique(map: "processed_game_tasks_receipt_key") @map("receipt_id") @db.Uuid
+  payloadHash String   @map("payload_hash") @db.Char(64)
+  processedAt DateTime @default(now()) @map("processed_at") @db.Timestamptz(3)
+  expiresAt   DateTime @map("expires_at") @db.Timestamptz(3)
+
+  @@index([expiresAt], map: "processed_game_tasks_expiry_idx")
+  @@map("processed_game_tasks")
+}
+
+model ProcessedGameNonce {
+  nonceHash   String   @id @map("nonce_hash") @db.Char(64)
+  sessionId   String   @map("session_id") @db.Uuid
+  requestHash String   @map("request_hash") @db.Char(64)
+  receiptId   String   @map("receipt_id") @db.Uuid
+  processedAt DateTime @default(now()) @map("processed_at") @db.Timestamptz(3)
+  expiresAt   DateTime @map("expires_at") @db.Timestamptz(3)
+
+  @@index([expiresAt], map: "processed_game_nonces_expiry_idx")
+  @@map("processed_game_nonces")
+}
+
+model MiniGameOperationReceipt {
+  id                   String   @id @db.Uuid
+  actorUserId          String   @map("actor_user_id") @db.Uuid
+  idempotencyKey       String   @map("idempotency_key") @db.Uuid
+  method               String   @db.VarChar(8)
+  canonicalPath        String   @map("canonical_path") @db.VarChar(200)
+  requestFingerprint   String   @map("request_fingerprint") @db.Char(64)
+  responseStatus       Int      @map("response_status") @db.SmallInt
+  responseCiphertext   Bytes    @map("response_ciphertext")
+  encryptionKeyVersion Int      @map("encryption_key_version")
+  createdAt            DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  expiresAt            DateTime @default(dbgenerated("CURRENT_TIMESTAMP + INTERVAL '24 hours'")) @map("expires_at") @db.Timestamptz(3)
+
+  @@unique([actorUserId, method, canonicalPath, idempotencyKey], map: "mini_game_operation_receipts_scope_key")
+  @@index([expiresAt], map: "mini_game_operation_receipts_expiry_idx")
+  @@map("mini_game_operation_receipts")
 }

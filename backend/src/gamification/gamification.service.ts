@@ -448,7 +448,11 @@ export class GamificationService {
         dailyEventCap: number;
         weeklyEventCap: number;
     }): ClubXpTemplateDto {
-        return { ...rule };
+        const { sourceKind } = rule;
+        if (sourceKind === 'MINI_GAME_DAILY_COMPLETION') {
+            throw new Error('Mini-game XP is global-only');
+        }
+        return { ...rule, sourceKind };
     }
     private scope(kind: GamificationScopeKind, clubId: string | null): object {
         return { kind, clubId };
