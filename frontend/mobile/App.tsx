@@ -152,9 +152,7 @@ export default function App() {
 
     useEffect(() => {
         const receive = (url: string) =>
-            void handleResolvedLink(
-                resolveUniversalLink(url, runtimeConfig.linkHost, runtimeConfig.appEnvironment !== 'production')
-            );
+            void handleResolvedLink(resolveUniversalLink(url, runtimeConfig.linkHost, runtimeConfig.developmentScheme));
         void Linking.getInitialURL().then((url) => {
             if (url !== null) receive(url);
         });

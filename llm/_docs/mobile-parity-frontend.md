@@ -38,10 +38,11 @@ physical VoiceOver/TalkBack и Dynamic Type evidence остаются verificati
 ## Проверки и открытые gates
 
 Policy tests доказывают отсутствие browser cookie/CSRF transport, закрытые link/push targets, SecureStore session
-и отсутствие safety в cache allowlist. Unit tests покрывают native refresh headers/rotation и resolver. Реальные
-Expo dependencies не были установлены в текущем окружении: корпоративный registry вернул `E401`, публичный npm —
-proxy `E407`. Поэтому lockfile, Expo typecheck/export, simulator/device launch и native dependency API compatibility
-не объявляются проверенными; это блокирует критерий запуска iOS/Android до восстановления registry access.
+и отсутствие safety в cache allowlist. Unit tests покрывают native refresh headers/rotation, resolver и realtime
+lifecycle. После восстановления registry access Expo dependencies установлены в единый lockfile; совместимость
+версий подтверждена `expo install --check`, а lint, strict typecheck, unit tests и Hermes export для iOS/Android
+проходят. Simulator/physical-device launch и native accessibility по-прежнему не объявляются проверенными.
 
-Открыты также provider/legal/residency, AASA/assetlinks ownership, signing, store privacy metadata, реальные push
-tokens, object upload, accessibility/device matrix, backup extraction и end-to-end lifecycle/cursor-gap tests.
+Verification evidence, production export audit и список незакрытых Match MVP/device/store gates зафиксированы в
+[проверке mobile parity](mobile-parity-verification.md). Наличие готовых Maestro flows не означает их успешный
+device-run.

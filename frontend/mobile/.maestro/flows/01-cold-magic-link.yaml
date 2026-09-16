@@ -1,0 +1,21 @@
+appId: ru.picklehub.mobile.dev
+name: Cold start magic link
+tags:
+    - auth
+    - ios
+    - android
+env:
+    E2E_EMAIL: ${E2E_EMAIL}
+    E2E_MAILBOX_URL: ${E2E_MAILBOX_URL}
+---
+- launchApp:
+      clearState: true
+- tapOn: Email
+- inputText: ${E2E_EMAIL}
+- tapOn: Получить ссылку
+- assertVisible: Если адрес можно использовать, письмо придёт в ближайшее время.
+- runScript: ../scripts/read-magic-link.js
+- openLink: ${output.magicLink}
+- assertVisible: Продолжить вход
+- tapOn: Продолжить вход
+- assertVisible: Матчи

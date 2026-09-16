@@ -14,6 +14,11 @@
 @picklehub/mobile`, `npm test --workspace @picklehub/mobile` и `npm run build --workspace @picklehub/mobile`.
 Подписывающие данные и provider credentials не хранятся в репозитории.
 
+Production export проверяется отдельно командой `npm run build:release:audit --workspace @picklehub/mobile`: без
+явного HTTPS API URL production config завершается ошибкой, а готовые iOS/Android bundles проверяются на dev URL,
+test stubs, private keys и signing artifacts. Device E2E лежат в `.maestro/flows`; они требуют изолированный mailbox,
+подготовленные test data и установленный Maestro и не входят в production bundle.
+
 ## Security boundary
 
 Refresh credential и login verifier находятся только в SecureStore с device-only accessibility, access token —

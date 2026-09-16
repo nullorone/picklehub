@@ -74,4 +74,50 @@ describe('native API transport', () => {
         await client.authenticatedCall('/me');
         expect(calls[1]?.[1]?.headers).toMatchObject({ Authorization: 'Bearer access-secret' });
     });
+
+    it('coalesces concurrent refreshes and persists rotation before exposing access', async () => {
+        const secureStore = store();
+        let release: ((value: Response) => void) | undefined;
+        const fetch: typeof globalThis.fetch = vi.fn(
+            () =>
+                new Promise<Response>((resolve) => {
+                    release = resolve;
+                })
+        );
+        const client = createMobileApiClient({ baseUrl: 'https://api.picklehub.ru/v1', fetch, secureStore });
+        const first = client.bootstrap();
+        const second = client.bootstrap();
+        await vi.waitFor(() => {
+            expect(fetch).toHaveBeenCalledOnce();
+        });
+        release?.(response(session));
+        await Promise.all([first, second]);
+        expect(Reflect.get(secureStore, 'replaceRefreshToken')).toHaveBeenCalledOnce();
+        expect(client.getAccessToken()).toBe('access-secret');
+    });
+
+    it('clears the local session when refresh rotation fails', async () => {
+        const secureStore = store();
+        const fetch: typeof globalThis.fetch = vi.fn(() =>
+            Promise.resolve(response({ error: { code: 'SESSION_REVOKED', message: 'Revoked.' } }, 401))
+        );
+        const client = createMobileApiClient({ baseUrl: 'https://api.picklehub.ru/v1', fetch, secureStore });
+        await expect(client.bootstrap()).rejects.toMatchObject({ code: 'SESSION_REVOKED', status: 401 });
+        expect(Reflect.get(secureStore, 'clear')).toHaveBeenCalledOnce();
+        expect(client.getAccessToken()).toBeUndefined();
+    });
+
+    it('makes local logout final even when server revocation is unavailable', async () => {
+        const secureStore = store();
+        const fetch: typeof globalThis.fetch = vi
+            .fn()
+            .mockResolvedValueOnce(response(session))
+            .mockRejectedValueOnce(new Error('offline'));
+        const client = createMobileApiClient({ baseUrl: 'https://api.picklehub.ru/v1', fetch, secureStore });
+        await client.bootstrap();
+        await expect(client.logout()).resolves.toBeUndefined();
+        expect(Reflect.get(secureStore, 'clear')).toHaveBeenCalled();
+        expect(client.getAccessToken()).toBeUndefined();
+        expect(client.getUserId()).toBeUndefined();
+    });
 });

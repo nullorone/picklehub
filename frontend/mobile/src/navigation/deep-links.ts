@@ -12,11 +12,7 @@ export type ResolvedLink =
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 const secret = /^[A-Za-z0-9_-]{16,512}$/u;
 
-export function resolveUniversalLink(
-    rawUrl: string,
-    canonicalHost: string,
-    allowDevelopmentScheme = false
-): ResolvedLink {
+export function resolveUniversalLink(rawUrl: string, canonicalHost: string, developmentScheme?: string): ResolvedLink {
     let url: URL;
     try {
         url = new URL(rawUrl);
@@ -24,7 +20,7 @@ export function resolveUniversalLink(
         return { kind: 'UNSUPPORTED' };
     }
     const isCanonical = url.protocol === 'https:' && url.hostname === canonicalHost;
-    const isDevelopment = allowDevelopmentScheme && url.protocol === 'picklehub-dev:';
+    const isDevelopment = developmentScheme !== undefined && url.protocol === `${developmentScheme}:`;
     if (!isCanonical && !isDevelopment) return { kind: 'UNSUPPORTED' };
 
     const segments = url.pathname.split('/').filter(Boolean);

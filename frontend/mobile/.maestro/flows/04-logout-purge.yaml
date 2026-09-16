@@ -1,0 +1,14 @@
+appId: ru.picklehub.mobile.dev
+name: Logout returns to neutral authentication
+tags:
+    - session
+    - ios
+    - android
+---
+- launchApp
+- tapOn: Профиль
+- tapOn: Аккаунт
+- tapOn: Выйти
+- assertVisible: Локальные данные этого аккаунта будут удалены.
+- tapOn: Выйти
+- assertVisible: Вход в PickleHub

@@ -3886,3 +3886,48 @@ contracts/scripts/mobile-client-policy.test.mjs` — успешно: 4/4. `npm r
   VoiceOver/TalkBack и 200% font scale ещё не проверены. AASA/assetlinks ownership, signing, push/map provider
   approval, store privacy metadata и legal/residency review также остаются production gates. Следующий промпт
   `05-verification` не начат.
+
+## 2026-09-16 — функциональный паритет mobile, этап 05-verification
+
+- Активный промпт: `llm/14-mobile-parity/05-verification.md`. Добавлен release-readiness документ
+  `mobile-parity-verification.md` с автоматизированными доказательствами, полной матрицей Match MVP, device/
+  accessibility checklist и явным решением `NO-GO`. Проверка не выдала существующие native surfaces за полный
+  паритет: venue revision/report, match edit/publish/cancel/roster/result/feedback, chat edit/delete/report,
+  notification settings, profile edit/avatar/privacy и safety report/appeal/block/delete completion остаются
+  `BLOCKED` как пробелы реализации этапа 04.
+- Добавлены четыре Maestro flow: cold magic link через изолированный mailbox и тот же device verifier, warm и
+  terminated match deep link, location denial с list/search fallback и local logout. Production bundle не получает
+  test hook или stub. Device suite не запускался: `maestro` и `adb` отсутствуют, а `xcrun simctl` недоступен; нет
+  подключённых физических устройств и test mailbox. Поэтому cold/warm links, реальный duplicate push, backup,
+  VoiceOver/TalkBack, 200% font, reduced motion и small-screen остаются подтверждёнными блокировками.
+- Mobile unit suite расширен с 5 до 12 проверок: single-flight refresh, atomic credential rotation, fail-closed
+  refresh/logout и WebSocket authenticate/subscribe cursor, cursor-gap REST resync, close без фонового reconnect.
+  Verification policy закрепляет Maestro/release evidence, offline mutation guards, accessibility semantics и
+  запрет скрывать blocked gates.
+- Production config завершается ошибкой без явного API URL и не включает development scheme. Новый
+  `build:release:audit` создаёт Hermes export обеих платформ, проверяет public Expo config и 38 export files на
+  emulator/local URL, development/test markers и private-key headers; репозиторий сканируется на signing material.
+  IPA/AAB и signing не создавались, submission в магазины не выполнялась. Crash/performance provider не добавлен:
+  его redacted adapter, dashboard, privacy/legal/residency review остаются gate.
+
+### Проверки этапа mobile parity 05-verification
+
+- `npm test --workspace @picklehub/mobile` — успешно: 3/3 files, 12/12 tests. `npm run lint --workspace
+@picklehub/mobile` и `npm run typecheck --workspace @picklehub/mobile` — успешно.
+- `node --test contracts/scripts/mobile-client-policy.test.mjs
+contracts/scripts/mobile-verification-policy.test.mjs` — успешно: 8/8; полный `npm run contracts:lint` — успешно:
+  231 REST operations, 66 messages, 173/173 contract/policy tests и mobile contract typecheck.
+- `EXPO_NO_TELEMETRY=1 npm run build:release:audit --workspace @picklehub/mobile` — успешно: production public
+  config, iOS/Android Hermes bundles и 38 файлов прошли audit. Первый запуск без `EXPO_NO_TELEMETRY=1` остановился
+  на sandbox `EPERM` при попытке Expo создать `~/.expo`; это не ошибка приложения.
+- `npm run format:check`, `npm run docs:check`, `npm run lint`, `npm run typecheck` и `npm test` — успешно:
+  форматирование/141 markdown files, 9/9 lint tasks, 9/9 typecheck tasks и 14/14 test tasks; backend 47/47 suites и
+  286/286 tests, mobile 12/12. `EXPO_NO_TELEMETRY=1 npm run build -- --env-mode=loose` — успешно: 9/9 builds.
+- `EXPO_NO_TELEMETRY=1 npm run verify` прошёл workspace и contract lint/breaking/generated/typecheck, но был
+  остановлен sandbox-запретом `listen EPERM 127.0.0.1` на `contracts:mock:check`; все следующие стадии выполнены
+  отдельно выше. `npm run test:e2e --workspace @picklehub/mobile` ожидаемо завершился `maestro: command not found` и
+  зафиксирован как device gate, а не успешный E2E.
+- Публикация отдельно авторизуема и не выполнялась. AASA/assetlinks ownership, реальные APNs/FCM и map provider,
+  signed IPA/AAB audit, privacy manifests/store disclosures, account deletion/support pages, provider/legal/
+  residency review и вся physical device/accessibility matrix остаются обязательными release gates. Следующий
+  промпт `llm/15-mini-game/01-requirements.md` не начат.

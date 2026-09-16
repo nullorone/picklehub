@@ -5,9 +5,11 @@
     "main": "index.ts",
     "scripts": {
         "build": "expo export --platform ios --output-dir dist/ios && expo export --platform android --output-dir dist/android && node scripts/check-build.mjs",
+        "build:release:audit": "APP_ENV=production EXPO_PUBLIC_API_URL=https://api.picklehub.ru/v1 expo export --platform ios --output-dir dist/ios && APP_ENV=production EXPO_PUBLIC_API_URL=https://api.picklehub.ru/v1 expo export --platform android --output-dir dist/android && APP_ENV=production EXPO_PUBLIC_API_URL=https://api.picklehub.ru/v1 expo config --type public --json > dist/public-config.json && node scripts/check-release.mjs",
         "dev": "expo start",
         "lint": "eslint src App.tsx app.config.ts index.ts --max-warnings=0",
         "test": "vitest run",
+        "test:e2e": "maestro test .maestro/flows",
         "typecheck": "tsc --noEmit -p tsconfig.json"
     },
     "dependencies": {

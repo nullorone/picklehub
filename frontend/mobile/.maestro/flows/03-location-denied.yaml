@@ -1,0 +1,15 @@
+appId: ru.picklehub.mobile.dev
+name: Location denial keeps venue fallback
+tags:
+    - permissions
+    - ios
+    - android
+---
+- launchApp:
+      permissions:
+          location: deny
+- tapOn: Площадки
+- tapOn: Рядом со мной
+- assertVisible: Доступ не выдан. Используйте поиск или перемещайте карту вручную.
+- assertVisible: Название или район
+- assertVisible: Список

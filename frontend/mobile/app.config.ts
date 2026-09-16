@@ -5,6 +5,10 @@ const productionLinkHost = 'picklehub.ru';
 export default ({ config }: ConfigContext): ExpoConfig => {
     const environment = process.env.APP_ENV === 'production' ? 'production' : 'development';
     const isProduction = environment === 'production';
+    const apiUrl = process.env.EXPO_PUBLIC_API_URL;
+    if (isProduction && apiUrl === undefined) {
+        throw new Error('EXPO_PUBLIC_API_URL is required for a production mobile export.');
+    }
 
     return {
         ...config,
@@ -41,8 +45,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
             ['expo-location', { locationWhenInUsePermission: 'Показать ближайшие площадки.' }],
         ],
         extra: {
-            apiUrl: process.env.EXPO_PUBLIC_API_URL ?? 'http://10.0.2.2:3000/v1',
+            apiUrl: apiUrl ?? 'http://10.0.2.2:3000/v1',
             appEnvironment: environment,
+            ...(isProduction ? {} : { developmentScheme: 'picklehub-dev' }),
             linkHost: productionLinkHost,
             pushEnabled: false,
         },

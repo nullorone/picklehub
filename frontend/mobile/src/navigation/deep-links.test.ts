@@ -23,6 +23,16 @@ describe('mobile deep-link allowlist', () => {
         });
     });
 
+    it('keeps the development scheme behind explicit runtime configuration', () => {
+        expect(resolveUniversalLink(`picklehub-dev:/matches/${matchId}`, 'picklehub.ru')).toEqual({
+            kind: 'UNSUPPORTED',
+        });
+        expect(resolveUniversalLink(`picklehub-dev:/matches/${matchId}`, 'picklehub.ru', 'picklehub-dev')).toEqual({
+            destination: { kind: 'MATCH', matchId },
+            kind: 'DESTINATION',
+        });
+    });
+
     it('rejects arbitrary push routes and accepts only the neutral payload', () => {
         expect(resolvePushPayload({ action: 'OPEN_URL', notificationId: matchId, schemaVersion: 1 })).toEqual({
             kind: 'UNSUPPORTED',

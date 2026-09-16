@@ -1,0 +1,16 @@
+appId: ru.picklehub.mobile.dev
+name: Warm start allowlisted match link
+tags:
+    - links
+    - ios
+    - android
+env:
+    E2E_MATCH_ID: ${E2E_MATCH_ID}
+---
+- launchApp
+- assertVisible: Матчи
+- openLink: https://picklehub.ru/matches/${E2E_MATCH_ID}
+- assertVisible: Матч
+- stopApp
+- openLink: https://picklehub.ru/matches/${E2E_MATCH_ID}
+- assertVisible: Матч
