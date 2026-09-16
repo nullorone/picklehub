@@ -28,6 +28,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=production-dependencies /app/node_modules ./node_modules
 COPY --from=build /app/node_modules/.prisma ./node_modules/.prisma
+COPY package.json ./package.json
 COPY --from=build /app/backend/dist ./backend/dist
 COPY --from=build /app/backend/prisma ./backend/prisma
 COPY --from=build /app/backend/package.json ./backend/package.json

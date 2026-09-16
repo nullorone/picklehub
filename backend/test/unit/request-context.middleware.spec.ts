@@ -55,4 +55,22 @@ describe('RequestContextMiddleware', () => {
         expect(headers.get('X-Trace-ID')).toMatch(/^[0-9a-f]{32}$/u);
         expect([...headers.values()]).not.toContain('secret');
     });
+
+    it.each([
+        '00-00000000000000000000000000000000-0123456789abcdef-01',
+        '00-0123456789abcdef0123456789abcdef-0000000000000000-01',
+    ])('rejects W3C traceparent with a forbidden zero identifier: %s', (traceparent) => {
+        const service = new RequestContextService();
+        const middleware = new RequestContextMiddleware(service);
+        const headers = new Map<string, string>();
+        const request = { headers: { traceparent } } as unknown as Request;
+        const response = {
+            setHeader: (name: string, value: string) => headers.set(name, value),
+        } as unknown as Response;
+
+        middleware.use(request, response, jest.fn());
+
+        expect(headers.get('X-Trace-ID')).toMatch(/^[0-9a-f]{32}$/u);
+        expect(headers.get('X-Trace-ID')).not.toBe(traceparent.split('-')[1]);
+    });
 });

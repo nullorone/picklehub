@@ -36,6 +36,7 @@ export class OperationsController {
         @Headers('x-operations-key') suppliedKey: string | undefined,
         @Res({ passthrough: true }) response: Response
     ): Promise<string> {
+        response.setHeader('Cache-Control', 'no-store');
         const expectedKey = this.environment.OPERATIONS_METRICS_KEY;
         if (
             expectedKey === undefined ||
@@ -45,7 +46,6 @@ export class OperationsController {
             throw new UnauthorizedException();
         }
 
-        response.setHeader('Cache-Control', 'no-store');
         response.setHeader('Content-Type', 'application/openmetrics-text; version=1.0.0; charset=utf-8');
         response.setHeader('X-Metrics-Schema-Version', '1');
         try {

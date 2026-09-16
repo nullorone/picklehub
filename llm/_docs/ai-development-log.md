@@ -4322,3 +4322,19 @@ npm exec --workspace @picklehub/backend -- prisma validate --schema prisma/schem
   managed PITR/restore и object/outbox reconciliation, alert delivery, provider/exporter integration, capacity,
   secret rotation, legal approvals и доказательство РФ-регионов требуют внешней инфраструктуры и владельцев.
   Следующий промпт — `llm/16-production-readiness/04-tma-web.md`; он не начат.
+
+### Дополнительный аудит этапа production-readiness 03-backend
+
+- Повторная ревизия обнаружила четыре локальных расхождения и закрыла их: runtime/migration image теперь содержит
+  корневой workspace manifest для фактически используемой `npm --workspace` release-команды; нейтральный `401`
+  metrics всегда получает контрактный `Cache-Control: no-store`; Overpass считает HTTP/JSON failure внутри circuit
+  breaker, а не только сетевой reject; W3C `traceparent` отклоняет запрещённые нулевые trace/parent ID. Добавлены
+  регрессии controller, provider metrics и trace parsing; production API/event contracts не менялись.
+- Backend `typecheck`, `lint`, полный unit run и `build` успешны: 53/53 suites и 308/308 tests после добавления
+  регрессии metrics controller. Отдельный targeted run трёх затронутых suites — 9/9 tests. `contracts:lint`
+  (238 REST operations, 69 messages, 194/194 policy/data tests), `contracts:breaking`,
+  `contracts:generated:check` и `contracts:typecheck` успешны.
+- Local, production-placeholder и drill Compose config успешны; shell syntax backup/restore scripts, Grafana JSON и
+  Prometheus/Compose YAML проверены. `npm run format:check`, `npm run docs:check`, `npm run workspace:check` и
+  `git diff --check` успешны. `docker info` не получил доступ к Docker Desktop socket (`operation not permitted`),
+  поэтому фактическая сборка/инспекция image и restore drill с живыми PostgreSQL/Redis не заявляются пройденными.

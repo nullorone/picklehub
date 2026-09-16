@@ -60,8 +60,8 @@ export class OverpassAdapter extends VenueCatalogImportPort {
         let lastError: unknown;
         for (let attempt = 0; attempt < 3; attempt += 1) {
             try {
-                const response = await this.breaker.execute(() =>
-                    fetch(endpoint, {
+                const payload = await this.breaker.execute(async () => {
+                    const response = await fetch(endpoint, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/x-www-form-urlencoded',
@@ -69,13 +69,13 @@ export class OverpassAdapter extends VenueCatalogImportPort {
                         },
                         body: new URLSearchParams({ data: query }),
                         signal: AbortSignal.timeout(Math.max(this.environment.DEPENDENCY_TIMEOUT_MS, 5000)),
-                    })
-                );
-                if (!response.ok) throw new Error(`OVERPASS_HTTP_${String(response.status)}`);
-                const payload = (await response.json()) as {
-                    osm3s?: { timestamp_osm_base?: string };
-                    elements?: OverpassElement[];
-                };
+                    });
+                    if (!response.ok) throw new Error(`OVERPASS_HTTP_${String(response.status)}`);
+                    return (await response.json()) as {
+                        osm3s?: { timestamp_osm_base?: string };
+                        elements?: OverpassElement[];
+                    };
+                });
                 const observedAt = new Date();
                 const sourceVersion = payload.osm3s?.timestamp_osm_base ?? observedAt.toISOString();
                 return {

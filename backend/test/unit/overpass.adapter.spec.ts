@@ -139,6 +139,18 @@ describe('OverpassAdapter', () => {
         });
     });
 
+    it('reports HTTP failures to the circuit breaker before retrying', async () => {
+        jest.useFakeTimers({ now: new Date('2026-09-10T10:00:00.000Z') });
+        jest.spyOn(globalThis, 'fetch').mockResolvedValueOnce(response(503)).mockResolvedValueOnce(response());
+        const metrics = { observeProvider: jest.fn() };
+        const result = new OverpassAdapter(environment(), metrics as never).fetch(scope);
+
+        await jest.advanceTimersByTimeAsync(500);
+        await expect(result).resolves.toBeDefined();
+        expect(metrics.observeProvider).toHaveBeenNthCalledWith(1, 'overpass', 'failure', 'closed');
+        expect(metrics.observeProvider).toHaveBeenNthCalledWith(2, 'overpass', 'success', 'closed');
+    });
+
     it('enforces the configured interval between successive imports', async () => {
         jest.useFakeTimers({ now: new Date('2026-09-10T10:00:00.000Z') });
         const fetchMock = jest.spyOn(globalThis, 'fetch').mockImplementation(() => Promise.resolve(response()));
