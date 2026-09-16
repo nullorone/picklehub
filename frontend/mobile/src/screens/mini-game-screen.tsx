@@ -9,17 +9,14 @@ import { uuidV4 } from '../platform/uuid';
 import { Button, Loading, Screen, Status } from '../ui/components';
 import { textStyles } from '../ui/styles';
 import type { RootParams } from './main-tabs';
-import { parseBridgeMessage, type SafeGameRoute } from './mini-game-bridge';
+import {
+    acceptUniqueBridgeMessage,
+    isAllowedGameNavigation,
+    isExpectedGameOrigin,
+    type SafeGameRoute,
+} from './mini-game-bridge';
 
 type Props = NativeStackScreenProps<RootParams, 'MiniGame'>;
-
-function sameOrigin(url: string): boolean {
-    try {
-        return new URL(url).origin === runtimeConfig.miniGameOrigin;
-    } catch {
-        return false;
-    }
-}
 
 export function MiniGameScreen({ navigation }: Props) {
     const { api, online, onLogout } = useAppServices();
@@ -92,19 +89,23 @@ export function MiniGameScreen({ navigation }: Props) {
         else navigation.replace('Main', { screen: route === 'MATCH_LIST' ? 'Matches' : 'Profile' });
     };
     const onMessage = (event: WebViewMessageEvent) => {
-        const envelope = parseBridgeMessage(event.nativeEvent.data);
-        if (!envelope || seenMessages.current.has(envelope.messageId)) {
+        if (!isExpectedGameOrigin(event.nativeEvent.url, runtimeConfig.miniGameOrigin)) {
             reject();
             return;
         }
-        seenMessages.current.add(envelope.messageId);
+        const envelope = acceptUniqueBridgeMessage(event.nativeEvent.data, seenMessages.current);
+        if (!envelope) {
+            reject();
+            return;
+        }
         if (envelope.type === 'READY_V1') setReady(true);
         else if (envelope.type === 'CLOSE_V1') close();
         else if (envelope.type === 'OPEN_SAFE_ROUTE_V1') {
             void navigateSafeRoute(envelope.payload.route as SafeGameRoute);
         }
     };
-    const allowNavigation = (request: WebViewNavigation) => request.url === 'about:blank' || sameOrigin(request.url);
+    const allowNavigation = (request: WebViewNavigation) =>
+        isAllowedGameNavigation(request.url, runtimeConfig.miniGameOrigin);
 
     const visibleError = online
         ? error

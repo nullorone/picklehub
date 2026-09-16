@@ -4143,3 +4143,41 @@ test && npm run build -- --env-mode=loose` — успешно: 143 Markdown-фа
   WKWebView/Android navigation/logout/crash tests, VoiceOver/TalkBack/200% zoom/contrast matrix, p75 ready ≤2.5 s,
   long-task/memory/crash-free telemetry, а также прежние database/Redis/residency gates rewards. Следующий промпт —
   `llm/15-mini-game/05-verification.md`; он не начат.
+
+## 2026-09-16 — мини-игра, этап 05-verification
+
+- Активный промпт: `llm/15-mini-game/05-verification.md`. Добавлены verification model/unit tests для
+  детерминированного engine, формулы очков, impossible counters, UTC day/week, replay/cap simulation, pause/blur,
+  reduced motion, opt-in sound, offline practice и ad-free critical phases. Root contract suite получил пять
+  mini-game verification policy tests; production Playwright canary покрывает общий web/TMA runtime на 1280×720 и
+  360×720, result minimization, pause/resume и удаление уже показанной рекламы во время игры.
+- Проверка обнаружила дефект `CALM`: клиентский 450-миллисекундный throttle противоречил режиму без ограничения
+  реакции. Ограничение оставлено только для `STANDARD`; быстрые 20 ходов теперь закреплены component/browser
+  сценарием. Mobile navigation validator вынесен в тестируемую функцию и отклоняет другую scheme/origin, похожий
+  subdomain, wrong message origin и invalid URL; bridge tests расширены duplicate ID, unknown version/type, extra
+  fields и arbitrary route payload.
+- Добавлен `llm/_docs/mini-game-verification.md` с матрицей evidence, PostgreSQL concurrency/reward-ledger drill,
+  viewport/accessibility/device/performance matrix и честным `NO-GO` для production rewards. Награды должны оставаться
+  выключены до живых PostgreSQL/Redis/outbox race tests, dedicated-origin headers, physical WebView, РФ-размещения,
+  retention/deletion/backup и performance evidence. Mini-game не влияет на спортивную статистику или Match MVP.
+
+### Проверки этапа mini-game 05-verification
+
+- Целевые проверки успешны: mini-game 2/2 files и 7/7 tests; mobile 4/4 и 17/17; backend verification/policy 2/2
+  suites; новый static policy 5/5; `npm run test:e2e:typecheck` успешен. Targeted lint и strict typecheck backend,
+  mini-game и mobile также успешны.
+- `npm run test:e2e:build` успешно создал production web/TMA builds. Общий lazy game chunk — 14 509 bytes web и
+  14 514 bytes TMA, ниже 100 KiB; web PWA precache содержит versioned chunk. `npx playwright test
+test/e2e/mini-game.spec.ts` скомпилировал два сценария, но оба были заблокированы до первого шага: локальный Chrome
+  завершился `SIGABRT`, а sandbox запретил kill (`EPERM`). Browser assertions не выданы за пройденные.
+- `EXPO_NO_TELEMETRY=1 npm run verify -- --env-mode=loose` прошёл workspace check, TypeSpec/Redocly, 191/191
+  contract/policy tests, mobile contract check, compatibility, generated drift и contract typecheck, затем ожидаемо
+  остановился на `listen EPERM 127.0.0.1` в OpenAPI mock. Оставшиеся стадии выполнены отдельно: format/docs/diff —
+  успешно (145 Markdown-файлов, 14 TypeSpec-файлов); root lint и typecheck — 10/10; `npm test` — 16/16 tasks,
+  backend 50/50 suites и 302/302 tests; root build — 10/10 с iOS/Android Expo exports. Сохраняются прежние
+  неблокирующие warnings основных web/TMA/MapLibre chunks около 707/668/924 KiB.
+- Prisma schema validation с локальным engine успешна. `prisma migrate deploy` не подключился к PostgreSQL
+  (`P1001` на `127.0.0.1:5432`); `docker info` заблокирован sandbox-доступом к daemon socket (`EPERM`), а локальные
+  `pg_isready`/`redis-cli` отсутствуют. Поэтому применение mini-game migrations, реальные result/nonce/claim/XP
+  races, Redis outage, outbox restart/reconciliation и reward ledger сверка остаются runtime gates и не заявлены
+  пройденными. Следующий промпт — `llm/16-production-readiness/01-requirements.md`; он не начат.

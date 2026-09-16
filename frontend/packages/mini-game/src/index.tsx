@@ -299,7 +299,7 @@ export function MiniGameScreen({ channel, client, online, onClose }: MiniGameScr
     const hit = useCallback(() => {
         if (phase !== 'PLAYING') return;
         const now = performance.now();
-        if (now - lastStrike.current < 450) return;
+        if (mode === 'STANDARD' && now - lastStrike.current < 450) return;
         lastStrike.current = now;
         if (!startTracked.current && gameSession && !practice) {
             startTracked.current = true;

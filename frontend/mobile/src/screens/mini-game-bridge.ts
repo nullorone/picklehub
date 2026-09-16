@@ -11,6 +11,18 @@ const messageIdPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3
 const safeRoutes = new Set<SafeGameRoute>(['MATCH_CREATE', 'MATCH_LIST', 'PROFILE_SELF']);
 const healthBuckets = new Set(['GOOD', 'DEGRADED', 'FAILED']);
 
+export function isExpectedGameOrigin(url: string, expectedOrigin: string): boolean {
+    try {
+        return new URL(url).origin === expectedOrigin;
+    } catch {
+        return false;
+    }
+}
+
+export function isAllowedGameNavigation(url: string, expectedOrigin: string): boolean {
+    return url === 'about:blank' || isExpectedGameOrigin(url, expectedOrigin);
+}
+
 function exactKeys(value: object, expected: readonly string[]): boolean {
     const actual = Object.keys(value).sort();
     const sortedExpected = [...expected].sort();
@@ -55,4 +67,11 @@ export function parseBridgeMessage(raw: string): GameBridgeEnvelope | undefined 
         return undefined;
     }
     return envelope as GameBridgeEnvelope;
+}
+
+export function acceptUniqueBridgeMessage(raw: string, seenMessages: Set<string>): GameBridgeEnvelope | undefined {
+    const envelope = parseBridgeMessage(raw);
+    if (!envelope || seenMessages.has(envelope.messageId)) return undefined;
+    seenMessages.add(envelope.messageId);
+    return envelope;
 }
