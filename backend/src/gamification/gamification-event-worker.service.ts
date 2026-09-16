@@ -18,6 +18,7 @@ interface EventPayload {
         reviewId?: unknown;
         reviewRevision?: unknown;
         membershipId?: unknown;
+        grantId?: unknown;
     };
 }
 
@@ -79,6 +80,10 @@ export class GamificationEventWorkerService implements OnApplicationBootstrap, O
                     membership.clubId,
                     membership.state === 'ACTIVE' ? null : (membership.endedAt ?? new Date())
                 );
+            return;
+        }
+        if (job.type === 'mini-game.reward-grant.changed.v1' && typeof payload.data?.grantId === 'string') {
+            await this.projection.reconcileMiniGameGrant(messageId, payload.data.grantId, hash);
         }
     }
 }

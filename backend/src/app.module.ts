@@ -22,6 +22,7 @@ import { TournamentsModule } from './tournaments/tournaments.module';
 import { GamificationModule } from './gamification/gamification.module';
 import { ContentModule } from './content/content.module';
 import { AdvertisingModule } from './advertising/advertising.module';
+import { MiniGameModule } from './mini-game/mini-game.module';
 
 @Module({
     imports: [
@@ -47,6 +48,7 @@ import { AdvertisingModule } from './advertising/advertising.module';
         GamificationModule,
         ContentModule,
         AdvertisingModule,
+        MiniGameModule,
     ],
 })
 export class AppModule {}

@@ -83,7 +83,7 @@ CREATE INDEX "game_seasons_window_idx" ON "game_seasons" ("starts_at", "ends_at"
 
 CREATE TABLE "game_sessions" (
     "id" UUID PRIMARY KEY,
-    "user_id" UUID NOT NULL REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE RESTRICT,
+    "user_id" UUID NOT NULL REFERENCES "identity_users"("id") ON DELETE RESTRICT ON UPDATE RESTRICT,
     "configuration_id" UUID NOT NULL REFERENCES "game_configurations"("id") ON DELETE RESTRICT ON UPDATE RESTRICT,
     "season_id" UUID NOT NULL REFERENCES "game_seasons"("id") ON DELETE RESTRICT ON UPDATE RESTRICT,
     "task_id" UUID NOT NULL,
@@ -114,7 +114,7 @@ CREATE INDEX "game_sessions_expiry_idx" ON "game_sessions" ("expires_at", "state
 
 CREATE TABLE "game_launch_capabilities" (
     "id" UUID PRIMARY KEY,
-    "user_id" UUID NOT NULL REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE RESTRICT,
+    "user_id" UUID NOT NULL REFERENCES "identity_users"("id") ON DELETE RESTRICT ON UPDATE RESTRICT,
     "native_session_id" UUID NOT NULL REFERENCES "identity_sessions"("id") ON DELETE CASCADE ON UPDATE RESTRICT,
     "origin" VARCHAR(255) NOT NULL,
     "capability_hash" CHAR(64) NOT NULL,
@@ -145,7 +145,7 @@ CREATE INDEX "game_launch_capabilities_expiry_idx"
 CREATE TABLE "game_results" (
     "id" UUID PRIMARY KEY,
     "session_id" UUID NOT NULL REFERENCES "game_sessions"("id") ON DELETE RESTRICT ON UPDATE RESTRICT,
-    "user_id" UUID NOT NULL REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE RESTRICT,
+    "user_id" UUID NOT NULL REFERENCES "identity_users"("id") ON DELETE RESTRICT ON UPDATE RESTRICT,
     "task_id" UUID NOT NULL,
     "outcome" "game_result_outcome" NOT NULL,
     "reason_code" VARCHAR(48) NOT NULL,
@@ -219,7 +219,7 @@ CREATE INDEX "processed_game_nonces_expiry_idx" ON "processed_game_nonces" ("exp
 
 CREATE TABLE "reward_grants" (
     "id" UUID PRIMARY KEY,
-    "user_id" UUID NOT NULL REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE RESTRICT,
+    "user_id" UUID NOT NULL REFERENCES "identity_users"("id") ON DELETE RESTRICT ON UPDATE RESTRICT,
     "receipt_id" UUID NOT NULL REFERENCES "game_results"("id") ON DELETE RESTRICT ON UPDATE RESTRICT,
     "season_id" UUID NOT NULL REFERENCES "game_seasons"("id") ON DELETE RESTRICT ON UPDATE RESTRICT,
     "kind" "game_reward_kind" NOT NULL,
@@ -266,7 +266,7 @@ CREATE INDEX "reward_grants_retention_idx" ON "reward_grants" ("retention_expire
 
 CREATE TABLE "cosmetic_unlocks" (
     "id" UUID PRIMARY KEY,
-    "user_id" UUID NOT NULL REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE RESTRICT,
+    "user_id" UUID NOT NULL REFERENCES "identity_users"("id") ON DELETE RESTRICT ON UPDATE RESTRICT,
     "season_id" UUID NOT NULL REFERENCES "game_seasons"("id") ON DELETE RESTRICT ON UPDATE RESTRICT,
     "cosmetic_code" VARCHAR(40) NOT NULL CHECK (
         "cosmetic_code" IN ('SEASON_CARD_BACKGROUND', 'BALL_COLOR', 'BALL_TRAIL', 'GAME_PROFILE_FRAME')

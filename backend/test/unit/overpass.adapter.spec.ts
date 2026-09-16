@@ -61,6 +61,13 @@ function environment(): Environment {
         PROFILE_DUPR_ALLOWED_PATH_PATTERN: '^/player/[^/]+/?$',
         PROFILE_DUPR_OUTBOUND_ENABLED: 'false',
         ADVERTISING_ASSET_BASE_URL: 'https://localhost/assets/advertising',
+        MINI_GAME_SIGNING_KEY: 'test-mini-game-signing-key-change-me-0001',
+        MINI_GAME_ENCRYPTION_KEY: '13579bdf2468ace013579bdf2468ace013579bdf2468ace013579bdf2468ace0',
+        MINI_GAME_ORIGIN: 'https://game.localhost',
+        MINI_GAME_REWARDS_ENABLED: 'true',
+        MINI_GAME_RU_RESIDENCY_CONFIRMED: 'false',
+        MINI_GAME_DAILY_SESSION_LIMIT: 20,
+        MINI_GAME_DAILY_RESULT_LIMIT: 10,
     };
 }
 

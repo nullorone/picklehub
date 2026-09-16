@@ -176,6 +176,60 @@ export class GamificationProjectionService {
         });
     }
 
+    async reconcileMiniGameGrant(messageId: string, grantId: string, payloadHash: string): Promise<void> {
+        const incoming = await this.prisma.rewardGrant.findUnique({ where: { id: grantId } });
+        if (incoming === null || incoming.kind !== 'GLOBAL_XP') return;
+        const reversal =
+            incoming.state === 'REINSTATED' && incoming.compensationOfGrantId !== null
+                ? await this.prisma.rewardGrant.findUnique({ where: { id: incoming.compensationOfGrantId } })
+                : null;
+        const rootId =
+            incoming.state === 'REVERSED'
+                ? incoming.compensationOfGrantId
+                : incoming.state === 'REINSTATED'
+                  ? (reversal?.compensationOfGrantId ?? null)
+                  : incoming.id;
+        if (rootId === null) return;
+        const revision = incoming.state === 'REVERSED' ? 2 : incoming.state === 'REINSTATED' ? 3 : 1;
+        await this.consume(
+            messageId,
+            'mini-game.reward-grant.changed.v1',
+            rootId,
+            revision,
+            payloadHash,
+            async (tx) => {
+                const root = await tx.rewardGrant.findUnique({ where: { id: rootId } });
+                if (root === null || root.kind !== 'GLOBAL_XP' || root.state !== 'GRANTED' || root.amount !== 10)
+                    return [];
+                const result = await tx.gameResult.findUnique({ where: { id: root.receiptId } });
+                if (result?.acceptedAt === null || result?.acceptedAt === undefined) return [];
+                const latestReversal = await tx.rewardGrant.findFirst({
+                    where: { compensationOfGrantId: root.id, state: 'REVERSED' },
+                    orderBy: { createdAt: 'desc' },
+                });
+                const reinstated =
+                    latestReversal === null
+                        ? null
+                        : await tx.rewardGrant.findFirst({
+                              where: { compensationOfGrantId: latestReversal.id, state: 'REINSTATED' },
+                          });
+                if (latestReversal !== null && reinstated === null) {
+                    await this.reverseSource(tx, root.id, 'MINI_GAME_REWARD_REVERSED');
+                    return [];
+                }
+                return [
+                    {
+                        userId: root.userId,
+                        sourceKind: 'MINI_GAME_DAILY_COMPLETION',
+                        sourceEventId: root.id,
+                        occurredAt: result.acceptedAt,
+                        scope: { kind: 'GLOBAL', clubId: null },
+                    },
+                ];
+            }
+        );
+    }
+
     async freezeClubMember(userId: string, clubId: string, frozenAt: Date | null): Promise<void> {
         await this.prisma.$transaction(async (tx) => {
             await tx.xpBalance.updateMany({

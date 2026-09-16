@@ -74,7 +74,12 @@ export class OutboxQueueService implements OnModuleDestroy {
                 removeOnFail: { age: 604_800, count: 100_000 },
             });
         }
-        if (data.type.startsWith('match.') || data.type.startsWith('review.') || data.type.startsWith('club.')) {
+        if (
+            data.type.startsWith('match.') ||
+            data.type.startsWith('review.') ||
+            data.type.startsWith('club.') ||
+            data.type === 'mini-game.reward-grant.changed.v1'
+        ) {
             await this.gamificationQueue.add('reconcile-gamification-source.v1', data, {
                 jobId: data.eventId,
                 attempts: this.maxAttempts,

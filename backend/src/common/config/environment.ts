@@ -97,6 +97,21 @@ const environmentSchema = z
             .regex(/^[1-9][0-9]*\.[0-9]+\.[0-9]+$/u)
             .optional(),
         ADVERTISING_ASSET_BASE_URL: httpsUrl.default('https://localhost/assets/advertising'),
+        MINI_GAME_SIGNING_KEY: z.string().min(32).default('local-mini-game-signing-key-change-me-0001'),
+        MINI_GAME_ENCRYPTION_KEY: z
+            .string()
+            .regex(/^[a-f0-9]{64}$/u)
+            .default('13579bdf2468ace013579bdf2468ace013579bdf2468ace013579bdf2468ace0'),
+        MINI_GAME_ORIGIN: z
+            .url()
+            .refine((value) => /^https:\/\/[^/?#]+$/u.test(value), {
+                message: 'Mini-game origin must be one exact HTTPS origin',
+            })
+            .default('https://game.localhost'),
+        MINI_GAME_REWARDS_ENABLED: z.enum(['true', 'false']).default('true'),
+        MINI_GAME_RU_RESIDENCY_CONFIRMED: z.enum(['true', 'false']).default('false'),
+        MINI_GAME_DAILY_SESSION_LIMIT: z.coerce.number().int().min(1).max(20).default(20),
+        MINI_GAME_DAILY_RESULT_LIMIT: z.coerce.number().int().min(1).max(10).default(10),
     })
     .superRefine((environment, context) => {
         if (environment.NODE_ENV === 'production' && environment.REDIS_NAMESPACE === 'local') {
@@ -116,6 +131,28 @@ const environmentSchema = z
                 code: 'custom',
                 path: ['IDENTITY_HMAC_KEY'],
                 message: 'Production identity secrets must be explicitly configured',
+            });
+        }
+        if (
+            environment.NODE_ENV === 'production' &&
+            (environment.MINI_GAME_SIGNING_KEY.startsWith('local-') ||
+                environment.MINI_GAME_ENCRYPTION_KEY.startsWith('13579bdf2468ace0'))
+        ) {
+            context.addIssue({
+                code: 'custom',
+                path: ['MINI_GAME_SIGNING_KEY'],
+                message: 'Production mini-game secrets must be explicitly configured',
+            });
+        }
+        if (
+            environment.NODE_ENV === 'production' &&
+            environment.MINI_GAME_REWARDS_ENABLED === 'true' &&
+            environment.MINI_GAME_RU_RESIDENCY_CONFIRMED !== 'true'
+        ) {
+            context.addIssue({
+                code: 'custom',
+                path: ['MINI_GAME_RU_RESIDENCY_CONFIRMED'],
+                message: 'Production mini-game rewards require confirmed Russian data residency',
             });
         }
         if (

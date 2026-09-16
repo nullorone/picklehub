@@ -4034,3 +4034,63 @@ prisma/schema.prisma` — успешно. `prisma migrate deploy` не смог 
 EXPO_NO_TELEMETRY=1 npm run build -- --env-mode=loose` — успешно: 142 Markdown-файла, 9/9 lint, 9/9 typecheck,
   14/14 test и 9/9 build tasks, включая iOS/Android Expo exports. Сохраняются неблокирующие warnings о web,
   TMA и MapLibre chunks около 706/667/924 KiB.
+
+## 2026-09-16 — мини-игра, этап 03-backend
+
+- Активный промпт: `llm/15-mini-game/03-backend.md`. Создан изолированный `MiniGameModule` со всеми шестью
+  опубликованными маршрутами: WebView launch/exchange, reward-eligible session, bounded result, private progress и
+  reward claim. Browser `WEB/TMA` сохраняет Origin/context/CSRF boundary, native launch доступен только
+  server-known `MOBILE`, а 15-минутный game bearer lookup-ом связан с исходной native session и не принимается
+  другими controller. Все ответы private/no-store, все мутации требуют UUIDv4 idempotency key; replay response
+  хранится 24 часа только как AES-256-GCM ciphertext.
+- Добавлен отдельный HMAC/AES key boundary. Compact signed challenge связывает actor/session/task/configuration/
+  season/mode/issued-at/expiry и укладывается в wire limit; 60-секундная capability и result proof также
+  purpose-bound. В PostgreSQL сохраняются только keyed hashes raw challenge/result proof/client nonce/capability.
+  Общая logger redaction дополнена `challengeProof`, `resultProof`, `nonce` и `capability`.
+- Submit transaction берёт session row lock и keyed nonce advisory lock, проверяет owner, 15-минутный TTL,
+  immutable config/mode, `STANDARD=90000 ms`, `CALM=20 turns`, counter arithmetic и coarse rate bound. Terminal
+  result, processed task/nonce, session transition и privacy-minimized outbox commit атомарно. Impossible result
+  сохраняет безопасную нормализованную форму с `REJECTED`, не score/input trace. Daily issue/result locks и
+  настраиваемые limits не могут превысить SQL hard caps 20/10.
+- Reward claim сериализуется на `user + season`, независимо создаёт practice marks, fixed cosmetics и global XP,
+  соблюдает semantic uniqueness и caps 10/day, 50/week, 300/84-day season. Mini-game не пишет XP ledger/balance:
+  `mini-game.reward-grant.changed.v1` теперь направляется в gamification worker, который reloads authorized grant,
+  дедуплицирует source/revision и применяет `MINI_GAME_DAILY_COMPLETION`. Append-only reversal/reinstatement
+  сходятся в том же порту и пишут минимальный audit.
+- Redis rate limits используют отдельный hashed namespace и fail closed только для game rewards; PostgreSQL
+  остаётся replay/cap truth. Добавлены low-cardinality metrics без actor/session/mode/score/counters/device. Worker
+  ежечасно завершает expired sessions и очищает 24-часовые task/nonce/operation receipts и истёкшие launch/access
+  capabilities. Audited reward switch и production gate требуют отдельные keys, exact HTTPS origin и подтверждение
+  РФ-размещения перед `MINI_GAME_REWARDS_ENABLED=true`.
+- Migration `20260916160000_mini_game_backend` публикует immutable configurations `1.0.0` и два смежных сезона до
+  2027-03-03; следующий сезон требует reviewed migration, request-time автопродления нет. В contract/data migration
+  исправлены пять ошибочных FK `users → identity_users`, без чего её нельзя применить к фактической схеме. Полная
+  реализация и runtime gates описаны в `llm/_docs/mini-game-backend.md`; game engine/UI этап 04 не начинался.
+- Добавлены unit tests compact proof/tamper/AES и bounded result policy, а также четыре обязательных backend policy
+  tests в root `contracts:lint`. Backend regression теперь 49/49 suites и 294/294 tests; snapshots не добавлялись и
+  проверки не ослаблялись.
+
+### Проверки этапа mini-game 03-backend
+
+- `npm run contracts:lint` — успешно: 237 REST operations, 69 AsyncAPI messages и 183/183 policy/data/backend/
+  verification tests, включая 4/4 новых mini-game backend checks. Compatibility, generated drift, contract/mobile
+  typecheck также прошли внутри `npm run verify` до mock.
+- `PRISMA_SCHEMA_ENGINE_BINARY=/private/tmp/picklehub-prisma-engine.UFwKg6/schema-engine
+PRISMA_QUERY_ENGINE_LIBRARY=/usr/bin/true npm exec --workspace @picklehub/backend -- prisma validate --schema
+prisma/schema.prisma` — успешно. `prisma migrate deploy` не подключился к PostgreSQL (`P1001` на
+  `127.0.0.1:5432`), поэтому применение обеих mini-game migrations и реальные concurrent races не заявляются
+  проверенными.
+- Targeted backend `lint`, strict `typecheck`, unit tests и `build` — успешно. `node --test
+contracts/scripts/mini-game-backend-policy.test.mjs` — 4/4 успешно. `git diff --check` — успешно.
+- `npm run verify -- --env-mode=loose` прошёл workspace check, TypeSpec/Redocly, 183 policy tests, breaking/generated/
+  typecheck и остановился только на sandbox `listen EPERM 127.0.0.1` в OpenAPI mock. Два отдельных повтора
+  `npm run contracts:mock:check` получили тот же sandbox-запрет; assertions не запускались и mock не выдан за
+  пройденный.
+- Оставшаяся точная цепочка `npm run format:check && npm run docs:check && npm run lint && npm run typecheck && npm
+test && npm run build -- --env-mode=loose` — успешно: 143 Markdown-файла, 9/9 lint, 9/9 typecheck, 14/14 test и
+  9/9 build tasks; backend 49/49 suites и 294/294 tests, web 14/14 и 59/59, TMA 11/11 и 34/34, mobile 3/3 и 12/12.
+  Сохраняются прежние неблокирующие chunk warnings около 706/667/924 KiB.
+- Остаются gates: реальное применение/upgrade SQL и PostgreSQL/Redis concurrency/outage/restart, outbox
+  at-least-once compensation, secret rotation, retention/backup cycle, РФ-размещение и device WebView Origin/CSP/
+  navigation/logout. До их закрытия production rewards должны оставаться выключены. Следующий промпт —
+  `llm/15-mini-game/04-tma-web.md`; он не начат.
