@@ -1,0 +1,133 @@
+.mini-game-screen {
+    display: grid;
+    width: min(100% - 2rem, 58rem);
+    margin: 1.5rem auto;
+    gap: 1rem;
+}
+
+.mini-game-header,
+.mini-game-hud,
+.mini-game-controls,
+.mini-game-lanes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.mini-game-header h1,
+.mini-game-card h2,
+.mini-game-progress h2 {
+    margin: 0;
+}
+
+.mini-game-eyebrow,
+.mini-game-practice {
+    margin: 0;
+    color: var(--text-muted, #4a5955);
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.mini-game-card,
+.mini-game-play,
+.mini-game-progress,
+.mini-game-status,
+.mini-game-practice {
+    padding: 1rem;
+    border: 1px solid var(--border, #ccd5d0);
+    border-radius: 1rem;
+    background: var(--surface, #fff);
+}
+
+.mini-game-card,
+.mini-game-play,
+.mini-game-progress,
+.mini-game-result {
+    display: grid;
+    gap: 1rem;
+}
+
+.mini-game-mode-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+}
+
+.mini-game-mode-grid button {
+    display: grid;
+    min-height: 6rem;
+    gap: 0.35rem;
+    text-align: left;
+}
+
+.mini-game-mode-grid button[aria-pressed='true'],
+.mini-game-lanes button[aria-pressed='true'] {
+    border: 3px solid var(--primary, #12634f);
+}
+
+.mini-game-canvas {
+    width: 100%;
+    height: auto;
+    border-radius: 0.8rem;
+    background: #145b49;
+    touch-action: none;
+}
+
+.mini-game-controls button,
+.mini-game-lanes button,
+.mini-game-primary,
+.mini-game-close {
+    min-height: 2.75rem;
+    padding: 0.65rem 1rem;
+}
+
+.mini-game-hit,
+.mini-game-primary {
+    color: #fff;
+    border-color: #12634f;
+    background: #12634f;
+    font-weight: 800;
+}
+
+.mini-game-hit {
+    min-width: 8rem;
+    min-height: 4rem !important;
+}
+
+.mini-game-text-equivalent {
+    padding: 0.75rem;
+    border-radius: 0.75rem;
+    background: var(--surface-strong, #edf2ef);
+}
+
+.mini-game-pause {
+    display: grid;
+    gap: 0.75rem;
+    padding: 1.25rem;
+    border: 3px solid var(--primary, #12634f);
+    border-radius: 1rem;
+}
+
+.mini-game-score {
+    margin: 0;
+    font-size: clamp(2.5rem, 10vw, 5rem);
+    font-weight: 900;
+}
+
+@media (max-width: 560px) {
+    .mini-game-mode-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .mini-game-screen,
+    .mini-game-screen * {
+        scroll-behavior: auto !important;
+        animation: none !important;
+        transition: none !important;
+    }
+}

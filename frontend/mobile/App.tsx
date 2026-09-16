@@ -19,6 +19,7 @@ import { secureSessionStore } from './src/security/secure-session';
 import { AuthScreen } from './src/screens/auth-screen';
 import { ChatScreen, CreateMatchScreen, MatchDetailScreen, VenueDetailScreen } from './src/screens/detail-screens';
 import { MainTabs, type RootParams } from './src/screens/main-tabs';
+import { MiniGameScreen } from './src/screens/mini-game-screen';
 import { OnboardingScreen } from './src/screens/onboarding-screen';
 import { AccountScreen, PlayerScreen, SafetyReceiptScreen, SafetyScreen } from './src/screens/profile-screens';
 import { Loading, Status } from './src/ui/components';
@@ -254,6 +255,11 @@ export default function App() {
                                 options={{ title: 'Площадка' }}
                             />
                             <Stack.Screen component={ChatScreen} name="Chat" options={{ title: 'Чат' }} />
+                            <Stack.Screen
+                                component={MiniGameScreen}
+                                name="MiniGame"
+                                options={{ headerShown: false, title: 'Ралли на точность' }}
+                            />
                             <Stack.Screen
                                 component={CreateMatchScreen}
                                 name="CreateMatch"

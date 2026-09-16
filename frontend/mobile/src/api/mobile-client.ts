@@ -137,6 +137,13 @@ export function createMobileApiClient(options: MobileApiClientOptions) {
         },
         getAccessToken: () => accessToken,
         getUserId: () => userId,
+        createMiniGameWebViewLaunch: (idempotencyKey: string) =>
+            call<Schemas['GameWebViewLaunch']>('/mini-game/webview-launches', {
+                authenticated: true,
+                body: {},
+                idempotencyKey,
+                method: 'POST',
+            }),
         logout: async () => {
             const refreshToken = await options.secureStore.getRefreshToken();
             accessToken = undefined;

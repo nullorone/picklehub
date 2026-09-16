@@ -26,7 +26,11 @@ if (
     publicConfig.extra?.appEnvironment !== 'production' ||
     publicConfig.extra?.developmentScheme !== undefined ||
     typeof publicConfig.extra?.apiUrl !== 'string' ||
-    !publicConfig.extra.apiUrl.startsWith('https://')
+    !publicConfig.extra.apiUrl.startsWith('https://') ||
+    typeof publicConfig.extra?.miniGameOrigin !== 'string' ||
+    !publicConfig.extra.miniGameOrigin.startsWith('https://') ||
+    publicConfig.ios?.infoPlist?.WKAppBoundDomains?.includes(new URL(publicConfig.extra.miniGameOrigin).hostname) !==
+        true
 ) {
     throw new Error('Public Expo config is not a closed production configuration.');
 }

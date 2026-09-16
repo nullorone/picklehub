@@ -1,0 +1,28 @@
+{
+    "name": "@picklehub/mini-game",
+    "version": "0.1.0",
+    "private": true,
+    "type": "module",
+    "exports": {
+        ".": "./src/index.tsx",
+        "./styles.css": "./src/styles.css"
+    },
+    "scripts": {
+        "build": "tsc -p tsconfig.build.json",
+        "lint": "eslint src --max-warnings=0",
+        "typecheck": "tsc --noEmit -p tsconfig.json",
+        "test": "vitest run"
+    },
+    "dependencies": {
+        "@picklehub/analytics": "0.1.0",
+        "@picklehub/api-client": "0.1.0",
+        "react": "19.2.8"
+    },
+    "devDependencies": {
+        "@testing-library/react": "16.3.3",
+        "@testing-library/jest-dom": "6.9.1",
+        "@types/react": "19.2.18",
+        "jsdom": "27.4.0",
+        "vitest": "5.0.0"
+    }
+}

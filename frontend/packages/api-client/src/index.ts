@@ -1160,6 +1160,37 @@ export function createIdentityClient(options: ApiClientOptions, platform: Client
                 idempotencyKey,
                 mutation: true,
             }),
+        createMiniGameSession: (body: components['schemas']['CreateGameSessionInput'], idempotencyKey?: string) =>
+            call<components['schemas']['GameSession']>('/mini-game/sessions', body, {
+                auth: true,
+                idempotent: true,
+                idempotencyKey,
+                mutation: true,
+            }),
+        submitMiniGameResult: (
+            sessionId: string,
+            body: components['schemas']['SubmitGameResultInput'],
+            idempotencyKey?: string
+        ) =>
+            call<components['schemas']['GameResult']>(`/mini-game/sessions/${sessionId}/results`, body, {
+                auth: true,
+                idempotent: true,
+                idempotencyKey,
+                mutation: true,
+            }),
+        getOwnMiniGameProgress: () =>
+            call<components['schemas']['GameSeasonProgress']>('/mini-game/progress', undefined, { auth: true }),
+        claimMiniGameRewards: (
+            receiptId: string,
+            body: components['schemas']['ClaimGameRewardsInput'],
+            idempotencyKey?: string
+        ) =>
+            call<components['schemas']['GameRewardClaim']>(`/mini-game/receipts/${receiptId}/reward-claim`, body, {
+                auth: true,
+                idempotent: true,
+                idempotencyKey,
+                mutation: true,
+            }),
     } as const;
 }
 

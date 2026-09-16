@@ -65,6 +65,26 @@ export type AnalyticsEvent =
           readonly channel: ClientChannel;
           readonly filter: 'NONE' | 'LOCALITY' | 'VENUE';
           readonly resultBucket: 'ZERO' | 'ONE_FIVE' | 'SIX_TWENTY' | 'GT_TWENTY';
+      }
+    | {
+          readonly name: 'mini_game_started';
+          readonly channel: ClientChannel;
+          readonly mode: 'STANDARD' | 'CALM';
+          readonly connectivity: 'ONLINE';
+          readonly entryClass: 'DIRECT';
+      }
+    | {
+          readonly name: 'mini_game_completed';
+          readonly channel: ClientChannel;
+          readonly mode: 'STANDARD' | 'CALM';
+          readonly durationBucket: 'TURN_BASED' | '60_120S';
+          readonly rewardOutcomeClass: 'GRANTED' | 'CAPPED_OR_EMPTY' | 'REJECTED' | 'UNAVAILABLE';
+      }
+    | {
+          readonly name: 'mini_game_exit_intent';
+          readonly channel: ClientChannel;
+          readonly stage: 'ENTRY' | 'ACTIVE' | 'PAUSED' | 'RESULT';
+          readonly reasonClass: 'USER';
       };
 
 export interface AnalyticsPort {

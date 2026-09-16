@@ -1,8 +1,9 @@
 # Backend мини-игры
 
 Документ фиксирует реализацию этапа [`15-mini-game/03-backend.md`](../15-mini-game/03-backend.md) поверх
-[контрактов и политики данных](mini-game-data-policy.md). Он не заявляет готовность game bundle, WebView-клиента,
-production-размещения данных или реальную проверку гонок PostgreSQL/Redis в текущей среде.
+[контрактов и политики данных](mini-game-data-policy.md). Клиентский runtime и WebView-оболочка описаны отдельно в
+[client-документе](mini-game-frontend.md). Документ не заявляет production-размещение данных или реальную проверку
+гонок PostgreSQL/Redis в текущей среде.
 
 ## Сессия, challenge и result
 

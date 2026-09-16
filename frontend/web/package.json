@@ -17,6 +17,7 @@
         "@picklehub/api-client": "0.1.0",
         "@picklehub/domain": "0.1.0",
         "@picklehub/i18n": "0.1.0",
+        "@picklehub/mini-game": "0.1.0",
         "@picklehub/validation": "0.1.0",
         "@tanstack/react-query": "5.102.8",
         "i18next": "26.4.2",

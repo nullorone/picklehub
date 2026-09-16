@@ -1,7 +1,7 @@
 import { disabledAnalytics } from '@picklehub/analytics';
 import { createIdentityClient, type components } from '@picklehub/api-client';
 import { readSafeMagicFragment, type RuntimeConfig } from '@picklehub/validation';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom';
 
@@ -18,6 +18,11 @@ import { ProfileScreen } from './profiles-ui';
 import { MatchFeedbackScreen, SafetyCenterScreen, SafetyReceiptScreen, SafetyReportScreen } from './safety-ui';
 import { TournamentDetailsScreen, TournamentsScreen } from './tournaments-ui';
 import { VenuesScreen } from './venues-ui';
+
+const MiniGameRoute = lazy(async () => {
+    const module = await import('./mini-game-ui');
+    return { default: module.MiniGameRoute };
+});
 
 type Session = components['schemas']['AuthenticatedSession'];
 
@@ -144,6 +149,7 @@ export function App({ config }: { readonly config: RuntimeConfig }) {
                         <Link to="/clubs">Клубы</Link>
                         <Link to="/tournaments">Турниры</Link>
                         <Link to="/progress">Прогресс</Link>
+                        <Link to="/mini-game">Мини-игра</Link>
                         <Link to="/notifications">
                             Уведомления
                             <NotificationBadge client={client} />
@@ -420,6 +426,24 @@ export function App({ config }: { readonly config: RuntimeConfig }) {
                     element={
                         session && !requiresOnboarding ? (
                             <SafetyReceiptScreen client={client} online={online} />
+                        ) : (
+                            <Navigate to={session ? '/onboarding' : '/login'} replace />
+                        )
+                    }
+                />
+                <Route
+                    path="/mini-game"
+                    element={
+                        session && !requiresOnboarding ? (
+                            <Suspense
+                                fallback={
+                                    <main className="state-card" aria-busy="true">
+                                        Загружаем игру…
+                                    </main>
+                                }
+                            >
+                                <MiniGameRoute client={client} online={online} />
+                            </Suspense>
                         ) : (
                             <Navigate to={session ? '/onboarding' : '/login'} replace />
                         )

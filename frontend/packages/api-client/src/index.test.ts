@@ -16,6 +16,45 @@ describe('createApiClient', () => {
 });
 
 describe('createIdentityClient', () => {
+    it('keeps mini-game proofs in protected bodies and reuses explicit operation keys', async () => {
+        const fetch = vi
+            .fn<typeof globalThis.fetch>()
+            .mockResolvedValueOnce(Response.json({ csrfToken: 'c'.repeat(43) }))
+            .mockResolvedValueOnce(Response.json({ id: crypto.randomUUID(), outcome: 'ACCEPTED' }, { status: 201 }));
+        const client = createIdentityClient({ baseUrl: '/v1', fetch }, 'WEB');
+        const sessionId = crypto.randomUUID();
+        const key = crypto.randomUUID();
+        const challengeProof = `mgc1_${'a'.repeat(43)}`;
+
+        await client.submitMiniGameResult(
+            sessionId,
+            {
+                activeDurationMilliseconds: 90_000,
+                challengeProof,
+                configurationVersion: '1.0.0',
+                counters: {
+                    attempts: 20,
+                    centerTargetHits: 2,
+                    leftTargetHits: 2,
+                    rightTargetHits: 2,
+                    streakBonuses: 1,
+                    successfulReturns: 15,
+                    targetHits: 6,
+                },
+                mode: 'STANDARD',
+                nonce: 'b'.repeat(22),
+                pausedDurationMilliseconds: 0,
+            },
+            key
+        );
+
+        const [url, init] = fetch.mock.calls[1] ?? [];
+        expect(url).toBe(`/v1/mini-game/sessions/${sessionId}/results`);
+        expect(url).not.toContain(challengeProof);
+        expect(new Headers(init?.headers).get('Idempotency-Key')).toBe(key);
+        expect(init?.body).toContain(challengeProof);
+    });
+
     it('keeps advertising tokens and coarse context in protected mutation bodies', async () => {
         const fetch = vi
             .fn<typeof globalThis.fetch>()

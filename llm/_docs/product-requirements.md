@@ -2516,6 +2516,7 @@ Behavioral start/complete/return и связь с матчевой воронк�
 
 Этап требований завершён после покрытия MG-01–MG-10 и MG-AC1–MG-AC15. DTO, challenge/receipt TTL,
 конфигурационные enum, SQL ledger constraints, XP rule migration, WebView capability/CSP и event schemas теперь
-зафиксированы [этапом contract/data](mini-game-data-policy.md); game engine, backend и UI ещё не заявлены. Владение уточнено в
+зафиксированы [этапом contract/data](mini-game-data-policy.md); backend и общий client runtime реализованы и описаны
+в [backend-документе](mini-game-backend.md) и [client-документе](mini-game-frontend.md). Владение уточнено в
 [доменной модели](domain-model.md), зависимости — в [архитектуре](architecture.md), данные и abuse boundary — в
 [безопасности](security-privacy.md), измерения — в [плане аналитики](analytics-plan.md).

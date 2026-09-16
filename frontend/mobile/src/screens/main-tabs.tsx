@@ -27,6 +27,7 @@ interface RootParamSpec {
     CreateMatch: undefined;
     Main: NavigatorScreenParams<TabParams> | undefined;
     MatchDetail: { readonly matchId: string };
+    MiniGame: undefined;
     Player: { readonly playerId: string };
     Safety: undefined;
     SafetyReceipt: { readonly receiptId: string };
@@ -271,6 +272,12 @@ function ProfileScreen({ navigation }: TabProps<'Profile'>) {
                     </Text>
                 </Card>
             )}
+            <Button
+                label="Ралли на точность"
+                onPress={() => {
+                    navigation.navigate('MiniGame');
+                }}
+            />
             <Button
                 label="История и статистика"
                 onPress={() => {

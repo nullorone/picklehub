@@ -6,9 +6,18 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     const environment = process.env.APP_ENV === 'production' ? 'production' : 'development';
     const isProduction = environment === 'production';
     const apiUrl = process.env.EXPO_PUBLIC_API_URL;
+    const miniGameOrigin = process.env.EXPO_PUBLIC_MINI_GAME_ORIGIN;
     if (isProduction && apiUrl === undefined) {
         throw new Error('EXPO_PUBLIC_API_URL is required for a production mobile export.');
     }
+    if (isProduction && miniGameOrigin === undefined) {
+        throw new Error('EXPO_PUBLIC_MINI_GAME_ORIGIN is required for a production mobile export.');
+    }
+    const resolvedApiUrl = apiUrl ?? 'http://10.0.2.2:3000/v1';
+    const resolvedMiniGameOrigin = miniGameOrigin ?? 'https://game.picklehub.local';
+    const appBoundDomains = isProduction
+        ? [new URL(resolvedApiUrl).hostname, new URL(resolvedMiniGameOrigin).hostname]
+        : [];
 
     return {
         ...config,
@@ -23,6 +32,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
             infoPlist: {
                 NSLocationWhenInUseUsageDescription:
                     'Геопозиция нужна только по вашему запросу, чтобы показать ближайшие площадки.',
+                WKAppBoundDomains: appBoundDomains,
             },
             supportsTablet: true,
         },
@@ -45,10 +55,11 @@ export default ({ config }: ConfigContext): ExpoConfig => {
             ['expo-location', { locationWhenInUsePermission: 'Показать ближайшие площадки.' }],
         ],
         extra: {
-            apiUrl: apiUrl ?? 'http://10.0.2.2:3000/v1',
+            apiUrl: resolvedApiUrl,
             appEnvironment: environment,
             ...(isProduction ? {} : { developmentScheme: 'picklehub-dev' }),
             linkHost: productionLinkHost,
+            miniGameOrigin: resolvedMiniGameOrigin,
             pushEnabled: false,
         },
         ...(isProduction ? {} : { scheme: 'picklehub-dev' }),

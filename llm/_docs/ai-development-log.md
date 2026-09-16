@@ -4094,3 +4094,52 @@ test && npm run build -- --env-mode=loose` — успешно: 143 Markdown-фа
   at-least-once compensation, secret rotation, retention/backup cycle, РФ-размещение и device WebView Origin/CSP/
   navigation/logout. До их закрытия production rewards должны оставаться выключены. Следующий промпт —
   `llm/15-mini-game/04-tma-web.md`; он не начат.
+
+## 2026-09-16 — мини-игра, этап 04-tma-web
+
+- Активный промпт: `llm/15-mini-game/04-tma-web.md`. Создан общий workspace `@picklehub/mini-game` с
+  детерминированной state machine, Canvas-режимом `STANDARD` на 90 секунд активного времени и доступным DOM-режимом
+  `CALM` на 20 ходов. Есть три учебные подачи, keyboard/touch/pointer, текстовый эквивалент, local score/series,
+  выключаемый звук, reduced-motion default, visibility/blur pause и явный resume с пределом 10 минут.
+- Web/PWA и TMA получили защищённый `/mini-game` только после onboarding и один общий runtime через динамический
+  import. Production builds создают отдельный minified JS chunk 14 493/14 498 bytes (gzip около 5.44 KiB), а build
+  gate ограничивает его 100 KiB. PWA versioned precache включает этот chunk; offline раунд явно помечен как practice,
+  не вызывает session/claim, не ставится в очередь и после reconnect не превращается в награду.
+- API client интегрирует session, bounded result, own progress и idempotent reward claim. Challenge/result proof,
+  nonce и capability остаются в body; nonce создаётся через `crypto.getRandomValues`, а UUIDv4 operation key передаётся
+  явно. UI не отправляет score/trajectory/input trace, показывает UTC goals/season/cosmetics и не выдаёт ошибку
+  результата/claim за успех.
+- Реклама остаётся общим маркированным placement только на entry и terminal result. Tutorial, round, pause,
+  submit/claim и reward announcement имеют `data-ad-free`; no-fill не влияет на игру. Analytics taxonomy добавлена в
+  минимизированной форме без score, IDs, proofs, input trace и reward amount; фактический port остаётся выключенным и
+  ничего не буферизует без подключённого consent-aware provider.
+- Mobile получил `react-native-webview`, authenticated launch capability и initial POST body на exact immutable HTTPS
+  origin без token в URL. Ephemeral WebView запрещает cache/DOM storage/cookies/mixed content/popup/new window,
+  проверяет exact navigation origin и production WK app-bound domains. Bridge принимает ≤2048-byte exact JSON с
+  UUIDv4 и только `READY_V1`, `CLOSE_V1`, `OPEN_SAFE_ROUTE_V1`, `HEALTH_V1`; duplicate/unknown закрывает игру, а safe
+  route ограничен списком матчей, созданием матча и собственным профилем. System back требует подтверждения.
+- Добавлены engine/UI offline tests, API proof-body test, mobile bridge tests и 3 root client-policy tests. Первый
+  полный `npm test` обнаружил, что `tsc` включил `.test.tsx` в `dist` и Vitest повторно запустил artifact без jsdom;
+  build exclude исправлен, два ошибочно сгенерированных test artifact удалены, повторная полная проверка успешна.
+  Реализация и честные внешние gates описаны в `llm/_docs/mini-game-frontend.md`.
+
+### Проверки этапа mini-game 04-tma-web
+
+- `npm run workspace:check && npm run contracts:lint` — успешно: 9 workspaces, 237 REST operations, 69 AsyncAPI
+  messages и 186/186 contract/policy/client tests. `contracts:breaking`, reproducible generated drift,
+  `contracts:typecheck` и mobile contract typecheck также прошли внутри общего verify до mock.
+- Targeted `lint`, strict `typecheck`, tests и builds для mini-game, API client, web, TMA и mobile успешны. Mini-game:
+  2 files/3 tests; API client: 1/8; web: 14/59; TMA: 11/34; mobile: 4/14. Expo export успешно собрал iOS и Android
+  Hermes bundles с `react-native-webview`.
+- `npm run format:check`, `npm run docs:check` и `git diff --check` — успешно: 144 Markdown-файла, 14 TypeSpec-файлов
+  и отсутствие whitespace errors. `npm run lint` и `npm run typecheck` — 10/10 tasks. Повторный `npm test` — 16/16
+  tasks, включая backend 49/49 suites и 294/294 tests. `EXPO_NO_TELEMETRY=1 npm run build -- --env-mode=loose` —
+  10/10 builds; сохраняются прежние неблокирующие warnings основных web/TMA/MapLibre chunks около 707/668/924 KiB.
+- `EXPO_NO_TELEMETRY=1 npm run verify -- --env-mode=loose` прошёл workspace, contract lint/186 tests, breaking,
+  generated drift и contract typecheck, затем остановился на sandbox `listen EPERM 127.0.0.1` в
+  `contracts:mock:check`. Mock assertions не запускались и не выданы за успешные; все оставшиеся стадии verify
+  выполнены отдельно командами выше.
+- Не заявлены проверенными: production dedicated-origin gateway/CSP headers и initial POST exchange, физические
+  WKWebView/Android navigation/logout/crash tests, VoiceOver/TalkBack/200% zoom/contrast matrix, p75 ready ≤2.5 s,
+  long-task/memory/crash-free telemetry, а также прежние database/Redis/residency gates rewards. Следующий промпт —
+  `llm/15-mini-game/05-verification.md`; он не начат.

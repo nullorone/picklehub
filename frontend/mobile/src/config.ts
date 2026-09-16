@@ -5,6 +5,7 @@ interface RuntimeExtra {
     readonly appEnvironment: 'development' | 'production';
     readonly developmentScheme?: string;
     readonly linkHost: string;
+    readonly miniGameOrigin: string;
     readonly pushEnabled: boolean;
 }
 
@@ -19,5 +20,10 @@ export const runtimeConfig: RuntimeExtra = {
     appEnvironment: extra.appEnvironment === 'production' ? 'production' : 'development',
     ...(extra.developmentScheme === undefined ? {} : { developmentScheme: extra.developmentScheme }),
     linkHost: extra.linkHost ?? 'picklehub.ru',
+    miniGameOrigin:
+        extra.miniGameOrigin ??
+        (() => {
+            throw new Error('Mobile mini-game origin is missing from Expo config.');
+        })(),
     pushEnabled: extra.pushEnabled === true,
 };
