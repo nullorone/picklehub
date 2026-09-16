@@ -1,0 +1,72 @@
+{
+    "title": "PickleHub production overview",
+    "uid": "picklehub-overview-v1",
+    "schemaVersion": 39,
+    "version": 1,
+    "refresh": "30s",
+    "time": { "from": "now-6h", "to": "now" },
+    "tags": ["picklehub", "production-readiness"],
+    "panels": [
+        {
+            "id": 1,
+            "type": "timeseries",
+            "title": "Critical-path error ratio",
+            "targets": [
+                {
+                    "refId": "A",
+                    "expr": "sum by (scenario) (rate(picklehub_http_requests_total{outcome=\"ERROR\"}[5m])) / clamp_min(sum by (scenario) (rate(picklehub_http_requests_total[5m])), 0.001)"
+                }
+            ],
+            "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 }
+        },
+        {
+            "id": 2,
+            "type": "timeseries",
+            "title": "Critical-path p95 latency",
+            "targets": [
+                {
+                    "refId": "A",
+                    "expr": "histogram_quantile(0.95, sum by (le, scenario) (rate(picklehub_http_request_duration_seconds_bucket[5m])))"
+                }
+            ],
+            "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 }
+        },
+        {
+            "id": 3,
+            "type": "timeseries",
+            "title": "Outbox age and states",
+            "targets": [
+                { "refId": "A", "expr": "picklehub_outbox_oldest_unpublished_seconds" },
+                { "refId": "B", "expr": "sum by (state) (picklehub_outbox_events)" }
+            ],
+            "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 }
+        },
+        {
+            "id": 4,
+            "type": "timeseries",
+            "title": "Privacy and reconciliation state",
+            "targets": [
+                { "refId": "A", "expr": "sum by (state) (picklehub_privacy_tasks)" },
+                { "refId": "B", "expr": "sum by (state) (picklehub_reconciliation_runs)" }
+            ],
+            "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 }
+        },
+        {
+            "id": 5,
+            "type": "timeseries",
+            "title": "Process memory",
+            "targets": [
+                { "refId": "A", "expr": "picklehub_process_resident_memory_bytes" },
+                { "refId": "B", "expr": "picklehub_process_heap_used_bytes" }
+            ],
+            "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 }
+        },
+        {
+            "id": 6,
+            "type": "stat",
+            "title": "Telemetry allowlist violations",
+            "targets": [{ "refId": "A", "expr": "sum(increase(picklehub_telemetry_redaction_violations_total[1h]))" }],
+            "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 }
+        }
+    ]
+}

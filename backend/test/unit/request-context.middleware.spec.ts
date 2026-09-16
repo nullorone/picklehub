@@ -11,13 +11,22 @@ describe('RequestContextMiddleware', () => {
         const requestId = 'b85e2f1a-ec0d-4b40-b3cc-60a71b1e5f98';
         const correlationId = '8e4398c6-cbee-4386-9871-28206d45ca17';
         const request = {
-            headers: { 'x-request-id': requestId, 'x-correlation-id': correlationId },
+            headers: {
+                'x-request-id': requestId,
+                'x-correlation-id': correlationId,
+                traceparent: '00-0123456789abcdef0123456789abcdef-0123456789abcdef-01',
+            },
         } as unknown as Request;
         const response = {
             setHeader: (name: string, value: string) => headers.set(name, value),
         } as unknown as Response;
         const next: NextFunction = jest.fn(() => {
-            expect(service.get()).toEqual({ requestId, correlationId, locale: 'ru-RU' });
+            expect(service.get()).toEqual({
+                requestId,
+                correlationId,
+                traceId: '0123456789abcdef0123456789abcdef',
+                locale: 'ru-RU',
+            });
         });
 
         middleware.use(request, response, next);
@@ -25,6 +34,7 @@ describe('RequestContextMiddleware', () => {
         expect(headers.get('X-Request-ID')).toBe(requestId);
         expect(headers.get('X-Correlation-ID')).toBe(correlationId);
         expect(headers.get('Content-Language')).toBe('ru-RU');
+        expect(headers.get('X-Trace-ID')).toBe('0123456789abcdef0123456789abcdef');
     });
 
     it('replaces invalid identifiers without reflecting their values', () => {
@@ -42,6 +52,7 @@ describe('RequestContextMiddleware', () => {
 
         expect(headers.get('X-Request-ID')).toMatch(/^[0-9a-f-]{36}$/u);
         expect(headers.get('X-Correlation-ID')).toBe(headers.get('X-Request-ID'));
+        expect(headers.get('X-Trace-ID')).toMatch(/^[0-9a-f]{32}$/u);
         expect([...headers.values()]).not.toContain('secret');
     });
 });

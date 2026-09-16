@@ -37,6 +37,12 @@ const REDACTED_PATHS = [
     '*.resultProof',
     '*.nonce',
     '*.capability',
+    '*.advertisingId',
+    '*.deviceId',
+    '*.objectKey',
+    '*.providerResponse',
+    '*.ip',
+    '*.remoteAddress',
     'req.headers.authorization',
     'req.headers.cookie',
     "req.headers['x-telegram-init-data']",
@@ -72,6 +78,12 @@ const SENSITIVE_KEYS = new Set([
     'resultproof',
     'nonce',
     'capability',
+    'advertisingid',
+    'deviceid',
+    'objectkey',
+    'providerresponse',
+    'ip',
+    'remoteaddress',
 ]);
 
 export function redactSensitiveData(value: unknown): unknown {
@@ -151,6 +163,7 @@ export class ApplicationLogger implements LoggerService {
                 : {
                       requestId: request.requestId,
                       correlationId: request.correlationId,
+                      traceId: request.traceId,
                   }),
         };
 

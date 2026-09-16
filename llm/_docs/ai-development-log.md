@@ -4272,3 +4272,53 @@ npm exec --workspace @picklehub/backend -- prisma validate --schema prisma/schem
 - Публичный production остаётся `NO-GO`: metrics/privacy/reconciliation runtime, реальный migration/restore drill,
   secret rotation, legal retention/deadlines, provider approvals и РФ-размещение относятся к следующим этапам и
   внешним gates.
+
+## 2026-09-16 — production readiness, этап 03-backend
+
+- Активный промпт: `llm/16-production-readiness/03-backend.md`. Backend получил runtime реализацию закрытого
+  `GET /v1/operations/metrics`: отдельный constant-time operations credential, OpenMetrics schema `1`, `no-store`,
+  bounded HTTP scenario/outcome/status histograms, process memory, durable outbox age/state, BullMQ state,
+  privacy/reconciliation и provider/circuit metrics. Произвольные labels и IDs отклоняются счётчиком redaction
+  violations; scrape не публикует URL, IP, координаты, object/provider payload или exemplars.
+- Request context теперь принимает только строгий W3C trace ID либо генерирует новый и связывает его с JSON logs,
+  request/correlation ID без внешнего span exporter. Расширены recursive log redaction и канонизация UUID/capability/
+  content-slug paths. Подключение tracing/error-reporting провайдера оставлено fail-closed до подтверждения РФ-
+  размещения, retention/access review и canary redaction.
+- Добавлены явный JSON/form body limit, существующий 16 KiB WebSocket limit, process-level HTTP/probe rate limits,
+  аварийные switches для content/advertising/mini-game/notifications/venue providers и process-local circuit breaker
+  email/Telegram/geocoder/Overpass с timeout, half-open probe и метриками. Content scheduler и worker не открывают
+  новые provider jobs при switch. Outbox остаётся PostgreSQL-authoritative, BullMQ job IDs идемпотентны; появились
+  точечные, а не массовые, команды повторения одного quarantine event или failed job.
+- Backend runtime/migration images используют `npm ci --omit=dev`, `tini`, non-root `node`; Prisma CLI переведён в
+  production dependency только для отдельного migration target. Local Compose получил CPU/memory/PID limits,
+  read-only API/worker, bounded tmpfs, `no-new-privileges` и stop grace. Provider-neutral production Compose требует
+  immutable digests, managed PostgreSQL/PostGIS/Redis URLs, отдельные secrets и явный `RU_DATA_RESIDENCY_CONFIRMED`,
+  не создаёт production data services и публикует приложения только на loopback perimeter.
+- Добавлены logical backup/checksum и disposable tmpfs restore+migration drill scripts, Compose drill, Grafana
+  dashboard, Prometheus alerts для provisional C0/C1 burn, outbox/queues, providers, privacy/reconciliation, memory и
+  telemetry violations. Канонический `llm/_docs/production-readiness-backend.md` описывает release order,
+  graceful degradation, recovery/reconciliation и runbooks C0/C1/outbox/DLQ/privacy/resource/telemetry. Logical
+  dump явно не выдан за замену managed PITR.
+
+### Проверки этапа production-readiness 03-backend
+
+- Targeted backend `typecheck`, `lint`, `test` и `build` успешны: 52/52 suites, 304/304 tests, включая новые circuit
+  breaker и operational metrics allowlist tests. `npm run lint`, `npm run typecheck`, `npm test` и
+  `EXPO_NO_TELEMETRY=1 npm run build -- --env-mode=loose` затем прошли полностью: 10/10 lint, 10/10 typecheck,
+  16/16 test tasks и 10/10 builds, включая iOS/Android Expo exports. Сохраняются прежние неблокирующие warnings
+  web/TMA/MapLibre chunks около 707/668/924 KiB.
+- `npm run contracts:lint` — успешно: 238 REST operations, 69 AsyncAPI messages и 194/194 policy/data tests.
+  `contracts:breaking`, `contracts:generated:check` и `contracts:typecheck` успешны. Контракт metrics не менялся;
+  runtime реализован в соответствии с завершённым этапом 02.
+- `docker compose --profile foundation config --quiet`, production Compose config с placeholder env и drill Compose
+  config успешны. Shell syntax двух operations scripts, Grafana JSON, Prometheus/Compose YAML и `git diff --check`
+  успешны. `npm run format:check`, `npm run docs:check` и `npm run workspace:check` прошли: 15 TypeSpec-файлов,
+  148 Markdown-файлов и 9 workspaces/один root lockfile.
+- Prisma schema validation успешна с сохранённым локальным schema engine. Docker daemon недоступен из sandbox
+  (`EPERM` к Docker Desktop socket), поэтому фактическая сборка/инспекция runtime image, container restart и
+  disposable restore/migration drill не выполнены и не выданы за успешные. `prisma migrate deploy` и integration
+  tests с живыми PostgreSQL/Redis также не запускались на этом этапе.
+- Публичный production остаётся `NO-GO`: пять ранее выявленных `BLOCKED` migration paths, production-like upgrade,
+  managed PITR/restore и object/outbox reconciliation, alert delivery, provider/exporter integration, capacity,
+  secret rotation, legal approvals и доказательство РФ-регионов требуют внешней инфраструктуры и владельцев.
+  Следующий промпт — `llm/16-production-readiness/04-tma-web.md`; он не начат.

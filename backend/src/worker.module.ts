@@ -20,11 +20,13 @@ import { GamificationModule } from './gamification/gamification.module';
 import { ContentModule } from './content/content.module';
 import { AdvertisingModule } from './advertising/advertising.module';
 import { MiniGameModule } from './mini-game/mini-game.module';
+import { OperationsModule } from './operations/operations.module';
 
 @Module({
     imports: [
         TypedConfigModule,
         RequestContextModule,
+        OperationsModule,
         LoggingModule,
         LifecycleModule,
         DatabaseModule,

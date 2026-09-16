@@ -23,6 +23,18 @@ const environmentSchema = z
         LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
         DEPENDENCY_TIMEOUT_MS: z.coerce.number().int().min(100).max(10_000).default(1000),
         SHUTDOWN_GRACE_MS: z.coerce.number().int().min(1000).max(60_000).default(10_000),
+        HTTP_BODY_LIMIT_BYTES: z.coerce.number().int().min(16_384).max(2_097_152).default(262_144),
+        HTTP_RATE_LIMIT_PER_MINUTE: z.coerce.number().int().min(10).max(10_000).default(300),
+        HEALTH_RATE_LIMIT_PER_MINUTE: z.coerce.number().int().min(10).max(1000).default(120),
+        OPERATIONS_METRICS_KEY: z.string().min(32).optional(),
+        CIRCUIT_BREAKER_FAILURE_THRESHOLD: z.coerce.number().int().min(2).max(100).default(5),
+        CIRCUIT_BREAKER_RESET_MS: z.coerce.number().int().min(1000).max(300_000).default(30_000),
+        EMERGENCY_DISABLE_CONTENT: z.enum(['true', 'false']).default('false'),
+        EMERGENCY_DISABLE_ADVERTISING: z.enum(['true', 'false']).default('false'),
+        EMERGENCY_DISABLE_MINI_GAME: z.enum(['true', 'false']).default('false'),
+        EMERGENCY_DISABLE_OUTBOUND_NOTIFICATIONS: z.enum(['true', 'false']).default('false'),
+        EMERGENCY_DISABLE_VENUE_PROVIDERS: z.enum(['true', 'false']).default('false'),
+        RU_DATA_RESIDENCY_CONFIRMED: z.enum(['true', 'false']).default('false'),
         OUTBOX_BATCH_SIZE: z.coerce.number().int().min(1).max(500).default(50),
         OUTBOX_POLL_INTERVAL_MS: z.coerce.number().int().min(100).max(60_000).default(1000),
         OUTBOX_MAX_ATTEMPTS: z.coerce.number().int().min(1).max(100).default(10),
@@ -119,6 +131,20 @@ const environmentSchema = z
                 code: 'custom',
                 path: ['REDIS_NAMESPACE'],
                 message: 'Production must use an explicit non-local Redis namespace',
+            });
+        }
+        if (environment.NODE_ENV === 'production' && environment.OPERATIONS_METRICS_KEY === undefined) {
+            context.addIssue({
+                code: 'custom',
+                path: ['OPERATIONS_METRICS_KEY'],
+                message: 'Production requires a separately rotated operations metrics key',
+            });
+        }
+        if (environment.NODE_ENV === 'production' && environment.RU_DATA_RESIDENCY_CONFIRMED !== 'true') {
+            context.addIssue({
+                code: 'custom',
+                path: ['RU_DATA_RESIDENCY_CONFIRMED'],
+                message: 'Production requires an explicit Russian data residency approval gate',
             });
         }
         if (

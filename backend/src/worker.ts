@@ -5,12 +5,20 @@ import { NestFactory } from '@nestjs/core';
 
 import { ApplicationLogger } from './common/logging/application-logger.service';
 import { WorkerModule } from './worker.module';
+import { ApplicationLifecycleService } from './common/lifecycle/application-lifecycle.service';
 
 async function bootstrap(): Promise<void> {
     const application = await NestFactory.createApplicationContext(WorkerModule, { bufferLogs: true });
     const logger = application.get(ApplicationLogger);
     application.useLogger(logger);
     application.enableShutdownHooks(['SIGTERM', 'SIGINT']);
+    const lifecycle = application.get(ApplicationLifecycleService);
+    process.prependOnceListener('SIGTERM', () => {
+        lifecycle.beginShutdown();
+    });
+    process.prependOnceListener('SIGINT', () => {
+        lifecycle.beginShutdown();
+    });
     logger.log({ event: 'worker.started' }, 'Bootstrap');
 }
 

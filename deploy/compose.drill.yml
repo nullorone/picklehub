@@ -1,0 +1,46 @@
+name: picklehub-drill
+
+services:
+    postgres:
+        image: postgis/postgis:16-3.4
+        environment:
+            POSTGRES_DB: picklehub_drill
+            POSTGRES_USER: picklehub_drill
+            POSTGRES_PASSWORD: drill-only-not-production
+        healthcheck:
+            test: ['CMD-SHELL', 'pg_isready -U picklehub_drill -d picklehub_drill']
+            interval: 2s
+            timeout: 2s
+            retries: 30
+        tmpfs: ['/var/lib/postgresql/data:size=2g']
+        cpus: 1.0
+        mem_limit: 1g
+        pids_limit: 200
+
+    migrate:
+        build:
+            context: ..
+            dockerfile: backend/Dockerfile
+            target: migration
+        environment:
+            NODE_ENV: test
+            APP_ROLE: worker
+            DATABASE_URL: postgresql://picklehub_drill:drill-only-not-production@postgres:5432/picklehub_drill?schema=public
+            REDIS_URL: redis://redis:6379/0
+            REDIS_NAMESPACE: drill
+        depends_on:
+            postgres:
+                condition: service_healthy
+        restart: 'no'
+        cpus: 1.0
+        mem_limit: 768m
+        pids_limit: 200
+        security_opt: ['no-new-privileges:true']
+
+    redis:
+        image: redis:7.4.1-alpine
+        command: ['redis-server', '--appendonly', 'yes']
+        tmpfs: ['/data:size=128m']
+        cpus: 0.5
+        mem_limit: 256m
+        pids_limit: 100

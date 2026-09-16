@@ -5,6 +5,7 @@ import { Injectable } from '@nestjs/common';
 export interface RequestContext {
     requestId: string;
     correlationId: string;
+    traceId: string;
     locale: 'ru-RU';
 }
 

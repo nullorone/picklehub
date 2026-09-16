@@ -1,9 +1,11 @@
 import { randomBytes } from 'node:crypto';
 
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
 
 import { ENVIRONMENT } from '../common/config/config.module';
 import type { Environment } from '../common/config/environment';
+import { CircuitBreaker } from '../common/resilience/circuit-breaker';
+import { OperationalMetricsService } from '../operations/operational-metrics.service';
 import { venueError } from './venue.errors';
 import { coordinateHasAllowedPrecision } from './venue-normalization';
 import { GeocoderPort, type GeocodingResult, type StoredGeocodingSelection } from './venue-provider';
@@ -22,9 +24,18 @@ interface ProviderItem {
 @Injectable()
 export class ConfiguredGeocoderAdapter extends GeocoderPort {
     private readonly selections = new Map<string, { expiresAt: number; value: StoredGeocodingSelection }>();
+    private readonly breaker: CircuitBreaker;
 
-    constructor(@Inject(ENVIRONMENT) private readonly environment: Environment) {
+    constructor(
+        @Inject(ENVIRONMENT) private readonly environment: Environment,
+        @Optional() metrics?: OperationalMetricsService
+    ) {
         super();
+        this.breaker = new CircuitBreaker({
+            failureThreshold: environment.CIRCUIT_BREAKER_FAILURE_THRESHOLD,
+            resetAfterMs: environment.CIRCUIT_BREAKER_RESET_MS,
+            onResult: (outcome, state) => metrics?.observeProvider('geocoder', outcome, state),
+        });
     }
 
     async suggest(query: string, limit: number): Promise<GeocodingResult[]> {
@@ -33,20 +44,23 @@ export class ConfiguredGeocoderAdapter extends GeocoderPort {
             if (selection.expiresAt <= now) this.selections.delete(key);
         }
         const endpoint = this.environment.VENUE_GEOCODER_ENDPOINT;
-        if (endpoint === undefined) throw venueError('GEOCODER_TEMPORARILY_UNAVAILABLE', 503);
+        if (endpoint === undefined || this.environment.EMERGENCY_DISABLE_VENUE_PROVIDERS === 'true')
+            throw venueError('GEOCODER_TEMPORARILY_UNAVAILABLE', 503);
         try {
             const url = new URL(endpoint);
             url.searchParams.set('q', query);
             url.searchParams.set('limit', String(limit));
-            const response = await fetch(url, {
-                headers: this.environment.VENUE_GEOCODER_TOKEN
-                    ? { Authorization: `Bearer ${this.environment.VENUE_GEOCODER_TOKEN}` }
-                    : {},
-                signal: AbortSignal.timeout(this.environment.DEPENDENCY_TIMEOUT_MS),
+            return await this.breaker.execute(async () => {
+                const response = await fetch(url, {
+                    headers: this.environment.VENUE_GEOCODER_TOKEN
+                        ? { Authorization: `Bearer ${this.environment.VENUE_GEOCODER_TOKEN}` }
+                        : {},
+                    signal: AbortSignal.timeout(this.environment.DEPENDENCY_TIMEOUT_MS),
+                });
+                if (!response.ok) throw new Error('provider rejected request');
+                const payload = (await response.json()) as { items?: ProviderItem[] };
+                return (payload.items ?? []).slice(0, limit).flatMap((item) => this.mapItem(item));
             });
-            if (!response.ok) throw new Error('provider rejected request');
-            const payload = (await response.json()) as { items?: ProviderItem[] };
-            return (payload.items ?? []).slice(0, limit).flatMap((item) => this.mapItem(item));
         } catch {
             throw venueError('GEOCODER_TEMPORARILY_UNAVAILABLE', 503);
         }

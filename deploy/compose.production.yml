@@ -1,0 +1,110 @@
+name: picklehub-production
+
+x-backend-environment: &backend-environment
+    NODE_ENV: production
+    DATABASE_URL: ${DATABASE_URL:?managed PostgreSQL/PostGIS URL is required}
+    REDIS_URL: ${REDIS_URL:?managed Redis URL is required}
+    REDIS_NAMESPACE: ${REDIS_NAMESPACE:?release-specific Redis namespace is required}
+    RU_DATA_RESIDENCY_CONFIRMED: ${RU_DATA_RESIDENCY_CONFIRMED:?approval gate is required}
+    OPERATIONS_METRICS_KEY: ${OPERATIONS_METRICS_KEY:?scrape credential is required}
+    IDENTITY_HMAC_KEY: ${IDENTITY_HMAC_KEY:?secret is required}
+    IDENTITY_ENCRYPTION_KEY: ${IDENTITY_ENCRYPTION_KEY:?secret is required}
+    TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:?secret is required}
+    EMAIL_PROVIDER_ENDPOINT: ${EMAIL_PROVIDER_ENDPOINT:?approved provider endpoint is required}
+    EMAIL_PROVIDER_TOKEN: ${EMAIL_PROVIDER_TOKEN:?secret is required}
+    COMMUNICATION_ENCRYPTION_KEY: ${COMMUNICATION_ENCRYPTION_KEY:?secret is required}
+    COMMUNICATION_HMAC_KEY: ${COMMUNICATION_HMAC_KEY:?secret is required}
+    SAFETY_ENCRYPTION_KEY: ${SAFETY_ENCRYPTION_KEY:?secret is required}
+    MINI_GAME_SIGNING_KEY: ${MINI_GAME_SIGNING_KEY:?secret is required}
+    MINI_GAME_ENCRYPTION_KEY: ${MINI_GAME_ENCRYPTION_KEY:?secret is required}
+    MINI_GAME_REWARDS_ENABLED: 'false'
+    LOG_LEVEL: info
+    HTTP_BODY_LIMIT_BYTES: 262144
+    HTTP_RATE_LIMIT_PER_MINUTE: 300
+    HEALTH_RATE_LIMIT_PER_MINUTE: 120
+    DEPENDENCY_TIMEOUT_MS: 1000
+    SHUTDOWN_GRACE_MS: 10000
+
+x-backend-service: &backend-service
+    image: ${BACKEND_IMAGE:?immutable backend image digest is required}
+    restart: unless-stopped
+    read_only: true
+    tmpfs: ['/tmp:size=32m,mode=1777']
+    security_opt: ['no-new-privileges:true']
+    cap_drop: ['ALL']
+    cpus: 1.0
+    mem_limit: 768m
+    pids_limit: 200
+    stop_grace_period: 15s
+
+services:
+    migrate:
+        <<: *backend-service
+        command: ['npm', 'run', 'prisma:migrate', '--workspace', '@picklehub/backend']
+        restart: 'no'
+        environment:
+            <<: *backend-environment
+            APP_ROLE: worker
+        cpus: 1.0
+        mem_limit: 512m
+
+    api:
+        <<: *backend-service
+        command: ['node', 'backend/dist/main.js']
+        environment:
+            <<: *backend-environment
+            APP_ROLE: api
+            HOST: 0.0.0.0
+            PORT: 3000
+        depends_on:
+            migrate:
+                condition: service_completed_successfully
+        ports: ['127.0.0.1:3000:3000']
+        healthcheck:
+            test:
+                [
+                    'CMD',
+                    'node',
+                    '-e',
+                    "fetch('http://127.0.0.1:3000/v1/health/ready').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
+                ]
+            interval: 10s
+            timeout: 2s
+            retries: 3
+            start_period: 20s
+
+    worker:
+        <<: *backend-service
+        command: ['node', 'backend/dist/worker.js']
+        environment:
+            <<: *backend-environment
+            APP_ROLE: worker
+        depends_on:
+            migrate:
+                condition: service_completed_successfully
+
+    web:
+        image: ${WEB_IMAGE:?immutable web image digest is required}
+        restart: unless-stopped
+        ports: ['127.0.0.1:8080:8080']
+        read_only: true
+        tmpfs: ['/var/cache/nginx:size=16m', '/var/run:size=1m']
+        security_opt: ['no-new-privileges:true']
+        cap_drop: ['ALL']
+        cap_add: ['CHOWN', 'SETGID', 'SETUID']
+        cpus: 0.25
+        mem_limit: 128m
+        pids_limit: 100
+
+    tg:
+        image: ${TG_IMAGE:?immutable TMA image digest is required}
+        restart: unless-stopped
+        ports: ['127.0.0.1:8081:8080']
+        read_only: true
+        tmpfs: ['/var/cache/nginx:size=16m', '/var/run:size=1m']
+        security_opt: ['no-new-privileges:true']
+        cap_drop: ['ALL']
+        cap_add: ['CHOWN', 'SETGID', 'SETUID']
+        cpus: 0.25
+        mem_limit: 128m
+        pids_limit: 100

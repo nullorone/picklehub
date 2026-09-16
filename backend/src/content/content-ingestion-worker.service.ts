@@ -23,7 +23,7 @@ export class ContentIngestionWorkerService implements OnApplicationBootstrap, On
     ) {}
 
     onApplicationBootstrap(): void {
-        if (this.environment.APP_ROLE !== 'worker') return;
+        if (this.environment.APP_ROLE !== 'worker' || this.environment.EMERGENCY_DISABLE_CONTENT === 'true') return;
         this.connection = this.redis.client.duplicate({ maxRetriesPerRequest: null });
         this.worker = new Worker<Record<string, never>, { attempted: number; succeeded: number }>(
             this.queue.name,

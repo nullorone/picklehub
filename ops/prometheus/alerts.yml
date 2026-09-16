@@ -1,0 +1,103 @@
+groups:
+    - name: picklehub-critical-path
+      interval: 30s
+      rules:
+          - alert: PickleHubC0FastBurn
+            expr: |
+                (
+                  sum(rate(picklehub_http_requests_total{scenario=~"AUTHENTICATION|JOIN|MATCH_COMPLETION",outcome="ERROR"}[1h]))
+                  /
+                  clamp_min(sum(rate(picklehub_http_requests_total{scenario=~"AUTHENTICATION|JOIN|MATCH_COMPLETION"}[1h])), 0.001)
+                ) > (14.4 * 0.001)
+            for: 5m
+            labels:
+                severity: page
+            annotations:
+                summary: C0 availability is consuming the provisional error budget quickly
+                runbook: llm/_docs/production-readiness-backend.md#c0-authentication-join-or-match-completion
+
+          - alert: PickleHubC1FastBurn
+            expr: |
+                (
+                  sum(rate(picklehub_http_requests_total{scenario=~"SEARCH|CHAT",outcome="ERROR"}[1h]))
+                  /
+                  clamp_min(sum(rate(picklehub_http_requests_total{scenario=~"SEARCH|CHAT"}[1h])), 0.001)
+                ) > (14.4 * 0.005)
+            for: 5m
+            labels:
+                severity: page
+            annotations:
+                summary: C1 availability is consuming the provisional error budget quickly
+                runbook: llm/_docs/production-readiness-backend.md#c1-search-or-chat
+
+          - alert: PickleHubOutboxLag
+            expr: picklehub_outbox_oldest_unpublished_seconds > 300
+            for: 5m
+            labels:
+                severity: page
+            annotations:
+                summary: A durable domain event has remained unpublished for more than five minutes
+                runbook: llm/_docs/production-readiness-backend.md#outbox-or-queue-backlog
+
+          - alert: PickleHubOutboxQuarantined
+            expr: picklehub_outbox_events{state="QUARANTINED"} > 0
+            for: 1m
+            labels:
+                severity: page
+            annotations:
+                summary: At least one outbox event exhausted automatic retries
+                runbook: llm/_docs/production-readiness-backend.md#outbox-or-queue-backlog
+
+          - alert: PickleHubQueueFailedJobs
+            expr: sum by (queue) (picklehub_queue_jobs{state="failed"}) > 0
+            for: 5m
+            labels:
+                severity: page
+            annotations:
+                summary: A durable worker queue contains terminally failed jobs
+                runbook: llm/_docs/production-readiness-backend.md#outbox-or-queue-backlog
+
+          - alert: PickleHubProviderCircuitOpen
+            expr: picklehub_provider_circuit_state == 2
+            for: 2m
+            labels:
+                severity: page
+            annotations:
+                summary: An outbound provider circuit remains open
+                runbook: llm/_docs/production-readiness-backend.md#c1-search-or-chat
+
+          - alert: PickleHubPrivacyTaskFailed
+            expr: picklehub_privacy_tasks{state=~"FAILED|BLOCKED"} > 0
+            for: 5m
+            labels:
+                severity: page
+            annotations:
+                summary: A privacy task requires operator or legal action
+                runbook: llm/_docs/production-readiness-backend.md#privacy-or-reconciliation-failure
+
+          - alert: PickleHubReconciliationFailed
+            expr: picklehub_reconciliation_runs{state="FAILED"} > 0
+            for: 5m
+            labels:
+                severity: page
+            annotations:
+                summary: Cross-store reconciliation failed
+                runbook: llm/_docs/production-readiness-backend.md#privacy-or-reconciliation-failure
+
+          - alert: PickleHubMemorySaturation
+            expr: picklehub_process_resident_memory_bytes > 644245094
+            for: 10m
+            labels:
+                severity: ticket
+            annotations:
+                summary: Backend RSS exceeds 80 percent of the 768 MiB reference limit
+                runbook: llm/_docs/production-readiness-backend.md#resource-saturation
+
+          - alert: PickleHubTelemetryAllowlistViolation
+            expr: increase(picklehub_telemetry_redaction_violations_total[5m]) > 0
+            for: 1m
+            labels:
+                severity: page
+            annotations:
+                summary: Runtime attempted to publish a metric outside the reviewed allowlist
+                runbook: llm/_docs/production-readiness-backend.md#telemetry-or-redaction

@@ -23,12 +23,16 @@ import { GamificationModule } from './gamification/gamification.module';
 import { ContentModule } from './content/content.module';
 import { AdvertisingModule } from './advertising/advertising.module';
 import { MiniGameModule } from './mini-game/mini-game.module';
+import { OperationsModule } from './operations/operations.module';
+import { TrafficControlModule } from './common/http/traffic-control.module';
 
 @Module({
     imports: [
         TypedConfigModule,
         RequestContextModule,
+        OperationsModule,
         LoggingModule,
+        TrafficControlModule,
         LifecycleModule,
         DatabaseModule,
         RedisModule,

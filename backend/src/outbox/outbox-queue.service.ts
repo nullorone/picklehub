@@ -11,6 +11,14 @@ export interface OutboxJobData {
     schemaVersion: number;
 }
 
+export interface QueueOperationalCount {
+    queue: 'outbox' | 'match_statistics' | 'communications' | 'profile_statistics' | 'gamification';
+    waiting: number;
+    active: number;
+    delayed: number;
+    failed: number;
+}
+
 @Injectable()
 export class OutboxQueueService implements OnModuleDestroy {
     private readonly queue: Queue<OutboxJobData>;
@@ -93,6 +101,28 @@ export class OutboxQueueService implements OnModuleDestroy {
     async isReady(): Promise<boolean> {
         await (await this.queue.client).ping();
         return true;
+    }
+
+    async operationalCounts(): Promise<QueueOperationalCount[]> {
+        const queues = [
+            ['outbox', this.queue],
+            ['match_statistics', this.matchStatisticsQueue],
+            ['communications', this.communicationQueue],
+            ['profile_statistics', this.profileStatisticsQueue],
+            ['gamification', this.gamificationQueue],
+        ] as const;
+        return Promise.all(
+            queues.map(async ([queue, instance]) => {
+                const counts = await instance.getJobCounts('waiting', 'active', 'delayed', 'failed');
+                return {
+                    queue,
+                    waiting: counts.waiting ?? 0,
+                    active: counts.active ?? 0,
+                    delayed: counts.delayed ?? 0,
+                    failed: counts.failed ?? 0,
+                };
+            })
+        );
     }
 
     async onModuleDestroy(): Promise<void> {

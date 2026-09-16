@@ -13,10 +13,6 @@ RUN PRISMA_SCHEMA_ENGINE_BINARY=/usr/bin/true \
     npm run prisma:generate --workspace @picklehub/backend \
     && npm run build --workspace @picklehub/backend
 
-FROM build AS migration
-ENV NODE_ENV=production
-CMD ["npm", "run", "prisma:migrate", "--workspace", "@picklehub/backend"]
-
 FROM node:22.19.0-bookworm-slim AS production-dependencies
 ENV PRISMA_SKIP_POSTINSTALL_GENERATE=true
 WORKDIR /app
@@ -39,3 +35,6 @@ USER node
 EXPOSE 3000
 ENTRYPOINT ["/usr/bin/tini", "--"]
 CMD ["node", "backend/dist/main.js"]
+
+FROM runtime AS migration
+CMD ["npm", "run", "prisma:migrate", "--workspace", "@picklehub/backend"]

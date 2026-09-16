@@ -14,7 +14,7 @@ export class ContentIngestionQueueService implements OnApplicationBootstrap, OnM
     constructor(@Inject(ENVIRONMENT) environment: Environment, redis: RedisService) {
         this.environment = environment;
         this.name = `${environment.REDIS_NAMESPACE}-content-ingestion-v1`;
-        if (environment.APP_ROLE === 'worker') {
+        if (environment.APP_ROLE === 'worker' && environment.EMERGENCY_DISABLE_CONTENT !== 'true') {
             this.queue = new Queue(this.name, {
                 connection: redis.client,
                 defaultJobOptions: {
@@ -28,7 +28,7 @@ export class ContentIngestionQueueService implements OnApplicationBootstrap, OnM
     }
 
     async onApplicationBootstrap(): Promise<void> {
-        if (this.environment.APP_ROLE !== 'worker') return;
+        if (this.environment.APP_ROLE !== 'worker' || this.environment.EMERGENCY_DISABLE_CONTENT === 'true') return;
         if (this.queue === undefined) throw new Error('Content ingestion queue is not configured for the worker');
         await this.queue.upsertJobScheduler(
             'content-source-poll-v1',

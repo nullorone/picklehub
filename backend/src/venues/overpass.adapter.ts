@@ -1,7 +1,9 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
 
 import { ENVIRONMENT } from '../common/config/config.module';
 import type { Environment } from '../common/config/environment';
+import { CircuitBreaker } from '../common/resilience/circuit-breaker';
+import { OperationalMetricsService } from '../operations/operational-metrics.service';
 import { normalizeVenueAddress, normalizeVenueText } from './venue-normalization';
 import { type ImportedVenue, VenueCatalogImportPort } from './venue-provider';
 
@@ -28,14 +30,27 @@ interface ImportScope {
 @Injectable()
 export class OverpassAdapter extends VenueCatalogImportPort {
     private lastRequestAt = 0;
+    private readonly breaker: CircuitBreaker;
 
-    constructor(@Inject(ENVIRONMENT) private readonly environment: Environment) {
+    constructor(
+        @Inject(ENVIRONMENT) private readonly environment: Environment,
+        @Optional() metrics?: OperationalMetricsService
+    ) {
         super();
+        this.breaker = new CircuitBreaker({
+            failureThreshold: environment.CIRCUIT_BREAKER_FAILURE_THRESHOLD,
+            resetAfterMs: environment.CIRCUIT_BREAKER_RESET_MS,
+            onResult: (outcome, state) => metrics?.observeProvider('overpass', outcome, state),
+        });
     }
 
     async fetch(scopeInput: string): Promise<{ sourceVersion: string; items: ImportedVenue[] }> {
         const endpoint = this.environment.VENUE_OVERPASS_ENDPOINT;
-        if (endpoint === undefined || this.environment.VENUE_OVERPASS_STORAGE_ALLOWED !== 'true') {
+        if (
+            endpoint === undefined ||
+            this.environment.VENUE_OVERPASS_STORAGE_ALLOWED !== 'true' ||
+            this.environment.EMERGENCY_DISABLE_VENUE_PROVIDERS === 'true'
+        ) {
             throw new Error('VENUE_IMPORT_PROVIDER_NOT_APPROVED');
         }
         const scope = this.parseScope(scopeInput);
@@ -45,15 +60,17 @@ export class OverpassAdapter extends VenueCatalogImportPort {
         let lastError: unknown;
         for (let attempt = 0; attempt < 3; attempt += 1) {
             try {
-                const response = await fetch(endpoint, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                        'User-Agent': this.environment.VENUE_OVERPASS_USER_AGENT ?? '',
-                    },
-                    body: new URLSearchParams({ data: query }),
-                    signal: AbortSignal.timeout(Math.max(this.environment.DEPENDENCY_TIMEOUT_MS, 5000)),
-                });
+                const response = await this.breaker.execute(() =>
+                    fetch(endpoint, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'User-Agent': this.environment.VENUE_OVERPASS_USER_AGENT ?? '',
+                        },
+                        body: new URLSearchParams({ data: query }),
+                        signal: AbortSignal.timeout(Math.max(this.environment.DEPENDENCY_TIMEOUT_MS, 5000)),
+                    })
+                );
                 if (!response.ok) throw new Error(`OVERPASS_HTTP_${String(response.status)}`);
                 const payload = (await response.json()) as {
                     osm3s?: { timestamp_osm_base?: string };

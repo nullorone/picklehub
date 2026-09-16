@@ -1,9 +1,11 @@
 import { HttpLoggingMiddleware } from '../../src/common/logging/http-logging.middleware';
 
+const metrics = { observeHttp: jest.fn() };
+
 describe('HttpLoggingMiddleware', () => {
     it('redacts raw match invite capabilities from structured logs', () => {
         const logger = { log: jest.fn() };
-        const middleware = new HttpLoggingMiddleware(logger as never);
+        const middleware = new HttpLoggingMiddleware(logger as never, metrics as never);
         let finish: (() => void) | undefined;
         const response = {
             statusCode: 200,
@@ -26,7 +28,7 @@ describe('HttpLoggingMiddleware', () => {
 
     it('redacts raw club invitation capabilities including command paths', () => {
         const logger = { log: jest.fn() };
-        const middleware = new HttpLoggingMiddleware(logger as never);
+        const middleware = new HttpLoggingMiddleware(logger as never, metrics as never);
         let finish: (() => void) | undefined;
         const response = {
             statusCode: 200,
