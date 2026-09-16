@@ -4226,3 +4226,49 @@ llm/_docs/security-privacy.md llm/_docs/analytics-plan.md`, `npm run docs:check`
   критические security/legal/provider пробелы запрещают публичный запуск. Нагрузочные измерения, production SLI,
   backup/restore, incident drill, фактическая РФ-локализация, legal approvals и provider checks этим этапом не
   выполнялись и остаются `NO-GO`. Следующий промпт — `llm/16-production-readiness/02-contract-data.md`; он не начат.
+
+## 2026-09-16 — production readiness, этап 02-contract-data
+
+- Активный промпт: `llm/16-production-readiness/02-contract-data.md`. TypeSpec добавляет private
+  `GET /v1/operations/metrics` с отдельным header credential, OpenMetrics 1.0, независимой schema version и
+  `no-store`; health/readiness остаются под REST major `/v1` и не раскрывают dependencies, topology, build или
+  ошибки. Runtime endpoint/perimeter этим контрактным этапом не реализованы.
+- Документ `llm/_docs/production-readiness-contract-data.md` фиксирует совместимость backend/frontend/worker/schema
+  соседних версий, deprecation событий и метрик, expand/migrate/contract, environment matrix, recovery order и
+  provider-independent secret ownership/rotation. Все 23 миграции получили явный `EMPTY`/`EXPAND`/`BLOCKED`
+  disposition с lock/runtime и recovery/backup gate.
+- Пять существующих migration paths честно помечены `BLOCKED` для заполненной production-БД: audit unique/check,
+  gamification index replacement, advertising trigger/check replacement, mobile checks/enums и mini-game enum
+  rewrite. Утверждённого production runbook и человеческих подписей нет; до replacement/production-like upgrade
+  evidence они запрещают rollout, а применённый SQL нельзя редактировать.
+- Prisma migration `20260916190000_production_readiness_contract_data` и schema добавляют минимальный control
+  plane: export/erasure receipts, идемпотентные sink tasks с leases, append-only keyed deletion suppression,
+  encrypted object locator registry, PostgreSQL/Redis/object/projection/outbox reconciliation и адресные legal
+  holds. Constraints/transition triggers исключают raw email/Telegram/object key/export payload, resurrection
+  terminal deletion и неограниченный account-wide hold.
+- OpenAPI и оба TypeScript generated artifacts обновлены только генератором. Новый policy проверяет dedicated
+  metrics auth/version/media type, минимальный health shape, полный migration disposition и privacy schema.
+  `16-production-readiness/03-backend.md` не начинался.
+
+### Проверки этапа production-readiness 02-contract-data
+
+- `npm run contracts:lint` — успешно: 238 REST operations, 69 AsyncAPI messages и 194/194 contract/policy/data
+  tests, включая 3/3 новых production-readiness tests. `npm run contracts:breaking`,
+  `npm run contracts:generated:check`, `npm run contracts:typecheck` и `npm run contracts:mobile:check` — успешно;
+  compatibility проверена относительно `HEAD`, generated OpenAPI/TypeScript воспроизводимы.
+- `PRISMA_SCHEMA_ENGINE_BINARY=/private/tmp/picklehub-prisma-engine.UFwKg6/schema-engine
+PRISMA_QUERY_ENGINE_LIBRARY=/usr/bin/true DATABASE_URL=postgresql://picklehub:picklehub@127.0.0.1:5432/picklehub
+npm exec --workspace @picklehub/backend -- prisma validate --schema prisma/schema.prisma` — успешно. Та же среда
+  с `prisma migrate deploy` не подключилась к PostgreSQL (`P1001` на `127.0.0.1:5432`), поэтому clean/upgrade SQL,
+  lock timing, triggers и restore/reconciliation на реальной БД не заявляются проверенными.
+- `npm run contracts:mock:check` заблокирован sandbox-запретом `listen EPERM 127.0.0.1`; новый OpenMetrics mock
+  assertion не выполнялся и не выдан за успешный. TypeSpec compile, Redocly и static policy до этого прошли.
+- `npm run workspace:check`, `npm run format:check`, `npm run docs:check` и `git diff --check` — успешно: 9
+  workspaces, 15 TypeSpec-файлов, 147 Markdown-файлов и отсутствие whitespace errors.
+- `npm run lint` и `npm run typecheck` — успешно, по 10/10 workspace tasks. `npm test` — 16/16 tasks: backend
+  50/50 suites и 302/302 tests, web 14/14 и 59/59, TMA 11/11 и 34/34, mobile 4/4 и 17/17, mini-game 2/2 и 7/7.
+  `EXPO_NO_TELEMETRY=1 npm run build -- --env-mode=loose` — успешно, 10/10 builds с iOS/Android Expo exports;
+  остаются прежние неблокирующие warnings chunks около 707/668/924 KiB.
+- Публичный production остаётся `NO-GO`: metrics/privacy/reconciliation runtime, реальный migration/restore drill,
+  secret rotation, legal retention/deadlines, provider approvals и РФ-размещение относятся к следующим этапам и
+  внешним gates.

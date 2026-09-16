@@ -3592,6 +3592,26 @@ export type paths = {
         readonly patch?: never;
         readonly trace?: never;
     };
+    readonly '/operations/metrics': {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        /**
+         * Scrape versioned operational metrics
+         * @description Restricted to the private monitoring network and a separately rotated scrape credential. The v1 allowlist excludes user, match, club, provider response, raw URL, IP, coordinates, object keys and arbitrary error text from names, labels and exemplars. A schema change that removes or redefines a family requires a new metrics schema version and an overlap window.
+         */
+        readonly get: operations['scrapeOperationalMetricsV1'];
+        readonly put?: never;
+        readonly post?: never;
+        readonly delete?: never;
+        readonly options?: never;
+        readonly head?: never;
+        readonly patch?: never;
+        readonly trace?: never;
+    };
     readonly '/players/{playerId}': {
         readonly parameters: {
             readonly query?: never;
@@ -6830,6 +6850,12 @@ export type components = {
         };
         /** @enum {string} */
         readonly OnboardingStatus: 'DRAFT' | 'COMPLETED';
+        readonly OperationalMetricsHeaders: Record<string, never>;
+        /**
+         * @description Version of the allowlisted operational metric names and labels, independent from the application release.
+         * @enum {string}
+         */
+        readonly OperationalMetricsSchemaVersion: '1';
         readonly OwnReview: {
             readonly editableUntil: components['schemas']['Timestamp'];
             /** Format: int32 */
@@ -8607,6 +8633,8 @@ export type SchemaNotificationType = components['schemas']['NotificationType'];
 export type SchemaOnboarding = components['schemas']['Onboarding'];
 export type SchemaOnboardingOptions = components['schemas']['OnboardingOptions'];
 export type SchemaOnboardingStatus = components['schemas']['OnboardingStatus'];
+export type SchemaOperationalMetricsHeaders = components['schemas']['OperationalMetricsHeaders'];
+export type SchemaOperationalMetricsSchemaVersion = components['schemas']['OperationalMetricsSchemaVersion'];
 export type SchemaOwnReview = components['schemas']['OwnReview'];
 export type SchemaOwnSafetyReportDetail = components['schemas']['OwnSafetyReportDetail'];
 export type SchemaOwnSafetyTextEntry = components['schemas']['OwnSafetyTextEntry'];
@@ -47955,6 +47983,92 @@ export interface operations {
                         };
                         readonly requestId: components['schemas']['RequestId'];
                     };
+                };
+            };
+        };
+    };
+    readonly scrapeOperationalMetricsV1: {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: {
+                /** @description Preferred BCP 47 response locale. Russian is used when no supported locale matches. */
+                readonly 'Accept-Language'?: string;
+                /** @description Optional identifier joining work across requests. Invalid values are ignored and replaced. */
+                readonly 'X-Correlation-ID'?: components['schemas']['CorrelationId'];
+                /** @description Optional caller request identifier. Invalid values are ignored and replaced by the server. */
+                readonly 'X-Request-ID'?: components['schemas']['RequestId'];
+            };
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        readonly requestBody?: never;
+        readonly responses: {
+            /** @description An OpenMetrics 1.0 payload containing only reviewed metric families and bounded labels. */
+            readonly 200: {
+                headers: {
+                    readonly 'Cache-Control': 'no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    readonly 'X-Metrics-Schema-Version': components['schemas']['OperationalMetricsSchemaVersion'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/openmetrics-text; version=1.0.0; charset=utf-8': string;
+                };
+            };
+            /** @description The scrape credential is absent, expired or invalid. The response never distinguishes those cases. */
+            readonly 401: {
+                headers: {
+                    readonly 'Cache-Control': 'no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': components['schemas']['ErrorEnvelope'];
+                };
+            };
+            /** @description The applicable rate limit was exceeded. */
+            readonly 429: {
+                headers: {
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Non-negative whole seconds before the client should retry. */
+                    readonly 'Retry-After': number;
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': components['schemas']['ErrorEnvelope'];
+                };
+            };
+            /** @description Metrics collection is temporarily unavailable. Product readiness is evaluated independently. */
+            readonly 503: {
+                headers: {
+                    readonly 'Cache-Control': 'no-store';
+                    /** @description BCP 47 locale used for human-readable text in the response. */
+                    readonly 'Content-Language': components['schemas']['Locale'];
+                    /** @description Non-negative whole seconds before the client should retry. */
+                    readonly 'Retry-After': number;
+                    /** @description Server-validated identifier joining related requests and background work. */
+                    readonly 'X-Correlation-ID': components['schemas']['CorrelationId'];
+                    /** @description Server-validated request identifier, also present in response bodies where defined. */
+                    readonly 'X-Request-ID': components['schemas']['RequestId'];
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly 'application/json': components['schemas']['ErrorEnvelope'];
                 };
             };
         };

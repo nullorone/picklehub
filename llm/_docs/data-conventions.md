@@ -128,6 +128,11 @@
 [`contracts/README.md`](../../contracts/README.md). Общие security-требования находятся в
 [`security-privacy.md`](security-privacy.md), а направления зависимостей — в [`architecture.md`](architecture.md).
 
+Production privacy tasks, keyed suppression, encrypted object registry, reconciliation records и exhaustive
+migration disposition определены в
+[`production-readiness-contract-data.md`](production-readiness-contract-data.md). Raw subject/object keys и export
+payload не входят в task, finding, log, audit или metrics.
+
 ## Mini-game proofs и bounded rewards
 
 - Challenge/result/WebView capability — bearer secrets только в TLS body/header. В database сохраняется keyed

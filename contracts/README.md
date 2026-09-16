@@ -25,7 +25,8 @@ npm run contracts:check
   operation/message IDs, версионированные envelopes, UTC timestamps, `no-store`, browser CSRF/cookie и безопасный
   payload внутренних identity/venue/match/communication/profile/club/tournament/gamification/content/advertising events,
   admin capability registry и
-  notification jobs и privacy-minimized mini-game receipt/reward events.
+  notification jobs, privacy-minimized mini-game receipt/reward events и отдельный versioned operations metrics
+  surface без высококардинальных labels.
   Статические data-policy тесты
   дополнительно удерживают
   обязательные migration constraints, GiST-стратегию, provenance, постоянные merge aliases, вместимость/FIFO и
@@ -47,7 +48,7 @@ npm run contracts:check
   gamification, content, advertising и mini-game,
   проверяет status,
   JSON shape и
-  `no-store`, включая private progress геймификации.
+  `no-store`, включая private progress геймификации и versioned OpenMetrics response.
   AsyncAPI examples проверяются
   parser/linter в `contracts:lint`.
 
@@ -70,6 +71,15 @@ namespace сообщения: так одинаковые внутренние �
 4. Не редактировать `contracts/generated/` и не копировать transport DTO вручную. Prisma schema и database column
    names не экспортируются через контракт.
 5. Examples используют только вымышленные UUID, время и тексты без реальных персональных данных или credentials.
+
+## Production readiness
+
+`GET /v1/operations/metrics` использует отдельный header credential и OpenMetrics schema version; это private
+monitoring surface, а не пользовательский или admin API. Health не раскрывает зависимости, build и topology.
+Правила совместимости соседних версий, полный аудит миграций, privacy lifecycle/reconciliation, матрица окружений и
+ротация секретов находятся в
+[`production-readiness-contract-data.md`](../llm/_docs/production-readiness-contract-data.md). Наличие контракта не
+означает, что perimeter, runtime scrape, restore или rotation уже проверены.
 
 ## Макеты
 

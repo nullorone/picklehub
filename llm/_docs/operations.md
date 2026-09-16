@@ -66,6 +66,12 @@ Production rollout, backup/restore, startup probe, TLS termination, secret manag
 retention и data-residency review остаются gates этапа production readiness. Отсутствующие интеграции не
 подменяются успешными заглушками: foundation readiness проверяет только PostgreSQL/PostGIS и Redis.
 
+Контрактный production-readiness этап добавляет private versioned metrics surface и схемы privacy lifecycle,
+suppression, object inventory и reconciliation. Их topology, совместимость, migration gates, environment matrix и
+secret rotation описаны в
+[`production-readiness-contract-data.md`](production-readiness-contract-data.md); runtime/restore evidence пока не
+заявляется.
+
 ## Диагностика
 
 - `docker compose --profile foundation config --quiet` проверяет структуру Compose без запуска.

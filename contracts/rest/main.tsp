@@ -14,6 +14,7 @@ import "./gamification.tsp";
 import "./content.tsp";
 import "./advertising.tsp";
 import "./mini-game.tsp";
+import "./production-readiness.tsp";
 
 using TypeSpec.Http;
 using TypeSpec.OpenAPI;
@@ -39,7 +40,8 @@ using TypeSpec.OpenAPI;
     #{ name: "Gamification", description: "Private XP progress, achievements and consented seasonal leaderboards." },
     #{ name: "Content", description: "Published editorial articles, self-only bookmarks and staff CMS workflows." },
     #{ name: "Advertising", description: "Contextual ad decisions, accountable measurement and governed inventory." },
-    #{ name: "MiniGame", description: "Short-lived single-player game sessions and capped private rewards." }
+    #{ name: "MiniGame", description: "Short-lived single-player game sessions and capped private rewards." },
+    #{ name: "Operations", description: "Versioned health and restricted low-cardinality operational telemetry." }
 ])
 namespace PickleHub;
 

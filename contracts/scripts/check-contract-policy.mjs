@@ -19,6 +19,7 @@ import { checkGamificationContract, gamificationEventFields, gamificationOperati
 import { checkContentContract, contentEventFields, contentOperations } from './content-policy.mjs';
 import { advertisingEventFields, advertisingOperations, checkAdvertisingContract } from './advertising-policy.mjs';
 import { checkMiniGameContract, miniGameEventFields, miniGameOperations } from './mini-game-policy.mjs';
+import { checkProductionReadinessContract, productionReadinessOperations } from './production-readiness-policy.mjs';
 
 const allowedPaths = new Set([
     '/health/live',
@@ -36,6 +37,7 @@ const allowedPaths = new Set([
     ...Object.keys(contentOperations),
     ...Object.keys(advertisingOperations),
     ...Object.keys(miniGameOperations),
+    ...Object.keys(productionReadinessOperations),
 ]);
 const allowedProtocolMessages = new Set([
     'session.authenticate.v1',
@@ -182,5 +184,6 @@ checkGamificationContract(openApi, asyncApi);
 checkContentContract(openApi, asyncApi);
 checkAdvertisingContract(openApi, asyncApi);
 checkMiniGameContract(openApi, asyncApi);
+checkProductionReadinessContract(openApi);
 
 console.log(`Contract policy passed: ${operationIds.length} REST operations, ${messageNames.length} messages.`);

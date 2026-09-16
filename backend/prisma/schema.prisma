@@ -277,6 +277,7 @@ model User {
   notifications                   Notification[]
   notificationDevices             NotificationDevice[]
   communicationIdempotencyRecords CommunicationIdempotencyRecord[]
+  privacyRequests                 PrivacyRequest[]
   clubMemberships                 ClubMembership[]
 
   @@map("identity_users")
@@ -4123,4 +4124,224 @@ model MiniGameOperationReceipt {
   @@unique([actorUserId, method, canonicalPath, idempotencyKey], map: "mini_game_operation_receipts_scope_key")
   @@index([expiresAt], map: "mini_game_operation_receipts_expiry_idx")
   @@map("mini_game_operation_receipts")
+}
+
+// Production-readiness control plane. These records contain opaque references only; export payloads and object
+// keys remain encrypted outside ordinary application access.
+enum PrivacyRequestKind {
+  EXPORT
+  ERASURE
+
+  @@map("privacy_request_kind")
+}
+
+enum PrivacyRequestState {
+  REQUESTED
+  IN_PROGRESS
+  READY
+  COMPLETED
+  FAILED
+  BLOCKED
+
+  @@map("privacy_request_state")
+}
+
+enum DataLifecycleTaskKind {
+  EXPORT
+  ERASURE
+  RETENTION
+  RECONCILIATION
+
+  @@map("data_lifecycle_task_kind")
+}
+
+enum DataLifecycleTaskState {
+  PENDING
+  RUNNING
+  SUCCEEDED
+  FAILED
+  BLOCKED
+
+  @@map("data_lifecycle_task_state")
+}
+
+enum DataSinkKind {
+  POSTGRESQL
+  OBJECT_STORAGE
+  REDIS
+  QUEUE
+  SEARCH
+  ANALYTICS
+  OBSERVABILITY
+  PROVIDER
+  BACKUP
+
+  @@map("data_sink_kind")
+}
+
+enum StorageObjectState {
+  REFERENCED
+  DELETE_PENDING
+  DELETED
+  MISSING
+
+  @@map("storage_object_state")
+}
+
+enum ReconciliationKind {
+  POSTGRESQL_REDIS
+  POSTGRESQL_OBJECT_STORAGE
+  POSTGRESQL_PROJECTIONS
+  POSTGRESQL_OUTBOX
+
+  @@map("reconciliation_kind")
+}
+
+enum ReconciliationState {
+  RUNNING
+  SUCCEEDED
+  FAILED
+
+  @@map("reconciliation_state")
+}
+
+enum ReconciliationFindingKind {
+  MISSING_DERIVED_RECORD
+  STALE_DERIVED_RECORD
+  MISSING_OBJECT
+  ORPHAN_OBJECT
+  OUTBOX_GAP
+
+  @@map("reconciliation_finding_kind")
+}
+
+model PrivacyRequest {
+  id                    String              @id @db.Uuid
+  userId                String              @map("user_id") @db.Uuid
+  kind                  PrivacyRequestKind
+  state                 PrivacyRequestState @default(REQUESTED)
+  policyVersion         String              @map("policy_version") @db.VarChar(128)
+  requestedAt           DateTime            @map("requested_at") @db.Timestamptz(3)
+  dueAt                 DateTime            @map("due_at") @db.Timestamptz(3)
+  reauthenticatedAt     DateTime            @map("reauthenticated_at") @db.Timestamptz(3)
+  completedAt           DateTime?           @map("completed_at") @db.Timestamptz(3)
+  artifactKeyCiphertext Bytes?              @map("artifact_key_ciphertext")
+  artifactKeyVersion    Int?                @map("artifact_key_version")
+  artifactExpiresAt     DateTime?           @map("artifact_expires_at") @db.Timestamptz(3)
+  artifactConsumedAt    DateTime?           @map("artifact_consumed_at") @db.Timestamptz(3)
+  failureCode           String?             @map("failure_code") @db.VarChar(96)
+  createdAt             DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt             DateTime            @default(now()) @map("updated_at") @db.Timestamptz(3)
+  user                  User                @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  tasks                 DataLifecycleTask[]
+
+  @@index([state, dueAt, id], map: "privacy_requests_due_idx")
+  @@index([userId, requestedAt, id], map: "privacy_requests_owner_idx")
+  @@map("privacy_requests")
+}
+
+model DataLifecycleTask {
+  id               String                 @id @db.Uuid
+  privacyRequestId String?                @map("privacy_request_id") @db.Uuid
+  kind             DataLifecycleTaskKind
+  sink             DataSinkKind
+  bucketCode       String                 @map("bucket_code") @db.VarChar(64)
+  state            DataLifecycleTaskState @default(PENDING)
+  attempt          Int                    @default(0)
+  availableAt      DateTime               @map("available_at") @db.Timestamptz(3)
+  claimedAt        DateTime?              @map("claimed_at") @db.Timestamptz(3)
+  claimExpiresAt   DateTime?              @map("claim_expires_at") @db.Timestamptz(3)
+  completedAt      DateTime?              @map("completed_at") @db.Timestamptz(3)
+  lastErrorCode    String?                @map("last_error_code") @db.VarChar(96)
+  createdAt        DateTime               @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt        DateTime               @default(now()) @map("updated_at") @db.Timestamptz(3)
+  privacyRequest   PrivacyRequest?        @relation(fields: [privacyRequestId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([privacyRequestId, sink, bucketCode], map: "data_lifecycle_tasks_request_sink_key")
+  @@index([state, availableAt, id], map: "data_lifecycle_tasks_dispatch_idx")
+  @@map("data_lifecycle_tasks")
+}
+
+model DeletionSuppression {
+  id            String   @id @db.Uuid
+  subjectKind   String   @map("subject_kind") @db.VarChar(64)
+  subjectKey    String   @map("subject_key") @db.Char(64)
+  policyVersion String   @map("policy_version") @db.VarChar(128)
+  effectiveAt   DateTime @map("effective_at") @db.Timestamptz(3)
+  backupPurgeAt DateTime @map("backup_purge_at") @db.Timestamptz(3)
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@unique([subjectKind, subjectKey], map: "deletion_suppressions_subject_key")
+  @@index([backupPurgeAt], map: "deletion_suppressions_backup_idx")
+  @@map("deletion_suppressions")
+}
+
+model StorageObjectRecord {
+  id                   String             @id @db.Uuid
+  storageClass         String             @map("storage_class") @db.VarChar(64)
+  bucketCode           String             @map("bucket_code") @db.VarChar(64)
+  objectKeyHash        String             @map("object_key_hash") @db.Char(64)
+  objectKeyCiphertext  Bytes              @map("object_key_ciphertext")
+  encryptionKeyVersion Int                @map("encryption_key_version")
+  ownerType            String             @map("owner_type") @db.VarChar(64)
+  ownerId              String             @map("owner_id") @db.Uuid
+  state                StorageObjectState @default(REFERENCED)
+  retentionExpiresAt   DateTime?          @map("retention_expires_at") @db.Timestamptz(3)
+  deletedAt            DateTime?          @map("deleted_at") @db.Timestamptz(3)
+  createdAt            DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt            DateTime           @default(now()) @map("updated_at") @db.Timestamptz(3)
+
+  @@unique([storageClass, bucketCode, objectKeyHash], map: "storage_object_records_object_key")
+  @@index([state, retentionExpiresAt, id], map: "storage_object_records_retention_idx")
+  @@index([ownerType, ownerId], map: "storage_object_records_owner_idx")
+  @@map("storage_object_records")
+}
+
+model ReconciliationRun {
+  id            String                  @id @db.Uuid
+  kind          ReconciliationKind
+  state         ReconciliationState     @default(RUNNING)
+  highWatermark DateTime                @map("high_watermark") @db.Timestamptz(3)
+  examinedCount BigInt                  @default(0) @map("examined_count")
+  findingCount  BigInt                  @default(0) @map("finding_count")
+  repairedCount BigInt                  @default(0) @map("repaired_count")
+  startedAt     DateTime                @map("started_at") @db.Timestamptz(3)
+  completedAt   DateTime?               @map("completed_at") @db.Timestamptz(3)
+  lastErrorCode String?                 @map("last_error_code") @db.VarChar(96)
+  findings      ReconciliationFinding[]
+
+  @@index([kind, startedAt, id], map: "reconciliation_runs_history_idx")
+  @@map("reconciliation_runs")
+}
+
+model ReconciliationFinding {
+  id            String                    @id @db.Uuid
+  runId         String                    @map("run_id") @db.Uuid
+  kind          ReconciliationFindingKind
+  referenceHash String                    @map("reference_hash") @db.Char(64)
+  repairCode    String?                   @map("repair_code") @db.VarChar(96)
+  discoveredAt  DateTime                  @map("discovered_at") @db.Timestamptz(3)
+  resolvedAt    DateTime?                 @map("resolved_at") @db.Timestamptz(3)
+  run           ReconciliationRun         @relation(fields: [runId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([runId, kind, referenceHash], map: "reconciliation_findings_run_reference_key")
+  @@index([resolvedAt, discoveredAt], map: "reconciliation_findings_open_idx")
+  @@map("reconciliation_findings")
+}
+
+model DataLegalHold {
+  id                  String    @id @db.Uuid
+  recordScope         String    @map("record_scope") @db.VarChar(96)
+  recordReferenceHash String    @map("record_reference_hash") @db.Char(64)
+  reasonCode          String    @map("reason_code") @db.VarChar(96)
+  policyVersion       String    @map("policy_version") @db.VarChar(128)
+  ownerReference      String    @map("owner_reference") @db.Uuid
+  reviewAt            DateTime  @map("review_at") @db.Timestamptz(3)
+  expiresAt           DateTime  @map("expires_at") @db.Timestamptz(3)
+  releasedAt          DateTime? @map("released_at") @db.Timestamptz(3)
+  createdAt           DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([expiresAt, releasedAt], map: "data_legal_holds_expiry_idx")
+  @@index([recordScope, recordReferenceHash], map: "data_legal_holds_record_idx")
+  @@map("data_legal_holds")
 }

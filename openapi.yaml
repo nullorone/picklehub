@@ -35,6 +35,8 @@ tags:
     description: Contextual ad decisions, accountable measurement and governed inventory.
   - name: MiniGame
     description: Short-lived single-player game sessions and capped private rewards.
+  - name: Operations
+    description: Versioned health and restricted low-cardinality operational telemetry.
 paths:
   /admin/advertising/campaigns:
     get:
@@ -84310,6 +84312,161 @@ paths:
         - Communications
       security:
         - BearerAuth: []
+  /operations/metrics:
+    get:
+      operationId: scrapeOperationalMetricsV1
+      summary: Scrape versioned operational metrics
+      description: Restricted to the private monitoring network and a separately rotated scrape credential. The v1 allowlist excludes user, match, club, provider response, raw URL, IP, coordinates, object keys and arbitrary error text from names, labels and exemplars. A schema change that removes or redefines a family requires a new metrics schema version and an overlap window.
+      parameters:
+        - name: X-Request-ID
+          in: header
+          required: false
+          description: Optional caller request identifier. Invalid values are ignored and replaced by the server.
+          schema:
+            $ref: '#/components/schemas/RequestId'
+        - name: X-Correlation-ID
+          in: header
+          required: false
+          description: Optional identifier joining work across requests. Invalid values are ignored and replaced.
+          schema:
+            $ref: '#/components/schemas/CorrelationId'
+        - name: Accept-Language
+          in: header
+          required: false
+          description: Preferred BCP 47 response locale. Russian is used when no supported locale matches.
+          schema:
+            type: string
+            minLength: 2
+            maxLength: 128
+      responses:
+        '200':
+          description: An OpenMetrics 1.0 payload containing only reviewed metric families and bounded labels.
+          headers:
+            X-Request-ID:
+              required: true
+              description: Server-validated request identifier, also present in response bodies where defined.
+              schema:
+                $ref: '#/components/schemas/RequestId'
+            X-Correlation-ID:
+              required: true
+              description: Server-validated identifier joining related requests and background work.
+              schema:
+                $ref: '#/components/schemas/CorrelationId'
+            Content-Language:
+              required: true
+              description: BCP 47 locale used for human-readable text in the response.
+              schema:
+                $ref: '#/components/schemas/Locale'
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+            X-Metrics-Schema-Version:
+              required: true
+              schema:
+                $ref: '#/components/schemas/OperationalMetricsSchemaVersion'
+          content:
+            application/openmetrics-text; version=1.0.0; charset=utf-8:
+              schema:
+                type: string
+        '401':
+          description: The scrape credential is absent, expired or invalid. The response never distinguishes those cases.
+          headers:
+            X-Request-ID:
+              required: true
+              description: Server-validated request identifier, also present in response bodies where defined.
+              schema:
+                $ref: '#/components/schemas/RequestId'
+            X-Correlation-ID:
+              required: true
+              description: Server-validated identifier joining related requests and background work.
+              schema:
+                $ref: '#/components/schemas/CorrelationId'
+            Content-Language:
+              required: true
+              description: BCP 47 locale used for human-readable text in the response.
+              schema:
+                $ref: '#/components/schemas/Locale'
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '429':
+          description: The applicable rate limit was exceeded.
+          headers:
+            X-Request-ID:
+              required: true
+              description: Server-validated request identifier, also present in response bodies where defined.
+              schema:
+                $ref: '#/components/schemas/RequestId'
+            X-Correlation-ID:
+              required: true
+              description: Server-validated identifier joining related requests and background work.
+              schema:
+                $ref: '#/components/schemas/CorrelationId'
+            Content-Language:
+              required: true
+              description: BCP 47 locale used for human-readable text in the response.
+              schema:
+                $ref: '#/components/schemas/Locale'
+            Retry-After:
+              required: true
+              description: Non-negative whole seconds before the client should retry.
+              schema:
+                type: integer
+                format: int32
+                minimum: 0
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '503':
+          description: Metrics collection is temporarily unavailable. Product readiness is evaluated independently.
+          headers:
+            X-Request-ID:
+              required: true
+              description: Server-validated request identifier, also present in response bodies where defined.
+              schema:
+                $ref: '#/components/schemas/RequestId'
+            X-Correlation-ID:
+              required: true
+              description: Server-validated identifier joining related requests and background work.
+              schema:
+                $ref: '#/components/schemas/CorrelationId'
+            Content-Language:
+              required: true
+              description: BCP 47 locale used for human-readable text in the response.
+              schema:
+                $ref: '#/components/schemas/Locale'
+            Retry-After:
+              required: true
+              description: Non-negative whole seconds before the client should retry.
+              schema:
+                type: integer
+                format: int32
+                minimum: 0
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+      tags:
+        - Operations
+      security:
+        - ApiKeyAuth_: []
   /players/{playerId}:
     get:
       operationId: getPublicPlayerProfile
@@ -105288,6 +105445,15 @@ components:
       enum:
         - DRAFT
         - COMPLETED
+    OperationalMetricsHeaders:
+      type: object
+      unevaluatedProperties:
+        not: {}
+    OperationalMetricsSchemaVersion:
+      type: string
+      enum:
+        - '1'
+      description: Version of the allowlisted operational metric names and labels, independent from the application release.
     OwnReview:
       type: object
       required:
@@ -109150,6 +109316,10 @@ components:
     BearerAuth:
       type: http
       scheme: Bearer
+    ApiKeyAuth_:
+      type: apiKey
+      in: header
+      name: X-Operations-Key
 servers:
   - url: /v1
     description: Version 1, relative to the current API origin

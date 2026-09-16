@@ -76,6 +76,23 @@ try {
         throw new Error(`Unexpected readiness mock: ${ready.status} ${JSON.stringify(readyBody)}`);
     }
 
+    const metrics = await fetch(`http://${host}:${port}/operations/metrics`, {
+        headers: {
+            'accept-language': 'ru-RU',
+            'x-operations-key': 'synthetic-contract-key',
+        },
+    });
+    requireNoStore(metrics, 'Operational metrics response');
+    const metricsBody = await metrics.text();
+    if (
+        metrics.status !== 200 ||
+        metrics.headers.get('x-metrics-schema-version') !== '1' ||
+        !metrics.headers.get('content-type')?.startsWith('application/openmetrics-text') ||
+        metricsBody.length === 0
+    ) {
+        throw new Error(`Unexpected operational metrics mock: ${metrics.status}`);
+    }
+
     const context = await fetch(`http://${host}:${port}/auth/context`, {
         headers: { 'accept-language': 'ru-RU' },
     });
