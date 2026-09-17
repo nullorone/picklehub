@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { test } from 'node:test';
-import { resolve } from 'node:path';
+import { posix, resolve } from 'node:path';
 
 const root = resolve(import.meta.dirname, '../..');
 const read = (path) => readFile(resolve(root, path), 'utf8');
@@ -14,9 +14,51 @@ test('web and TMA are separate immutable artifacts with public source maps disab
             read(`frontend/${client}/package.json`),
         ]);
         assert.match(dockerfile, /build:release/u);
+        assert.match(dockerfile, /COPY scripts\/release\/build-client\.mjs/u);
         assert.match(dockerfile, /org\.opencontainers\.image\.revision/u);
         assert.match(vite, /sourcemap: false/u);
         assert.match(packageJson, /"build:release"/u);
+    }
+});
+
+test('client lockfile includes native build bindings for Alpine ARM64 and x64', async () => {
+    const lock = JSON.parse(await read('package-lock.json'));
+    const bindings = [
+        '@esbuild/linux-arm64',
+        '@esbuild/linux-x64',
+        '@rolldown/binding-linux-arm64-musl',
+        '@rolldown/binding-linux-x64-musl',
+        '@rollup/rollup-linux-arm64-musl',
+        '@rollup/rollup-linux-x64-musl',
+        'lightningcss-linux-arm64-musl',
+        'lightningcss-linux-x64-musl',
+    ];
+    for (const binding of bindings) {
+        const dependency = lock.packages[`node_modules/${binding}`];
+        assert.ok(dependency, `${binding} must be present for reproducible Docker builds`);
+        assert.match(dependency.resolved, /^https:\/\/registry\.npmjs\.org\//u);
+        assert.match(dependency.integrity, /^sha512-/u);
+    }
+});
+
+test('lockfile resolves every pinned optional dependency from its owning package', async () => {
+    const { packages } = JSON.parse(await read('package-lock.json'));
+    for (const [ownerPath, owner] of Object.entries(packages)) {
+        for (const [name, version] of Object.entries(owner.optionalDependencies ?? {})) {
+            if (!/^\d+\.\d+\.\d+$/u.test(version)) continue;
+            let directory = ownerPath;
+            let dependency;
+            while (true) {
+                dependency = packages[posix.join(directory, 'node_modules', name)];
+                if (dependency || directory === '.') break;
+                directory = posix.dirname(directory);
+            }
+            const context = `${ownerPath} requires ${name}@${version}`;
+            assert.ok(dependency, `${context}: missing from lockfile`);
+            assert.equal(dependency.version, version, context);
+            assert.match(dependency.resolved, /^https:\/\/registry\.npmjs\.org\//u, context);
+            assert.match(dependency.integrity, /^sha512-/u, context);
+        }
     }
 });
 

@@ -32,7 +32,8 @@ ALTER TABLE "notification_deliveries"
     DROP CONSTRAINT "notification_deliveries_external_only_check";
 ALTER TABLE "notification_deliveries"
     ADD CONSTRAINT "notification_deliveries_external_only_check"
-    CHECK ("channel" IN ('TELEGRAM', 'EMAIL', 'PUSH'));
+    -- Compare text so the newly added enum value is not used before transaction commit.
+    CHECK ("channel"::text IN ('TELEGRAM', 'EMAIL', 'PUSH'));
 
 CREATE TABLE "push_registrations" (
     "id" UUID NOT NULL,

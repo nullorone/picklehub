@@ -12,7 +12,19 @@ Backend собирается многоэтапно. Build stage содержи�
 `tini`. Оба запускаются как `node`, а не root; секреты и `.env` в образ не копируются. Prisma CLI переведён в
 runtime dependency только для отдельной release-команды миграции.
 
+Runtime копирует из production dependencies оба каталога: `/app/node_modules` и
+`/app/backend/node_modules`. npm workspaces оставляет часть зависимостей (включая `pino` и `ws`) внутри backend;
+копирование только корневого каталога приводит к `MODULE_NOT_FOUND`. После упаковки образ загружает модули
+API и worker от пользователя `node` с `RUN --network=none`, без запуска Nest и подключения к БД/Redis.
+Эта проверка выявляет отсутствующие runtime imports ещё при сборке, но не заменяет readiness и Compose smoke.
+
+Production dependencies устанавливаются с `--ignore-scripts`; затем Prisma CLI явно загружает и проверяет
+движки во время сборки. На этой стадии уже установлен OpenSSL, как и в runtime, чтобы выбор binary target
+совпадал. Migration image выполняет `prisma --version` от пользователя `node` с `RUN --network=none`:
+отсутствующие или неработающие движки должны останавливать сборку до запуска миграций.
+
 Локальный [`docker-compose.yml`](../../docker-compose.yml) имеет CPU, memory и PID limits. API/worker read-only,
+используют `NODE_ENV=local` с локальными defaults без production-секретов и подтверждений размещения данных,
 имеют только bounded `/tmp`, `no-new-privileges`, 15-секундный stop grace и `tini`. Readiness ждёт завершения
 одноразового migration job. Worker при остановке прекращает новые poll и ждёт текущий dispatch/job; BullMQ workers
 закрываются до Redis. Outbox остаётся в PostgreSQL до успешной идемпотентной публикации, поэтому перезапуск не
@@ -36,6 +48,75 @@ identity/communication/safety/game secrets приложение fail-closed пр
 Релиз выполняется в порядке: backup/PITR marker → preflight/lock timing → `migrate` как один job → migration smoke →
 API canary → worker → web/TMA. Миграция не запускается из API replica. При несовместимой DDL или нарушении
 инварианта rollout останавливается и применяется утверждённый forward-fix; blind down migration запрещена.
+
+### Локальный Compose: P3009 после mobile parity migration
+
+`P3009` означает сохранённую неудачную попытку, а не первичную SQL-ошибку. Для локального Compose получите её:
+
+```sh
+docker compose exec -T postgres psql -U picklehub -d picklehub -c \
+  'SELECT migration_name, logs FROM _prisma_migrations WHERE finished_at IS NULL AND rolled_back_at IS NULL;'
+```
+
+В исходной `20260916090000_mobile_parity_contract_data` значение `PUSH` добавлялось в enum и использовалось
+в CHECK в одной транзакции. PostgreSQL отклоняет это с `55P04: unsafe use of new value "PUSH"`. Исправленный
+CHECK сравнивает `channel::text`, сохраняя ровно `TELEGRAM`, `EMAIL`, `PUSH` и атомарность SQL-файла. Отдельная
+более поздняя миграция не исправила бы установку: Prisma останавливается раньше неё.
+
+Следующая процедура применима только к этой ошибке исходного файла без ручного частичного исполнения SQL.
+Проверьте, что новые объекты отсутствуют после отката неудачной транзакции (все результаты — `false`):
+
+```sh
+docker compose exec -T postgres psql -U picklehub -d picklehub <<'SQL'
+SELECT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'magic_links' AND column_name = 'client_platform'
+) AS mobile_column_exists,
+EXISTS (
+    SELECT 1 FROM pg_enum e JOIN pg_type t ON t.oid = e.enumtypid
+    JOIN pg_namespace n ON n.oid = t.typnamespace
+    WHERE n.nspname = 'public' AND t.typname = 'notification_channel' AND e.enumlabel = 'PUSH'
+) AS push_enum_exists,
+to_regclass('public.push_registrations') IS NOT NULL AS push_table_exists;
+SQL
+```
+
+При другой причине или частично применённом SQL остановитесь и разберите состояние. При подтверждённом откате
+пересоберите migration image, пометьте только неудачную попытку как rolled back и повторите deploy:
+
+```sh
+docker compose --profile foundation build migrate
+docker compose --profile foundation run --rm migrate npm exec --workspace @picklehub/backend -- \
+  prisma migrate resolve --rolled-back 20260916090000_mobile_parity_contract_data
+docker compose --profile foundation run --rm migrate
+docker compose --profile foundation up -d
+```
+
+`resolve --rolled-back` меняет только историю Prisma и сам не откатывает SQL. Не используйте `--applied` для
+неисполненной миграции, `migrate reset` или `down -v`: удаление базы для этой ошибки не требуется. Успешно
+применённую ранее миграцию не помечайте rolled back; исправление нужно для неудачных и новых установок.
+
+### Локальный Compose: P3009 после mini-game migration
+
+Если журнал `_prisma_migrations` для `20260916130000_mini_game_contract_data` содержит
+`42601: syntax error at or near "grant"`, причина — зарезервированное слово в SQL-псевдониме. В исправленном
+файле псевдоним и переменная соседней PL/pgSQL-функции названы `reward_entry`.
+
+Для исходного файла без ручного частичного исполнения ошибка откатывает транзакцию. После обновления исходников
+выполняйте команды по очереди, останавливаясь при любой ошибке:
+
+```sh
+docker compose --profile foundation build migrate
+docker compose --profile foundation run --rm migrate npm exec --workspace @picklehub/backend -- \
+  prisma migrate resolve --rolled-back 20260916130000_mini_game_contract_data
+docker compose --profile foundation run --rm migrate
+docker compose --profile foundation up -d
+```
+
+Здесь снимается статус сбоя только mini-game migration. Повторно помечать mobile migration rolled back не нужно.
+Если SQL выполняли частями вручную, сначала проверьте состояние схемы: `resolve` не откатывает изменения БД.
+Если deploy сообщает P3009 для другой миграции, снова получите её первичный `logs`; не переносите `resolve`
+на следующую миграцию без диагностики и исправления причины.
 
 ## 2. HTTP, lifecycle и зависимости
 

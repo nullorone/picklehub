@@ -40,8 +40,9 @@ services:
             context: .
             dockerfile: backend/Dockerfile
             target: migration
+        # Local foundation stack; production requires deploy/compose.production.yml.
         environment: &backend-environment
-            NODE_ENV: production
+            NODE_ENV: local
             DATABASE_URL: postgresql://picklehub:picklehub@postgres:5432/picklehub?schema=public
             REDIS_URL: redis://redis:6379/0
             REDIS_NAMESPACE: foundation

@@ -9,6 +9,7 @@ WORKDIR /workspace
 COPY package.json package-lock.json turbo.json tsconfig.base.json ./
 COPY backend/package.json ./backend/package.json
 COPY contracts ./contracts
+COPY scripts/release/build-client.mjs ./scripts/release/build-client.mjs
 COPY frontend ./frontend
 RUN npm ci --ignore-scripts
 RUN npm run build:release --workspace @picklehub/tg

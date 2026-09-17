@@ -448,12 +448,12 @@ BEGIN
     END IF;
     IF NEW."kind" = 'GLOBAL_XP' AND NEW."state" = 'GRANTED' THEN
         PERFORM pg_advisory_xact_lock(hashtextextended(NEW."user_id"::text || ':MINI_GAME_DAILY_COMPLETION', 0));
-        SELECT count(*) FILTER (WHERE grant."window_started_at" = NEW."window_started_at"),
-            count(*) FILTER (WHERE date_trunc('week', grant."window_started_at", 'UTC') = date_trunc('week', NEW."window_started_at", 'UTC')),
-            count(*) FILTER (WHERE grant."season_id" = NEW."season_id")
+        SELECT count(*) FILTER (WHERE reward_entry."window_started_at" = NEW."window_started_at"),
+            count(*) FILTER (WHERE date_trunc('week', reward_entry."window_started_at", 'UTC') = date_trunc('week', NEW."window_started_at", 'UTC')),
+            count(*) FILTER (WHERE reward_entry."season_id" = NEW."season_id")
         INTO daily_count, weekly_count, season_count
-        FROM "reward_grants" grant WHERE grant."user_id" = NEW."user_id" AND grant."kind" = 'GLOBAL_XP'
-            AND grant."state" IN ('GRANTED', 'REINSTATED');
+        FROM "reward_grants" AS reward_entry WHERE reward_entry."user_id" = NEW."user_id" AND reward_entry."kind" = 'GLOBAL_XP'
+            AND reward_entry."state" IN ('GRANTED', 'REINSTATED');
         IF daily_count >= 1 OR weekly_count >= 5 OR season_count >= 30 THEN
             RAISE EXCEPTION 'mini-game XP daily, UTC-week or 84-day season cap reached';
         END IF;
@@ -464,11 +464,11 @@ CREATE TRIGGER "reward_grants_chain_guard" BEFORE INSERT ON "reward_grants"
     FOR EACH ROW EXECUTE FUNCTION "validate_reward_grant_chain"();
 
 CREATE FUNCTION "validate_cosmetic_unlock_chain"() RETURNS TRIGGER LANGUAGE plpgsql AS $$
-DECLARE prior "cosmetic_unlocks"%ROWTYPE; grant "reward_grants"%ROWTYPE;
+DECLARE prior "cosmetic_unlocks"%ROWTYPE; reward_entry "reward_grants"%ROWTYPE;
 BEGIN
-    SELECT * INTO grant FROM "reward_grants" WHERE "id" = NEW."source_grant_id" FOR SHARE;
-    IF NOT FOUND OR grant."user_id" <> NEW."user_id" OR grant."season_id" <> NEW."season_id"
-        OR grant."kind" <> 'COSMETIC' OR grant."cosmetic_code" <> NEW."cosmetic_code" THEN
+    SELECT * INTO reward_entry FROM "reward_grants" WHERE "id" = NEW."source_grant_id" FOR SHARE;
+    IF NOT FOUND OR reward_entry."user_id" <> NEW."user_id" OR reward_entry."season_id" <> NEW."season_id"
+        OR reward_entry."kind" <> 'COSMETIC' OR reward_entry."cosmetic_code" <> NEW."cosmetic_code" THEN
         RAISE EXCEPTION 'cosmetic unlock must use its exact cosmetic reward grant';
     END IF;
     IF NEW."state" <> 'UNLOCKED' THEN

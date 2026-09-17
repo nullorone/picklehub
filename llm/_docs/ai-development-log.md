@@ -4436,3 +4436,161 @@ npm exec --workspace @picklehub/backend -- prisma validate --schema prisma/schem
   обязательными сетевыми CI checks и не выданы за пройденные.
 - Следующего prompt нет: последовательность `16-production-readiness` завершена документально, но проект остаётся
   `NO-GO` до закрытия матрицы внешних и live-infrastructure evidence.
+
+## 2026-09-16 — исправление воспроизводимости npm/Docker
+
+- После сбоя `npm ci --omit=dev` при сборке backend image установлено, что 2 075 `resolved` записей корневого
+  `package-lock.json` указывали на внутренний `artifactory.raiffeisen.ru`, недоступный чистому Docker builder.
+  Все эти URL заменены на `https://registry.npmjs.org/` без изменения версий или integrity; корневой `.npmrc`
+  закрепляет публичный registry и предотвращает повторное загрязнение lock-файла пользовательской конфигурацией.
+- Проверки: JSON lock-файла валиден; структурное сравнение с `HEAD` подтвердило ровно 2 075 изменений и только
+  ожидаемую замену registry URL; поиск приватного hostname не нашёл совпадений; `npm config get registry
+--location=project` вернул `https://registry.npmjs.org/`; эквивалентный backend production `npm ci` установил
+  224 пакета из локального integrity-кэша; `git diff --check` успешен.
+- Установка с намеренно пустым npm cache не завершена из-за сетевой изоляции среды агента и была остановлена.
+  Docker image здесь не пересобран: доступ к Docker Desktop socket запрещён sandbox. Повторная Compose-сборка
+  остаётся локальной проверкой разработчика.
+- Следующая Compose-сборка выявила, что web/TMA Dockerfiles запускали общий `scripts/release/build-client.mjs`, но
+  не копировали его в build image. Оба Dockerfile теперь копируют ровно этот release-скрипт; release policy test
+  закрепляет обязательный `COPY`. `npm run release:policy` успешен (4/4), локальные release-сборки web и TMA с
+  Compose defaults успешны; остаются прежние неблокирующие предупреждения о chunks более 500 KiB.
+- Сборка frontend images на Alpine ARM64 затем обнаружила npm optional-dependency defect: lock-файл, созданный на
+  macOS ARM64 поверх существующего `node_modules`, содержал только Darwin native bindings. В lock-файл добавлены
+  проверенные по registry metadata версии, public tarball URLs и integrity для ARM64/x64 Alpine bindings Rolldown,
+  Rollup, esbuild и Lightning CSS; также добавлены GNU Rolldown bindings для Linux release build. Release policy
+  теперь требует все восемь Alpine build bindings и успешен (5/5). Полный `npm ci`/Docker build на Linux не заявлен
+  пройденным: загрузка новых tarballs недоступна из sandbox и должна быть повторена разработчиком через Compose.
+
+## 2026-09-17 — полнота платформенных зависимостей npm
+
+- Повторный `EUSAGE` показал неполноту предыдущего исправления: проверялись только восемь верхнеуровневых Linux
+  bindings, но отсутствовали остальные платформы esbuild `0.28.2` и вложенного esbuild `0.25.12` из `tsx`.
+  `--omit=dev` не отменяет проверку согласованности lock-файла. Восстановлены 120 отсутствующих платформенных
+  записей esbuild, Rollup, Rolldown, Lightning CSS, msgpackr, Turbo и unrs, а также девять записей зависимостей
+  WASI binding. Версии существующих пакетов сохранены; metadata и integrity взяты из локального npm cache,
+  tarball URLs используют публичный registry. Продуктовый код и контракты не менялись.
+- В `scripts/release/client-release-policy.test.mjs` добавлена проверка каждой точно закреплённой optional
+  dependency с разрешением относительно пакета-владельца, включая вложенные версии. Проверка входит в существующий
+  CI `release:policy`; прежняя проверка Alpine сохранена. `npm run release:policy` — успешно, 6/6. Дополнительный
+  mutation probe удалил вложенный `@esbuild/linux-x64@0.25.12` только из данных теста в памяти и подтвердил падение
+  новой проверки с ожидаемой диагностикой.
+- В изолированной копии только root/backend manifests и lock-файла команда
+  `env -u NODE_TLS_REJECT_UNAUTHORIZED npm_config_strict_ssl=true npm ci --ignore-scripts --omit=dev --workspace @picklehub/backend --include-workspace-root --offline --no-audit --no-fund --prefix /private/tmp/picklehub-backend-ci.SXPpvt`
+  успешна: 224 packages, Node `22.19.0`, npm `10.9.3`. Рабочий `node_modules` репозитория не переустанавливался.
+- Для копии всех workspace manifests выполнены два успешных разрешения дерева:
+  `env -u NODE_TLS_REJECT_UNAUTHORIZED npm_config_strict_ssl=true npm ci --ignore-scripts --offline --dry-run --os=linux --cpu=x64 --libc=musl --no-audit --no-fund --registry=https://artifactory.raiffeisen.ru/artifactory/api/npm/npm/ --prefix /private/tmp/picklehub-lock-repair.V3oxKx`
+  и та же команда с `--cpu=arm64 --libc=glibc`. Registry здесь служит ключом ранее сохранённых metadata в offline
+  cache; сетевых запросов нет. Оба dry-run разрешили 2 248 packages. Это проверка дерева, не установка Linux
+  binaries и не исполнение Linux-контейнера.
+- `npm exec -- turbo run lint typecheck test build --filter=@picklehub/backend` — успешно, 4/4 задачи без cache;
+  backend 53/53 suites и 309/309 tests. `npm run contracts:check` прошёл lint, policy, mobile, breaking,
+  generated drift и typecheck, затем остановился на `contracts:mock:check`: sandbox запрещает
+  `listen 127.0.0.1` (`EPERM`). Mock не заявлен пройденным.
+- `npm run workspace:check`, `npx prettier --check package-lock.json scripts/release/client-release-policy.test.mjs`
+  и `git diff --check` — успешно. Финальные `npm run format:check` и `npm run docs:check` также успешны:
+  15 TypeSpec-файлов и 150 Markdown-файлов. Полная Docker-сборка недоступна: `docker info --format '{{.ServerVersion}}'`
+  получил `operation not permitted` при обращении к Docker Desktop socket. Загрузка tarballs из сети и сборка
+  образов требуют повторной проверки разработчиком; локальная проверка использовала integrity cache.
+
+## 2026-09-17 — движки Prisma в migration image
+
+- Пользователь подтвердил успешную Docker-сборку после исправления lock-файла, но `migrate` завершался с кодом 1:
+  `Can't write to /app/node_modules/@prisma/engines`. Production dependencies устанавливались с
+  `--ignore-scripts`, поэтому движки отсутствовали; Prisma пыталась загрузить их при старте от пользователя
+  `node` в каталог, принадлежащий root.
+- В `backend/Dockerfile` стадия production dependencies теперь устанавливает OpenSSL до определения Prisma
+  binary target и после `npm ci` выполняет `node node_modules/prisma/build/index.js --version`. Этот вызов явно
+  загружает требуемые CLI engines и останавливает сборку при ошибке загрузки. Migration stage дополнительно
+  выполняет ту же команду как `node` с `RUN --network=none`. Права каталога не расширялись, запуск non-root
+  сохранён; SQL-миграции, версии зависимостей и продуктовый код не изменены. Обновлена эксплуатационная документация.
+- `docker compose --profile foundation config --quiet`, `npm run release:policy` (6/6), `npm run format:check`
+  (включая 15 TypeSpec-файлов), `npm run docs:check` (150 файлов) и `git diff --check` — успешно.
+- `docker compose --profile foundation build migrate` заблокирован sandbox на записи Docker Buildx activity
+  (`operation not permitted`); сборка и запуск миграций здесь не заявляются успешными. Локальный
+  `node node_modules/prisma/build/index.js --version` также остановился на `EPERM` при обновлении времени доступа
+  существующего Prisma cache вне workspace; повтор с временным `XDG_CACHE_HOME` не изменил используемый Prisma
+  cache path. Backend tests/typecheck и контракты повторно не запускались: изменены Dockerfile и документация,
+  результаты последней проверки backend записаны выше.
+
+## 2026-09-17 — mobile migration: enum и восстановление после P3009
+
+- По пользовательскому логу Prisma блокирует deploy из-за неудачной mobile parity migration. P3009 не содержит
+  первичную SQL-ошибку; запрошен `logs` из `_prisma_migrations`. При проверке SQL найден дефект: после
+  `ALTER TYPE notification_channel ADD VALUE 'PUSH'` CHECK использовал новое enum-значение в той же транзакции,
+  что PostgreSQL запрещает с `55P04`. CHECK теперь сравнивает `channel::text`; список разрешённых каналов
+  сохранён, commit посередине файла не добавлен. Исправлен исходный файл, поскольку поздняя миграция не может
+  пройти заблокированный deploy. База пользователя и история Prisma агентом не изменялись.
+- Добавлен integration regression: на изолированной схеме с существующими enum и строками исполняется реальный
+  блок SQL-миграции в одной транзакции; после commit проверяются PUSH и прежние каналы, а IN_APP отвергается.
+  В эксплуатационный документ добавлены диагностика первичной ошибки, проверка отката и условная процедура
+  rebuild → `resolve --rolled-back` → deploy без удаления volume. Автоматического resolve при старте нет.
+- `npm exec -- turbo run lint typecheck test build --filter=@picklehub/backend` — успешно, 4/4 задачи,
+  53/53 suites и 309/309 unit tests. `npm run format:check` — успешно, включая 15 TypeSpec-файлов.
+  `npm run docs:check` — успешно, 150 файлов; `git diff --check` — успешно.
+- `npm run contracts:check` прошёл lint/policy/mobile, breaking, generated reproducibility и typecheck;
+  mock остановился на `listen EPERM 127.0.0.1`. Контракты и generated artifacts не изменялись.
+- `npm exec --workspace @picklehub/backend -- jest --config jest.integration.config.cjs --runInBand mobile-enum-migration`
+  остановился на `pool.connect()` до выполнения SQL; отдельный probe через `pg.Client` к `127.0.0.1:5432`
+  подтвердил `EPERM`. `docker info --format '{{.ServerVersion}}'` также получил запрет Docker socket.
+  Live regression, повторный migration deploy и восстановление пользовательской БД не заявлены успешными.
+
+## 2026-09-17 — mini-game migration: зарезервированное имя grant
+
+- Пользовательский `logs` из `_prisma_migrations` подтвердил `42601: syntax error at or near "grant"` в
+  `20260916130000_mini_game_contract_data`, строка 451. SQL-псевдоним `grant` в подсчёте XP заменён на
+  `reward_entry`; так же переименована переменная соседней функции проверки cosmetic unlock. Все ссылки
+  обновлены, лимиты и условия сохранены. Поиск по остальным SQL-миграциям нашёл `grant` только в текстах ошибок.
+- Обновлена инструкция локального восстановления: rebuild migration image → точечный
+  `resolve --rolled-back 20260916130000_mini_game_contract_data` → deploy → Compose up. Процедура относится к
+  исходному атомарному файлу, без ручного частичного исполнения. База и история Prisma агентом не изменены.
+- `npm exec -- turbo run lint typecheck test build --filter=@picklehub/backend` — успешно, 4/4 задачи,
+  53/53 suites и 309/309 tests. `npm run contracts:check` — 199/199 policy tests, mobile, breaking,
+  generated reproducibility и typecheck успешны; mock заблокирован на `listen EPERM 127.0.0.1`.
+- `npm run format:check` — успешно, включая 15 TypeSpec-файлов. `npm run docs:check`,
+  `npx prettier --check llm/_docs/ai-development-log.md llm/_docs/production-readiness-backend.md` и
+  `git diff --check` — успешно.
+- `docker info --format '{{.ServerVersion}}'` — Docker socket недоступен (`operation not permitted`).
+  Применение SQL в PostgreSQL и повторный контейнерный deploy здесь не проверены; пользователь выполняет их
+  по обновлённой инструкции. SQL-исправление не выдано за успешное восстановление БД.
+
+## 2026-09-17 — runtime image: зависимости внутри backend workspace
+
+- Пользовательский API log показал `MODULE_NOT_FOUND: pino`. Lock-файл размещает production `pino@9.9.4`,
+  `ws@8.18.3` и часть транзитивных пакетов в `backend/node_modules`, а runtime Docker stage копировал только
+  корневой `node_modules`. Добавлен COPY workspace-каталога из production-dependencies; версии и lock-файл
+  в рамках этого исправления не менялись.
+- Runtime stage теперь выполняет от `node` с `RUN --network=none` команду
+  `node -e "require('./backend/dist/app.module.js'); require('./backend/dist/worker.module.js');"`.
+  Она проверяет загрузку обоих графов imports без запуска Nest и инфраструктурных подключений. Инструкция
+  эксплуатации дополнена причиной и ограничениями этой проверки.
+- В изолированной копии manifests/lock-файла выполнено
+  `npm ci --ignore-scripts --omit=dev --workspace @picklehub/backend --include-workspace-root --offline --no-audit --no-fund --prefix /private/tmp/picklehub-runtime-deps-8v7mcraj`
+  — успешно, 224 packages. Скопированы текущий backend dist и generated `.prisma`. При временном исключении
+  workspace node_modules загрузка модулей воспроизвела `Cannot find module 'pino'`; после возврата каталога
+  приведённая выше Node-команда успешно загрузила API и worker. Это проверка состава на macOS, не Linux image.
+- `npm run release:policy` — 6/6; `docker compose --profile foundation config --quiet`, `npm run format:check`
+  (включая 15 TypeSpec-файлов), `npm run docs:check`,
+  `npx prettier --check llm/_docs/ai-development-log.md llm/_docs/production-readiness-backend.md` и
+  `git diff --check` — успешно. Product TypeScript и контракты не менялись; lint/typecheck/unit/build и
+  contract checks последнего исправления записаны выше и повторно не запускались.
+- `docker compose --profile foundation build api worker` заблокирован sandbox на записи Docker Buildx activity
+  (`operation not permitted`). Container startup/readiness остаются проверкой разработчика после пересборки.
+
+## 2026-09-17 — локальный Compose: правильный режим окружения
+
+- После устранения отсутствующих dependencies API/worker дошли до Nest, но локальный foundation-профиль задавал
+  `NODE_ENV=production` без production secrets, origins, approved email adapter и residency approvals.
+  В общем environment anchor корневого `docker-compose.yml` установлен предусмотренный приложением `local`.
+  `deploy/compose.production.yml`, production guards и defaults валидатора не менялись; фиктивные подтверждения
+  размещения данных и секреты не добавлялись. Для применения достаточно пересоздания контейнеров без build.
+- `docker compose --profile foundation config --format json > /private/tmp/picklehub-local-compose.json` — успешно.
+  Node probe передал фактические environments API/worker из этого JSON в compiled `parseEnvironment`: оба
+  проходят с `local`, корректным APP_ROLE и residency `false`; замена только NODE_ENV на production снова
+  отклоняет оба окружения. Содержимое конфигурации и значения ключей в вывод не печатались.
+- `npm exec --workspace @picklehub/backend -- jest --config jest.unit.config.cjs --runInBand environment.spec.ts`
+  — успешно, 8/8 tests. `npx prettier --check docker-compose.yml llm/_docs/production-readiness-backend.md`
+  сначала нашёл оформление YAML-комментария; после форматирования финальная проверка успешна.
+- `npx prettier --check docker-compose.yml llm/_docs/production-readiness-backend.md llm/_docs/ai-development-log.md`,
+  `npm run docs:check`, `docker compose --profile foundation config --quiet` и `git diff --check` — успешно.
+  TypeScript, контракты и Docker image contents не менялись; прежние build/lint/typecheck/contract результаты
+  записаны выше. Контейнерный startup/readiness здесь не проверен из-за ранее подтверждённого запрета Docker.
