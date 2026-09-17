@@ -10,6 +10,12 @@ semantic version, полный SHA проверенного commit и `SOURCE_DA
 совместимость REST/AsyncAPI и SHA-256 всех публичных файлов. Проверка отклоняет source maps, localhost/test markers,
 development Telegram mock, private-key markers, TON Connect и неподтверждённые `example.invalid` значения.
 
+Оба образа используют общий `frontend/nginx.conf`: PID и все пять HTTP temporary paths находятся в `/tmp`,
+логи направлены в stdout/stderr. Это позволяет запускать стандартный nginx image как `USER nginx` без записи
+в root-owned `/var/run` и `/var/cache/nginx`. Docker build выполняет `nginx -t` уже от `nginx`, проверяя
+конфигурацию и доступ к временным каталогам. Статус Compose `Started` означает только запуск процесса;
+доступность подтверждается `Healthy` и HTTP-проверкой, а причину остановки показывают `docker compose logs web tg`.
+
 Оба клиента используют точный same-origin API path `/v1`; perimeter обязан маршрутизировать его в backend без
 широкого CORS. Backend production startup принимает только список точных HTTPS origins web и TMA, без `*`,
 localhost и `.invalid`. Канонические значения находятся в `deploy/client-production.json`: web

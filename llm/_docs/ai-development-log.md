@@ -4594,3 +4594,22 @@ npm exec --workspace @picklehub/backend -- prisma validate --schema prisma/schem
   `npm run docs:check`, `docker compose --profile foundation config --quiet` и `git diff --check` — успешно.
   TypeScript, контракты и Docker image contents не менялись; прежние build/lint/typecheck/contract результаты
   записаны выше. Контейнерный startup/readiness здесь не проверен из-за ранее подтверждённого запрета Docker.
+
+## 2026-09-17 — frontend nginx: пути для запуска без root
+
+- Пользователь сообщил, что web/tg завершаются после Compose `Started`. Этот статус не является readiness;
+  запрошены `docker compose logs --tail=100 web tg` и `docker compose ps -a web tg`, первичный stderr пока
+  не получен. При проверке Dockerfiles найден дефект: стандартный `nginx:1.29.1-alpine` запускается как
+  `USER nginx`, но его системные PID/temp paths остаются root-owned.
+- Добавлен общий `frontend/nginx.conf`: PID и client-body/proxy/FastCGI/uWSGI/SCGI temporary paths в `/tmp`,
+  логи в stdout/stderr, загрузка прежних server configs. Оба Dockerfile копируют его в `/etc/nginx/nginx.conf`
+  и выполняют `nginx -t` после `USER nginx`. Порты, CSP, кеширование и непривилегированный запуск сохранены.
+  Это исправление найденного дефекта, не подтверждение причины пользовательского завершения без его логов.
+- `npm run release:policy` — 6/6; `docker compose --profile foundation config --quiet`, `npm run format:check`
+  (включая 15 TypeSpec-файлов), `npm run docs:check` и `git diff --check` — успешно. После дополнения журнала
+  `npx prettier --check llm/_docs/ai-development-log.md llm/_docs/production-readiness-frontend.md` и
+  `npm run docs:check` также успешны. TypeScript/контракты/клиентские assets не менялись, их прежние результаты
+  не переобозначены как повторно выполненные проверки.
+- `docker compose --profile foundation build web tg` остановился на Docker Buildx activity с
+  `operation not permitted`; локальный nginx binary отсутствует. Исполнение `nginx -t`, Linux image build,
+  container healthchecks и HTTP smoke здесь не проверены и должны выполниться при пользовательской пересборке.

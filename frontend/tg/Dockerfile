@@ -21,8 +21,10 @@ LABEL org.opencontainers.image.title="PickleHub Telegram Mini App" \
       org.opencontainers.image.version="${RELEASE_VERSION}" \
       org.opencontainers.image.revision="${VCS_REF}" \
       org.opencontainers.image.source="https://github.com/picklehub/picklehub"
+COPY frontend/nginx.conf /etc/nginx/nginx.conf
 COPY frontend/tg/nginx.conf /etc/nginx/conf.d/default.conf
 COPY frontend/tg/security-headers.conf /etc/nginx/snippets/picklehub-security.conf
 COPY --from=build /workspace/frontend/tg/dist /usr/share/nginx/html
 EXPOSE 8080
 USER nginx
+RUN nginx -t
