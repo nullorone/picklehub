@@ -1,0 +1,13 @@
+{
+    "config": {
+        "MD013": false,
+        "MD024": false,
+        "MD007": {
+            "indent": 4,
+        },
+        "MD033": {
+            "allowed_elements": ["details", "summary"],
+        },
+    },
+    "globs": ["!node_modules/**", "!dist/**", "!coverage/**"],
+}
