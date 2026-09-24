@@ -128,6 +128,65 @@ function updateCounts(game: GameDetail) {
 }
 
 export const handlers = [
+    http.post(route("/games"), async ({ request }) => {
+        if (mode() === "error")
+            return error(503, "GAME_CONFLICT", "Temporary mock API error");
+        if (!currentUser(request))
+            return error(401, "UNAUTHENTICATED", "Use the local dev identity");
+        const input =
+            (await request.json()) as components["schemas"]["CreateGameRequest"];
+        const venueName = input.venueName.trim();
+        const venueAddress = input.venueAddress.trim();
+        const desiredLevel = input.desiredLevel?.trim();
+        const description = input.description?.trim();
+        const startsAt = Date.parse(input.startsAt);
+        if (
+            !venueName ||
+            venueName.length > 120 ||
+            !venueAddress ||
+            venueAddress.length > 300 ||
+            !Number.isFinite(startsAt) ||
+            startsAt <= Date.now() ||
+            input.durationMinutes < 30 ||
+            input.durationMinutes > 480 ||
+            input.participantLimit < 2 ||
+            input.participantLimit > 32 ||
+            (desiredLevel !== undefined &&
+                (desiredLevel.length < 1 || desiredLevel.length > 80)) ||
+            (description !== undefined && description.length > 2000)
+        )
+            return error(400, "VALIDATION_ERROR", "Проверьте данные игры");
+
+        const userId = requireUser(request);
+        const participates = input.organizerParticipates ?? true;
+        const created: GameDetail = {
+            id: crypto.randomUUID(),
+            organizerId: userId,
+            organizerParticipates: participates,
+            venueName,
+            venueAddress,
+            startsAt: new Date(startsAt).toISOString(),
+            durationMinutes: input.durationMinutes,
+            participantLimit: input.participantLimit,
+            participantCount: participates ? 1 : 0,
+            status: "SCHEDULED",
+            ...(desiredLevel ? { desiredLevel } : {}),
+            ...(description ? { description } : {}),
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            participants: participates
+                ? [
+                      participant(
+                          userId,
+                          userId === playerId ? "Денис" : "Алексей",
+                          true,
+                      ),
+                  ]
+                : [],
+        };
+        games.unshift(created);
+        return HttpResponse.json(created, { status: 201 });
+    }),
     http.get(route("/games"), async ({ request }) => {
         const scenario = mode();
         if (scenario === "error")

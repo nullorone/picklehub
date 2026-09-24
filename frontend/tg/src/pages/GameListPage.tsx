@@ -16,6 +16,12 @@ export function GameListPage() {
                 <p className="text-sm text-text-secondary">
                     Выберите встречу и присоединяйтесь.
                 </p>
+                <Link
+                    className="mt-3 inline-flex min-h-12 w-full items-center justify-center rounded-control bg-accent px-5 py-3 text-base font-semibold text-[var(--ph-button-text)] transition-colors hover:bg-accent-hover focus-visible:outline-offset-4"
+                    to="/games/new"
+                >
+                    Создать игру
+                </Link>
             </header>
 
             {games.isPending && (

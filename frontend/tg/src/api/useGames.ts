@@ -2,9 +2,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
     getGame,
     getGames,
+    createGame,
     joinGame,
     leaveGame,
     type GameDetail,
+    type CreateGameRequest,
 } from "@/api/games.ts";
 import { gameKeys } from "@/api/queryKeys.ts";
 
@@ -60,3 +62,14 @@ function useParticipationMutation(
 
 export const useJoinGame = () => useParticipationMutation(joinGame);
 export const useLeaveGame = () => useParticipationMutation(leaveGame);
+
+export function useCreateGame() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (input: CreateGameRequest) => createGame(input),
+        onSuccess: async (game) => {
+            queryClient.setQueryData(gameKeys.detail(game.id), game);
+            await queryClient.invalidateQueries({ queryKey: gameKeys.lists() });
+        },
+    });
+}

@@ -4,6 +4,7 @@ import { apiClient } from "@/api/client.ts";
 export type Game = components["schemas"]["Game"];
 export type GameDetail = components["schemas"]["GameDetail"];
 export type GamePage = components["schemas"]["GamePage"];
+export type CreateGameRequest = components["schemas"]["CreateGameRequest"];
 
 export class ApiError extends Error {
     constructor(
@@ -40,6 +41,16 @@ export async function getGames(cursor?: string, limit = 20): Promise<GamePage> {
 export async function getGame(gameId: string): Promise<GameDetail> {
     const result = await apiClient.GET("/games/{gameId}", {
         params: { path: { gameId } },
+    });
+    return unwrap(result);
+}
+
+export async function createGame(
+    input: CreateGameRequest,
+): Promise<GameDetail> {
+    const result = await apiClient.POST("/games", {
+        params: { header: { "Idempotency-Key": crypto.randomUUID() } },
+        body: input,
     });
     return unwrap(result);
 }
