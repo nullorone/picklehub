@@ -8,6 +8,7 @@ import { retrieveLaunchParams } from "@telegram-apps/sdk-react";
 import { Root } from "@/components/Root.tsx";
 import { EnvUnsupported } from "@/components/EnvUnsupported.tsx";
 import { init } from "@/init.ts";
+import { startApiMocks } from "@/mocks/start.ts";
 
 import "./index.css";
 
@@ -17,6 +18,7 @@ import "./mockEnv.ts";
 const root = ReactDOM.createRoot(document.getElementById("root")!);
 
 try {
+    await startApiMocks();
     const launchParams = retrieveLaunchParams();
     const { tgWebAppPlatform: platform } = launchParams;
     const debug = import.meta.env.DEV;

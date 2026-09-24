@@ -7,11 +7,16 @@ import {
 } from "@telegram-apps/sdk-react";
 import { AppRoot } from "@telegram-apps/telegram-ui";
 import { tokens } from "@picklehub/tokens";
-import { createApiClient } from "@picklehub/api";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { routes } from "@/navigation/routes.tsx";
 
-export const apiClient = createApiClient(import.meta.env.VITE_API_URL ?? "");
+export const queryClient = new QueryClient({
+    defaultOptions: {
+        queries: { retry: 1, staleTime: 15_000, refetchOnWindowFocus: false },
+        mutations: { retry: false },
+    },
+});
 
 export function App() {
     const lp = useMemo(() => retrieveLaunchParams(), []);
@@ -45,22 +50,26 @@ export function App() {
     }, [isDark]);
 
     return (
-        <AppRoot
-            appearance={isDark ? "dark" : "light"}
-            platform={
-                ["macos", "ios"].includes(lp.tgWebAppPlatform) ? "ios" : "base"
-            }
-        >
-            <div className="min-h-dvh bg-background text-text">
-                <HashRouter>
-                    <Routes>
-                        {routes.map((route) => (
-                            <Route key={route.path} {...route} />
-                        ))}
-                        <Route path="*" element={<Navigate to="/" />} />
-                    </Routes>
-                </HashRouter>
-            </div>
-        </AppRoot>
+        <QueryClientProvider client={queryClient}>
+            <AppRoot
+                appearance={isDark ? "dark" : "light"}
+                platform={
+                    ["macos", "ios"].includes(lp.tgWebAppPlatform)
+                        ? "ios"
+                        : "base"
+                }
+            >
+                <div className="min-h-dvh bg-background text-text">
+                    <HashRouter>
+                        <Routes>
+                            {routes.map((route) => (
+                                <Route key={route.path} {...route} />
+                            ))}
+                            <Route path="*" element={<Navigate to="/" />} />
+                        </Routes>
+                    </HashRouter>
+                </div>
+            </AppRoot>
+        </QueryClientProvider>
     );
 }
