@@ -7,8 +7,11 @@ import {
 } from "@telegram-apps/sdk-react";
 import { AppRoot } from "@telegram-apps/telegram-ui";
 import { tokens } from "@picklehub/tokens";
+import { createApiClient } from "@picklehub/api";
 
 import { routes } from "@/navigation/routes.tsx";
+
+export const apiClient = createApiClient(import.meta.env.VITE_API_URL ?? "");
 
 export function App() {
     const lp = useMemo(() => retrieveLaunchParams(), []);

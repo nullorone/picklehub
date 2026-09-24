@@ -6,7 +6,8 @@
     "homepage": "https://nullorone.github.io/picklehub",
     "workspaces": [
         "frontend/tg",
-        "frontend/packages/tokens"
+        "frontend/packages/tokens",
+        "frontend/packages/api"
     ],
     "scripts": {
         "start": "npm run dev --workspace @picklehub/tg --",
@@ -19,7 +20,11 @@
         "format:check": "prettier --check \"frontend/tg/**/*.{ts,tsx,css,html,json}\" package.json eslint.config.js",
         "preview": "npm run preview --workspace @picklehub/tg",
         "deploy": "gh-pages -d frontend/tg/dist",
-        "predeploy": "npm run build"
+        "predeploy": "npm run build",
+        "contracts:generate": "npm run contracts:openapi && npm run contracts:client",
+        "contracts:openapi": "tsp compile contracts/main.tsp --emit @typespec/openapi3 --output-dir contracts/openapi",
+        "contracts:client": "openapi-typescript contracts/openapi/openapi.yaml -o frontend/packages/api/src/generated/schema.ts",
+        "contracts:check": "node contracts/check-generated.mjs && git diff --exit-code -- contracts/openapi frontend/packages/api/src/generated"
     },
     "devDependencies": {
         "@eslint/js": "^9.23.0",

@@ -186,3 +186,42 @@ S01 приняты; повторная загрузка mkcert из моей с�
 
 S02 принята. Следующий шаг — [S03: контракт встреч в TypeSpec](../tasks/03-typespec-contract.md). Токены минимальны;
 React Native-компоненты и полная дизайн-система остаются за границами этой задачи.
+
+## 2026-09-24 — S03: контракт встреч в TypeSpec (в работе)
+
+### Выполнено
+
+- Подготовлен `contracts/main.tsp` с моделями игр, участия, Telegram-сессии и ошибок; описаны список, детали,
+  создание, частичное изменение, запись, выход, удаление участника и отмена. Запись организатора представлена
+  отдельно от владения игрой.
+- Добавлены npm-команды генерации OpenAPI и типов TypeScript, API workspace и точка импорта клиента в TMA.
+  Добавлена проверка повторного байтового результата генерации.
+- Записаны ограничения полей, пагинация, UTC, поведение полной/отменённой игры, идемпотентность и транзакционная
+  семантика конкурентной записи в [`game-api-contract.md`](game-api-contract.md).
+- Фактическое время — около 5 минут по времени инструментальных отметок.
+
+### Проверки и блокировка
+
+- `npm install --save-dev @typespec/compiler @typespec/http @typespec/openapi3 openapi-typescript && npm install openapi-fetch --workspace @picklehub/api`
+  — registry `registry.npmjs.org` вернул HTTP 403 до установки пакетов, включая повтор с запросом расширенного
+  сетевого доступа.
+- `npm install --registry=https://artifactory.raiffeisen.ru/artifactory/api/npm/npm/ --save-dev @typespec/compiler @typespec/http @typespec/openapi3 openapi-typescript`
+  — HTTP 404 для `@typespec/compiler`; `npm install --offline --save-dev @typespec/compiler @typespec/http @typespec/openapi3 openapi-typescript`
+  — `ENOTCACHED`.
+  Зависимости и lock-файл пока не обновлены, поскольку npm не разрешил получить пакеты.
+- `./node_modules/.bin/prettier --write package.json frontend/tg/package.json frontend/tg/src/components/App.tsx frontend/packages/api/package.json frontend/packages/api/src/index.ts llm/_docs/game-api-contract.md contracts/check-generated.mjs`
+  — успешно для изменённых JSON, TS/JS и Markdown файлов.
+- `npm run format:check` — успешно.
+- `node --check contracts/check-generated.mjs` — успешно.
+- Prettier check изменённых файлов и `git diff --check` — успешно.
+- `npm run lint` — неуспешно: API workspace и сгенерированные типы ещё недоступны; импорт клиента получает
+  error type и нарушает `no-unsafe-*`.
+- `npm run typecheck` и `npm run build` — неуспешно по той же причине: TypeScript не находит `@picklehub/api`.
+- TypeSpec compilation, OpenAPI generation, повторная генерация, client import verification и проверка контрактных
+  схем не запускались из-за недоступных зависимостей; их успешность не заявляется.
+
+### Остаток
+
+Добавить зависимости TypeSpec/OpenAPI/client и обновить корневой lock-файл, сгенерировать и закоммитить OpenAPI и
+клиент, затем выполнить компиляцию, проверку схем/повторной генерации, lint, typecheck и build. Приёмка S03 не
+пройдена; S04 не начинать.

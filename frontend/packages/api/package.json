@@ -1,0 +1,15 @@
+{
+    "name": "@picklehub/api",
+    "private": true,
+    "version": "0.0.1",
+    "type": "module",
+    "exports": {
+        ".": "./src/index.ts"
+    },
+    "scripts": {
+        "generate": "npm run contracts:generate --workspace-root"
+    },
+    "dependencies": {
+        "openapi-fetch": "*"
+    }
+}
