@@ -1,57 +1,109 @@
 @import "tailwindcss";
-/*@import "tailwindcss/preflight";*/
-@tailwind utilities;
 
-:root {
-    color-scheme: light dark;
-    --background: #f6f7f4;
-    --foreground: #20241f;
+@theme inline {
+    --spacing: var(--token-space-1, 4px);
+    --text-sm: var(--token-font-size-sm, 14px);
+    --text-base: var(--token-font-size-base, 16px);
+    --text-lg: var(--token-font-size-lg, 18px);
+    --text-xl: var(--token-font-size-xl, 22px);
+    --text-2xl: var(--token-font-size-2xl, 28px);
+    --color-background: var(--ph-background);
+    --color-surface: var(--ph-surface);
+    --color-text: var(--ph-text);
+    --color-text-secondary: var(--ph-text-secondary);
+    --color-accent: var(--ph-accent);
+    --color-accent-hover: var(--ph-accent-hover);
+    --color-error: var(--ph-error);
+    --color-border: var(--ph-border);
+    --radius-card: var(--token-radius-lg, 20px);
+    --radius-control: var(--token-radius-md, 14px);
+    --radius-small: var(--token-radius-sm, 8px);
 }
 
-@media (prefers-color-scheme: dark) {
-    :root {
-        --background: #20231f;
-        --foreground: #f2f4ed;
-    }
+:root,
+:root[data-theme="light"] {
+    color-scheme: light;
+    --ph-background: var(
+        --tg-theme-bg-color,
+        var(--token-theme-light-background, #f6f7f4)
+    );
+    --ph-surface: var(
+        --tg-theme-secondary-bg-color,
+        var(--token-theme-light-surface, #ffffff)
+    );
+    --ph-text: var(
+        --tg-theme-text-color,
+        var(--token-theme-light-text, #20241f)
+    );
+    --ph-text-secondary: var(
+        --tg-theme-hint-color,
+        var(--token-theme-light-textSecondary, #72776f)
+    );
+    --ph-accent: var(
+        --tg-theme-button-color,
+        var(--token-theme-light-accent, #387a45)
+    );
+    --ph-button-text: var(
+        --tg-theme-button-text-color,
+        var(--token-theme-light-buttonText, #ffffff)
+    );
+    --ph-accent-hover: var(--token-theme-light-accentHover, #2f683b);
+    --ph-error: var(--token-theme-light-error, #a83226);
+    --ph-border: var(--token-theme-light-border, #c8cdc4);
+}
+
+:root[data-theme="dark"] {
+    color-scheme: dark;
+    --ph-background: var(
+        --tg-theme-bg-color,
+        var(--token-theme-dark-background, #20231f)
+    );
+    --ph-surface: var(
+        --tg-theme-secondary-bg-color,
+        var(--token-theme-dark-surface, #292d28)
+    );
+    --ph-text: var(
+        --tg-theme-text-color,
+        var(--token-theme-dark-text, #f2f4ed)
+    );
+    --ph-text-secondary: var(
+        --tg-theme-hint-color,
+        var(--token-theme-dark-textSecondary, #b1b7ad)
+    );
+    --ph-accent: var(
+        --tg-theme-button-color,
+        var(--token-theme-dark-accent, #80b889)
+    );
+    --ph-button-text: var(
+        --tg-theme-button-text-color,
+        var(--token-theme-dark-buttonText, #171b17)
+    );
+    --ph-accent-hover: var(--token-theme-dark-accentHover, #9bc9a2);
+    --ph-error: var(--token-theme-dark-error, #f2aaa1);
+    --ph-border: var(--token-theme-dark-border, #4e554c);
+}
+
+* {
+    box-sizing: border-box;
 }
 
 body {
-    padding: 0;
+    min-width: 320px;
+    min-height: 100vh;
     margin: 0;
-    color: var(--tg-theme-text-color, var(--foreground));
-    background: var(--tg-theme-bg-color, var(--background));
+    background: var(--ph-background);
+    color: var(--ph-text);
     font-family: Arial, Helvetica, sans-serif;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
 }
 
-.foundation {
-    display: grid;
-    min-height: 100dvh;
-    align-content: center;
-    justify-items: center;
-    padding: 24px;
-    text-align: center;
+button,
+input {
+    font: inherit;
 }
 
-.foundation__mark {
-    display: grid;
-    width: 64px;
-    height: 64px;
-    place-items: center;
-    border-radius: 22px;
-    color: #ffffff;
-    background: #387a45;
-    font-size: 30px;
-    font-weight: 700;
-}
-
-.foundation__title {
-    margin: 20px 0 8px;
-    font-size: 28px;
-}
-
-.foundation__description {
-    max-width: 280px;
-    margin: 0;
-    color: var(--tg-theme-hint-color, #72776f);
-    line-height: 1.5;
+:focus-visible {
+    outline: 3px solid var(--ph-accent);
+    outline-offset: 3px;
 }

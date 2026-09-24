@@ -20,8 +20,8 @@
 
 | Шаг | День | Задача                                                                 | Статус    |
 | --- | ---- | ---------------------------------------------------------------------- | --------- |
-| S01 | 1    | [Основа frontend и npm workspace](01-frontend-foundation.md)           | В работе  |
-| S02 | 1    | [Tailwind и минимальные дизайн-токены](02-tailwind-tokens.md)          | Не начата |
+| S01 | 1    | [Основа frontend и npm workspace](01-frontend-foundation.md)           | Выполнена |
+| S02 | 1    | [Tailwind и минимальные дизайн-токены](02-tailwind-tokens.md)          | Выполнена |
 | S03 | 1    | [Контракт встреч в TypeSpec](03-typespec-contract.md)                  | Не начата |
 | S04 | 1    | [TanStack Query и моки HTTP API](04-query-api-mocks.md)                | Не начата |
 | S05 | 1    | [Список и страница игры](05-game-list-details.md)                      | Не начата |

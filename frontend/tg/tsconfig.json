@@ -20,7 +20,7 @@
         "useDefineForClassFields": true,
         "types": ["vite/client"]
     },
-    "include": ["src"],
+    "include": ["src", "../packages/tokens/src"],
     "references": [
         {
             "path": "./tsconfig.node.json"

@@ -5,7 +5,8 @@
     "type": "module",
     "homepage": "https://nullorone.github.io/picklehub",
     "workspaces": [
-        "frontend/tg"
+        "frontend/tg",
+        "frontend/packages/tokens"
     ],
     "scripts": {
         "start": "npm run dev --workspace @picklehub/tg --",

@@ -5,21 +5,39 @@ import { emitEvent, isTMA, mockTelegramEnv } from "@telegram-apps/sdk-react";
 // so you will not see it in your final bundle.
 if (import.meta.env.DEV) {
     if (!(await isTMA("complete"))) {
-        const themeParams = {
-            accent_text_color: "#6ab2f2",
-            bg_color: "#17212b",
-            button_color: "#5288c1",
-            button_text_color: "#ffffff",
-            destructive_text_color: "#ec3942",
-            header_bg_color: "#17212b",
-            hint_color: "#708499",
-            link_color: "#6ab3f3",
-            secondary_bg_color: "#232e3c",
-            section_bg_color: "#17212b",
-            section_header_text_color: "#6ab3f3",
-            subtitle_text_color: "#708499",
-            text_color: "#f5f5f5",
-        } as const;
+        const theme = new URLSearchParams(window.location.search).get("theme");
+        const themeParams =
+            theme === "light"
+                ? ({
+                      accent_text_color: "#2f683b",
+                      bg_color: "#f6f7f4",
+                      button_color: "#387a45",
+                      button_text_color: "#ffffff",
+                      destructive_text_color: "#a83226",
+                      header_bg_color: "#f6f7f4",
+                      hint_color: "#72776f",
+                      link_color: "#2f683b",
+                      secondary_bg_color: "#ffffff",
+                      section_bg_color: "#ffffff",
+                      section_header_text_color: "#2f683b",
+                      subtitle_text_color: "#72776f",
+                      text_color: "#20241f",
+                  } as const)
+                : ({
+                      accent_text_color: "#6ab2f2",
+                      bg_color: "#20231f",
+                      button_color: "#80b889",
+                      button_text_color: "#171b17",
+                      destructive_text_color: "#f2aaa1",
+                      header_bg_color: "#20231f",
+                      hint_color: "#b1b7ad",
+                      link_color: "#9bc9a2",
+                      secondary_bg_color: "#292d28",
+                      section_bg_color: "#20231f",
+                      section_header_text_color: "#9bc9a2",
+                      subtitle_text_color: "#b1b7ad",
+                      text_color: "#f2f4ed",
+                  } as const);
         const noInsets = { left: 0, top: 0, bottom: 0, right: 0 } as const;
 
         mockTelegramEnv({
