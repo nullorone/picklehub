@@ -11,160 +11,219 @@ model BearerAuth is Http.BearerAuth;
 
 @useAuth(BearerAuth)
 interface Games {
-    @get
-    @route("/games")
-    list(@query cursor?: string, @query limit?: PageSize): GamePage | UnauthorizedError;
+  @get
+  @route("/games")
+  list(@query cursor?: string, @query limit?: PageSize):
+    | GamePage
+    | UnauthorizedError;
 
-    @get
-    @route("/games/{gameId}")
-    get(@path gameId: uuid): GameDetail | UnauthorizedError | NotFoundError | CancelledError;
+  @get
+  @route("/games/{gameId}")
+  get(@path gameId: uuid):
+    | GameDetail
+    | UnauthorizedError
+    | NotFoundError
+    | CancelledError;
 
-    @post
-    @route("/games")
-    create(
-        @header("Idempotency-Key") key: IdempotencyKey,
-        @body body: CreateGameRequest,
-    ): GameDetail | UnauthorizedError | ValidationError | ConflictError;
+  @post
+  @route("/games")
+  create(
+    @header("Idempotency-Key") key: IdempotencyKey,
+    @body body: CreateGameRequest,
+  ): GameDetail | UnauthorizedError | ValidationError | ConflictError;
 
-    @patch
-    @route("/games/{gameId}")
-    update(
-        @path gameId: uuid,
-        @header("Idempotency-Key") key: IdempotencyKey,
-        @body body: UpdateGameRequest,
-    ): GameDetail | UnauthorizedError | NotFoundError | ForbiddenError | CancelledError | ValidationError | ConflictError;
+  @patch
+  @route("/games/{gameId}")
+  update(
+    @path gameId: uuid,
+    @header("Idempotency-Key") key: IdempotencyKey,
+    @body body: UpdateGameRequest,
+  ):
+    | GameDetail
+    | UnauthorizedError
+    | NotFoundError
+    | ForbiddenError
+    | CancelledError
+    | ValidationError
+    | ConflictError;
 
-    @put
-    @route("/games/{gameId}/participation")
-    join(
-        @path gameId: uuid,
-        @header("Idempotency-Key") key: IdempotencyKey,
-    ): GameDetail | UnauthorizedError | NotFoundError | ForbiddenError | CancelledError | ConflictError;
+  @put
+  @route("/games/{gameId}/participation")
+  join(@path gameId: uuid, @header("Idempotency-Key") key: IdempotencyKey):
+    | GameDetail
+    | UnauthorizedError
+    | NotFoundError
+    | ForbiddenError
+    | CancelledError
+    | ConflictError;
 
-    @delete
-    @route("/games/{gameId}/participation")
-    leave(
-        @path gameId: uuid,
-        @header("Idempotency-Key") key: IdempotencyKey,
-    ): GameDetail | UnauthorizedError | NotFoundError | ForbiddenError | CancelledError | ConflictError;
+  @delete
+  @route("/games/{gameId}/participation")
+  leave(@path gameId: uuid, @header("Idempotency-Key") key: IdempotencyKey):
+    | GameDetail
+    | UnauthorizedError
+    | NotFoundError
+    | ForbiddenError
+    | CancelledError
+    | ConflictError;
 
-    @delete
-    @route("/games/{gameId}/participants/{userId}")
-    removeParticipant(
-        @path gameId: uuid,
-        @path userId: uuid,
-        @header("Idempotency-Key") key: IdempotencyKey,
-    ): GameDetail | UnauthorizedError | NotFoundError | ForbiddenError | CancelledError | ConflictError;
+  @delete
+  @route("/games/{gameId}/participants/{userId}")
+  removeParticipant(
+    @path gameId: uuid,
+    @path userId: uuid,
+    @header("Idempotency-Key") key: IdempotencyKey,
+  ):
+    | GameDetail
+    | UnauthorizedError
+    | NotFoundError
+    | ForbiddenError
+    | CancelledError
+    | ConflictError;
 
-    @post
-    @route("/games/{gameId}/cancellation")
-    cancel(
-        @path gameId: uuid,
-        @header("Idempotency-Key") key: IdempotencyKey,
-    ): GameDetail | UnauthorizedError | NotFoundError | ForbiddenError | ConflictError;
+  @post
+  @route("/games/{gameId}/cancellation")
+  cancel(@path gameId: uuid, @header("Idempotency-Key") key: IdempotencyKey):
+    | GameDetail
+    | UnauthorizedError
+    | NotFoundError
+    | ForbiddenError
+    | ConflictError;
 }
 
 interface TelegramSessions {
-    @post
-    @route("/sessions/telegram")
-    create(@body body: TelegramSessionRequest): TelegramSession | ValidationError;
+  @post
+  @route("/sessions/telegram")
+  create(@body body: TelegramSessionRequest): TelegramSession | ValidationError;
 }
 
 model Game {
-    id: uuid;
-    organizerId: uuid;
-    organizerParticipates: boolean;
-    venueName: VenueName;
-    venueAddress: VenueAddress;
-    startsAt: utcDateTime;
-    durationMinutes: DurationMinutes;
-    participantLimit: ParticipantLimit;
-    participantCount: int32;
-    status: GameStatus;
-    desiredLevel?: DesiredLevel;
-    description?: GameDescription;
-    createdAt: utcDateTime;
-    updatedAt: utcDateTime;
+  id: uuid;
+  organizerId: uuid;
+  organizerParticipates: boolean;
+  venueName: VenueName;
+  venueAddress: VenueAddress;
+  startsAt: utcDateTime;
+  durationMinutes: DurationMinutes;
+  participantLimit: ParticipantLimit;
+  participantCount: ParticipantCount;
+  status: GameStatus;
+  desiredLevel?: DesiredLevel;
+  description?: GameDescription;
+  createdAt: utcDateTime;
+  updatedAt: utcDateTime;
 }
 
 model Participant {
-    userId: uuid;
-    displayName: DisplayName;
-    joinedAt: utcDateTime;
-    isOrganizer: boolean;
+  userId: uuid;
+  displayName: DisplayName;
+  joinedAt: utcDateTime;
+  isOrganizer: boolean;
 }
 
 model GameDetail extends Game {
-    participants: Participant[];
+  participants: Participant[];
 }
 
 model GamePage {
-    items: Game[];
-    nextCursor?: string;
+  items: Game[];
+  nextCursor?: string;
 }
 
 model CreateGameRequest {
-    venueName: VenueName;
-    venueAddress: VenueAddress;
-    startsAt: utcDateTime;
-    durationMinutes: DurationMinutes;
-    participantLimit: ParticipantLimit;
-    organizerParticipates: boolean = true;
-    desiredLevel?: DesiredLevel;
-    description?: GameDescription;
+  venueName: VenueName;
+  venueAddress: VenueAddress;
+  startsAt: utcDateTime;
+  durationMinutes: DurationMinutes;
+  participantLimit: ParticipantLimit;
+  organizerParticipates: boolean = true;
+  desiredLevel?: DesiredLevel;
+  description?: GameDescription;
 }
 
 model UpdateGameRequest {
-    venueName?: VenueName;
-    venueAddress?: VenueAddress;
-    startsAt?: utcDateTime;
-    durationMinutes?: DurationMinutes;
-    participantLimit?: ParticipantLimit;
-    organizerParticipates?: boolean;
-    desiredLevel?: DesiredLevel | null;
-    description?: GameDescription | null;
+  venueName?: VenueName;
+  venueAddress?: VenueAddress;
+  startsAt?: utcDateTime;
+  durationMinutes?: DurationMinutes;
+  participantLimit?: ParticipantLimit;
+  organizerParticipates?: boolean;
+  desiredLevel?: DesiredLevel | null;
+  description?: GameDescription | null;
 }
 
 model TelegramSessionRequest {
-    initData: string;
+  initData: string;
 }
 
 model TelegramSession {
-    accessToken: string;
-    tokenType: "Bearer";
-    expiresAt: utcDateTime;
-    user: SessionUser;
+  accessToken: string;
+  tokenType: "Bearer";
+  expiresAt: utcDateTime;
+  user: SessionUser;
 }
 
 model SessionUser {
-    id: uuid;
-    displayName: DisplayName;
+  id: uuid;
+  displayName: DisplayName;
 }
 
 model ErrorResponse {
-    code: string;
-    message: string;
-    requestId: string;
-    details?: Record<unknown>;
+  code: ErrorCode;
+  message: string;
+  requestId: string;
+  details?: Record<unknown>;
 }
 
-@statusCode(400)
-model ValidationError extends ErrorResponse {}
+model ValidationError extends ErrorResponse {
+  @statusCode
+  statusCode: 400;
+}
 
-@statusCode(401)
-model UnauthorizedError extends ErrorResponse {}
+model UnauthorizedError extends ErrorResponse {
+  @statusCode
+  statusCode: 401;
+}
 
-@statusCode(403)
-model ForbiddenError extends ErrorResponse {}
+model ForbiddenError extends ErrorResponse {
+  @statusCode
+  statusCode: 403;
+}
 
-@statusCode(404)
-model NotFoundError extends ErrorResponse {}
+model NotFoundError extends ErrorResponse {
+  @statusCode
+  statusCode: 404;
+}
 
-@statusCode(409)
-model ConflictError extends ErrorResponse {}
+model ConflictError extends ErrorResponse {
+  @statusCode
+  statusCode: 409;
+}
 
-@statusCode(410)
-model CancelledError extends ErrorResponse {}
+model CancelledError extends ErrorResponse {
+  @statusCode
+  statusCode: 410;
+}
+
+@pattern("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$")
+scalar uuid extends string;
+
+@minValue(0)
+@maxValue(32)
+scalar ParticipantCount extends int32;
+
+union ErrorCode {
+  validation: "VALIDATION_ERROR",
+  unauthenticated: "UNAUTHENTICATED",
+  forbidden: "FORBIDDEN",
+  gameNotFound: "GAME_NOT_FOUND",
+  participantNotFound: "PARTICIPANT_NOT_FOUND",
+  gameFull: "GAME_FULL",
+  gameConflict: "GAME_CONFLICT",
+  idempotencyKeyReused: "IDEMPOTENCY_KEY_REUSED",
+  gameCancelled: "GAME_CANCELLED",
+  telegramAuthInvalid: "TELEGRAM_AUTH_INVALID",
+}
 
 @maxLength(120)
 @minLength(1)
@@ -202,7 +261,7 @@ scalar IdempotencyKey extends string;
 scalar PageSize extends int32;
 
 enum GameStatus {
-    scheduled: "SCHEDULED",
-    full: "FULL",
-    cancelled: "CANCELLED",
+  scheduled: "SCHEDULED",
+  full: "FULL",
+  cancelled: "CANCELLED",
 }

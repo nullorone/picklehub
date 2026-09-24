@@ -23,18 +23,23 @@
         "predeploy": "npm run build",
         "contracts:generate": "npm run contracts:openapi && npm run contracts:client",
         "contracts:openapi": "tsp compile contracts/main.tsp --emit @typespec/openapi3 --output-dir contracts/openapi",
-        "contracts:client": "openapi-typescript contracts/openapi/openapi.yaml -o frontend/packages/api/src/generated/schema.ts",
+        "contracts:client": "openapi-typescript contracts/openapi/@typespec/openapi3/openapi.yaml -o frontend/packages/api/src/generated/schema.ts && prettier --write frontend/packages/api/src/generated/schema.ts",
         "contracts:check": "node contracts/check-generated.mjs && git diff --exit-code -- contracts/openapi frontend/packages/api/src/generated"
     },
     "devDependencies": {
         "@eslint/js": "^9.23.0",
         "@typescript-eslint/eslint-plugin": "^8.28.0",
         "@typescript-eslint/parser": "^8.28.0",
+        "@typespec/compiler": "1.16.0",
+        "@typespec/http": "1.16.0",
+        "@typespec/openapi3": "1.16.0",
         "eslint": "^9.34.0",
+        "gh-pages": "^6.3.0",
         "globals": "^15.15.0",
+        "openapi-fetch": "0.17.0",
+        "openapi-typescript": "7.13.0",
         "prettier": "^3.5.3",
         "typescript": "^5.9.2",
-        "typescript-eslint": "^8.40.0",
-        "gh-pages": "^6.3.0"
+        "typescript-eslint": "^8.40.0"
     }
 }
