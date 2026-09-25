@@ -5,6 +5,7 @@ export interface AppConfig {
     databaseUrl: string;
     frontendOrigins: string[];
     logLevel: 'error' | 'warn' | 'info';
+    telegramBotToken: string;
 }
 
 const allowedNodeEnvs = ['development', 'test', 'production'] as const;
@@ -56,6 +57,11 @@ export function loadConfig(env: NodeJS.ProcessEnv): AppConfig {
         errors.push('LOG_LEVEL must be error, warn, or info');
     }
 
+    const telegramBotToken = env.TELEGRAM_BOT_TOKEN ?? '';
+    if (!telegramBotToken || telegramBotToken.length > 512) {
+        errors.push('TELEGRAM_BOT_TOKEN must be configured');
+    }
+
     if (errors.length > 0) {
         throw new Error(`Invalid configuration: ${errors.join('; ')}`);
     }
@@ -67,5 +73,6 @@ export function loadConfig(env: NodeJS.ProcessEnv): AppConfig {
         databaseUrl,
         frontendOrigins,
         logLevel: logLevel as AppConfig['logLevel'],
+        telegramBotToken,
     };
 }

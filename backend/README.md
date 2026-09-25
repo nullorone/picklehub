@@ -29,8 +29,20 @@ contain only request ID, HTTP method, URL path (not query string), status, and d
 Telegram init data, authorization values, email, and user content are not logged. A valid incoming `X-Request-Id` is
 returned as-is; otherwise the server generates one.
 
-The API has no auth bypass or product endpoints in this foundation task. Telegram session verification and routes
-will be added in their ordered tasks. Local development CORS origins should be explicitly added to the environment;
+`POST /sessions/telegram` verifies Mini App initData with the official Telegram Web Apps HMAC procedure and rejects
+data older than 24 hours or more than 30 seconds in the future. It creates or finds the account by the verified
+Telegram numeric ID and returns a 30-day opaque Bearer token. Only the token SHA-256 hash is stored in `sessions`;
+the guard checks expiry on each protected request. `TELEGRAM_BOT_TOKEN` is required and must be supplied through the
+runtime environment or an untracked `.env`; never put it in frontend variables. The process applies a per-IP login
+limit of 10 attempts per minute. Its limiter is process-local, suitable for the single-process pilot; a multi-instance
+deployment needs a shared limiter.
+
+For a separate frontend and API origin, keep the returned Bearer token in frontend memory and send it in the
+`Authorization` header; do not put it in a URL, browser storage, or logs. The API currently does not enable
+credentialed CORS or cookie auth. Telegram initData and the bot token follow Telegram's
+[Mini App validation procedure](https://core.telegram.org/bots/webapps#validating-data-received-via-the-mini-app).
+Development MSW mocks are gated by Vite's `import.meta.env.DEV`; production builds do not enable them.
+Local development CORS origins should be explicitly added to the environment;
 the committed example contains localhost and the current GitHub Pages origin.
 
 ## Database and durable jobs

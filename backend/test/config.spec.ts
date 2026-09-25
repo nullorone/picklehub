@@ -9,6 +9,7 @@ const validEnv: NodeJS.ProcessEnv = {
     DATABASE_URL: 'postgresql://user:password@localhost:5432/picklehub',
     FRONTEND_ORIGINS: 'http://localhost:5173,https://localhost:5173',
     LOG_LEVEL: 'info',
+    TELEGRAM_BOT_TOKEN: 'test-bot-token',
 };
 
 test('loads valid configuration', () => {
@@ -19,6 +20,7 @@ test('loads valid configuration', () => {
         databaseUrl: validEnv.DATABASE_URL,
         frontendOrigins: ['http://localhost:5173', 'https://localhost:5173'],
         logLevel: 'info',
+        telegramBotToken: 'test-bot-token',
     });
 });
 
