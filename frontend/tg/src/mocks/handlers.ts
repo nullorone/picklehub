@@ -6,6 +6,7 @@ type Game = components["schemas"]["Game"];
 const organizerId = "00000000-0000-4000-8000-000000000001";
 const playerId = "00000000-0000-4000-8000-000000000002";
 const otherId = "00000000-0000-4000-8000-000000000003";
+const visitorId = "00000000-0000-4000-8000-000000000099";
 const now = Date.now();
 const iso = (offsetHours: number) =>
     new Date(now + offsetHours * 3_600_000).toISOString();
@@ -19,6 +20,16 @@ const participant = (
     joinedAt: iso(-1),
     isOrganizer,
 });
+const displayName = (userId: string) =>
+    userId === organizerId
+        ? "Алексей"
+        : userId === playerId
+          ? "Денис"
+          : userId === otherId
+            ? "Мария"
+            : userId === visitorId
+              ? "Гость"
+              : "Игрок";
 
 const seeds: GameDetail[] = [
     {
@@ -76,6 +87,36 @@ const seeds: GameDetail[] = [
         updatedAt: iso(-1),
         participants: [participant(organizerId, "Алексей", true)],
     },
+    {
+        id: "10000000-0000-4000-8000-000000000004",
+        organizerId,
+        organizerParticipates: true,
+        venueName: "Игра уже началась",
+        venueAddress: "Москва",
+        startsAt: iso(-1),
+        durationMinutes: 60,
+        participantLimit: 4,
+        participantCount: 1,
+        status: "SCHEDULED",
+        createdAt: iso(-24),
+        updatedAt: iso(-1),
+        participants: [participant(organizerId, "Алексей", true)],
+    },
+    {
+        id: "10000000-0000-4000-8000-000000000005",
+        organizerId,
+        organizerParticipates: true,
+        venueName: "Последнее место",
+        venueAddress: "Москва",
+        startsAt: iso(60),
+        durationMinutes: 90,
+        participantLimit: 2,
+        participantCount: 1,
+        status: "SCHEDULED",
+        createdAt: iso(-24),
+        updatedAt: iso(-1),
+        participants: [participant(organizerId, "Алексей", true)],
+    },
 ];
 
 let games = structuredClone(seeds);
@@ -103,11 +144,15 @@ function currentUser(request: Request) {
         ? playerId
         : token === "player-1"
           ? organizerId
-          : undefined;
+          : token === "player-3"
+            ? otherId
+            : token === "player-4"
+              ? visitorId
+              : undefined;
 }
 
 function requireUser(request: Request) {
-    return currentUser(request) ?? "00000000-0000-4000-8000-000000000099";
+    return currentUser(request) ?? visitorId;
 }
 
 function listGame(game: GameDetail): Game {
@@ -175,13 +220,7 @@ export const handlers = [
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
             participants: participates
-                ? [
-                      participant(
-                          userId,
-                          userId === playerId ? "Денис" : "Алексей",
-                          true,
-                      ),
-                  ]
+                ? [participant(userId, displayName(userId), true)]
                 : [],
         };
         games.unshift(created);
@@ -212,6 +251,8 @@ export const handlers = [
             : error(404, "GAME_NOT_FOUND", "Игра не найдена");
     }),
     http.put(route("/games/:gameId/participation"), ({ params, request }) => {
+        if (mode() === "join-error")
+            return error(503, "GAME_CONFLICT", "Временная ошибка API");
         if (!currentUser(request))
             return error(401, "UNAUTHENTICATED", "Use the local dev identity");
         const game = games.find((item) => item.id === params.gameId);
@@ -219,12 +260,20 @@ export const handlers = [
         const userId = requireUser(request);
         if (game.status === "CANCELLED")
             return error(410, "GAME_CANCELLED", "Игра отменена");
+        if (Date.parse(game.startsAt) <= Date.now())
+            return error(409, "GAME_CONFLICT", "Игра уже началась");
+        if (
+            mode() === "join-conflict" &&
+            game.id === "10000000-0000-4000-8000-000000000005"
+        ) {
+            game.participants.push(participant(otherId, "Мария"));
+            updateCounts(game);
+            return error(409, "GAME_FULL", "Последнее место уже занято");
+        }
         if (!game.participants.some((item) => item.userId === userId)) {
             if (game.participantCount >= game.participantLimit)
                 return error(409, "GAME_FULL", "Нет свободных мест");
-            game.participants.push(
-                participant(userId, userId === playerId ? "Денис" : "Алексей"),
-            );
+            game.participants.push(participant(userId, displayName(userId)));
             if (userId === game.organizerId) game.organizerParticipates = true;
             updateCounts(game);
         }
@@ -233,6 +282,8 @@ export const handlers = [
     http.delete(
         route("/games/:gameId/participation"),
         ({ params, request }) => {
+            if (mode() === "leave-error")
+                return error(503, "GAME_CONFLICT", "Временная ошибка API");
             if (!currentUser(request))
                 return error(
                     401,
@@ -243,6 +294,8 @@ export const handlers = [
             if (!game) return error(404, "GAME_NOT_FOUND", "Игра не найдена");
             if (game.status === "CANCELLED")
                 return error(410, "GAME_CANCELLED", "Игра отменена");
+            if (Date.parse(game.startsAt) <= Date.now())
+                return error(409, "GAME_CONFLICT", "Игра уже началась");
             const userId = requireUser(request);
             game.participants = game.participants.filter(
                 (item) => item.userId !== userId,

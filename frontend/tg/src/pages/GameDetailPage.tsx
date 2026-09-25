@@ -1,12 +1,29 @@
+import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Page } from "@/components/Page.tsx";
 import { Card } from "@/components/ui/Card/Card.tsx";
 import { useGame } from "@/api/useGames.ts";
+import { ApiError } from "@/api/games.ts";
+import { useJoinGame, useLeaveGame } from "@/api/useGames.ts";
+import { mockUser, mockUserIds } from "@/api/client.ts";
 import { formatGameDate, statusLabel } from "@/pages/gameFormatting.ts";
+import { Button } from "@/components/ui/Button/Button.tsx";
 
 export function GameDetailPage() {
     const { matchId = "" } = useParams();
     const gameQuery = useGame(matchId);
+    const joinMutation = useJoinGame();
+    const leaveMutation = useLeaveGame();
+    const [now, setNow] = useState(Date.now());
+
+    useEffect(() => {
+        const startsAt = gameQuery.data?.startsAt;
+        if (!startsAt) return;
+        const delay = Date.parse(startsAt) - Date.now();
+        if (delay <= 0) return;
+        const timeout = window.setTimeout(() => setNow(Date.now()), delay);
+        return () => window.clearTimeout(timeout);
+    }, [gameQuery.data?.startsAt]);
 
     return (
         <Page>
@@ -68,11 +85,51 @@ export function GameDetailPage() {
                             (participant) =>
                                 participant.userId === game.organizerId,
                         );
+                        const currentUserId =
+                            import.meta.env.DEV &&
+                            import.meta.env.VITE_API_MOCKS !== "false"
+                                ? mockUserIds[mockUser]
+                                : undefined;
+                        const isParticipant = currentUserId
+                            ? game.participants.some(
+                                  (participant) =>
+                                      participant.userId === currentUserId,
+                              )
+                            : false;
+                        const hasStarted = now >= Date.parse(game.startsAt);
+                        const isClosed =
+                            game.status === "CANCELLED" || hasStarted;
+                        const isFull =
+                            game.status === "FULL" ||
+                            game.participantCount >= game.participantLimit;
+                        const mutation = isParticipant
+                            ? leaveMutation
+                            : joinMutation;
+                        const isMutationPending =
+                            joinMutation.isPending || leaveMutation.isPending;
+                        const mutationError = mutation.error;
+                        const mutationMessage =
+                            mutationError instanceof ApiError &&
+                            mutationError.code === "GAME_FULL"
+                                ? "Все места уже заняты. Состав обновлён."
+                                : mutationError instanceof ApiError &&
+                                    mutationError.code === "GAME_CANCELLED"
+                                  ? "Игра отменена, изменить состав нельзя."
+                                  : mutationError instanceof ApiError &&
+                                      mutationError.status === 409 &&
+                                      mutationError.code === "GAME_CONFLICT"
+                                    ? "Игра уже началась, изменить состав нельзя."
+                                    : !navigator.onLine
+                                      ? "Нет подключения к сети. Проверьте соединение и попробуйте ещё раз."
+                                      : "Не удалось изменить состав. Попробуйте ещё раз.";
                         return (
                             <>
                                 <header className="grid gap-2">
                                     <span className="w-fit rounded-small bg-surface px-3 py-1 text-sm font-medium">
-                                        {statusLabel(game.status)}
+                                        {hasStarted &&
+                                        game.status !== "CANCELLED"
+                                            ? "Уже началась"
+                                            : statusLabel(game.status)}
                                     </span>
                                     <h1 className="break-words text-2xl font-bold">
                                         {game.venueName}
@@ -118,6 +175,61 @@ export function GameDetailPage() {
                                                 "Организатор игры"}
                                         </p>
                                     </section>
+                                    {isClosed && (
+                                        <p
+                                            className="text-sm text-text-secondary"
+                                            role="status"
+                                        >
+                                            {game.status === "CANCELLED"
+                                                ? "Игра отменена. Состав изменить нельзя."
+                                                : "Игра уже началась. Запись и выход закрыты."}
+                                        </p>
+                                    )}
+                                    {currentUserId && !isClosed && (
+                                        <section className="grid gap-2">
+                                            <Button
+                                                disabled={
+                                                    isMutationPending ||
+                                                    (!isParticipant && isFull)
+                                                }
+                                                onClick={() => {
+                                                    joinMutation.reset();
+                                                    leaveMutation.reset();
+                                                    if (isParticipant) {
+                                                        leaveMutation.mutate(
+                                                            game.id,
+                                                        );
+                                                    } else {
+                                                        joinMutation.mutate(
+                                                            game.id,
+                                                        );
+                                                    }
+                                                }}
+                                                type="button"
+                                                variant={
+                                                    isParticipant
+                                                        ? "secondary"
+                                                        : "primary"
+                                                }
+                                            >
+                                                {isMutationPending
+                                                    ? "Обновляем состав…"
+                                                    : isParticipant
+                                                      ? "Выйти из игры"
+                                                      : isFull
+                                                        ? "Мест нет"
+                                                        : "Записаться"}
+                                            </Button>
+                                            {mutationError && (
+                                                <p
+                                                    className="text-sm text-error"
+                                                    role="alert"
+                                                >
+                                                    {mutationMessage}
+                                                </p>
+                                            )}
+                                        </section>
+                                    )}
                                     {game.description && (
                                         <section>
                                             <h2 className="text-sm font-semibold text-text-secondary">
