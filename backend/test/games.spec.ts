@@ -32,6 +32,10 @@ function fixture() {
                 });
             },
         },
+        job: {
+            deleteMany: async () => ({ count: 0 }),
+            create: async () => ({}),
+        },
         game: {
             create: async ({ data, include }: any) => {
                 const row = {
@@ -45,6 +49,7 @@ function fixture() {
                     level: data.level,
                     description: data.description,
                     status: 'OPEN',
+                    eventVersion: 1,
                     createdAt: new Date(),
                     updatedAt: new Date(),
                     participants: data.participants

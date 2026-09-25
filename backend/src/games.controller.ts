@@ -7,6 +7,7 @@ import {
     HttpException,
     HttpStatus,
     Param,
+    Patch,
     Post,
     Put,
     Query,
@@ -39,6 +40,9 @@ interface NormalizedGame {
     desiredLevel: string | null;
     description: string | null;
 }
+
+type UpdateGameBody = Partial<CreateGameBody>;
+type OrganizerGame = Prisma.GameGetPayload<{ include: { participants: { select: typeof participantSelection } } }>;
 
 const participantSelection = {
     userId: true,
@@ -96,6 +100,7 @@ export class GamesController {
                         },
                     },
                 });
+                await this.rescheduleReminder(tx, game.id, game.startsAt, game.eventVersion);
                 const response = this.toDetail(game);
                 await tx.idempotencyRecord.create({
                     data: { userId: request.userId, key, requestHash, response: response as Prisma.InputJsonValue },
@@ -200,6 +205,273 @@ export class GamesController {
         @Req() request: AuthenticatedRequest
     ): Promise<Record<string, unknown>> {
         return this.changeParticipation(gameId, request, 'DELETE', false);
+    }
+
+    @Patch(':gameId')
+    async update(
+        @Param('gameId') gameId: string,
+        @Body() body: UpdateGameBody,
+        @Req() request: AuthenticatedRequest
+    ): Promise<Record<string, unknown>> {
+        const requestId = request.header('x-request-id') ?? '';
+        const changes = this.validateUpdate(body, requestId);
+        return this.organizerAction(gameId, request, 'PATCH', changes, async (tx, game) => {
+            if (game.status === 'CANCELLED')
+                this.fail(HttpStatus.GONE, 'GAME_CANCELLED', 'Game was cancelled', requestId);
+            if (game.startsAt.getTime() <= Date.now())
+                this.fail(HttpStatus.CONFLICT, 'GAME_CONFLICT', 'Game has already started', requestId);
+            const organizerParticipates = game.participants.some((item) => item.userId === game.organizerId);
+            const targetLimit = changes.participantLimit ?? game.participantLimit;
+            const targetCount =
+                game.participants.length +
+                (changes.organizerParticipates === true && !organizerParticipates ? 1 : 0) -
+                (changes.organizerParticipates === false && organizerParticipates ? 1 : 0);
+            if (targetLimit < targetCount)
+                this.fail(HttpStatus.CONFLICT, 'GAME_CONFLICT', 'Participant limit is below roster size', requestId);
+            const startsAt = changes.startsAt ?? game.startsAt;
+            if (startsAt.getTime() <= Date.now())
+                this.fail(HttpStatus.BAD_REQUEST, 'VALIDATION_ERROR', 'startsAt must be in the future', requestId);
+            const fields = {
+                venueName: changes.venueName ?? game.venueName,
+                address: changes.venueAddress ?? game.address,
+                startsAt,
+                durationMinutes: changes.durationMinutes ?? game.durationMinutes,
+                participantLimit: targetLimit,
+                level: changes.desiredLevel === undefined ? game.level : changes.desiredLevel,
+                description: changes.description === undefined ? game.description : changes.description,
+            };
+            const changed = Object.entries(fields).some(([key, value]) => {
+                const previous = game[key as keyof typeof fields];
+                return value instanceof Date ? value.getTime() !== (previous as Date).getTime() : value !== previous;
+            });
+            const participationChanged =
+                changes.organizerParticipates !== undefined && changes.organizerParticipates !== organizerParticipates;
+            if (!changed && !participationChanged) return;
+            if (participationChanged) {
+                if (changes.organizerParticipates) {
+                    await tx.gameParticipant.create({ data: { gameId: game.id, userId: game.organizerId } });
+                } else {
+                    await tx.gameParticipant.delete({
+                        where: { gameId_userId: { gameId: game.id, userId: game.organizerId } },
+                    });
+                }
+            }
+            const nextVersion = game.eventVersion + 1;
+            await tx.game.update({ where: { id: game.id }, data: { ...fields, eventVersion: nextVersion } });
+            if (changed) {
+                await tx.job.create({
+                    data: {
+                        gameId: game.id,
+                        type: 'GAME_UPDATED',
+                        eventVersion: nextVersion,
+                        deduplicationKey: `${game.id}:${nextVersion}:GAME_UPDATED`,
+                        payload: {
+                            recipientUserIds: [
+                                ...new Set([...game.participants.map((p) => p.userId), game.organizerId]),
+                            ],
+                            game: { ...fields, startsAt: fields.startsAt.toISOString() },
+                        },
+                    },
+                });
+            }
+            if (startsAt.getTime() !== game.startsAt.getTime())
+                await this.rescheduleReminder(tx, game.id, startsAt, nextVersion);
+        });
+    }
+
+    @Delete(':gameId/participants/:userId')
+    async removeParticipant(
+        @Param('gameId') gameId: string,
+        @Param('userId') userId: string,
+        @Req() request: AuthenticatedRequest
+    ): Promise<Record<string, unknown>> {
+        const requestId = request.header('x-request-id') ?? '';
+        if (!isUuid(userId)) this.fail(HttpStatus.BAD_REQUEST, 'VALIDATION_ERROR', 'userId must be a UUID', requestId);
+        return this.organizerAction(gameId, request, 'DELETE', { userId }, async (tx, game) => {
+            if (game.status === 'CANCELLED')
+                this.fail(HttpStatus.GONE, 'GAME_CANCELLED', 'Game was cancelled', requestId);
+            if (game.startsAt.getTime() <= Date.now())
+                this.fail(HttpStatus.CONFLICT, 'GAME_CONFLICT', 'Game has already started', requestId);
+            if (!game.participants.some((item) => item.userId === userId))
+                this.fail(HttpStatus.NOT_FOUND, 'PARTICIPANT_NOT_FOUND', 'Participant not found', requestId);
+            await tx.gameParticipant.delete({ where: { gameId_userId: { gameId, userId } } });
+            const nextVersion = game.eventVersion + 1;
+            await tx.game.update({ where: { id: gameId }, data: { eventVersion: nextVersion } });
+            await tx.job.create({
+                data: {
+                    gameId,
+                    type: 'PARTICIPANT_REMOVED',
+                    eventVersion: nextVersion,
+                    deduplicationKey: `${gameId}:${nextVersion}:PARTICIPANT_REMOVED`,
+                    payload: { recipientUserId: userId },
+                },
+            });
+        });
+    }
+
+    @Post(':gameId/cancellation')
+    async cancel(
+        @Param('gameId') gameId: string,
+        @Req() request: AuthenticatedRequest
+    ): Promise<Record<string, unknown>> {
+        return this.organizerAction(gameId, request, 'POST', null, async (tx, game) => {
+            if (game.status === 'CANCELLED') return;
+            const nextVersion = game.eventVersion + 1;
+            await tx.game.update({ where: { id: gameId }, data: { status: 'CANCELLED', eventVersion: nextVersion } });
+            await tx.job.deleteMany({ where: { gameId, type: 'GAME_REMINDER', status: 'PENDING' } });
+            await tx.job.create({
+                data: {
+                    gameId,
+                    type: 'GAME_CANCELLED',
+                    eventVersion: nextVersion,
+                    deduplicationKey: `${gameId}:${nextVersion}:GAME_CANCELLED`,
+                    payload: {
+                        recipientUserIds: [...new Set([...game.participants.map((p) => p.userId), game.organizerId])],
+                    },
+                },
+            });
+        });
+    }
+
+    private async organizerAction(
+        gameId: string,
+        request: AuthenticatedRequest,
+        method: 'PATCH' | 'DELETE' | 'POST',
+        body: unknown,
+        action: (tx: Prisma.TransactionClient, game: OrganizerGame) => Promise<void>
+    ): Promise<Record<string, unknown>> {
+        const requestId = request.header('x-request-id') ?? '';
+        if (!isUuid(gameId)) this.fail(HttpStatus.BAD_REQUEST, 'VALIDATION_ERROR', 'gameId must be a UUID', requestId);
+        const key = request.header('idempotency-key');
+        if (!key || key.length < 16 || key.length > 128)
+            this.fail(HttpStatus.BAD_REQUEST, 'VALIDATION_ERROR', 'A valid Idempotency-Key is required', requestId);
+        const path =
+            method === 'DELETE'
+                ? `/games/${gameId}/participants/${(body as { userId: string }).userId}`
+                : method === 'POST'
+                  ? `/games/${gameId}/cancellation`
+                  : `/games/${gameId}`;
+        const requestHash = createHash('sha256').update(JSON.stringify({ method, path, body })).digest('hex');
+        const where = { userId_key: { userId: request.userId, key } };
+        const existing = await this.prisma.idempotencyRecord.findUnique({ where });
+        if (existing) return this.replay(existing.requestHash, requestHash, existing.response, requestId);
+        try {
+            return await this.prisma.$transaction(async (tx) => {
+                const locked = await tx.$queryRaw<Array<{ id: string }>>`
+                    SELECT id FROM games WHERE id = ${gameId}::uuid FOR UPDATE
+                `;
+                if (!locked.length) this.fail(HttpStatus.NOT_FOUND, 'GAME_NOT_FOUND', 'Game not found', requestId);
+                const raced = await tx.idempotencyRecord.findUnique({ where });
+                if (raced) return this.replay(raced.requestHash, requestHash, raced.response, requestId);
+                const game = await tx.game.findUniqueOrThrow({
+                    where: { id: gameId },
+                    include: {
+                        participants: { select: participantSelection, orderBy: [{ joinedAt: 'asc' }, { id: 'asc' }] },
+                    },
+                });
+                if (game.organizerId !== request.userId)
+                    this.fail(HttpStatus.FORBIDDEN, 'FORBIDDEN', 'Only the organizer can manage this game', requestId);
+                await action(tx, game);
+                const current = await tx.game.findUniqueOrThrow({
+                    where: { id: gameId },
+                    include: {
+                        participants: { select: participantSelection, orderBy: [{ joinedAt: 'asc' }, { id: 'asc' }] },
+                    },
+                });
+                const response = this.toDetail(current);
+                await tx.idempotencyRecord.create({
+                    data: {
+                        userId: request.userId,
+                        key,
+                        requestHash,
+                        response: response as Prisma.InputJsonValue,
+                    },
+                });
+                return response;
+            });
+        } catch (error) {
+            if (this.isUniqueError(error)) {
+                const raced = await this.prisma.idempotencyRecord.findUnique({ where });
+                if (raced) return this.replay(raced.requestHash, requestHash, raced.response, requestId);
+            }
+            throw error;
+        }
+    }
+
+    private async rescheduleReminder(tx: Prisma.TransactionClient, gameId: string, startsAt: Date, version: number) {
+        await tx.job.deleteMany({ where: { gameId, type: 'GAME_REMINDER', status: 'PENDING' } });
+        const availableAt = new Date(startsAt.getTime() - 2 * 60 * 60 * 1000);
+        if (availableAt.getTime() > Date.now())
+            await tx.job.create({
+                data: {
+                    gameId,
+                    type: 'GAME_REMINDER',
+                    eventVersion: version,
+                    deduplicationKey: `${gameId}:${version}:GAME_REMINDER`,
+                    availableAt,
+                },
+            });
+    }
+
+    private validateUpdate(body: UpdateGameBody, requestId: string): Partial<NormalizedGame> {
+        if (!body || typeof body !== 'object' || Array.isArray(body))
+            this.fail(HttpStatus.BAD_REQUEST, 'VALIDATION_ERROR', 'Request body must be an object', requestId);
+        const result: Record<string, unknown> = {};
+        const allowed = new Set([
+            'venueName',
+            'venueAddress',
+            'startsAt',
+            'durationMinutes',
+            'participantLimit',
+            'organizerParticipates',
+            'desiredLevel',
+            'description',
+        ]);
+        if (Object.keys(body).some((key) => !allowed.has(key)))
+            this.fail(HttpStatus.BAD_REQUEST, 'VALIDATION_ERROR', 'Unknown field', requestId);
+        for (const [key, value] of Object.entries(body)) {
+            if (key === 'venueName' || key === 'venueAddress' || key === 'desiredLevel' || key === 'description') {
+                if (value === null && (key === 'desiredLevel' || key === 'description')) result[key] = null;
+                else {
+                    const normalized = text(
+                        value,
+                        key === 'description' ? 0 : 1,
+                        key === 'venueName' ? 120 : key === 'venueAddress' ? 300 : key === 'desiredLevel' ? 80 : 2000,
+                        key === 'description'
+                    );
+                    if (normalized === null)
+                        this.fail(HttpStatus.BAD_REQUEST, 'VALIDATION_ERROR', `${key} is invalid`, requestId);
+                    result[key] = normalized;
+                }
+            } else if (key === 'startsAt') {
+                if (typeof value !== 'string' || !isDateTime(value) || Date.parse(value) <= Date.now())
+                    this.fail(
+                        HttpStatus.BAD_REQUEST,
+                        'VALIDATION_ERROR',
+                        'startsAt must be a future ISO date-time',
+                        requestId
+                    );
+                result[key] = new Date(value);
+            } else if (key === 'durationMinutes' || key === 'participantLimit') {
+                const min = key === 'durationMinutes' ? 30 : 2;
+                const max = key === 'durationMinutes' ? 480 : 32;
+                if (!Number.isInteger(value) || Number(value) < min || Number(value) > max)
+                    this.fail(HttpStatus.BAD_REQUEST, 'VALIDATION_ERROR', `${key} is invalid`, requestId);
+                result[key] = value;
+            } else if (key === 'organizerParticipates') {
+                if (typeof value !== 'boolean')
+                    this.fail(
+                        HttpStatus.BAD_REQUEST,
+                        'VALIDATION_ERROR',
+                        'organizerParticipates must be boolean',
+                        requestId
+                    );
+                result[key] = value;
+            }
+        }
+        return Object.fromEntries(
+            Object.entries(result).sort(([a], [b]) => a.localeCompare(b))
+        ) as Partial<NormalizedGame>;
     }
 
     private async changeParticipation(
