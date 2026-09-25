@@ -33,8 +33,37 @@ The API has no auth bypass or product endpoints in this foundation task. Telegra
 will be added in their ordered tasks. Local development CORS origins should be explicitly added to the environment;
 the committed example contains localhost and the current GitHub Pages origin.
 
+## Database and durable jobs
+
+Prisma schema lives in `prisma/schema.prisma`; apply committed migrations with
+`npm run prisma:migrate:deploy --workspace @picklehub/backend` and regenerate the client with
+`npm run prisma:generate --workspace @picklehub/backend`. A Telegram identity is separate from the internal user;
+sessions store only a token hash. A game references its organizer independently from `game_participants`, so an
+organizer who opted out still has management ownership. Participant uniqueness is enforced by the database.
+
+Joining must run in a PostgreSQL transaction and take `SELECT ... FROM games WHERE id = $1 FOR UPDATE` before
+checking status, start time, and participant count, then insert the participant. All join/leave/capacity-changing
+operations use that same game-row lock. This serializes competing joins for the final place; the unique
+`(game_id, user_id)` constraint protects duplicate membership even if application code races. The count check must
+include an organizer who participates because that identity also has a participant row.
+
+Jobs are durable rows in `jobs`, not process memory. A business mutation increments `games.event_version` and
+inserts its job with a stable key such as `game:<id>:<version>:<event-type>` in the _same Prisma transaction_;
+the unique key prevents duplicate enqueue. Claim batches atomically with `FOR UPDATE SKIP LOCKED`, changing due
+`PENDING` rows to `PROCESSING`, setting `locked_at`/`locked_by`, and incrementing attempts in one statement. After
+the external call, mark completed or return to pending with exponential delay `min(2^attempts * 5 seconds, 1 hour)`;
+after 8 attempts mark `DEAD` and retain only a bounded internal error code (never provider response bodies or user
+content). A worker periodically requeues `PROCESSING` rows whose lease is older than 5 minutes, clearing lease
+fields; exhausted rows become `DEAD`. Claiming and delivery are deferred to S17/S18. Before delivery, compare the
+job's game version and current state and resolve current recipients; this avoids sending stale cancellation or
+reminder jobs. The Telegram send boundary cannot guarantee exactly-once delivery after an ambiguous network result.
+
+The initial migration has DB checks for valid durations/capacities, event versions, retry counts, and coherent
+leases. Fixtures are intentionally absent; use synthetic data in isolated local verification databases only.
+
 ## Checks
 
-Run `npm run backend:check` from the repository root, or run the corresponding `format`, `lint`, `typecheck`, `test`,
+Run `npm run check --workspace @picklehub/backend` (includes Prisma generation) or `npm run backend:check` from
+the repository root, or run the corresponding `format`, `lint`, `typecheck`, `test`,
 `contracts:check`, and `build` scripts in this workspace. `contracts:check` compares TypeSpec route declarations with
 generated OpenAPI paths and ensures operational health routes stay outside the public product contract.

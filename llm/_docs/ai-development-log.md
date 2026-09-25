@@ -530,3 +530,41 @@ S08 принята. Следующая отдельная задача — [S09:
 
 S09 принята. Следующая отдельная задача — [S10: Prisma-модели и устойчивые задания](../tasks/10-prisma-jobs.md);
 автоматически не начиналась.
+
+## 2026-09-25 — S10: Prisma-модели, миграции и устойчивые задания (выполнена)
+
+### Выполнено
+
+- Добавлены Prisma 6.16.2, Prisma Client, схема и первая PostgreSQL-миграция. В модели разделены внутренний
+  пользователь и уникальная Telegram identity; сессия хранит только хеш токена. Встреча ссылается на организатора
+  отдельно от состава, поэтому создание встречи организатором без участия поддерживается схемой.
+- База обеспечивает уникальность пары `game_id/user_id`, внешние ключи, диапазоны длительности и лимита,
+  положительную версию события, уникальный ключ дедупликации задания, допустимые попытки и согласованное состояние
+  lease. Синтетические fixtures не добавлялись.
+- При конкуренции за последнее место все операции, влияющие на вместимость, должны брать `SELECT ... FOR UPDATE`
+  для строки встречи до проверки состава и записи. Уникальный индекс отдельно защищает повторное участие.
+- Устойчивая очередь — таблица PostgreSQL `jobs`. Изменение встречи и enqueue обязаны выполняться в одной Prisma
+  транзакции; ключ `game:<id>:<version>:<event-type>` дедуплицирует события. Захват проектируется одним запросом
+  с `FOR UPDATE SKIP LOCKED`; lease — 5 минут, повторы — до 8 с задержкой `min(2^attempts * 5s, 1h)`, затем
+  `DEAD`. Восстановление возвращает просроченные захваты в очередь. Отправщик и доставка остаются для S17/S18.
+- Фактическое время активной работы инструментально не измерялось; сессия заняла около 2 часов с ожиданием
+  сетевых/средовых операций, план в 60 минут превышен.
+
+### Проверки
+
+- `env -u HTTPS_PROXY -u HTTP_PROXY -u ALL_PROXY -u https_proxy -u http_proxy -u all_proxy -u NODE_TLS_REJECT_UNAUTHORIZED npm install --workspace @picklehub/backend @prisma/client@6.16.2 prisma@6.16.2` — успешно; npm добавил 33 пакета и сообщил о 9 уязвимостях в полном дереве. Без очистки proxy установка получила HTTP 403; аудит и автоисправления не запускались.
+- `DATABASE_URL=postgresql://picklehub:picklehub@127.0.0.1:5432/picklehub npm run prisma:generate --workspace @picklehub/backend` — успешно после разрешения доступа Prisma к `~/.cache/prisma`.
+- `DATABASE_URL=postgresql://picklehub:picklehub@127.0.0.1:5432/picklehub_s10_verify npm run prisma:migrate:deploy --workspace @picklehub/backend` — успешно применена миграция `20260925110000_initial_jobs` к новой чистой изолированной БД.
+- `DATABASE_URL=postgresql://picklehub:picklehub@127.0.0.1:5432/picklehub_s10_verify npx prisma migrate status --schema backend/prisma/schema.prisma` — БД актуальна, найдена одна применённая миграция.
+- `DATABASE_URL=postgresql://picklehub:picklehub@127.0.0.1:5432/picklehub_s10_verify npx prisma validate --schema backend/prisma/schema.prisma` — схема валидна.
+- Синтетические SQL-проверки через `docker exec backend-postgres-1 psql -v ON_ERROR_STOP=1 -U picklehub -d picklehub_s10_verify`: organizer-only встреча вставляется без участника; синтетическое участие записывается; повтор той же пары отклонён уникальным индексом; `DO` проверил отказ ограничений для длительности 10 минут и лимита 1; транзакция с совместной вставкой встречи и задания завершена `ROLLBACK`, после чего обе строки отсутствуют.
+- `npm run backend:check` — успешно: Prisma Client generation, форматирование, ESLint, TypeScript, 5 тестов backend, проверка 9 TypeSpec/OpenAPI маршрутов и сборка.
+- `npx prisma format --check --schema backend/prisma/schema.prisma` — успешно.
+- `npx prettier --check package.json backend/package.json backend/README.md llm/tasks/10-prisma-jobs.md llm/tasks/README.md llm/_docs/ai-development-log.md` — успешно.
+- `git diff --check` — успешно.
+- Изолированная БД проверки удалена командой `docker exec backend-postgres-1 dropdb -U picklehub picklehub_s10_verify`; основная локальная БД не изменялась.
+
+### Следующий шаг
+
+S10 принята. Следующая отдельная задача — [S11: Telegram-вход и сессия](../tasks/11-telegram-auth.md);
+автоматически не начиналась.
