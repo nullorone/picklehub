@@ -74,6 +74,7 @@ export class TelegramSessionsController {
             (await this.prisma.user
                 .create({
                     data: {
+                        displayName: telegramUser.first_name,
                         telegramIdentity: { create: { telegramUserId } },
                     },
                     select: { id: true },

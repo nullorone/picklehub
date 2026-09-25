@@ -21,11 +21,13 @@ enum JobStatus {
 
 model User {
   id               String            @id @default(uuid()) @db.Uuid
+  displayName      String            @default("Игрок") @map("display_name") @db.VarChar(120)
   createdAt        DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
   telegramIdentity TelegramIdentity?
   sessions         Session[]
   organizedGames   Game[]            @relation("GameOrganizer")
   participations   GameParticipant[]
+  idempotencyKeys IdempotencyRecord[]
 
   @@map("users")
 }
@@ -60,7 +62,7 @@ model Game {
   startsAt         DateTime          @map("starts_at") @db.Timestamptz(3)
   durationMinutes  Int               @map("duration_minutes") @db.SmallInt
   participantLimit Int               @map("participant_limit") @db.SmallInt
-  level            String            @db.VarChar(80)
+  level            String?           @db.VarChar(80)
   description      String?           @db.VarChar(2000)
   status           GameStatus        @default(OPEN)
   eventVersion     Int               @default(1) @map("event_version")
@@ -72,6 +74,19 @@ model Game {
 
   @@index([startsAt, status])
   @@map("games")
+}
+
+model IdempotencyRecord {
+  id             String   @id @default(uuid()) @db.Uuid
+  userId         String   @map("user_id") @db.Uuid
+  key            String   @db.VarChar(128)
+  requestHash    String   @map("request_hash") @db.VarChar(64)
+  response       Json     @db.JsonB
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, key])
+  @@map("idempotency_records")
 }
 
 model GameParticipant {

@@ -45,6 +45,12 @@ Development MSW mocks are gated by Vite's `import.meta.env.DEV`; production buil
 Local development CORS origins should be explicitly added to the environment;
 the committed example contains localhost and the current GitHub Pages origin.
 
+`POST /games`, `GET /games`, and `GET /games/:gameId` require a Bearer session. Creation accepts an
+`Idempotency-Key` and atomically stores the game, the optional organizer participation, and the response snapshot.
+The key is scoped to the authenticated user; repeating the same request replays its response, while using that key
+with a different body returns `409`. The list contains future open games in start-time/ID order with a base64url
+cursor. The detail response includes participants; status is `FULL` when the participant limit is reached.
+
 ## Database and durable jobs
 
 Prisma schema lives in `prisma/schema.prisma`; apply committed migrations with
