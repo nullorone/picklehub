@@ -7,10 +7,11 @@ const request = (key = 'synthetic-idempotency-key-1') => ({
     userId: organizerId,
     header: (name: string) => (name.toLowerCase() === 'idempotency-key' ? key : 'synthetic-request-id'),
 });
+const futureStart = new Date(Date.now() + 60 * 60 * 1000).toISOString();
 const validBody = (organizerParticipates = true) => ({
     venueName: '  Court A  ',
     venueAddress: 'Moscow, Example street',
-    startsAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+    startsAt: futureStart,
     durationMinutes: 120,
     participantLimit: 8,
     organizerParticipates,

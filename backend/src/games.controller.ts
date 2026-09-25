@@ -1,5 +1,18 @@
 import { createHash } from 'node:crypto';
-import { Body, Controller, Get, HttpException, HttpStatus, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
+import {
+    Body,
+    Controller,
+    Delete,
+    Get,
+    HttpException,
+    HttpStatus,
+    Param,
+    Post,
+    Put,
+    Query,
+    Req,
+    UseGuards,
+} from '@nestjs/common';
 import type { Request } from 'express';
 import { Prisma } from '@prisma/client';
 import { AuthenticatedRequest, SessionAuthGuard } from './session-auth.guard.js';
@@ -171,6 +184,104 @@ export class GamesController {
         if (!game)
             this.fail(HttpStatus.NOT_FOUND, 'GAME_NOT_FOUND', 'Game not found', request.header('x-request-id') ?? '');
         return this.toDetail(game);
+    }
+
+    @Put(':gameId/participation')
+    async join(
+        @Param('gameId') gameId: string,
+        @Req() request: AuthenticatedRequest
+    ): Promise<Record<string, unknown>> {
+        return this.changeParticipation(gameId, request, 'PUT', true);
+    }
+
+    @Delete(':gameId/participation')
+    async leave(
+        @Param('gameId') gameId: string,
+        @Req() request: AuthenticatedRequest
+    ): Promise<Record<string, unknown>> {
+        return this.changeParticipation(gameId, request, 'DELETE', false);
+    }
+
+    private async changeParticipation(
+        gameId: string,
+        request: AuthenticatedRequest,
+        method: 'PUT' | 'DELETE',
+        joining: boolean
+    ): Promise<Record<string, unknown>> {
+        const requestId = request.header('x-request-id') ?? '';
+        if (!isUuid(gameId)) this.fail(HttpStatus.BAD_REQUEST, 'VALIDATION_ERROR', 'gameId must be a UUID', requestId);
+        const key = request.header('idempotency-key');
+        if (!key || key.length < 16 || key.length > 128) {
+            this.fail(HttpStatus.BAD_REQUEST, 'VALIDATION_ERROR', 'A valid Idempotency-Key is required', requestId);
+        }
+        const requestHash = createHash('sha256').update(`${method} /games/${gameId}/participation`).digest('hex');
+        const where = { userId_key: { userId: request.userId, key } };
+        const existing = await this.prisma.idempotencyRecord.findUnique({ where });
+        if (existing) return this.replay(existing.requestHash, requestHash, existing.response, requestId);
+
+        try {
+            return await this.prisma.$transaction(async (tx) => {
+                // Every roster mutation, including organizer actions, must lock the game before reading its roster.
+                const locked = await tx.$queryRaw<Array<{ id: string }>>`
+                SELECT id FROM games WHERE id = ${gameId}::uuid FOR UPDATE
+            `;
+                if (!locked.length) this.fail(HttpStatus.NOT_FOUND, 'GAME_NOT_FOUND', 'Game not found', requestId);
+                const raced = await tx.idempotencyRecord.findUnique({ where });
+                if (raced) return this.replay(raced.requestHash, requestHash, raced.response, requestId);
+
+                const game = await tx.game.findUniqueOrThrow({
+                    where: { id: gameId },
+                    include: {
+                        participants: { select: participantSelection, orderBy: [{ joinedAt: 'asc' }, { id: 'asc' }] },
+                    },
+                });
+                if (game.status === 'CANCELLED') {
+                    this.fail(HttpStatus.GONE, 'GAME_CANCELLED', 'Game was cancelled', requestId);
+                }
+                if (game.startsAt.getTime() <= Date.now()) {
+                    this.fail(HttpStatus.CONFLICT, 'GAME_CONFLICT', 'Game has already started', requestId);
+                }
+                const participant = game.participants.some((item) => item.userId === request.userId);
+                if (joining && !participant) {
+                    if (game.participants.length >= game.participantLimit) {
+                        this.fail(HttpStatus.CONFLICT, 'GAME_FULL', 'Game is full', requestId);
+                    }
+                    try {
+                        await tx.gameParticipant.create({ data: { gameId, userId: request.userId } });
+                    } catch (error) {
+                        if (this.isUniqueError(error)) {
+                            this.fail(
+                                HttpStatus.CONFLICT,
+                                'GAME_CONFLICT',
+                                'Participation changed concurrently',
+                                requestId
+                            );
+                        }
+                        throw error;
+                    }
+                } else if (!joining && participant) {
+                    await tx.gameParticipant.delete({ where: { gameId_userId: { gameId, userId: request.userId } } });
+                }
+
+                const current = await tx.game.findUniqueOrThrow({
+                    where: { id: gameId },
+                    include: {
+                        participants: { select: participantSelection, orderBy: [{ joinedAt: 'asc' }, { id: 'asc' }] },
+                    },
+                });
+                const response = this.toDetail(current);
+                await tx.idempotencyRecord.create({
+                    data: { userId: request.userId, key, requestHash, response: response as Prisma.InputJsonValue },
+                });
+                return response;
+            });
+        } catch (error) {
+            if (this.isUniqueError(error)) {
+                const raced = await this.prisma.idempotencyRecord.findUnique({ where });
+                if (raced) return this.replay(raced.requestHash, requestHash, raced.response, requestId);
+            }
+            throw error;
+        }
     }
 
     private validate(body: CreateGameBody, requestId: string): NormalizedGame {
