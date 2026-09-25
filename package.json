@@ -5,6 +5,7 @@
     "type": "module",
     "homepage": "https://nullorone.github.io/picklehub",
     "workspaces": [
+        "backend",
         "frontend/tg",
         "frontend/packages/tokens",
         "frontend/packages/api"
@@ -24,7 +25,15 @@
         "contracts:generate": "npm run contracts:openapi && npm run contracts:client",
         "contracts:openapi": "tsp compile contracts/main.tsp --emit @typespec/openapi3 --output-dir contracts/openapi",
         "contracts:client": "openapi-typescript contracts/openapi/@typespec/openapi3/openapi.yaml -o frontend/packages/api/src/generated/schema.ts && prettier --write frontend/packages/api/src/generated/schema.ts",
-        "contracts:check": "node contracts/check-generated.mjs && git diff --exit-code -- contracts/openapi frontend/packages/api/src/generated"
+        "contracts:check": "node contracts/check-generated.mjs && git diff --exit-code -- contracts/openapi frontend/packages/api/src/generated",
+        "backend:format": "npm run format --workspace @picklehub/backend",
+        "backend:format:check": "npm run format:check --workspace @picklehub/backend",
+        "backend:lint": "npm run lint --workspace @picklehub/backend",
+        "backend:typecheck": "npm run typecheck --workspace @picklehub/backend",
+        "backend:test": "npm run test --workspace @picklehub/backend",
+        "backend:contracts:check": "npm run contracts:check --workspace @picklehub/backend",
+        "backend:build": "npm run build --workspace @picklehub/backend",
+        "backend:check": "npm run backend:format:check && npm run backend:lint && npm run backend:typecheck && npm run backend:test && npm run backend:contracts:check && npm run backend:build"
     },
     "devDependencies": {
         "@eslint/js": "^9.23.0",

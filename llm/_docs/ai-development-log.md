@@ -486,4 +486,47 @@ S07 принята. Следующая отдельная задача — [S08:
 ### Следующий шаг
 
 S08 принята. Следующая отдельная задача — [S09: NestJS и локальная база](../tasks/09-backend-foundation.md);
+выполнена ниже.
+
+## 2026-09-25 — S09: NestJS и локальная база (выполнена)
+
+### Выполнено
+
+- Добавлен npm workspace `backend/` на NestJS 11, строгом TypeScript и PostgreSQL-клиенте `pg`. В корне добавлен
+  `backend:check` и отдельные команды форматирования, линтинга, типов, тестов, проверки контракта и сборки.
+- Добавлен Compose-сервис PostgreSQL 17 с healthcheck и именованным volume; добавлен `.env.example` без секретов.
+  `.env` загружается через dotenv, значения переданные процессу имеют приоритет.
+- Конфигурация проверяет режим, порт, PostgreSQL URL, лог-уровень и точный allowlist HTTP(S) frontend-origin.
+  Ошибки перечисляют требования и имена полей, не выводя значения.
+- Добавлены `/health/live` и `/health/ready`; readiness выполняет `SELECT 1` и возвращает 503 при недоступной БД.
+  Потеря соединения пула не завершает процесс. Nest shutdown hooks закрывают пул при остановке.
+- Запрос получает проверяемый или сгенерированный `X-Request-Id`. JSON-логи включают только ID, метод, путь без
+  query string, HTTP status и duration; заголовки, тело, Telegram init data и прочие значения пользователя не пишутся.
+- Граница будущего публичного API документирована: продуктовые маршруты принадлежат TypeSpec; operational health
+  остаётся вне контракта. Скрипт сверяет девять путей TypeSpec с OpenAPI.
+- Фактическое время — около 2 часов с учётом загрузки зависимостей, настройки изоляции запуска и smoke-проверок;
+  плановая оценка в 60 минут превышена.
+
+### Проверки
+
+- `npm install` изолированно завершился HTTP 403 через настроенный прокси. Успешно установлено командой
+  `env -u HTTPS_PROXY -u HTTP_PROXY -u ALL_PROXY -u https_proxy -u http_proxy -u all_proxy -u NODE_TLS_REJECT_UNAUTHORIZED npm install`.
+  npm сообщил о 23 уязвимостях в полном дереве зависимостей; аудит и автоматическое обновление зависимостей не выполнялись.
+- `npm run backend:format` — успешно.
+- `npm run backend:check` — успешно: форматирование, ESLint без предупреждений, TypeScript, 5 тестов конфигурации и
+  health, 9 путей TypeSpec согласованы с OpenAPI, NestJS собран в `backend/dist`.
+- `docker compose -f backend/docker-compose.yml up -d --wait` — PostgreSQL healthy.
+- `NODE_ENV=development HOST=127.0.0.1 PORT=3000 DATABASE_URL=postgresql://picklehub:picklehub@127.0.0.1:5432/picklehub FRONTEND_ORIGINS=http://localhost:5173 node dist/main.js` — API запущен локально.
+- `curl --silent --show-error -i http://127.0.0.1:3000/health/live` — HTTP 200 и `X-Request-Id`.
+- `curl --silent --show-error -i http://127.0.0.1:3000/health/ready` — HTTP 200 с БД; после
+  `docker compose -f backend/docker-compose.yml stop postgres` вернулся HTTP 503 `{"status":"unavailable"}` и
+  Node-процесс продолжил работать. Затем Compose-сервис снова запущен и стал healthy.
+- Ctrl+C остановил локальный процесс; обработчики Nest shutdown hooks включены. Удаление данных PostgreSQL не выполнялось.
+- `NODE_ENV=invalid DATABASE_URL=postgresql://sample-secret-should-not-print node dist/main.js` — exit code 1,
+  показано только требование к `NODE_ENV`, переданное значение не попало в stderr.
+- `git diff --check` и форматирование изменённых Markdown — успешно.
+
+### Следующий шаг
+
+S09 принята. Следующая отдельная задача — [S10: Prisma-модели и устойчивые задания](../tasks/10-prisma-jobs.md);
 автоматически не начиналась.
