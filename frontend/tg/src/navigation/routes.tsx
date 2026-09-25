@@ -13,5 +13,6 @@ export const routes: Route[] = [
     { path: "/", Component: GameListPage },
     { path: "/matches/:matchId", Component: GameDetailPage },
     { path: "/games/new", Component: GameCreatePage },
+    { path: "/matches/:matchId/edit", Component: GameCreatePage },
     { path: "/foundation", Component: FoundationPage },
 ];

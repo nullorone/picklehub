@@ -250,6 +250,117 @@ export const handlers = [
             ? HttpResponse.json(game)
             : error(404, "GAME_NOT_FOUND", "Игра не найдена");
     }),
+    http.patch(route("/games/:gameId"), async ({ params, request }) => {
+        if (!currentUser(request))
+            return error(401, "UNAUTHENTICATED", "Use the local dev identity");
+        const game = games.find((item) => item.id === params.gameId);
+        if (!game) return error(404, "GAME_NOT_FOUND", "Игра не найдена");
+        if (mode() === "forbidden" || requireUser(request) !== game.organizerId)
+            return error(
+                403,
+                "FORBIDDEN",
+                "Управлять игрой может только организатор",
+            );
+        if (game.status === "CANCELLED")
+            return error(410, "GAME_CANCELLED", "Игра отменена");
+        const input =
+            (await request.json()) as components["schemas"]["UpdateGameRequest"];
+        if (
+            input.participantLimit !== undefined &&
+            input.participantLimit < game.participantCount
+        )
+            return error(409, "GAME_CONFLICT", "Лимит ниже числа участников");
+        if (
+            input.startsAt !== undefined &&
+            Date.parse(input.startsAt) <= Date.now()
+        )
+            return error(400, "VALIDATION_ERROR", "Дата должна быть в будущем");
+        const organizerIndex = game.participants.findIndex(
+            (item) => item.userId === game.organizerId,
+        );
+        if (
+            input.organizerParticipates &&
+            organizerIndex < 0 &&
+            game.participantCount >=
+                (input.participantLimit ?? game.participantLimit)
+        )
+            return error(409, "GAME_FULL", "Нет свободных мест");
+        Object.assign(game, input);
+        if (input.organizerParticipates !== undefined) {
+            if (input.organizerParticipates && organizerIndex < 0) {
+                game.participants.push(
+                    participant(
+                        game.organizerId,
+                        displayName(game.organizerId),
+                        true,
+                    ),
+                );
+            } else if (!input.organizerParticipates && organizerIndex >= 0) {
+                game.participants.splice(organizerIndex, 1);
+            }
+        }
+        updateCounts(game);
+        return HttpResponse.json(game);
+    }),
+    http.delete(
+        route("/games/:gameId/participants/:userId"),
+        ({ params, request }) => {
+            if (!currentUser(request))
+                return error(
+                    401,
+                    "UNAUTHENTICATED",
+                    "Use the local dev identity",
+                );
+            const game = games.find((item) => item.id === params.gameId);
+            if (!game) return error(404, "GAME_NOT_FOUND", "Игра не найдена");
+            if (
+                mode() === "forbidden" ||
+                requireUser(request) !== game.organizerId
+            )
+                return error(
+                    403,
+                    "FORBIDDEN",
+                    "Управлять игрой может только организатор",
+                );
+            if (game.status === "CANCELLED")
+                return error(410, "GAME_CANCELLED", "Игра отменена");
+            if (params.userId === game.organizerId)
+                return error(
+                    409,
+                    "GAME_CONFLICT",
+                    "Организатора нельзя удалить",
+                );
+            const before = game.participants.length;
+            game.participants = game.participants.filter(
+                (item) => item.userId !== params.userId,
+            );
+            if (before === game.participants.length)
+                return error(
+                    404,
+                    "PARTICIPANT_NOT_FOUND",
+                    "Участник не найден",
+                );
+            updateCounts(game);
+            return HttpResponse.json(game);
+        },
+    ),
+    http.post(route("/games/:gameId/cancellation"), ({ params, request }) => {
+        if (!currentUser(request))
+            return error(401, "UNAUTHENTICATED", "Use the local dev identity");
+        const game = games.find((item) => item.id === params.gameId);
+        if (!game) return error(404, "GAME_NOT_FOUND", "Игра не найдена");
+        if (mode() === "forbidden" || requireUser(request) !== game.organizerId)
+            return error(
+                403,
+                "FORBIDDEN",
+                "Управлять игрой может только организатор",
+            );
+        if (game.status !== "CANCELLED") {
+            game.status = "CANCELLED";
+            game.updatedAt = new Date().toISOString();
+        }
+        return HttpResponse.json(game);
+    }),
     http.put(route("/games/:gameId/participation"), ({ params, request }) => {
         if (mode() === "join-error")
             return error(503, "GAME_CONFLICT", "Временная ошибка API");

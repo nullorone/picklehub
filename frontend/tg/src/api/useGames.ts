@@ -1,12 +1,21 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+    useMutation,
+    useQuery,
+    useQueryClient,
+    type QueryClient,
+} from "@tanstack/react-query";
 import {
     getGame,
     getGames,
     createGame,
     joinGame,
     leaveGame,
+    updateGame,
+    removeParticipant,
+    cancelGame,
     type GameDetail,
     type CreateGameRequest,
+    type UpdateGameRequest,
 } from "@/api/games.ts";
 import { gameKeys } from "@/api/queryKeys.ts";
 
@@ -62,6 +71,47 @@ function useParticipationMutation(
 
 export const useJoinGame = () => useParticipationMutation(joinGame);
 export const useLeaveGame = () => useParticipationMutation(leaveGame);
+
+function refreshGame(queryClient: QueryClient, game: GameDetail) {
+    queryClient.setQueryData(gameKeys.detail(game.id), game);
+    return Promise.all([
+        queryClient.invalidateQueries({ queryKey: gameKeys.lists() }),
+        queryClient.invalidateQueries({ queryKey: gameKeys.detail(game.id) }),
+    ]);
+}
+
+export function useUpdateGame() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({
+            gameId,
+            input,
+        }: {
+            gameId: string;
+            input: UpdateGameRequest;
+        }) => updateGame(gameId, input),
+        onSuccess: async (game) => {
+            await refreshGame(queryClient, game);
+        },
+    });
+}
+
+export function useRemoveParticipant() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ gameId, userId }: { gameId: string; userId: string }) =>
+            removeParticipant(gameId, userId),
+        onSuccess: (game) => refreshGame(queryClient, game),
+    });
+}
+
+export function useCancelGame() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: cancelGame,
+        onSuccess: (game) => refreshGame(queryClient, game),
+    });
+}
 
 export function useCreateGame() {
     const queryClient = useQueryClient();

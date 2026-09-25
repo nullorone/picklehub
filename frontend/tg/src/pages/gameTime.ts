@@ -27,7 +27,8 @@ export function moscowDateTimeToUtc(value: string) {
         Number(hour),
         Number(minute),
     );
-    const parts = new Intl.DateTimeFormat("en-GB", {
+    let instant = wallTime;
+    const formatter = new Intl.DateTimeFormat("en-GB", {
         timeZone: MOSCOW_TIME_ZONE,
         year: "numeric",
         month: "2-digit",
@@ -36,25 +37,27 @@ export function moscowDateTimeToUtc(value: string) {
         minute: "2-digit",
         second: "2-digit",
         hourCycle: "h23",
-    }).formatToParts(new Date(wallTime));
-    const fields = Object.fromEntries(
-        parts.map(({ type, value: part }) => [type, part]),
-    );
-    if (
-        fields.year !== year ||
-        fields.month !== month ||
-        fields.day !== day ||
-        fields.hour !== hour ||
-        fields.minute !== minute
-    )
-        return undefined;
-    const representedWallTime = Date.UTC(
-        Number(fields.year),
-        Number(fields.month) - 1,
-        Number(fields.day),
-        Number(fields.hour),
-        Number(fields.minute),
-        Number(fields.second),
-    );
-    return new Date(wallTime - (representedWallTime - wallTime)).toISOString();
+    });
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+        const fields = Object.fromEntries(
+            formatter
+                .formatToParts(new Date(instant))
+                .map(({ type, value: part }) => [type, part]),
+        );
+        const representedWallTime = Date.UTC(
+            Number(fields.year),
+            Number(fields.month) - 1,
+            Number(fields.day),
+            Number(fields.hour),
+            Number(fields.minute),
+            Number(fields.second),
+        );
+        const correction = wallTime - representedWallTime;
+        instant += correction;
+        if (correction === 0) break;
+    }
+    const result = new Date(instant);
+    return moscowDateTimeInput(result) === value
+        ? result.toISOString()
+        : undefined;
 }

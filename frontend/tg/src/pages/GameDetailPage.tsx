@@ -4,16 +4,25 @@ import { Page } from "@/components/Page.tsx";
 import { Card } from "@/components/ui/Card/Card.tsx";
 import { useGame } from "@/api/useGames.ts";
 import { ApiError } from "@/api/games.ts";
-import { useJoinGame, useLeaveGame } from "@/api/useGames.ts";
+import {
+    useJoinGame,
+    useLeaveGame,
+    useRemoveParticipant,
+    useCancelGame,
+} from "@/api/useGames.ts";
 import { mockUser, mockUserIds } from "@/api/client.ts";
 import { formatGameDate, statusLabel } from "@/pages/gameFormatting.ts";
 import { Button } from "@/components/ui/Button/Button.tsx";
+import { gameShareLink } from "@/pages/gameShareLink.ts";
 
 export function GameDetailPage() {
     const { matchId = "" } = useParams();
     const gameQuery = useGame(matchId);
     const joinMutation = useJoinGame();
     const leaveMutation = useLeaveGame();
+    const removeMutation = useRemoveParticipant();
+    const cancelMutation = useCancelGame();
+    const [shareMessage, setShareMessage] = useState("");
     const [now, setNow] = useState(Date.now());
 
     useEffect(() => {
@@ -96,6 +105,9 @@ export function GameDetailPage() {
                                       participant.userId === currentUserId,
                               )
                             : false;
+                        const isOrganizer = Boolean(
+                            currentUserId && currentUserId === game.organizerId,
+                        );
                         const hasStarted = now >= Date.parse(game.startsAt);
                         const isClosed =
                             game.status === "CANCELLED" || hasStarted;
@@ -230,6 +242,150 @@ export function GameDetailPage() {
                                             )}
                                         </section>
                                     )}
+                                    {isOrganizer &&
+                                        game.status !== "CANCELLED" && (
+                                            <section
+                                                className="grid gap-3 border-t border-border pt-4"
+                                                aria-label="Управление игрой"
+                                            >
+                                                <h2 className="font-semibold">
+                                                    Управление игрой
+                                                </h2>
+                                                <Link
+                                                    className="min-h-11 rounded-control border border-border px-4 py-3 text-center font-semibold"
+                                                    to={`/matches/${game.id}/edit`}
+                                                >
+                                                    Редактировать игру
+                                                </Link>
+                                                <Button
+                                                    type="button"
+                                                    variant="secondary"
+                                                    onClick={() => {
+                                                        void (async () => {
+                                                            const link =
+                                                                gameShareLink(
+                                                                    game.id,
+                                                                );
+                                                            try {
+                                                                if (
+                                                                    navigator.share
+                                                                )
+                                                                    await navigator.share(
+                                                                        {
+                                                                            title: game.venueName,
+                                                                            url: link,
+                                                                        },
+                                                                    );
+                                                                else
+                                                                    await navigator.clipboard.writeText(
+                                                                        link,
+                                                                    );
+                                                                setShareMessage(
+                                                                    "Ссылка на игру готова к отправке.",
+                                                                );
+                                                            } catch {
+                                                                setShareMessage(
+                                                                    "Не удалось передать ссылку. Скопируйте адрес страницы вручную.",
+                                                                );
+                                                            }
+                                                        })();
+                                                    }}
+                                                >
+                                                    Поделиться ссылкой
+                                                </Button>
+                                                {shareMessage && (
+                                                    <p
+                                                        className="text-sm text-text-secondary"
+                                                        role="status"
+                                                    >
+                                                        {shareMessage}
+                                                    </p>
+                                                )}
+                                                {game.participants
+                                                    .filter(
+                                                        (participant) =>
+                                                            participant.userId !==
+                                                            game.organizerId,
+                                                    )
+                                                    .map((participant) => (
+                                                        <Button
+                                                            key={
+                                                                participant.userId
+                                                            }
+                                                            type="button"
+                                                            variant="secondary"
+                                                            disabled={
+                                                                removeMutation.isPending
+                                                            }
+                                                            onClick={() => {
+                                                                if (
+                                                                    window.confirm(
+                                                                        `Удалить ${participant.displayName} из игры? Это освободит место для записи другого игрока.`,
+                                                                    )
+                                                                )
+                                                                    removeMutation.mutate(
+                                                                        {
+                                                                            gameId: game.id,
+                                                                            userId: participant.userId,
+                                                                        },
+                                                                    );
+                                                            }}
+                                                        >
+                                                            Удалить{" "}
+                                                            {
+                                                                participant.displayName
+                                                            }
+                                                        </Button>
+                                                    ))}
+                                                {removeMutation.isError && (
+                                                    <p
+                                                        className="text-sm text-error"
+                                                        role="alert"
+                                                    >
+                                                        {removeMutation.error instanceof
+                                                            ApiError &&
+                                                        removeMutation.error
+                                                            .status === 403
+                                                            ? "Сервер отказал в доступе к управлению этой игрой."
+                                                            : "Не удалось удалить участника. Состав обновится после повтора."}
+                                                    </p>
+                                                )}
+                                                <Button
+                                                    type="button"
+                                                    variant="secondary"
+                                                    disabled={
+                                                        cancelMutation.isPending
+                                                    }
+                                                    onClick={() => {
+                                                        if (
+                                                            window.confirm(
+                                                                `Отменить игру «${game.venueName}»? Участники увидят, что игра отменена.`,
+                                                            )
+                                                        )
+                                                            cancelMutation.mutate(
+                                                                game.id,
+                                                            );
+                                                    }}
+                                                >
+                                                    {cancelMutation.isPending
+                                                        ? "Отменяем…"
+                                                        : "Отменить игру"}
+                                                </Button>
+                                                {cancelMutation.isError && (
+                                                    <p
+                                                        className="text-sm text-error"
+                                                        role="alert"
+                                                    >
+                                                        {cancelMutation.error instanceof
+                                                            ApiError &&
+                                                        cancelMutation.error
+                                                            .status === 403
+                                                            ? "Сервер отказал в доступе к управлению этой игрой."
+                                                            : "Не удалось отменить игру. Попробуйте ещё раз."}
+                                                    </p>
+                                                )}
+                                            </section>
+                                        )}
                                     {game.description && (
                                         <section>
                                             <h2 className="text-sm font-semibold text-text-secondary">
