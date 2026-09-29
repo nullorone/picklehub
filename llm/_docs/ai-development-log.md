@@ -899,3 +899,57 @@ npm run prisma:migrate:deploy --workspace @picklehub/backend` — успешно
   автоматически не начиналась.
 - `npx prettier --check llm/tasks/16-bot-links-hosting.md llm/tasks/README.md llm/_docs/ai-development-log.md`,
   `git diff --check` и проверка относительных Markdown-ссылок через `node -e` — успешно после смены статусов.
+
+## 2026-09-29 — S17: уведомления об изменениях и отмене (в работе)
+
+- Добавлен отдельный процесс `backend/src/worker.ts`, который атомарно захватывает задания из PostgreSQL,
+  восстанавливает захваты старше 60 секунд и ограничивает число попыток. Событие раскрывается транзакционно
+  в уникальные задания на каждого адресата. Состав адресатов фиксируется в момент изменения игры; снимок
+  времени и площадки сохраняется также при отмене и удалении участника. Сообщение содержит московское время
+  с явной подписью и ссылку на игру. `GAME_REMINDER` не обрабатывается до S18.
+- Ответы Telegram классифицируются: `429` с `retry_after`, временные ошибки и неопределённый сетевой результат
+  повторяются с задержкой; `400`/`403` завершают адресное задание, `403` также снимает `can_message`.
+  Безопасная диагностика содержит только ID задания и ограниченный код ошибки. После неопределённого ответа
+  повтор может дать дубль сообщения: внешнее API не подтверждает exactly-once доставку.
+- `npm run backend:typecheck`, `npm run backend:test` — успешно после первоначального исправления типа
+  `retryAfterMs`; модульные тесты проверили адресатов, содержание сообщений и классификацию ответов.
+- `docker compose -f backend/docker-compose.yml up -d --wait`,
+  `docker exec backend-postgres-1 createdb -U picklehub picklehub_s17_verify` — успешно. Команда
+  `DATABASE_URL=postgresql://picklehub:picklehub@127.0.0.1:5432/picklehub_s17_verify npm run prisma:migrate:deploy --workspace @picklehub/backend`
+  сначала получила `P1001` в сетевой песочнице, затем с разрешённым локальным доступом успешно применила
+  три существующие миграции. `S17_INTEGRATION=1 DATABASE_URL=postgresql://picklehub:picklehub@127.0.0.1:5432/picklehub_s17_verify node --import tsx --test backend/test/notification-worker.integration.spec.ts`
+  также сначала получила `P1001` в песочнице, затем с локальным доступом прошла: конкурентный захват,
+  транзакционная раскладка адресатов, временный и постоянный отказ, восстановление после сбоя.
+- `npm run backend:check` сначала остановилась на формате `notification-worker.ts` после последней правки;
+  после `npx prettier --single-quote --trailing-comma es5 --print-width 120 --write backend/src/notification-worker.ts`
+  повторный запуск прошёл: формат, ESLint, типы, 20 unit-тестов (4 интеграционных без флагов пропущены),
+  контракт (9 REST-маршрутов) и сборка. Финальные проверки после следующей правки записаны ниже.
+- Фактическое активное время инструментально не измерялось; работа заняла больше планового часа.
+  Реальную доставку ограниченному набору тестовых Telegram-аккаунтов здесь проверить нельзя: нет доступного
+  стенда с публичным API/webhook и тестовыми чатами. Первый и последний критерии остаются открытыми;
+  S18 не начата.
+- После усиления теста повторный запуск на прежней БД обнаружил конфликт синтетических Telegram ID, затем
+  накопившиеся записи мешали общему подсчёту. Тест исправлен: уникальные ID, подсчёт по ID игры и очистка
+  своих строк. `docker exec backend-postgres-1 createdb -U picklehub picklehub_s17_final` и
+  `DATABASE_URL=postgresql://picklehub:picklehub@127.0.0.1:5432/picklehub_s17_final npm run prisma:migrate:deploy --workspace @picklehub/backend`
+  — успешно; `S17_INTEGRATION=1 DATABASE_URL=postgresql://picklehub:picklehub@127.0.0.1:5432/picklehub_s17_final node --import tsx --test backend/test/notification-worker.integration.spec.ts`
+  — два последовательных успешных прогона (1 тест в каждом).
+- Финальный `npm run backend:check` — успешно: Prisma generation, формат, линт, типы, 20 unit-тестов,
+  контракт (9 маршрутов) и сборка; 4 интеграционных теста без флагов пропущены. Предыдущий прогон после
+  изменения теста сначала нашёл неотформатированные два файла; они приведены к формату.
+  `npx prettier --check backend/README.md llm/tasks/17-change-notifications.md llm/tasks/README.md llm/_docs/ai-development-log.md`,
+  `git diff --check` и проверка относительных Markdown-ссылок через `node -e` — успешно.
+  `docker exec backend-postgres-1 dropdb -U picklehub picklehub_s17_verify`,
+  `docker exec backend-postgres-1 dropdb -U picklehub picklehub_s17_final`,
+  `docker compose -f backend/docker-compose.yml down` — успешно; изолированные БД удалены, volume сохранён.
+
+## 2026-09-29 — S17: приёмка завершена
+
+- Владелец сообщил: «я проверил, работает». На основании его проверки реальной доставки отмечен первый
+  критерий S17. Детальный протокол проверки тестовых аккаунтов владелец не предоставил; локальные
+  синтетические и интеграционные проверки перечислены выше и не подменяют это подтверждение.
+- Остальные критерии подтверждены ранее записанными проверками. Статусы S17 и индекса задач обновлены.
+  Следующая отдельная задача — [S18: напоминания за два часа](../tasks/18-two-hour-reminders.md);
+  в этой сессии не начиналась.
+- `npx prettier --check llm/tasks/17-change-notifications.md llm/tasks/README.md llm/_docs/ai-development-log.md`,
+  `git diff --check` и проверка относительных Markdown-ссылок через `node -e` — успешно после смены статусов.

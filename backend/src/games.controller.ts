@@ -303,7 +303,10 @@ export class GamesController {
                     type: 'PARTICIPANT_REMOVED',
                     eventVersion: nextVersion,
                     deduplicationKey: `${gameId}:${nextVersion}:PARTICIPANT_REMOVED`,
-                    payload: { recipientUserId: userId },
+                    payload: {
+                        recipientUserId: userId,
+                        game: this.notificationGame(game),
+                    },
                 },
             });
         });
@@ -327,10 +330,23 @@ export class GamesController {
                     deduplicationKey: `${gameId}:${nextVersion}:GAME_CANCELLED`,
                     payload: {
                         recipientUserIds: [...new Set([...game.participants.map((p) => p.userId), game.organizerId])],
+                        game: this.notificationGame(game),
                     },
                 },
             });
         });
+    }
+
+    private notificationGame(game: OrganizerGame) {
+        return {
+            venueName: game.venueName,
+            address: game.address,
+            startsAt: game.startsAt.toISOString(),
+            durationMinutes: game.durationMinutes,
+            participantLimit: game.participantLimit,
+            level: game.level,
+            description: game.description,
+        };
     }
 
     private async organizerAction(

@@ -1,6 +1,6 @@
 # PickleHub backend
 
-The backend is a single NestJS process. Its public product API is the REST surface generated from
+The backend API is a NestJS process with a separate notification worker. Its public product API is the REST surface generated from
 [`contracts/main.tsp`](../contracts/main.tsp); health endpoints are operational and are deliberately outside that
 contract. Product routes will be implemented in later tasks. Do not expose database models as response DTOs.
 
@@ -73,15 +73,15 @@ operations use that same game-row lock. This serializes competing joins for the 
 include an organizer who participates because that identity also has a participant row.
 
 Jobs are durable rows in `jobs`, not process memory. A business mutation increments `games.event_version` and
-inserts its job with a stable key such as `game:<id>:<version>:<event-type>` in the _same Prisma transaction_;
-the unique key prevents duplicate enqueue. Claim batches atomically with `FOR UPDATE SKIP LOCKED`, changing due
-`PENDING` rows to `PROCESSING`, setting `locked_at`/`locked_by`, and incrementing attempts in one statement. After
-the external call, mark completed or return to pending with exponential delay `min(2^attempts * 5 seconds, 1 hour)`;
-after 8 attempts mark `DEAD` and retain only a bounded internal error code (never provider response bodies or user
-content). A worker periodically requeues `PROCESSING` rows whose lease is older than 5 minutes, clearing lease
-fields; exhausted rows become `DEAD`. Claiming and delivery are deferred to S17/S18. Before delivery, compare the
-job's game version and current state and resolve current recipients; this avoids sending stale cancellation or
-reminder jobs. The Telegram send boundary cannot guarantee exactly-once delivery after an ambiguous network result.
+inserts its job with a stable key in the _same Prisma transaction_; the unique key prevents duplicate enqueue.
+Run the S17 worker separately with `npm run start:worker --workspace @picklehub/backend`. It claims due notification
+rows atomically with `FOR UPDATE SKIP LOCKED`, recovers leases older than 60 seconds, and creates one deduplicated
+delivery row per event recipient in a transaction. Event recipients and game details are captured at the business
+mutation, so later roster changes do not redirect a past notification. The worker checks current Telegram reachability
+before sending. Temporary failures and rate limits retry up to eight attempts with capped exponential delay; a
+permanent refusal or exhausted retries marks only that recipient's delivery `DEAD`. Diagnostics contain job ID and
+bounded error code, never message text, chat ID, token, or Telegram response body. The Telegram send boundary
+cannot guarantee exactly-once delivery after an ambiguous network result. `GAME_REMINDER` rows are left for S18.
 
 The initial migration has DB checks for valid durations/capacities, event versions, retry counts, and coherent
 leases. Fixtures are intentionally absent; use synthetic data in isolated local verification databases only.
