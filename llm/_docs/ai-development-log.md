@@ -841,3 +841,61 @@ S14 принята. Следующая отдельная задача — [S15:
   в этой сессии не начинался.
 - `npx prettier --check llm/tasks/15-real-api-integration.md llm/tasks/README.md llm/_docs/ai-development-log.md`,
   `git diff --check` и проверка относительных Markdown-ссылок через `node -e` — успешно.
+
+## 2026-09-29 — S16: бот, ссылки и план размещения (в работе)
+
+- Добавлены защищённый секретным заголовком webhook `POST /telegram/webhook` и ответ на приватный `/start` с
+  кнопкой Mini App. Ссылка приглашения ведёт в `/start g_<uuid>`; прямой `startapp` и маршрут кнопки открывают
+  игру после авторизации. Неверный/неизвестный ID обрабатывается без отражения пользовательского ввода.
+  Telegram identity хранит приватный chat ID, время запуска бота и `can_message`; ответ отправки `403` снимает
+  доступность. Миграция добавляет уникальность chat ID. Вход TMA и bot update сопоставляются по Telegram user ID.
+- В [плане](s16-bot-hosting-plan.md) описаны VM и PostgreSQL в `ru-central1`, HTTPS, переменные окружения,
+  миграции, резервное восстановление, rollback и действия владельца. GitHub Pages build получает публичные
+  `VITE_API_URL` и `VITE_TELEGRAM_BOT_USERNAME` из repository variables и отказывает в выпуске при их отсутствии.
+  Внешние ресурсы и webhook не создавались. Фактическое активное время инструментально не измерялось;
+  работа заняла более планового часа.
+
+### Проверки
+
+- `npm run backend:check` — после исправления ожидаемого объекта config-теста успешно: формат, линт, типы,
+  17 unit-тестов (3 прежних интеграционных пропущены без флагов), контракт 9 TypeSpec routes, сборка.
+  Первый прогон выявил новый поля в ожидаемом объекте теста; исправлено.
+- `npm run backend:test; npm run backend:format:check; npm run backend:lint; npm run backend:typecheck;
+npm run backend:contracts:check; npm run backend:build` — успешно после добавления проверки неизвестной игры:
+  18 тестов прошли, 3 прежних интеграционных пропущены. Тесты покрывают неверный webhook secret, private `/start`,
+  неверный/неизвестный UUID, связывание чата и ответ Telegram `403`.
+- `npm run format:check; npm run lint; npm run typecheck; npm run contracts:check; npm run build;
+node --import tsx --test frontend/tg/test/startParameter.spec.ts` — успешно; генерация контрактов воспроизводима,
+  тест параметра прошёл. Первый прогон frontend проверок выявил test-файл внутри `src` без Node types и
+  отсутствующий Vite env type; тест вынесен в `test`, тип добавлен, формат исправлен.
+- `docker compose -f backend/docker-compose.yml up -d --wait`, `docker exec backend-postgres-1 createdb -U picklehub
+picklehub_s16_verify`, `DATABASE_URL=postgresql://picklehub:picklehub@127.0.0.1:5432/picklehub_s16_verify
+npm run prisma:migrate:deploy --workspace @picklehub/backend` — успешно вне сетевой песочницы, 3 миграции
+  применены. Первый запуск миграции в песочнице получил `P1001`; после разрешённого локального доступа прошёл.
+  Затем `docker exec backend-postgres-1 dropdb -U picklehub picklehub_s16_verify` и
+  `docker compose -f backend/docker-compose.yml down` — успешно, тестовая БД удалена, volume сохранён.
+- Официальные страницы Telegram и Yandex Cloud не удалось получить: `curl` получил ошибку сертификата,
+  прямой запрос без proxy — DNS error, браузер — timeout. Актуальные правила и цены не выдаются за проверенные.
+
+### Остаток для приёмки
+
+- Проверить настоящий переход `/start` → кнопка → конкретная игра и `startapp`, неверный и неизвестный ID,
+  а также блокировку бота в согласованном Telegram-стенде с тестовыми участниками. Сейчас нет настроенного
+  публичного HTTPS API, webhook и доступного тестового аккаунта; синтетические тесты не заменяют этот сценарий.
+- Перед выбором провайдера проверить официальные условия Telegram Bot API/Mini Apps и Yandex Cloud,
+  договор, размещение данных/резервных копий и цену выбранной конфигурации. После этого дополнить план
+  подтверждёнными ссылками и расчётом. S16 остаётся в работе; S17 не начата.
+
+## 2026-09-29 — S16: приёмка завершена
+
+- Владелец сообщил: «я проверил. Можно закрывать». На основании его проверки реального перехода через
+  Telegram первый критерий S16 отмечен выполненным. Детальный протокол проверки владельцем не предоставлен;
+  локальные синтетические тесты и команды перечислены выше и не подменяют его подтверждение.
+- Второй и третий критерии закрыты реализованным учётом `can_message` и [планом размещения](s16-bot-hosting-plan.md).
+  Локальные проверки четвёртого критерия перечислены выше. Статусы S16 и индекса задач обновлены.
+- Проверка актуальных условий и цены Yandex Cloud, договора и размещения резервных копий остаётся обязательным
+  действием **до выбора и оплаты инфраструктуры**; подтверждения этих внешних условий в текущей среде нет.
+  Следующая отдельная задача — [S17: уведомления об изменениях](../tasks/17-change-notifications.md);
+  автоматически не начиналась.
+- `npx prettier --check llm/tasks/16-bot-links-hosting.md llm/tasks/README.md llm/_docs/ai-development-log.md`,
+  `git diff --check` и проверка относительных Markdown-ссылок через `node -e` — успешно после смены статусов.

@@ -6,6 +6,8 @@ export interface AppConfig {
     frontendOrigins: string[];
     logLevel: 'error' | 'warn' | 'info';
     telegramBotToken: string;
+    telegramWebhookSecret: string;
+    telegramAppUrl: string;
 }
 
 const allowedNodeEnvs = ['development', 'test', 'production'] as const;
@@ -61,6 +63,18 @@ export function loadConfig(env: NodeJS.ProcessEnv): AppConfig {
     if (!telegramBotToken || telegramBotToken.length > 512) {
         errors.push('TELEGRAM_BOT_TOKEN must be configured');
     }
+    const telegramWebhookSecret = env.TELEGRAM_WEBHOOK_SECRET ?? '';
+    const telegramAppUrl = env.TELEGRAM_APP_URL ?? '';
+    if (nodeEnv === 'production' && !/^[A-Za-z0-9_-]{1,256}$/.test(telegramWebhookSecret)) {
+        errors.push('TELEGRAM_WEBHOOK_SECRET must be configured');
+    }
+    if (nodeEnv === 'production') {
+        try {
+            if (new URL(telegramAppUrl).protocol !== 'https:') errors.push('TELEGRAM_APP_URL must be HTTPS');
+        } catch {
+            errors.push('TELEGRAM_APP_URL must be a valid HTTPS URL');
+        }
+    }
 
     if (errors.length > 0) {
         throw new Error(`Invalid configuration: ${errors.join('; ')}`);
@@ -74,5 +88,7 @@ export function loadConfig(env: NodeJS.ProcessEnv): AppConfig {
         frontendOrigins,
         logLevel: logLevel as AppConfig['logLevel'],
         telegramBotToken,
+        telegramWebhookSecret,
+        telegramAppUrl,
     };
 }

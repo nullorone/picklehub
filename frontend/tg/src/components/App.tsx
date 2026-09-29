@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Navigate, Route, Routes, HashRouter } from "react-router-dom";
+import {
+    Navigate,
+    Route,
+    Routes,
+    HashRouter,
+    useLocation,
+} from "react-router-dom";
 import {
     retrieveLaunchParams,
     useSignal,
@@ -16,6 +22,15 @@ import {
     type SessionUser,
 } from "@/api/session.ts";
 import { setAccessToken } from "@/api/client.ts";
+import { gameIdFromStartParameter } from "@/navigation/startParameter.ts";
+
+function StartParameterRoute({ startParameter }: { startParameter: unknown }) {
+    const location = useLocation();
+    const gameId = gameIdFromStartParameter(startParameter);
+    return location.pathname === "/" && gameId ? (
+        <Navigate to={`/matches/${gameId}`} replace />
+    ) : null;
+}
 
 export const queryClient = new QueryClient({
     defaultOptions: {
@@ -117,6 +132,9 @@ export function App() {
                     <div className="min-h-dvh bg-background text-text">
                         {user ? (
                             <HashRouter>
+                                <StartParameterRoute
+                                    startParameter={lp.tgWebAppStartParam}
+                                />
                                 <Routes>
                                     {routes.map((route) => (
                                         <Route key={route.path} {...route} />

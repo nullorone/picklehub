@@ -21,6 +21,8 @@ test('loads valid configuration', () => {
         frontendOrigins: ['http://localhost:5173', 'https://localhost:5173'],
         logLevel: 'info',
         telegramBotToken: 'test-bot-token',
+        telegramWebhookSecret: '',
+        telegramAppUrl: '',
     });
 });
 

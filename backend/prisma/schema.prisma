@@ -37,6 +37,9 @@ model TelegramIdentity {
   userId         String   @unique @map("user_id") @db.Uuid
   telegramUserId BigInt   @unique @map("telegram_user_id")
   createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  privateChatId  BigInt?  @unique @map("private_chat_id")
+  canMessage     Boolean  @default(false) @map("can_message")
+  botStartedAt   DateTime? @map("bot_started_at") @db.Timestamptz(3)
   user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("telegram_identities")
