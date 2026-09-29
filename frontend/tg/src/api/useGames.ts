@@ -23,6 +23,7 @@ export function useGames(cursor?: string, limit = 20) {
     return useQuery({
         queryKey: gameKeys.list(cursor, limit),
         queryFn: () => getGames(cursor, limit),
+        refetchInterval: 30_000,
     });
 }
 
@@ -31,6 +32,7 @@ export function useGame(gameId: string) {
         queryKey: gameKeys.detail(gameId),
         queryFn: () => getGame(gameId),
         enabled: Boolean(gameId),
+        refetchInterval: 15_000,
     });
 }
 
@@ -93,6 +95,11 @@ export function useUpdateGame() {
         onSuccess: async (game) => {
             await refreshGame(queryClient, game);
         },
+        onError: async (_error, { gameId }) => {
+            await queryClient.invalidateQueries({
+                queryKey: gameKeys.detail(gameId),
+            });
+        },
     });
 }
 
@@ -102,6 +109,11 @@ export function useRemoveParticipant() {
         mutationFn: ({ gameId, userId }: { gameId: string; userId: string }) =>
             removeParticipant(gameId, userId),
         onSuccess: (game) => refreshGame(queryClient, game),
+        onError: async (_error, { gameId }) => {
+            await queryClient.invalidateQueries({
+                queryKey: gameKeys.detail(gameId),
+            });
+        },
     });
 }
 
@@ -110,6 +122,11 @@ export function useCancelGame() {
     return useMutation({
         mutationFn: cancelGame,
         onSuccess: (game) => refreshGame(queryClient, game),
+        onError: async (_error, gameId) => {
+            await queryClient.invalidateQueries({
+                queryKey: gameKeys.detail(gameId),
+            });
+        },
     });
 }
 

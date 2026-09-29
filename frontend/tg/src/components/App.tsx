@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Navigate, Route, Routes, HashRouter } from "react-router-dom";
 import {
     retrieveLaunchParams,
@@ -10,17 +10,71 @@ import { tokens } from "@picklehub/tokens";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { routes } from "@/navigation/routes.tsx";
+import {
+    createTelegramSession,
+    SessionContext,
+    type SessionUser,
+} from "@/api/session.ts";
+import { setAccessToken } from "@/api/client.ts";
 
 export const queryClient = new QueryClient({
     defaultOptions: {
-        queries: { retry: 1, staleTime: 15_000, refetchOnWindowFocus: false },
-        mutations: { retry: false },
+        queries: {
+            retry: 1,
+            staleTime: 0,
+            refetchOnWindowFocus: true,
+            refetchOnMount: "always",
+        },
+        mutations: { retry: false, networkMode: "always" },
     },
 });
 
 export function App() {
     const lp = useMemo(() => retrieveLaunchParams(), []);
     const isDark = useSignal(isMiniAppDark);
+    const [user, setUser] = useState<SessionUser | null>(null);
+    const [authError, setAuthError] = useState("");
+    const loginPromise = useRef<Promise<void> | null>(null);
+
+    const login = useCallback(() => {
+        if (loginPromise.current) return loginPromise.current;
+        setUser(null);
+        setAccessToken("");
+        queryClient.clear();
+        setAuthError("");
+        const pending = createTelegramSession()
+            .then(setUser)
+            .catch((error: unknown) => {
+                setAuthError(
+                    error instanceof Error
+                        ? error.message
+                        : "Не удалось войти.",
+                );
+            })
+            .finally(() => {
+                loginPromise.current = null;
+            });
+        loginPromise.current = pending;
+        return pending;
+    }, []);
+
+    useEffect(() => {
+        void login();
+        const expired = () => void login();
+        window.addEventListener("picklehub:session-expired", expired);
+        return () =>
+            window.removeEventListener("picklehub:session-expired", expired);
+    }, [login]);
+
+    useEffect(() => {
+        const refresh = () => {
+            if (document.visibilityState === "visible") {
+                void queryClient.invalidateQueries({ queryKey: ["games"] });
+            }
+        };
+        document.addEventListener("visibilitychange", refresh);
+        return () => document.removeEventListener("visibilitychange", refresh);
+    }, []);
 
     useEffect(() => {
         const root = document.documentElement;
@@ -59,16 +113,46 @@ export function App() {
                         : "base"
                 }
             >
-                <div className="min-h-dvh bg-background text-text">
-                    <HashRouter>
-                        <Routes>
-                            {routes.map((route) => (
-                                <Route key={route.path} {...route} />
-                            ))}
-                            <Route path="*" element={<Navigate to="/" />} />
-                        </Routes>
-                    </HashRouter>
-                </div>
+                <SessionContext.Provider value={user}>
+                    <div className="min-h-dvh bg-background text-text">
+                        {user ? (
+                            <HashRouter>
+                                <Routes>
+                                    {routes.map((route) => (
+                                        <Route key={route.path} {...route} />
+                                    ))}
+                                    <Route
+                                        path="*"
+                                        element={<Navigate to="/" />}
+                                    />
+                                </Routes>
+                            </HashRouter>
+                        ) : (
+                            <main
+                                className="mx-auto grid max-w-lg gap-4 p-6"
+                                role={authError ? "alert" : "status"}
+                            >
+                                <h1 className="text-xl font-semibold">
+                                    {authError
+                                        ? "Не удалось войти"
+                                        : "Входим через Telegram…"}
+                                </h1>
+                                {authError && (
+                                    <>
+                                        <p>{authError}</p>
+                                        <button
+                                            className="min-h-12 rounded-control bg-accent px-5 py-3 font-semibold"
+                                            onClick={() => void login()}
+                                            type="button"
+                                        >
+                                            Повторить вход
+                                        </button>
+                                    </>
+                                )}
+                            </main>
+                        )}
+                    </div>
+                </SessionContext.Provider>
             </AppRoot>
         </QueryClientProvider>
     );

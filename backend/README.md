@@ -45,6 +45,13 @@ Development MSW mocks are gated by Vite's `import.meta.env.DEV`; production buil
 Local development CORS origins should be explicitly added to the environment;
 the committed example contains localhost and the current GitHub Pages origin.
 
+For local Mini App integration, start PostgreSQL and the backend, then run `npm run start:api` from the root.
+This sets `VITE_API_MOCKS=false` and proxies `/api` through Vite to `http://127.0.0.1:3000`. Open the
+frontend from a real Telegram Mini App; a normal browser has no verified Telegram initData. For a separate
+frontend and backend origin, set `VITE_API_URL` to the reachable HTTPS API origin at build time and add the
+frontend origin to `FRONTEND_ORIGINS`. A production build requires `VITE_API_URL`; otherwise the login screen
+reports missing API configuration. The default `npm start` remains the isolated mock development mode.
+
 `POST /games`, `GET /games`, and `GET /games/:gameId` require a Bearer session. Creation accepts an
 `Idempotency-Key` and atomically stores the game, the optional organizer participation, and the response snapshot.
 The key is scoped to the authenticated user; repeating the same request replays its response, while using that key

@@ -7,7 +7,7 @@ import { TextField } from "@/components/ui/TextField/TextField.tsx";
 import { ApiError } from "@/api/games.ts";
 import { useCreateGame, useGame, useUpdateGame } from "@/api/useGames.ts";
 import { moscowDateTimeInput, moscowDateTimeToUtc } from "@/pages/gameTime.ts";
-import { mockUser, mockUserIds } from "@/api/client.ts";
+import { useSessionUser } from "@/api/session.ts";
 import { Card } from "@/components/ui/Card/Card.tsx";
 
 type FormValues = {
@@ -41,10 +41,7 @@ export function GameCreatePage() {
     const create = useCreateGame();
     const updateGame = useUpdateGame();
     const pending = create.isPending || updateGame.isPending;
-    const currentUserId =
-        import.meta.env.DEV && import.meta.env.VITE_API_MOCKS !== "false"
-            ? mockUserIds[mockUser]
-            : undefined;
+    const currentUserId = useSessionUser()?.id;
     const canEdit =
         !matchId ||
         !gameQuery.data ||

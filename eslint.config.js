@@ -7,7 +7,11 @@ import reactHooks from "eslint-plugin-react-hooks";
 import globals from "globals";
 
 export default tseslint.config({
-    files: ["frontend/tg/src/**/*.{js,jsx,mjs,cjs,ts,tsx}", "backend/src/**/*.ts", "backend/test/**/*.ts"],
+    files: [
+        "frontend/tg/src/**/*.{js,jsx,mjs,cjs,ts,tsx}",
+        "backend/src/**/*.ts",
+        "backend/test/**/*.ts",
+    ],
     extends: [
         eslint.configs.recommended,
         ...tseslint.configs.recommendedTypeChecked,

@@ -12,6 +12,7 @@
     ],
     "scripts": {
         "start": "npm run dev --workspace @picklehub/tg --",
+        "start:api": "npm run dev:api --workspace @picklehub/tg --",
         "start:https": "npm run dev:https --workspace @picklehub/tg --",
         "build": "npm run build --workspace @picklehub/tg",
         "lint": "eslint frontend/tg/src --report-unused-disable-directives --max-warnings 0",

@@ -10,7 +10,7 @@ import {
     useRemoveParticipant,
     useCancelGame,
 } from "@/api/useGames.ts";
-import { mockUser, mockUserIds } from "@/api/client.ts";
+import { useSessionUser } from "@/api/session.ts";
 import { formatGameDate, statusLabel } from "@/pages/gameFormatting.ts";
 import { Button } from "@/components/ui/Button/Button.tsx";
 import { gameShareLink } from "@/pages/gameShareLink.ts";
@@ -24,6 +24,7 @@ export function GameDetailPage() {
     const cancelMutation = useCancelGame();
     const [shareMessage, setShareMessage] = useState("");
     const [now, setNow] = useState(Date.now());
+    const currentUserId = useSessionUser()?.id;
 
     useEffect(() => {
         const startsAt = gameQuery.data?.startsAt;
@@ -94,11 +95,6 @@ export function GameDetailPage() {
                             (participant) =>
                                 participant.userId === game.organizerId,
                         );
-                        const currentUserId =
-                            import.meta.env.DEV &&
-                            import.meta.env.VITE_API_MOCKS !== "false"
-                                ? mockUserIds[mockUser]
-                                : undefined;
                         const isParticipant = currentUserId
                             ? game.participants.some(
                                   (participant) =>

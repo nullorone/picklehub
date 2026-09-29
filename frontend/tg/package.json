@@ -5,6 +5,7 @@
     "type": "module",
     "scripts": {
         "dev": "vite",
+        "dev:api": "cross-env VITE_API_MOCKS=false vite",
         "dev:https": "cross-env HTTPS=true vite",
         "build": "tsc --noEmit && vite build",
         "preview": "vite preview"

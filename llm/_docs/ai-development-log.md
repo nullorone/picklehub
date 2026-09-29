@@ -739,3 +739,105 @@ S13 принята. Следующая отдельная задача — [S14:
 
 S14 принята. Следующая отдельная задача — [S15: подключение TMA к настоящему API](../tasks/15-real-api-integration.md);
 автоматически не начиналась. Доставка заданий и повторная проверка актуальности напоминаний остаются S17–S18.
+
+## 2026-09-25 — S15: подключение TMA к настоящему API (в работе)
+
+### Изменения и решения
+
+- TMA получает сессию через `POST /sessions/telegram` с исходными Telegram initData, держит Bearer-токен только
+  в памяти и передаёт его сгенерированному клиенту. Текущий пользователь берётся из ответа сессии; права и кнопки
+  записи, выхода и управления больше не зависят от mock ID. После `401` приложение очищает Query-кэш и повторяет
+  вход; есть экран ошибки с ручным повтором. Перезагрузка страницы создаёт новую сессию.
+- `npm run start:api` запускает Vite без MSW; `/api` проксируется на локальный NestJS. Искусственная Telegram-среда
+  отключена вместе с HTTP-моками. Обычный `npm start` остаётся отдельным mock-режимом. Production требует
+  `VITE_API_URL` при сборке; без адреса API экран входа показывает ошибку конфигурации.
+- Списки и детали обновляются при входе на экран, возвращении фокуса/видимости, после мутаций и периодически
+  (30/15 секунд). Ошибки управления обновляют detail, чтобы показать изменения другого пользователя. Мутации
+  подтверждаются только ответом сервера. Сетевой отказ не создаёт локального успешного состояния.
+- Добавлен сквозной интеграционный тест через сгенерированный OpenAPI-клиент, настоящий Nest HTTP API и PostgreSQL:
+  два синтетических Telegram-аккаунта проходят вход, создание, список, детали, запись, выход, удаление участника,
+  изменение и отмену; после перезапуска backend данные и сессия сохраняются; после остановки API запрос отвергается.
+  Тест использует собранный `backend/dist`, потому что `tsx` не сохраняет Nest decorator metadata при прямом
+  импорте исходного модуля. Изменены frontend API/session, App, игровые страницы, Query-хуки, Vite, npm-скрипты,
+  `backend/test/real-api.integration.spec.ts`, `backend/README.md`, статус задачи и индекс. Форматирование
+  существующего `eslint.config.js` приведено к Prettier для прохождения общей проверки.
+- Фактическое активное время инструментально не измерялось; работа заняла больше планового часа.
+
+### Проверки
+
+- `docker compose -f backend/docker-compose.yml ps` — PostgreSQL healthy.
+- `docker exec backend-postgres-1 createdb -U picklehub picklehub_s15_verify` — создана отдельная тестовая БД.
+- `DATABASE_URL=postgresql://picklehub:picklehub@127.0.0.1:5432/picklehub_s15_verify npm run prisma:migrate:deploy --workspace @picklehub/backend`
+  — две миграции применены. Первый запуск внутри песочницы получил `P1001`; повтор с разрешённым доступом прошёл.
+- Из `backend/`: `NODE_ENV=test S15_INTEGRATION=1 DATABASE_URL=postgresql://picklehub:picklehub@127.0.0.1:5432/picklehub_s15_verify node --import tsx --test test/real-api.integration.spec.ts`
+  — 1 интеграционный тест прошёл. Первые диагностические прогоны выявили неверный `NODE_ENV=local` из локального
+  `.env`, отсутствие Nest metadata при импорте исходников и двойное закрытие тестового приложения; тест исправлен.
+- `npm run format:check`, `npm run lint`, `npm run typecheck`, `npm run build`, `npm run contracts:check`,
+  `npm run backend:check` — успешно. Первоначальный `format:check` обнаружил ранее существовавшее отличие
+  `eslint.config.js` от Prettier; формат исправлен, повтор прошёл. Backend check: 15 unit-тестов прошли,
+  3 интеграционных пропущены без явных флагов; отдельный S15 интеграционный тест запущен выше.
+- `docker exec backend-postgres-1 dropdb -U picklehub picklehub_s15_verify` — изолированная БД удалена.
+- `npx prettier --single-quote --trailing-comma es5 --print-width 120 --check backend/test/real-api.integration.spec.ts`,
+  `npx prettier --check backend/README.md llm/tasks/15-real-api-integration.md llm/tasks/README.md llm/_docs/ai-development-log.md`,
+  `git diff --check` и проверка относительных Markdown-ссылок через `node -e` — успешно.
+
+### Остаток для приёмки
+
+- Сквозной сценарий на двух **реальных** Telegram-аккаунтах в TMA, включая перезагрузку страницы, изменение
+  состава другим пользователем и отключение сети в браузере, не выполнен: в среде нет двух доступных аккаунтов
+  и запущенной через Telegram Mini App. Синтетический тест не выдаётся за эту проверку. S15 остаётся в работе;
+  S16 не начиналась. После реальной проверки дополнить этот журнал, отметить критерии и сменить статус задачи.
+
+## 2026-09-29 — S15: продолжение локальной UI-проверки (в работе)
+
+### Изменения и результаты
+
+- Через `npm run start:api` и локальный NestJS открыты две браузерные вкладки с разными подписанными
+  синтетическими Telegram initData. MSW был отключён; в сетевых запросах видны `POST /api/sessions/telegram`,
+  `POST/GET/PATCH /api/games`, запись, выход, удаление участника и отмена с реальными HTTP-ответами backend.
+  Для браузерной имитации Telegram bridge использован тестовый `TelegramWebviewProxy`; это не проверка в клиенте
+  Telegram. Создание, детали, запись второго игрока, обновление состава и названия при возвращении на вкладку,
+  выход, повторная запись, удаление организатором и отмена отображались корректно.
+- Перезагрузка страницы создала новую сессию и сохранила игру и состав. После остановки и перезапуска backend
+  игра, изменённое название и состав сохранились. Принудительное истечение сессий только в изолированной БД
+  вызвало повторный `POST /sessions/telegram`; интерфейс восстановился. Полноценный клиент Telegram остаётся
+  непроверенным.
+- Проверка отключения сети выявила, что мутация оставалась в состоянии «Обновляем состав…»: TanStack Query
+  ставил её на паузу до восстановления соединения. В `frontend/tg/src/components/App.tsx` для мутаций добавлен
+  `networkMode: 'always'` при `retry: false`. Повторная браузерная проверка: `PUT /participation` завершился
+  `net::ERR_INTERNET_DISCONNECTED`, показана ошибка о сети, состав остался `1 из 8`; после восстановления сети
+  повторный клик дал `2 из 8`. Ложного успеха и автоматической отложенной записи больше нет.
+- Фактическое активное время инструментально не измерялось; эта сессия заняла больше планового часа.
+
+### Команды и проверки
+
+- `docker compose -f backend/docker-compose.yml ps` — сначала Docker daemon не работал; запущен Docker Desktop.
+  `docker compose -f backend/docker-compose.yml up -d --wait` — PostgreSQL healthy.
+- `docker exec backend-postgres-1 createdb -U picklehub picklehub_s15_ui_verify` — отдельная БД создана.
+  `DATABASE_URL=postgresql://picklehub:picklehub@127.0.0.1:5432/picklehub_s15_ui_verify npm run prisma:migrate:deploy --workspace @picklehub/backend`
+  — обе миграции применены; после `P1001` в песочнице повтор с разрешённым локальным доступом прошёл.
+- Из `backend/`: `NODE_ENV=test HOST=127.0.0.1 PORT=3000 DATABASE_URL=postgresql://picklehub:picklehub@127.0.0.1:5432/picklehub_s15_ui_verify TELEGRAM_BOT_TOKEN=<synthetic-test-token> FRONTEND_ORIGINS=http://localhost:5173 node dist/main.js`
+  — API запущен локально и один раз перезапущен. `npm run start:api` — Vite без моков запущен. Первые запуски
+  внутри песочницы получили `P1001` и `EPERM` на прослушивание порта; повтор с разрешённым доступом прошёл.
+- `docker exec backend-postgres-1 psql -U picklehub -d picklehub_s15_ui_verify -c "UPDATE sessions SET expires_at = now() - interval '1 minute'"`
+  — только тестовые сессии помечены истёкшими; затем браузер заново вошёл через Telegram endpoint.
+- `npm run format:check`, `npm run lint`, `npm run typecheck`, `npm run contracts:check`, `npm run build`,
+  `git diff --check` — успешно после исправления офлайн-мутации. Контракты сгенерированы воспроизводимо.
+- `docker exec backend-postgres-1 dropdb -U picklehub picklehub_s15_ui_verify` — отдельная тестовая БД удалена.
+  `docker compose -f backend/docker-compose.yml down` — запущенный для проверки PostgreSQL остановлен;
+  постоянный Docker volume сохранён.
+
+### Остаток
+
+- Проверка двух настоящих Telegram-аккаунтов в Mini App по-прежнему нужна для первого критерия S15.
+  В доступном браузере Telegram-сессий нет. S16 не начиналась.
+
+## 2026-09-29 — S15: приёмка завершена
+
+- Владелец сообщил: «я проверил. Можно закрыть этот этап». На основании его проверки первый критерий S15
+  отмечен выполненным. Детальный протокол проверки реальных аккаунтов владельцем не предоставлен; локальный
+  синтетический прогон и выполненные команды перечислены выше и не подменяют его подтверждение.
+- Статусы S15 и индекса задач обновлены. Следующий отдельный шаг — [S16: бот, ссылки и подготовка размещения](../tasks/16-bot-links-hosting.md);
+  в этой сессии не начинался.
+- `npx prettier --check llm/tasks/15-real-api-integration.md llm/tasks/README.md llm/_docs/ai-development-log.md`,
+  `git diff --check` и проверка относительных Markdown-ссылок через `node -e` — успешно.
