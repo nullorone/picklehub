@@ -14,6 +14,8 @@ npm run start:https
 ```
 
 `start:https` создаёт локальный HTTPS-сертификат через mkcert. Он не создаёт публичный туннель.
+Для временной проверки Mini App из Telegram с локальным API используйте
+[инструкцию S19](llm/_docs/s19-local-pilot-runbook.md).
 
 ## Проверки и сборка
 

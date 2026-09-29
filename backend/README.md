@@ -1,5 +1,9 @@
 # PickleHub backend
 
+For a temporary public HTTPS test stand with this API and the worker running locally, follow the
+[S19 local pilot runbook](../llm/_docs/s19-local-pilot-runbook.md). It is limited to test accounts and does not
+provide availability when the local machine is off.
+
 The backend API is a NestJS process with a separate notification worker. Its public product API is the REST surface generated from
 [`contracts/main.tsp`](../contracts/main.tsp); health endpoints are operational and are deliberately outside that
 contract. Product routes will be implemented in later tasks. Do not expose database models as response DTOs.

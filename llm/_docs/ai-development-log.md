@@ -1018,3 +1018,66 @@ llm/_docs/ai-development-log.md` после обновления журнала 
 - `npx prettier --write llm/tasks/18-two-hour-reminders.md llm/tasks/README.md llm/_docs/ai-development-log.md`,
   `npx prettier --check llm/tasks/18-two-hour-reminders.md llm/tasks/README.md llm/_docs/ai-development-log.md`,
   `git diff --check` и проверка относительных Markdown-ссылок трёх документов через `node -e` — успешно.
+
+## 2026-09-29 — S19: временный локальный стенд (в работе)
+
+- По решению владельца до появления хостинга подготовлен стенд только для тестовых Telegram-аккаунтов:
+  GitHub Pages для Mini App, локальные API/PostgreSQL/worker и Cloudflare Quick Tunnel для HTTPS API.
+  Это не выполняет требование доступности при выключенном ноутбуке; S19 не закрыта. Версия кода при
+  локальной проверке: `c7508a7`. Публичный URL туннеля не получен, webhook не регистрировался,
+  GitHub Pages не перепубликовывался, реальный Telegram-сценарий не проверялся.
+- Добавлены команды `pilot:api`, `pilot:worker`, `pilot:tunnel`, `pilot:webhook`; скрипт webhook читает
+  секреты из игнорируемого `backend/.env`, не печатает их и ограничивает updates типом `message`.
+  PostgreSQL в compose слушает только `127.0.0.1`. Исправлены пример CORS-origin и URL Mini App
+  на текущий GitHub Pages репозитория; Pages workflow требует HTTPS API. Порядок запуска, смены адреса,
+  резервного копирования, восстановления и отката описан в [инструкции](s19-local-pilot-runbook.md).
+- `npm run backend:check` — успешно: формат, линт, типы, 21 unit-тест (5 интеграционных пропущены),
+  9 контрактных REST-маршрутов и сборка API/worker.
+- `npm run format:check && npm run lint && npm run typecheck && npm run contracts:check &&
+VITE_API_URL=https://example.trycloudflare.com VITE_TELEGRAM_BOT_USERNAME=picklehub_test_bot npm run build`
+  — успешно: frontend и TypeSpec-клиент проверены, production-сборка создана. Поиск
+  `rg -l 'synthetic-token|replace-with-bot-token|TELEGRAM_BOT_TOKEN|dev:player|mockServiceWorker|http://127\\.0\\.0\\.1:3000' frontend/tg/dist/assets`
+  совпадений не нашёл. Сборка использовала только синтетические публичные значения.
+- `docker compose -p picklehub-s19-verify -f backend/docker-compose.yml up -d --wait` — успешно.
+  `DATABASE_URL=postgresql://picklehub:picklehub@127.0.0.1:5432/picklehub npm run prisma:migrate:deploy
+--workspace @picklehub/backend` сначала получила `P1001` в песочнице, затем с разрешённым локальным
+  доступом успешно применила `20260925110000_initial_jobs`, `20260925130000_game_api` и
+  `20260929120000_bot_chat`.
+- В изолированной БД создана синтетическая таблица с одной записью. `docker compose -p
+picklehub-s19-verify -f backend/docker-compose.yml exec -T postgres pg_dump -U picklehub -Fc picklehub >
+/private/tmp/picklehub-s19-verify.dump`, затем `createdb -U picklehub picklehub_restore` и `pg_restore
+-U picklehub -d picklehub_restore --exit-on-error` из этого dump — успешно; проверка показала одну
+  восстановленную запись и три применённые миграции. Команды с перенаправлением сначала упирались в
+  ограничение доступа к Docker socket, затем прошли с разрешением. Тестовый контейнер, volume и dump удалены.
+- Production API запущен с синтетическими переменными на локальном порту 3000: первая попытка получила
+  `P1001` в песочнице, повтор с разрешённым доступом запустился. `curl --silent --show-error --fail
+http://127.0.0.1:3000/health/live` и аналогично `/health/ready` вернули `{"status":"ok"}`;
+  OPTIONS `/games` с origin `https://nullorone.github.io` вернул `204` и соответствующий
+  `Access-Control-Allow-Origin`. API остановлен после проверки.
+- `node backend/scripts/pilot-webhook.mjs` ожидаемо вернул usage с кодом 2;
+  `TELEGRAM_BOT_TOKEN=synthetic TELEGRAM_WEBHOOK_SECRET=synthetic node backend/scripts/pilot-webhook.mjs
+set http://example.test` ожидаемо отверг HTTP без обращения к Telegram. `npx prettier --write` для
+  выбранных файлов применился, но сообщил, что не знает формат `.env.example`; остальные файлы
+  проверены отдельно. Фактическая подготовка заняла около 30 минут.
+- Дополнительная проверка всей сборки выявила `frontend/tg/dist/mockServiceWorker.js`: Vite копировал dev
+  worker из `public/` даже при выключенных в коде моках. Сборка изменена так, чтобы при `vite build`
+  публичный каталог не копировался, а нужный `tonconnect-manifest.json` добавлялся отдельно.
+  `npm run format:check && npm run lint && npm run typecheck &&
+VITE_API_URL=https://example.trycloudflare.com VITE_TELEGRAM_BOT_USERNAME=picklehub_test_bot npm run build`
+  повторно успешно. `test ! -e frontend/tg/dist/mockServiceWorker.js && test -e
+frontend/tg/dist/tonconnect-manifest.json && ! rg -l
+'synthetic-token|replace-with-bot-token|TELEGRAM_BOT_TOKEN|dev:player|mockServiceWorker|http://127\\.0\\.0\\.1:3000'
+frontend/tg/dist/assets` — успешно. Изменённый build-артефакт `.tsbuildinfo` возвращён к исходному
+  состоянию; продуктовый код от проверки не изменялся.
+- `brew install cloudflared` сначала не смог писать в Homebrew Cellar в песочнице; повтор с разрешением
+  не скачал пакет из-за ошибки проверки TLS-сертификата (`curl: 60`). Отключать проверку сертификата
+  не стали. `docker pull cloudflare/cloudflared:2026.9.1` сначала получил отказ доступа к Docker socket,
+  затем с разрешением успешно скачал официальный образ, но туннель и его подключение к локальному API
+  не проверялись. Для команды `pilot:tunnel` по-прежнему нужен локальный исполняемый `cloudflared`.
+- `npx prettier --single-quote --trailing-comma es5 --print-width 120 --check` для изменённых скрипта,
+  README, compose, задачи, индекса и документов; `node --check backend/scripts/pilot-webhook.mjs`,
+  `git diff --check` и проверка относительных Markdown-ссылок шести документов через `node -e` — успешно.
+- Остаётся установить `cloudflared`, указать настоящие секреты вне Git, поднять туннель,
+  обновить GitHub Actions variables и опубликовать Pages, зарегистрировать webhook, проверить
+  вход/игры/worker на тестовых аккаунтах. Для полной приёмки S19 позже требуется независимый от ноутбука
+  хостинг API, БД и worker с проверенными условиями хранения данных.

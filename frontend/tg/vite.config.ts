@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { defineConfig } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 import react from "@vitejs/plugin-react-swc";
@@ -5,7 +6,7 @@ import mkcert from "vite-plugin-mkcert";
 import tailwindcss from "@tailwindcss/vite";
 
 // https://vitejs.dev/config/
-export default defineConfig({
+export default defineConfig(({ command }) => ({
     base: "./",
     // css: {
     //   preprocessorOptions: {
@@ -26,11 +27,26 @@ export default defineConfig({
         // https://www.npmjs.com/package/vite-plugin-mkcert
         process.env.HTTPS && mkcert(),
         tailwindcss(),
+        command === "build" && {
+            name: "emit-public-manifest",
+            generateBundle() {
+                this.emitFile({
+                    type: "asset",
+                    fileName: "tonconnect-manifest.json",
+                    source: readFileSync(
+                        new URL(
+                            "./public/tonconnect-manifest.json",
+                            import.meta.url,
+                        ),
+                    ),
+                });
+            },
+        },
     ],
     build: {
         target: "esnext",
     },
-    publicDir: "./public",
+    publicDir: command === "build" ? false : "./public",
     server: {
         // Exposes your dev server and makes it accessible for the devices in the same network.
         host: true,
@@ -42,4 +58,4 @@ export default defineConfig({
             },
         },
     },
-});
+}));
