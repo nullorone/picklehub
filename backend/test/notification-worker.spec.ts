@@ -1,7 +1,18 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { Job } from '@prisma/client';
-import { messageFor, sendTelegramMessage } from '../src/notification-worker.js';
+import { messageFor, reminderIsCurrent, sendTelegramMessage } from '../src/notification-worker.js';
+
+test('reminder threshold and late window use an injected instant', () => {
+    const start = new Date('2030-01-01T12:00:00.000Z');
+    const due = new Date('2030-01-01T10:00:00.000Z');
+    assert.equal(reminderIsCurrent(start, due, new Date(due.getTime() - 1)), false);
+    assert.equal(reminderIsCurrent(start, due, due), true);
+    assert.equal(reminderIsCurrent(start, due, new Date(due.getTime() + 900_000)), true);
+    assert.equal(reminderIsCurrent(start, due, new Date(due.getTime() + 900_001)), false);
+    assert.equal(reminderIsCurrent(start, new Date(due.getTime() + 1), due), false);
+    assert.equal(reminderIsCurrent(start, due, start), false);
+});
 
 const gameId = '11111111-1111-4111-8111-111111111111';
 const base = {

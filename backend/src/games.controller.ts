@@ -321,7 +321,10 @@ export class GamesController {
             if (game.status === 'CANCELLED') return;
             const nextVersion = game.eventVersion + 1;
             await tx.game.update({ where: { id: gameId }, data: { status: 'CANCELLED', eventVersion: nextVersion } });
-            await tx.job.deleteMany({ where: { gameId, type: 'GAME_REMINDER', status: 'PENDING' } });
+            await tx.job.updateMany({
+                where: { gameId, type: 'GAME_REMINDER', status: { in: ['PENDING', 'PROCESSING'] } },
+                data: { status: 'DEAD', lastErrorCode: 'REMINDER_STALE', lockedAt: null, lockedBy: null },
+            });
             await tx.job.create({
                 data: {
                     gameId,
@@ -415,7 +418,10 @@ export class GamesController {
     }
 
     private async rescheduleReminder(tx: Prisma.TransactionClient, gameId: string, startsAt: Date, version: number) {
-        await tx.job.deleteMany({ where: { gameId, type: 'GAME_REMINDER', status: 'PENDING' } });
+        await tx.job.updateMany({
+            where: { gameId, type: 'GAME_REMINDER', status: { in: ['PENDING', 'PROCESSING'] } },
+            data: { status: 'DEAD', lastErrorCode: 'REMINDER_STALE', lockedAt: null, lockedBy: null },
+        });
         const availableAt = new Date(startsAt.getTime() - 2 * 60 * 60 * 1000);
         if (availableAt.getTime() > Date.now())
             await tx.job.create({

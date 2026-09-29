@@ -953,3 +953,68 @@ npm run prisma:migrate:deploy --workspace @picklehub/backend` — успешно
   в этой сессии не начиналась.
 - `npx prettier --check llm/tasks/17-change-notifications.md llm/tasks/README.md llm/_docs/ai-development-log.md`,
   `git diff --check` и проверка относительных Markdown-ссылок через `node -e` — успешно после смены статусов.
+
+## 2026-09-29 — S18: напоминания за два часа (в работе)
+
+- Worker обрабатывает устойчивые `GAME_REMINDER` из S10/S14. Перед раскладкой и перед адресной доставкой проверяет
+  актуальные статус, время начала и состав. Участник должен занимать место и иметь время последней записи не позже
+  срока задания; организатор без места не включается. Перенос и отмена помечают ожидающие и захваченные старые
+  задания `DEAD` в транзакции изменения игры. Адресные задания имеют уникальный ключ исходного задания и участника.
+- Допустимое опоздание worker — 15 минут после срока «минус два часа»; в момент начала и после него отправка
+  запрещена. Позже окно закрывается без массовой догоняющей рассылки. Повтор после неизвестного ответа Telegram
+  всё ещё может доставить дубль; изменение игры между последней проверкой и сетевым запросом нельзя отозвать.
+- Изменены `backend/src/notification-worker.ts`, `backend/src/games.controller.ts`, тесты worker/контроллера,
+  `backend/README.md`, этот журнал, статус S18 и индекс задач. Контракт REST и схема БД не изменялись.
+- `npm run backend:test` сначала завершился с тремя ошибками: старому unit-моку не хватало `job.updateMany`;
+  мок исправлен. `npx prettier --single-quote --trailing-comma es5 --print-width 120 --write
+backend/src/notification-worker.ts backend/src/games.controller.ts backend/test/notification-worker.spec.ts
+backend/test/notification-worker.integration.spec.ts backend/test/organizer.integration.spec.ts
+backend/test/games.spec.ts` — успешно. `npm run backend:check` — успешно: генерация Prisma, формат, линт,
+  типы, 21 unit-тест, контракт (9 REST-маршрутов), сборка; 5 интеграционных тестов без флагов пропущены.
+- `docker compose -f backend/docker-compose.yml up -d --wait` и
+  `docker exec backend-postgres-1 createdb -U picklehub picklehub_s18_verify` — успешно. Команда
+  `DATABASE_URL=postgresql://picklehub:picklehub@127.0.0.1:5432/picklehub_s18_verify npm run prisma:migrate:deploy
+--workspace @picklehub/backend` сначала получила `P1001` в сетевой песочнице, затем с разрешённым локальным
+  доступом успешно применила три миграции.
+- Первый запуск интеграционного теста из корня без локального доступа получил `P1001` и ошибку трансформации
+  декораторов из-за неверного рабочего каталога. Запуск из `backend/` с локальным доступом затем выявил
+  зависимость теста от порядка адресных заданий; тест исправлен. Команда из `backend/`:
+  `S18_INTEGRATION=1 S14_INTEGRATION=1 DATABASE_URL=postgresql://picklehub:picklehub@127.0.0.1:5432/picklehub_s18_verify
+node --import tsx --test test/notification-worker.integration.spec.ts test/organizer.integration.spec.ts` —
+  успешно, 2 пройдено и 1 пропущен. Управляемые часы покрывают порог, позднюю запись, выход, перенос вперёд
+  и назад, отмену, перезапуск и начало игры без двухчасового ожидания.
+- Фактическое активное время инструментально не измерялось; работа заняла больше планового часа. Ограниченную
+  реальную доставку тестовому Telegram-аккаунту подтвердить здесь нельзя: доступного тестового чата и стенда
+  с запущенным worker нет. Для приёмки нужно на тестовом стенде создать игру с началом через чуть более двух
+  часов, записать и связать с ботом тестовый аккаунт, затем сверить время получения сообщения и UTC-время
+  `available_at` задания; не менять системные часы или боевую БД. До этого S18 остаётся в работе, S19 не начата.
+- После добавления проверки повторного захвата совместный параллельный запуск двух интеграционных файлов дал
+  нестабильный результат: worker обработал чужое задание из той же БД. Раздельные команды из `backend/`
+  `S18_INTEGRATION=1 DATABASE_URL=postgresql://picklehub:picklehub@127.0.0.1:5432/picklehub_s18_verify
+node --import tsx --test test/notification-worker.integration.spec.ts` (1 пройден, 1 пропущен) и
+  `S14_INTEGRATION=1 DATABASE_URL=postgresql://picklehub:picklehub@127.0.0.1:5432/picklehub_s18_verify
+node --import tsx --test test/organizer.integration.spec.ts` (1 пройден) — успешно. Проверка повторного
+  захвата подтвердила неизменный адресный набор.
+- Повторный `npm run backend:check` — успешно: формат, линт, типы, 21 unit-тест (5 интеграционных пропущены),
+  контракт и сборка. `npx prettier --check backend/README.md llm/tasks/18-two-hour-reminders.md
+llm/tasks/README.md llm/_docs/ai-development-log.md` сначала нашёл два неформатированных документа;
+  `npx prettier --single-quote --trailing-comma es5 --print-width 120 --write
+backend/test/notification-worker.integration.spec.ts llm/tasks/18-two-hour-reminders.md
+llm/_docs/ai-development-log.md` исправил формат. Финальные проверки документов записаны ниже.
+- `npx prettier --check backend/README.md llm/tasks/18-two-hour-reminders.md llm/tasks/README.md
+llm/_docs/ai-development-log.md` после обновления журнала повторно потребовал форматировать журнал;
+  `npx prettier --write llm/_docs/ai-development-log.md` — успешно. `git diff --check` и проверка
+  существования относительных Markdown-ссылок в четырёх изменённых документах через `node -e` — успешно.
+  `docker exec backend-postgres-1 dropdb -U picklehub picklehub_s18_verify` и
+  `docker compose -f backend/docker-compose.yml down` — успешно; тестовая БД удалена, volume сохранён.
+
+## 2026-09-29 — S18: приёмка завершена
+
+- Владелец сообщил: «все работает, можно закрывать». Его подтверждение реальной работы принято для оставшегося
+  критерия доставки. Подробный протокол проверки времени и тестового аккаунта владелец не предоставил;
+  синтетические и интеграционные проверки перечислены выше и не подменяют это подтверждение.
+- Статусы S18 и индекса задач обновлены. Следующая отдельная задача —
+  [S19: размещение пилота](../tasks/19-pilot-deployment.md); в этой сессии не начиналась.
+- `npx prettier --write llm/tasks/18-two-hour-reminders.md llm/tasks/README.md llm/_docs/ai-development-log.md`,
+  `npx prettier --check llm/tasks/18-two-hour-reminders.md llm/tasks/README.md llm/_docs/ai-development-log.md`,
+  `git diff --check` и проверка относительных Markdown-ссылок трёх документов через `node -e` — успешно.

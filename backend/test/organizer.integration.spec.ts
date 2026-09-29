@@ -126,8 +126,12 @@ test(
             await controller.update(game.id, { venueName: 'New court' }, request(organizer) as never);
             assert.equal(await prisma.job.count({ where: { gameId: game.id, type: 'GAME_UPDATED' } }), 3);
             const reminders = await prisma.job.findMany({ where: { gameId: game.id, type: 'GAME_REMINDER' } });
-            assert.equal(reminders.length, 1);
-            assert.equal(reminders[0]?.availableAt.getTime(), initialTime.getTime() - 7_200_000);
+            assert.equal(reminders.length, 2);
+            assert.equal(
+                reminders.find((job) => job.status === 'PENDING')?.availableAt.getTime(),
+                initialTime.getTime() - 7_200_000
+            );
+            assert.equal(reminders.find((job) => job.status === 'DEAD')?.lastErrorCode, 'REMINDER_STALE');
 
             const cancelKey = randomUUID();
             const cancelled = await controller.cancel(game.id, request(organizer, cancelKey) as never);

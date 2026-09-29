@@ -5,6 +5,139 @@ import { PrismaClient } from '@prisma/client';
 import { NotificationWorker } from '../src/notification-worker.js';
 
 test(
+    'reminders use the current schedule and roster across worker restarts',
+    { skip: !process.env.S18_INTEGRATION },
+    async () => {
+        const prisma = new PrismaClient();
+        const ids = [randomUUID(), randomUUID(), randomUUID()];
+        const chatBase = BigInt(randomInt(2_000_000_000, 3_000_000_000));
+        const sent: bigint[] = [];
+        const sender = async (_token: string, chatId: bigint, message: string) => {
+            assert.match(message, /Москва/);
+            assert.match(message, /#\/matches\//);
+            sent.push(chatId);
+            return { kind: 'sent' as const, code: 'SENT' };
+        };
+        const start = new Date('2030-01-01T12:00:00.000Z');
+        const due = new Date(start.getTime() - 7_200_000);
+        let clock = new Date(due.getTime() - 1);
+        const worker = () =>
+            new NotificationWorker(prisma, 'synthetic-token', 'https://example.test/app/', sender, () => clock);
+        let gameId: string | undefined;
+        try {
+            await prisma.$connect();
+            await prisma.user.createMany({ data: ids.map((id) => ({ id })) });
+            for (let i = 0; i < ids.length; i++) {
+                await prisma.telegramIdentity.create({
+                    data: {
+                        userId: ids[i],
+                        telegramUserId: chatBase + BigInt(i),
+                        privateChatId: chatBase + BigInt(i),
+                        canMessage: true,
+                    },
+                });
+            }
+            const game = await prisma.game.create({
+                data: {
+                    organizerId: ids[0],
+                    venueName: 'Synthetic venue',
+                    address: 'Synthetic address',
+                    startsAt: start,
+                    durationMinutes: 90,
+                    participantLimit: 8,
+                },
+            });
+            gameId = game.id;
+            await prisma.gameParticipant.createMany({
+                data: [
+                    { gameId, userId: ids[0], joinedAt: new Date(due.getTime() - 60_000) },
+                    { gameId, userId: ids[1], joinedAt: new Date(due.getTime() - 60_000) },
+                    { gameId, userId: ids[2], joinedAt: new Date(due.getTime() + 1) },
+                ],
+            });
+            const reminder = await prisma.job.create({
+                data: {
+                    gameId,
+                    type: 'GAME_REMINDER',
+                    eventVersion: 1,
+                    deduplicationKey: `${gameId}:1:GAME_REMINDER`,
+                    availableAt: due,
+                },
+            });
+            assert.equal(await worker().runOne(), false);
+            clock = due;
+            assert.equal(await worker().runOne(), true);
+            assert.equal(await prisma.job.count({ where: { gameId, type: 'TELEGRAM_DELIVERY' } }), 2);
+            await prisma.job.update({
+                where: { id: reminder.id },
+                data: {
+                    status: 'PROCESSING',
+                    attempts: 1,
+                    lockedBy: 'crashed-worker',
+                    lockedAt: new Date(due.getTime() - 120_000),
+                    completedAt: null,
+                },
+            });
+            await worker().runOne();
+            assert.equal(await prisma.job.count({ where: { gameId, type: 'TELEGRAM_DELIVERY' } }), 2);
+            await prisma.gameParticipant.delete({ where: { gameId_userId: { gameId, userId: ids[1] } } });
+            await worker().runOne();
+            await worker().runOne();
+            assert.deepEqual(sent, [chatBase]);
+            assert.equal(await prisma.job.count({ where: { gameId, type: 'TELEGRAM_DELIVERY', status: 'DEAD' } }), 1);
+            assert.equal((await prisma.job.findUniqueOrThrow({ where: { id: reminder.id } })).status, 'COMPLETED');
+
+            const later = new Date(start.getTime() + 3_600_000);
+            const laterDue = new Date(later.getTime() - 7_200_000);
+            await prisma.game.update({ where: { id: gameId }, data: { startsAt: later, eventVersion: 2 } });
+            const next = await prisma.job.create({
+                data: {
+                    gameId,
+                    type: 'GAME_REMINDER',
+                    eventVersion: 2,
+                    deduplicationKey: `${gameId}:2:GAME_REMINDER`,
+                    availableAt: laterDue,
+                },
+            });
+            await prisma.gameParticipant.create({
+                data: { gameId, userId: ids[1], joinedAt: new Date(due.getTime() - 60_000) },
+            });
+            clock = laterDue;
+            await worker().runOne();
+            assert.equal((await prisma.job.findUniqueOrThrow({ where: { id: next.id } })).status, 'COMPLETED');
+            await prisma.game.update({ where: { id: gameId }, data: { status: 'CANCELLED' } });
+            await worker().runOne();
+            assert.deepEqual(sent, [chatBase]);
+
+            await prisma.game.update({ where: { id: gameId }, data: { status: 'OPEN', startsAt: start } });
+            const past = await prisma.job.create({
+                data: {
+                    gameId,
+                    type: 'GAME_REMINDER',
+                    eventVersion: 3,
+                    deduplicationKey: `${gameId}:3:GAME_REMINDER`,
+                    availableAt: due,
+                },
+            });
+            clock = start;
+            for (let attempt = 0; attempt < 5; attempt++) {
+                if ((await prisma.job.findUniqueOrThrow({ where: { id: past.id } })).status === 'COMPLETED') break;
+                await worker().runOne();
+            }
+            assert.equal((await prisma.job.findUniqueOrThrow({ where: { id: past.id } })).status, 'COMPLETED');
+            assert.deepEqual(sent, [chatBase]);
+        } finally {
+            if (gameId) {
+                await prisma.job.deleteMany({ where: { gameId } });
+                await prisma.game.delete({ where: { id: gameId } });
+            }
+            await prisma.user.deleteMany({ where: { id: { in: ids } } });
+            await prisma.$disconnect();
+        }
+    }
+);
+
+test(
     'durable fanout, parallel claims, retries and stale lease recovery',
     { skip: !process.env.S17_INTEGRATION },
     async () => {

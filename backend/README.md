@@ -81,7 +81,17 @@ mutation, so later roster changes do not redirect a past notification. The worke
 before sending. Temporary failures and rate limits retry up to eight attempts with capped exponential delay; a
 permanent refusal or exhausted retries marks only that recipient's delivery `DEAD`. Diagnostics contain job ID and
 bounded error code, never message text, chat ID, token, or Telegram response body. The Telegram send boundary
-cannot guarantee exactly-once delivery after an ambiguous network result. `GAME_REMINDER` rows are left for S18.
+cannot guarantee exactly-once delivery after an ambiguous network result.
+
+`GAME_REMINDER` is scheduled at `starts_at` minus two hours with a unique game/time-version key. Rescheduling and
+cancellation mark pending or leased reminder rows stale in the same transaction as the game update. The worker
+rechecks the game status, start time and current roster when expanding the reminder and again immediately before
+each delivery. Only participants whose latest join predates the reminder due time qualify; an organizer receives it
+only while occupying a participant slot. The worker may send a late reminder for at most 15 minutes after the due
+time, and never at or after game start. A reminder missed beyond that window is completed without delivery. Tests
+inject a clock into the worker to exercise the threshold without waiting two hours. A concurrent game change after
+the final check but during a Telegram network request cannot be recalled; as with other notifications, an ambiguous
+Telegram response can result in a duplicate on retry.
 
 The initial migration has DB checks for valid durations/capacities, event versions, retry counts, and coherent
 leases. Fixtures are intentionally absent; use synthetic data in isolated local verification databases only.

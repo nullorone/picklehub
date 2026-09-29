@@ -34,6 +34,7 @@ function fixture() {
         },
         job: {
             deleteMany: async () => ({ count: 0 }),
+            updateMany: async () => ({ count: 0 }),
             create: async () => ({}),
         },
         game: {
