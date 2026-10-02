@@ -1,4 +1,1 @@
-import tokens from './tokens.json';
-
-export { tokens };
-export type DesignTokens = typeof tokens;
+export { tokens, type DesignTokens } from '@picklehub/design-tokens';

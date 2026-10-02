@@ -8,7 +8,10 @@
         "backend",
         "frontend/tg",
         "frontend/packages/tokens",
-        "frontend/packages/api"
+        "frontend/packages/api",
+        "ds/tokens",
+        "ds/web",
+        "ds/storybook"
     ],
     "scripts": {
         "start": "npm run dev --workspace @picklehub/tg --",
@@ -38,7 +41,16 @@
         "backend:test": "npm run test --workspace @picklehub/backend",
         "backend:contracts:check": "npm run contracts:check --workspace @picklehub/backend",
         "backend:build": "npm run build --workspace @picklehub/backend",
-        "backend:check": "npm run prisma:generate --workspace @picklehub/backend && npm run backend:format:check && npm run backend:lint && npm run backend:typecheck && npm run backend:test && npm run backend:contracts:check && npm run backend:build"
+        "backend:check": "npm run prisma:generate --workspace @picklehub/backend && npm run backend:format:check && npm run backend:lint && npm run backend:typecheck && npm run backend:test && npm run backend:contracts:check && npm run backend:build",
+        "ds:tokens": "npm run build --workspace @picklehub/design-tokens",
+        "ds:dev": "npm run ds:tokens && npm run dev --workspace @picklehub/storybook",
+        "ds:build": "npm run ds:tokens && npm run build --workspace @picklehub/storybook",
+        "ds:format": "prettier --write ds",
+        "ds:format:check": "prettier --check ds",
+        "ds:lint": "eslint ds frontend/packages/tokens --report-unused-disable-directives --max-warnings 0",
+        "ds:typecheck": "npm run typecheck --workspace @picklehub/design-tokens && npm run typecheck --workspace @picklehub/ui-web && npm run typecheck --workspace @picklehub/storybook",
+        "ds:test": "npm run ds:tokens && npm test --workspace @picklehub/storybook",
+        "ds:check": "npm run ds:format:check && npm run ds:lint && npm run ds:typecheck && npm run ds:test && npm run ds:build"
     },
     "devDependencies": {
         "@eslint/js": "^9.23.0",

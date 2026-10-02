@@ -6,32 +6,45 @@ import react from "eslint-plugin-react";
 import reactHooks from "eslint-plugin-react-hooks";
 import globals from "globals";
 
-export default tseslint.config({
-    files: [
-        "frontend/tg/src/**/*.{js,jsx,mjs,cjs,ts,tsx}",
-        "backend/src/**/*.ts",
-        "backend/test/**/*.ts",
-    ],
-    extends: [
-        eslint.configs.recommended,
-        ...tseslint.configs.recommendedTypeChecked,
-    ],
-    plugins: {
-        react,
-        "react-hooks": reactHooks,
+export default tseslint.config(
+    {
+        ignores: ["ds/**/dist/**", "ds/**/node_modules/**"],
     },
-    languageOptions: {
-        parserOptions: {
-            projectService: true,
-            ecmaVersion: "latest",
-            sourceType: "module",
-            ecmaFeatures: {
-                jsx: true,
+    {
+        files: [
+            "frontend/tg/src/**/*.{js,jsx,mjs,cjs,ts,tsx}",
+            "backend/src/**/*.ts",
+            "backend/test/**/*.ts",
+            "ds/**/*.ts",
+            "ds/**/*.tsx",
+            "frontend/packages/tokens/src/**/*.ts",
+        ],
+        extends: [
+            eslint.configs.recommended,
+            ...tseslint.configs.recommendedTypeChecked,
+        ],
+        plugins: {
+            react,
+            "react-hooks": reactHooks,
+        },
+        languageOptions: {
+            parserOptions: {
+                projectService: true,
+                ecmaVersion: "latest",
+                sourceType: "module",
+                ecmaFeatures: {
+                    jsx: true,
+                },
+            },
+            globals: {
+                ...globals.browser,
+                ...globals.node,
             },
         },
-        globals: {
-            ...globals.browser,
-            ...globals.node,
-        },
     },
-});
+    {
+        files: ["ds/**/*.mjs"],
+        extends: [eslint.configs.recommended],
+        languageOptions: { globals: globals.node },
+    },
+);

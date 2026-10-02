@@ -1,0 +1,15 @@
+{
+    "name": "@picklehub/design-tokens",
+    "version": "0.0.1",
+    "private": true,
+    "type": "module",
+    "exports": {
+        ".": "./src/index.ts",
+        "./tokens.json": "./src/tokens.json",
+        "./styles.css": "./dist/tokens.css"
+    },
+    "scripts": {
+        "build": "node scripts/build-css.mjs",
+        "typecheck": "tsc --noEmit"
+    }
+}

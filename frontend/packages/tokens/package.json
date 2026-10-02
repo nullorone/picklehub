@@ -5,6 +5,9 @@
     "type": "module",
     "exports": {
         ".": "./src/index.ts",
-        "./tokens.json": "./src/tokens.json"
+        "./tokens.json": "./src/tokens-json.ts"
+    },
+    "dependencies": {
+        "@picklehub/design-tokens": "*"
     }
 }

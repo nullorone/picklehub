@@ -1081,3 +1081,71 @@ frontend/tg/dist/assets` — успешно. Изменённый build-арте
   обновить GitHub Actions variables и опубликовать Pages, зарегистрировать webhook, проверить
   вход/игры/worker на тестовых аккаунтах. Для полной приёмки S19 позже требуется независимый от ноутбука
   хостинг API, БД и worker с проверенными условиями хранения данных.
+
+## 2026-10-02 — DS01: отдельная основа дизайн-системы
+
+### Выполнено
+
+- По прямому запросу владельца создана отдельная DS01 и ADR-002; S19 остаётся в работе.
+- ds/tokens, ds/web и ds/storybook добавлены в npm workspaces. Источник токенов перенесён в ds;
+  @picklehub/tokens переэкспортирует тот же объект, включая default export подпути tokens.json.
+  Все прежние значения сохранены; добавлены стеклянные поверхности и контрастный текст опасного действия.
+- CSS токенов генерируется в игнорируемый dist. Компоненты экспортируют исходники для локальных Vite-потребителей.
+  Добавлен самостоятельный Button на React 18/Tailwind 4, без Telegram SDK и без копирования исходников Ein UI.
+- Storybook 10.6.1 показывает токены, Button, Controls, документацию, обе темы и узкий viewport.
+  Настроены Vitest 4.1.11, Chromium, проверки доступности и поведения. Телеметрия Storybook выключена.
+- Корневые команды ds:dev/ds:build/ds:check и дополнительные команды проверки готовы.
+  В Pages workflow Node 18 заменён на Node 22 для совместимости новых workspace-инструментов.
+- Card/TextField остаются для совместного кодинга с владельцем; порядок описан в ds/README.md.
+  UI Mini App не заменялся. Публикация не выполнялась. Исходные пользовательские изменения lock-файла сохранены;
+  npm дополнительно обновил пять совместимых транзитивных пакетов. Посторонние изменения не затрагивались.
+
+### Проверки
+
+- npm view storybook version и npm view @storybook/react-vite/@storybook/addon-vitest peerDependencies
+  — получена версия 10.6.1, подтверждена поддержка React 18 и Vite 6.
+  Первая попытка в песочнице получила ENOTFOUND; повтор вне неё успешен.
+- `npm install --ignore-scripts --fetch-retries=0 --fetch-timeout=20000` — успешно вне песочницы после ENOTFOUND:
+  добавлено 163 пакета, изменено 5. npm сообщил 27 уязвимостей (4 moderate, 23 high) во всём дереве;
+  отдельный аудит и исправление существующего дерева в эту задачу не входили, audit fix не выполнялся.
+- `npm exec --workspace @picklehub/storybook -- playwright install chromium` — успешно вне песочницы
+  после EPERM на запись браузерного кэша.
+- Первый ds:lint выявил, что TypeScript не включал скрытую .storybook: исправлены явные include-globs,
+  без отключения правил. Повторные lint и typecheck успешны.
+- Первый `npm run ds:test` в песочнице получил EPERM на локальный порт. Повтор вне песочницы выявил
+  перезагрузку React jsx-runtime оптимизатором Vite; добавлен optimizeDeps.include. Устаревший ручной
+  setProjectAnnotations удалён: Storybook 10.6 применяет preview и addon annotations автоматически.
+- Итоговый `npm run ds:check` вне песочницы — успешно: форматирование, typed ESLint, строгий TypeScript
+  трёх пакетов, 11 браузерных сценариев в двух файлах и статическая сборка Storybook.
+  Проверены click/Enter/Space, видимый фокус, disabled, ref и type=button/type=submit внутри формы;
+  a11y настроен как ошибка проверки. Сборка предупреждает о крупных чанках документации и axe;
+  лимиты и правила не ослаблялись. Node 26 локально также сообщает DEP0205 в зависимостях.
+- `npm run format:check && npm run lint && npm run typecheck && npm run contracts:check && npm run build`
+  — успешно. Первоначальная проверка формата eslint.config.js потребовала Prettier; после форматирования
+  вся цепочка прошла. TypeSpec-контракты и клиент воспроизводимы, изменения контрактов отсутствуют.
+- `node --import tsx --test frontend/tg/test/*.spec.ts` — успешно, один тест.
+- `node --import tsx --input-type=module` с assert: сравнение всех старых значений из
+  `git show HEAD:frontend/packages/tokens/src/tokens.json` с новым источником — успешно;
+  @picklehub/tokens и default export @picklehub/tokens/tokens.json равны новому объекту по ссылке.
+- `npm run ds:dev` — успешно вне песочницы после запрета локального порта; адрес http://localhost:6006.
+- `node /private/tmp/picklehub-ds-preview.mjs` вне песочницы — успешно: обе темы при ширине 320 px,
+  отсутствие горизонтальной прокрутки, фокус, reduced motion и имитация плотного fallback без размытия.
+  Первоначальная проверка reduced motion ошибочно ожидала duration=0; проверка исправлена на
+  transition-property=none, код компонента не менялся. Скрипт временный; постоянные проверки — stories.
+  Снимки .playwright-mcp/ds01-light-320.png, ds01-dark-320.png, ds01-tokens-light-320.png,
+  ds01-tokens-dark-320.png и ds01-fallback-320.png сохранены локально. Снимок тёмной темы осмотрен.
+- Build-артефакт frontend/tg/tsconfig.node.tsbuildinfo возвращён к исходному состоянию.
+  Фактическое время разработки из-за пауз между сообщениями не оценивалось.
+
+### Приёмка
+
+DS01 выполнена. Следующий совместный шаг — Card по образцу Button; он не начат.
+Проверки оформления документов и ссылок, а также git diff --check перечислены ниже.
+
+- `npx prettier --single-quote --trailing-comma es5 --print-width 120 --check frontend/packages/tokens
+llm/00-project-overview.md llm/README.md llm/_docs/adr-002-design-system.md llm/_docs/ai-development-log.md
+llm/tasks/ds01-design-system-foundation.md llm/tasks/README.md` — успешно.
+- `npm run ds:format:check` и `git diff --check` — успешно.
+- Проверка относительных Markdown-ссылок через Python: 7 документов, 80 локальных ссылок — успешно.
+- Генератор CSS также включён в recommended ESLint для ds/**/*.mjs; итоговые `npm run ds:lint`
+  и проверка формата eslint.config.js — успешно.
