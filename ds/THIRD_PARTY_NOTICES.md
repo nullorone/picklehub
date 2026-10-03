@@ -1,9 +1,14 @@
-# EIN UI — Glass Button
+# EIN UI
 
 Adapted from https://github.com/einui/einui/blob/main/registry/liquid-glass/glass-button.tsx.
 Original project: https://github.com/einui/einui. License: MIT.
 The component retains EIN's visual variants, dimensions and effects. Local adaptations include
 workspace imports, shared tokens, native button type, correct asChild composition and reduced motion.
+
+The additional components in `web/src/liquid-glass/`, `web/src/innovative/`, `web/src/widgets/`,
+the examples in `web/src/blocks/` and their Storybook demonstrations are also adapted from EIN UI.
+Local adaptations include workspace imports, accessible control names, heading order, keyboard access
+to scroll areas and propagation of progress values to ARIA.
 
 MIT License
 

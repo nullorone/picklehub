@@ -1149,3 +1149,28 @@ llm/tasks/ds01-design-system-foundation.md llm/tasks/README.md` — успешн
 - Проверка относительных Markdown-ссылок через Python: 7 документов, 80 локальных ссылок — успешно.
 - Генератор CSS также включён в recommended ESLint для ds/**/*.mjs; итоговые `npm run ds:lint`
   и проверка формата eslint.config.js — успешно.
+
+## 2026-10-02 — продолжение проверки каталога EIN
+
+- Продолжены существующие незавершённые изменения компонентов и stories EIN в `ds/`.
+  Новые продуктовые маршруты и интеграции не добавлялись; S19 и визуальная приёмка DS02 остаются в работе.
+- Удалён неиспользуемый импорт в Card story. Первый `npm run ds:test` выявил 17 ошибок доступности
+  в 12 файлах: подписи controls, порядок заголовков, пустой заголовок таблицы и доступ к прокрутке.
+  Исправлены stories и демонстрационные блоки, именование Slider передаётся его Thumb,
+  ScrollArea viewport получает клавиатурный фокус. Progress теперь передаёт value в Radix Root,
+  поэтому доступное числовое значение соответствует визуальному.
+- Уточнено распространение MIT notice на дополнительные компоненты и демонстрации EIN.
+- `npm run ds:format` — успешно. После последнего изменения PricingPage проверка формата потребовала
+  `npx prettier --write ds/web/src/blocks/PricingPage.tsx`; повтор успешен.
+- `npm run ds:test` вне песочницы — успешно: 43 файла, 105 браузерных тестов, включая a11y.
+  Повторные запуски внутри песочницы получили `listen EPERM ::1:63315`; запуск с разрешением прошёл.
+  Отдельный `npm test --workspace @picklehub/storybook -- src/scrollArea.stories.tsx
+src/notification.stories.tsx` подтвердил необходимость клавиатурного доступа к ScrollArea;
+  эти ошибки устранены перед полным успешным прогоном.
+- `npm run ds:format:check && npm run ds:lint && npm run ds:typecheck && npm run ds:build` — успешно.
+  Сборка сообщает о директивах `use client` в Framer Motion, крупных чанках и Node DEP0205;
+  проверки не ослаблялись.
+- `npm run contracts:check` — успешно: два генерируемых файла воспроизводимы и не изменились.
+- `npm run format:check && npm run lint && npm run typecheck && npm run build` — успешно для Mini App.
+- `git diff --check` — успешно. Сравнение реальных страниц EIN со Storybook в этой сессии не выполнялось;
+  DS02 не объявляется принятой только на основании автоматических проверок.

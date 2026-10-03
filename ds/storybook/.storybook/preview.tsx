@@ -1,3 +1,4 @@
+import { MotionConfig } from 'framer-motion';
 import type { Preview } from '@storybook/react-vite';
 import '@picklehub/ui-web/styles.css';
 import '@fontsource/geist/400.css';
@@ -24,10 +25,12 @@ const preview: Preview = {
                 className="min-h-screen bg-ds-background p-6 text-ds-text antialiased"
                 style={{ fontFamily: 'Geist, Arial, Helvetica, sans-serif' }}
             >
-                {context.title === 'Components/Button' ? (
+                {context.title !== 'Foundations/Tokens' ? (
                     <div className="ein-preview">
                         <div className="relative flex w-full items-center justify-center">
-                            <Story />
+                            <MotionConfig reducedMotion="user">
+                                <Story />
+                            </MotionConfig>
                         </div>
                     </div>
                 ) : (

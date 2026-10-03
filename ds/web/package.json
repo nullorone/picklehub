@@ -5,7 +5,8 @@
     "type": "module",
     "exports": {
         ".": "./src/index.ts",
-        "./styles.css": "./src/styles.css"
+        "./styles.css": "./src/styles.css",
+        "./label": "./src/label.tsx"
     },
     "sideEffects": [
         "**/*.css"
@@ -19,7 +20,20 @@
         "@radix-ui/react-slot": "^1.2.4",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
-        "tailwind-merge": "^3.3.1"
+        "tailwind-merge": "^3.3.1",
+        "radix-ui": "^1.0.0",
+        "framer-motion": "^12.0.0",
+        "lucide-react": "^0.468.0",
+        "@radix-ui/react-alert-dialog": "^1.0.0",
+        "@radix-ui/react-checkbox": "^1.0.0",
+        "@radix-ui/react-popover": "^1.0.0",
+        "@radix-ui/react-progress": "^1.0.0",
+        "@radix-ui/react-radio-group": "^1.0.0",
+        "@radix-ui/react-scroll-area": "^1.0.0",
+        "@radix-ui/react-select": "^1.0.0",
+        "@radix-ui/react-slider": "^1.0.0",
+        "@radix-ui/react-switch": "^1.0.0",
+        "@radix-ui/react-tabs": "^1.0.0"
     },
     "scripts": {
         "typecheck": "tsc --noEmit"
