@@ -77,13 +77,12 @@ export function GameDetailPage() {
                                 ? "Возможно, ссылка устарела или игра была удалена."
                                 : "Проверьте соединение и попробуйте ещё раз."}
                         </p>
-                        <button
-                            className="min-h-12 rounded-control bg-accent px-5 py-3 font-semibold text-[var(--ph-button-text)]"
+                        <Button
                             onClick={() => void gameQuery.refetch()}
                             type="button"
                         >
                             Повторить
-                        </button>
+                        </Button>
                     </Card>
                 )}
 
@@ -247,12 +246,16 @@ export function GameDetailPage() {
                                                 <h2 className="font-semibold">
                                                     Управление игрой
                                                 </h2>
-                                                <Link
-                                                    className="min-h-11 rounded-control border border-border px-4 py-3 text-center font-semibold"
-                                                    to={`/matches/${game.id}/edit`}
+                                                <Button
+                                                    asChild
+                                                    variant="secondary"
                                                 >
-                                                    Редактировать игру
-                                                </Link>
+                                                    <Link
+                                                        to={`/matches/${game.id}/edit`}
+                                                    >
+                                                        Редактировать игру
+                                                    </Link>
+                                                </Button>
                                                 <Button
                                                     type="button"
                                                     variant="secondary"

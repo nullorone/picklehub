@@ -1174,3 +1174,31 @@ src/notification.stories.tsx` подтвердил необходимость к
 - `npm run format:check && npm run lint && npm run typecheck && npm run build` — успешно для Mini App.
 - `git diff --check` — успешно. Сравнение реальных страниц EIN со Storybook в этой сессии не выполнялось;
   DS02 не объявляется принятой только на основании автоматических проверок.
+
+## 2026-10-03 — DS03: существующий Telegram UI на DS
+
+- По прямому запросу владельца подключён @picklehub/ui-web. Локальные Button/Card/TextField
+  стали адаптерами DS; форма использует GlassTextarea и GlassSwitch, действия-ссылки — asChild.
+  Обновлены список, детали, создание/редактирование и повтор авторизации. Маршруты и API сохранены.
+- DS CSS и токены генерируются автоматически перед dev/dev:api/dev:https/build. Telegram выбирает
+  data-theme и data-ds-theme; приложение использует EIN-палитру, фон со свечением, стеклянные карточки,
+  контрастные поля и непрозрачный градиент кнопки. Сохранены 48 px controls, ошибки, reduced motion
+  и плотная поверхность без backdrop-filter. Добавлены связи ошибок textarea через aria-describedby.
+- Импорт DS выявил NodeJS.Timeout в браузерном ClockWidget: заменён на ReturnType<typeof setInterval>.
+  Первая проверка типов не прошла; после исправления успешна, Node-типы в Mini App не добавлялись.
+- `npm install --package-lock-only --ignore-scripts --offline` — успешно; lock обновлён для локального DS.
+- `npm run format:check && npm run lint && npm run typecheck && npm run contracts:check && npm run build`
+  — успешно. После финальных изменений повторены format:check, lint, typecheck и build — успешно.
+  Контракты воспроизводимы, сгенерированные файлы не изменены. Сборка сообщает Node DEP0205.
+- `node --import tsx --test frontend/tg/test/*.spec.ts` — успешно, 1 тест.
+- `npm run ds:format:check && npm run ds:lint && npm run ds:typecheck` — успешно.
+- `npm run ds:test` вне песочницы — успешно: 43 файла, 105 браузерных тестов.
+- `npm start -- --host 127.0.0.1` получил listen EPERM в песочнице; повтор с разрешением успешен.
+- `node /private/tmp/picklehub-tg-ds-preview.mjs` с разрешением — успешно: обе темы на 320 px,
+  отсутствие горизонтальной прокрутки списка/формы/деталей, переключение участия, создание игры
+  через моковый API, переход в детали, отсутствие pageerror. Снимки сохранены в .playwright-mcp/tg-ds-*.
+  Список и форма осмотрены. Проверка переключения темы учитывает завершение CSS-перехода 400 ms.
+- Документы отформатированы через Prettier; `git diff --check` — успешно.
+
+DS03 выполнена локально. Публикация и проверка с реальным Telegram/API не выполнялись;
+статусы S19 и визуальной приёмки DS02 не менялись.

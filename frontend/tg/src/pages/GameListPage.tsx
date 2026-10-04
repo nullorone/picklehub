@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/Button/Button.tsx";
 import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/Card/Card.tsx";
 import { useGames } from "@/api/useGames.ts";
@@ -16,12 +17,9 @@ export function GameListPage() {
                 <p className="text-sm text-text-secondary">
                     Выберите встречу и присоединяйтесь.
                 </p>
-                <Link
-                    className="mt-3 inline-flex min-h-12 w-full items-center justify-center rounded-control bg-accent px-5 py-3 text-base font-semibold text-[var(--ph-button-text)] transition-colors hover:bg-accent-hover focus-visible:outline-offset-4"
-                    to="/games/new"
-                >
-                    Создать игру
-                </Link>
+                <Button asChild className="mt-4">
+                    <Link to="/games/new">+ Создать игру</Link>
+                </Button>
             </header>
 
             {games.isPending && (
@@ -55,13 +53,9 @@ export function GameListPage() {
                             ? "Проверьте интернет и попробуйте ещё раз."
                             : "Проверьте соединение и повторите загрузку."}
                     </p>
-                    <button
-                        className="min-h-12 rounded-control bg-accent px-5 py-3 font-semibold text-[var(--ph-button-text)]"
-                        onClick={() => void games.refetch()}
-                        type="button"
-                    >
+                    <Button onClick={() => void games.refetch()} type="button">
                         Повторить
-                    </button>
+                    </Button>
                 </Card>
             )}
 

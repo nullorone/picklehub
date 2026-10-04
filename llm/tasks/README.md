@@ -55,3 +55,5 @@ GitHub Pages обслуживает frontend; локальный `start:https` �
 [DS01 — основа дизайн-системы](ds01-design-system-foundation.md): выполнена 2026-10-02; не меняет статус S19.
 
 [DS02 — Button по исходнику EIN](ds02-ein-button.md): в работе.
+
+[DS03 — Telegram UI на DS](ds03-tg-ui.md): прямой запрос владельца от 2026-10-03.

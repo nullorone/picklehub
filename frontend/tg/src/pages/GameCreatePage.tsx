@@ -1,3 +1,4 @@
+import { GlassTextarea, GlassSwitch } from "@picklehub/ui-web";
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useParams } from "react-router-dom";
@@ -193,8 +194,15 @@ export function GameCreatePage() {
                                 />
                                 <label className="grid gap-2 text-sm font-medium">
                                     Адрес
-                                    <textarea
-                                        className="min-h-20 w-full rounded-control border border-border bg-surface px-4 py-3 text-base"
+                                    <GlassTextarea
+                                        glowOnFocus={false}
+                                        className="tg-input min-h-20 text-base"
+                                        id="venueAddress"
+                                        aria-describedby={
+                                            errors.venueAddress
+                                                ? "venueAddress-error"
+                                                : undefined
+                                        }
                                         name="venueAddress"
                                         maxLength={300}
                                         value={values.venueAddress}
@@ -210,6 +218,7 @@ export function GameCreatePage() {
                                     />
                                     {errors.venueAddress && (
                                         <span
+                                            id="venueAddress-error"
                                             className="text-sm font-normal text-error"
                                             role="alert"
                                         >
@@ -280,8 +289,15 @@ export function GameCreatePage() {
                                 />
                                 <label className="grid gap-2 text-sm font-medium">
                                     Описание (необязательно)
-                                    <textarea
-                                        className="min-h-24 w-full rounded-control border border-border bg-surface px-4 py-3 text-base"
+                                    <GlassTextarea
+                                        glowOnFocus={false}
+                                        className="tg-input min-h-24 text-base"
+                                        id="description"
+                                        aria-describedby={
+                                            errors.description
+                                                ? "description-error"
+                                                : undefined
+                                        }
                                         name="description"
                                         maxLength={2000}
                                         value={values.description}
@@ -297,6 +313,7 @@ export function GameCreatePage() {
                                     />
                                     {errors.description && (
                                         <span
+                                            id="description-error"
                                             className="text-sm font-normal text-error"
                                             role="alert"
                                         >
@@ -305,14 +322,14 @@ export function GameCreatePage() {
                                     )}
                                 </label>
                                 <label className="grid grid-cols-[auto_1fr] items-start gap-3 rounded-control border border-border p-4 text-sm">
-                                    <input
-                                        className="mt-1 size-5 accent-accent"
-                                        type="checkbox"
+                                    <GlassSwitch
+                                        aria-label="Я участвую"
+                                        className="mt-1"
                                         checked={values.organizerParticipates}
-                                        onChange={(event) =>
+                                        onCheckedChange={(checked) =>
                                             update(
                                                 "organizerParticipates",
-                                                event.target.checked,
+                                                checked,
                                             )
                                         }
                                     />

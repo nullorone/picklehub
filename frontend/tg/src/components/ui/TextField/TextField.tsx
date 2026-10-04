@@ -1,3 +1,4 @@
+import { GlassInput } from "@picklehub/ui-web";
 import type { InputHTMLAttributes } from "react";
 
 type TextFieldProps = InputHTMLAttributes<HTMLInputElement> & {
@@ -21,8 +22,9 @@ export function TextField({
             htmlFor={inputId}
         >
             {label}
-            <input
-                className={`min-h-12 w-full min-w-0 rounded-control border border-border bg-surface px-4 py-3 text-base text-text placeholder:text-text-secondary ${className}`}
+            <GlassInput
+                glowOnFocus={false}
+                className={`tg-input min-h-12 h-auto w-full min-w-0 text-base ${className}`}
                 id={inputId}
                 aria-invalid={Boolean(error)}
                 aria-describedby={errorId}

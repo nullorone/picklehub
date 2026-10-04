@@ -4,6 +4,10 @@
     "version": "0.0.1",
     "type": "module",
     "scripts": {
+        "predev": "npm run ds:tokens --prefix ../..",
+        "predev:api": "npm run ds:tokens --prefix ../..",
+        "predev:https": "npm run ds:tokens --prefix ../..",
+        "prebuild": "npm run ds:tokens --prefix ../..",
         "dev": "vite",
         "dev:api": "cross-env VITE_API_MOCKS=false vite",
         "dev:https": "cross-env HTTPS=true vite",
@@ -13,6 +17,7 @@
     "dependencies": {
         "@picklehub/api": "*",
         "@picklehub/tokens": "*",
+        "@picklehub/ui-web": "*",
         "@tanstack/react-query": "^5.103.2",
         "@telegram-apps/sdk-react": "^3.3.6",
         "@telegram-apps/telegram-ui": "^2.1.9",

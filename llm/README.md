@@ -67,3 +67,5 @@
 14. [Функциональный паритет мобильного приложения](14-mobile-parity/00-overview.md)
 15. [Мини-игра](15-mini-game/00-overview.md)
 16. [Готовность к эксплуатации](16-production-readiness/00-overview.md)
+
+[DS03 — Telegram UI на DS](tasks/ds03-tg-ui.md): прямой запрос владельца от 2026-10-03.

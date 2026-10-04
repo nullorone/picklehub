@@ -12,7 +12,7 @@ import {
     isMiniAppDark,
 } from "@telegram-apps/sdk-react";
 import { AppRoot } from "@telegram-apps/telegram-ui";
-import { tokens } from "@picklehub/tokens";
+import { Button } from "@/components/ui/Button/Button.tsx";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { routes } from "@/navigation/routes.tsx";
@@ -92,30 +92,8 @@ export function App() {
     }, []);
 
     useEffect(() => {
-        const root = document.documentElement;
-        Object.entries(tokens.color).forEach(([group, scale]) => {
-            Object.entries(scale).forEach(([step, value]) => {
-                root.style.setProperty(`--token-color-${group}-${step}`, value);
-            });
-        });
-        Object.entries(tokens.theme).forEach(([mode, roles]) => {
-            Object.entries(roles).forEach(([role, value]) => {
-                root.style.setProperty(`--token-theme-${mode}-${role}`, value);
-            });
-        });
-        Object.entries(tokens.space).forEach(([step, value]) => {
-            root.style.setProperty(`--token-space-${step}`, value);
-        });
-        Object.entries(tokens.fontSize).forEach(([step, value]) => {
-            root.style.setProperty(`--token-font-size-${step}`, value);
-        });
-        Object.entries(tokens.radius).forEach(([step, value]) => {
-            root.style.setProperty(`--token-radius-${step}`, value);
-        });
-    }, []);
-
-    useEffect(() => {
         document.documentElement.dataset.theme = isDark ? "dark" : "light";
+        document.documentElement.dataset.dsTheme = isDark ? "dark" : "light";
     }, [isDark]);
 
     return (
@@ -129,7 +107,7 @@ export function App() {
                 }
             >
                 <SessionContext.Provider value={user}>
-                    <div className="min-h-dvh bg-background text-text">
+                    <div className="tg-shell min-h-dvh text-text">
                         {user ? (
                             <HashRouter>
                                 <StartParameterRoute
@@ -158,13 +136,12 @@ export function App() {
                                 {authError && (
                                     <>
                                         <p>{authError}</p>
-                                        <button
-                                            className="min-h-12 rounded-control bg-accent px-5 py-3 font-semibold"
+                                        <Button
                                             onClick={() => void login()}
                                             type="button"
                                         >
                                             Повторить вход
-                                        </button>
+                                        </Button>
                                     </>
                                 )}
                             </main>

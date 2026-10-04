@@ -242,7 +242,7 @@ function StopwatchWidget({ className }: StopwatchWidgetProps) {
     const [isRunning, setIsRunning] = React.useState(false);
 
     React.useEffect(() => {
-        let interval: NodeJS.Timeout;
+        let interval: ReturnType<typeof setInterval>;
         if (isRunning) {
             interval = setInterval(() => setTime((t) => t + 10), 10);
         }
@@ -302,7 +302,7 @@ function TimerWidget({ initialMinutes = 5, className }: TimerWidgetProps) {
     const [initialTime] = React.useState(initialMinutes * 60 * 1000);
 
     React.useEffect(() => {
-        let interval: NodeJS.Timeout;
+        let interval: ReturnType<typeof setInterval>;
         if (isRunning && timeLeft > 0) {
             interval = setInterval(() => setTimeLeft((t) => Math.max(0, t - 1000)), 1000);
         }

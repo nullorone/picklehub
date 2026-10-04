@@ -1,13 +1,10 @@
-import type { ButtonHTMLAttributes } from "react";
+import {
+    Button as DSButton,
+    type ButtonProps as DSButtonProps,
+} from "@picklehub/ui-web";
 
-type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
+type ButtonProps = Omit<DSButtonProps, "variant"> & {
     variant?: "primary" | "secondary" | "danger";
-};
-
-const variants = {
-    primary: "bg-accent text-[var(--ph-button-text)] hover:bg-accent-hover",
-    secondary: "border border-border bg-surface text-text hover:bg-background",
-    danger: "bg-error text-white",
 };
 
 export function Button({
@@ -16,8 +13,16 @@ export function Button({
     ...props
 }: ButtonProps) {
     return (
-        <button
-            className={`inline-flex min-h-12 w-full items-center justify-center rounded-control px-5 py-3 text-base font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${variants[variant]} ${className}`}
+        <DSButton
+            size="lg"
+            variant={
+                variant === "secondary"
+                    ? "default"
+                    : variant === "danger"
+                      ? "destructive"
+                      : "primary"
+            }
+            className={`tg-button min-h-12 h-auto w-full whitespace-normal py-3 hover:scale-100 active:scale-100 ${className}`}
             {...props}
         />
     );
