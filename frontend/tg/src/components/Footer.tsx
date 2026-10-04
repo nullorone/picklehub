@@ -1,3 +1,4 @@
+import pickleballIcon from "../assets/pickleball.svg";
 import { GlassDock } from "@picklehub/ui-web";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -47,15 +48,15 @@ export function Footer() {
                         {
                             id: "play",
                             label: "Играть",
-                            iconScale: 2,
+                            iconScale: 3.5,
                             glow: true,
                             containerStyle: {
                                 width: 64,
                                 height: 64,
-                                top: '-50%',
-                                position: 'absolute',
-                                left: '50%',
-                                transform: 'translateX(-50%)',
+                                top: "-50%",
+                                position: "absolute",
+                                left: "50%",
+                                transform: "translateX(-50%)",
                             },
                             buttonStyle: {
                                 width: 64,
@@ -69,12 +70,13 @@ export function Footer() {
                                 boxShadow: "0 8px 24px rgb(6 182 212 / 40%)",
                             },
                             icon: (
-                                <svg {...iconProps}>
-                                    <circle cx="12" cy="12" r="9" />
-                                    <circle cx="9" cy="8" r="1" />
-                                    <circle cx="16" cy="11" r="1" />
-                                    <circle cx="10" cy="16" r="1" />
-                                </svg>
+                                <img
+                                    src={pickleballIcon}
+                                    width={20}
+                                    height={20}
+                                    alt=""
+                                    aria-hidden="true"
+                                />
                             ),
                             active: pathname === "/games/new",
                             onClick: () => navigate("/games/new"),

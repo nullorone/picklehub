@@ -1319,3 +1319,30 @@ frontend/tg/src/index.css` — успешно.
 - `node /private/tmp/picklehub-footer-check.mjs` вне песочницы — успешно:
   размеры 40/64 px и масштаб 1/2, зазор огонька 4 px на всех пунктах, поднятая Играть,
   обе темы, навигация, ширина карточек 320/768 px, space-between и безопасная прокрутка.
+
+### SVG-мяч для кнопки «Играть» — 2026-10-04
+
+- По запросу владельца контурная иконка заменена собственной SVG-иллюстрацией зелёного
+  мяча для пиклбола: девять тёмных отверстий, овалы по краям и боковая тень.
+  Референс: https://www.vectorstock.com/royalty-free-vector/pickleball-icon-green-ball-vector-55257485.
+  Страница и превью недоступны через web; curl получил DNS-ошибку в песочнице, повтор
+  вне песочницы — ошибку TLS. Точное визуальное совпадение не проверено; исходный SVG не скачивался.
+- `npx prettier --write frontend/tg/src/components/Footer.tsx` — успешно.
+- `npm run format:check && npm run lint && npm run typecheck && npm run contracts:check
+&& npm run build && node --import tsx --test frontend/tg/test/*.spec.ts` — успешно, 1 тест.
+  Сборка сообщает существующее предупреждение Node DEP0205.
+- Браузерная проверка через `node --input-type=module -e` с Playwright — успешно:
+  обе темы при ширине 320 px, кнопка открывает форму создания игры. Первый запуск Chromium
+  в песочнице получил Permission denied; повтор с разрешением вне песочницы успешен.
+  Снимки: `/private/tmp/pickleball-icon-light.png`, `/private/tmp/pickleball-icon-dark.png`.
+  Тёмная тема осмотрена визуально. Публикация не выполнялась.
+- `npx prettier --check llm/_docs/ai-development-log.md && git diff --check` — успешно.
+
+### Масштаб и отдельный файл SVG
+
+- По уточнению владельца мяч вынесен в `frontend/tg/src/assets/pickleball.svg`,
+  Footer импортирует его как изображение; `iconScale` кнопки «Играть» увеличен до 3.5.
+- `npx prettier --write frontend/tg/src/components/Footer.tsx llm/_docs/ai-development-log.md` — успешно.
+- `npm run format:check && npm run lint && npm run typecheck && npm run contracts:check
+&& npm run build && node --import tsx --test frontend/tg/test/*.spec.ts` — повторно успешно, 1 тест.
+- `npx prettier --check llm/_docs/ai-development-log.md && git diff --check` — успешно.
