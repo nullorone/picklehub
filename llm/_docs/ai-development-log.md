@@ -1364,3 +1364,15 @@ frontend/tg/src/index.css` — успешно.
 - Первоначальная проверка через locator.click ожидала стабильной позиции движущейся кнопки
   и завершилась по таймауту; повтор использует обычный клик мыши по центру кнопки.
 - `npx prettier --write llm/_docs/ai-development-log.md && git diff --check` — успешно.
+
+### Avatar вместо иконки профиля — 2026-10-04
+
+- По запросу владельца пункт профиля в футере использует GlassAvatar и GlassAvatarFallback
+  из @picklehub/ui-web. Отображаются до двух инициалов displayName текущей сессии;
+  фото в SessionUser отсутствует. Цвета используют токены обеих тем, размер — 40 px.
+  Сохранены доступное имя «Профиль», переход /profile и активный индикатор.
+- `npx prettier --write frontend/tg/src/components/Footer.tsx && npm run format:check
+&& npm run lint && npm run typecheck && npm run contracts:check && npm run build
+&& node --import tsx --test frontend/tg/test/*.spec.ts` — успешно, 1 тест.
+- После уточнения цветов повторены форматирование, lint, типы, сборка и тест — успешно.
+  Сборка сообщает существующее предупреждение Node DEP0205. Браузерная проверка не выполнялась.

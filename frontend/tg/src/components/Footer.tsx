@@ -1,10 +1,20 @@
 import pickleballIcon from "../assets/pickleball.svg";
-import { GlassDock } from "@picklehub/ui-web";
+import { GlassAvatar, GlassAvatarFallback, GlassDock } from "@picklehub/ui-web";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useSessionUser } from "@/api/session.ts";
 
 export function Footer() {
     const { pathname } = useLocation();
     const navigate = useNavigate();
+    const user = useSessionUser();
+    const initials =
+        user?.displayName
+            .trim()
+            .split(/\s+/)
+            .slice(0, 2)
+            .map((part) => Array.from(part)[0])
+            .join("")
+            .toLocaleUpperCase("ru") || "?";
     const iconProps = {
         width: 20,
         height: 20,
@@ -86,11 +96,22 @@ export function Footer() {
                             label: "Профиль",
                             iconScale: 1,
                             glow: false,
+                            buttonStyle: { borderRadius: "50%" },
                             icon: (
-                                <svg {...iconProps}>
-                                    <circle cx="12" cy="8" r="4" />
-                                    <path d="M4 21v-2a8 8 0 0 1 16 0v2" />
-                                </svg>
+                                <GlassAvatar
+                                    glowEffect={false}
+                                    aria-hidden="true"
+                                >
+                                    <GlassAvatarFallback
+                                        style={{
+                                            color: "var(--ds-text)",
+                                            backgroundColor:
+                                                "color-mix(in srgb, var(--ds-accent) 15%, var(--ds-surface))",
+                                        }}
+                                    >
+                                        {initials}
+                                    </GlassAvatarFallback>
+                                </GlassAvatar>
                             ),
                             active: pathname === "/profile",
                             onClick: () => navigate("/profile"),
