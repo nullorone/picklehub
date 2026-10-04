@@ -11,6 +11,10 @@ interface DockItem {
     href?: string;
     onClick?: () => void;
     active?: boolean;
+    glow?: boolean;
+    buttonStyle?: React.CSSProperties;
+    containerStyle?: React.CSSProperties;
+    iconScale?: number;
 }
 
 type DockOrientation = 'horizontal' | 'vertical';
@@ -152,6 +156,7 @@ const GlassDock = React.forwardRef<HTMLDivElement, GlassDockProps>(
                                     [isVertical ? 'width' : 'height']: maxSize,
                                     display: 'flex',
                                     [isVertical ? 'justifyContent' : 'alignItems']: 'flex-end',
+                                    ...item.containerStyle,
                                 }}
                             >
                                 <div
@@ -169,7 +174,7 @@ const GlassDock = React.forwardRef<HTMLDivElement, GlassDockProps>(
                                                       : 'opacity-0 translate-x-[calc(100%-8px)]'
                                               )
                                             : cn(
-                                                  '-top-12',
+                                                  '-top-12 left-1/2 -translate-x-1/2',
                                                   isHovered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'
                                               ),
                                         !isHovered && 'pointer-events-none'
@@ -192,6 +197,7 @@ const GlassDock = React.forwardRef<HTMLDivElement, GlassDockProps>(
                                 <button
                                     onClick={item.onClick}
                                     aria-label={item.label}
+                                    aria-current={item.active ? 'page' : undefined}
                                     className={cn(
                                         'relative flex items-center justify-center rounded-xl',
                                         glass.itemBg,
@@ -208,6 +214,7 @@ const GlassDock = React.forwardRef<HTMLDivElement, GlassDockProps>(
                                         transform: isVertical
                                             ? `translateX(${(maxSize - size) / 2}px)`
                                             : `translateY(${(maxSize - size) / 2}px)`,
+                                        ...item.buttonStyle,
                                     }}
                                 >
                                     {/* Button glass highlights */}
@@ -215,14 +222,14 @@ const GlassDock = React.forwardRef<HTMLDivElement, GlassDockProps>(
                                     <div className="absolute inset-0 rounded-xl bg-linear-to-tr from-transparent to-white/10 pointer-events-none" />
 
                                     {/* Active glow */}
-                                    {item.active && (
+                                    {(item.glow ?? item.active) && (
                                         <div className="absolute -inset-1.5 rounded-2xl bg-linear-to-r from-cyan-500/40 to-blue-500/40 blur-md -z-10" />
                                     )}
 
                                     <span
                                         className="relative text-white/90"
                                         style={{
-                                            transform: `scale(${scale})`,
+                                            transform: `scale(${scale * (item.iconScale ?? 1)})`,
                                             transition: 'transform 0.2s ease-out',
                                         }}
                                     >
@@ -232,11 +239,13 @@ const GlassDock = React.forwardRef<HTMLDivElement, GlassDockProps>(
 
                                 {item.active && (
                                     <div
+                                        data-dock-active-indicator=""
+                                        aria-hidden="true"
                                         className={cn(
                                             'absolute w-1.5 h-1.5 rounded-full',
                                             'bg-linear-to-r from-cyan-400 to-blue-400',
                                             'shadow-[0_0_8px_rgba(6,182,212,0.8),0_0_16px_rgba(6,182,212,0.4)]',
-                                            isVertical ? '-left-1' : '-bottom-1'
+                                            isVertical ? '-left-1' : '-bottom-1 left-1/2 -translate-x-1/2'
                                         )}
                                     />
                                 )}

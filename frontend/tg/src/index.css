@@ -75,7 +75,60 @@ input {
             transparent 50%
         ),
         var(--ds-background);
-    padding-bottom: max(24px, env(safe-area-inset-bottom));
+    --footer-safe-bottom: max(
+        env(safe-area-inset-bottom, 0px),
+        var(--tg-safe-area-inset-bottom, 0px),
+        var(--tg-content-safe-area-inset-bottom, 0px)
+    );
+    padding-bottom: calc(124px + var(--footer-safe-bottom));
+}
+
+html {
+    scroll-padding-bottom: calc(124px + env(safe-area-inset-bottom, 0px));
+}
+
+.tg-footer {
+    position: fixed;
+    z-index: 40;
+    inset: auto 0 0;
+    display: flex;
+    justify-content: center;
+    padding: 12px 0 calc(12px + var(--footer-safe-bottom));
+    pointer-events: none;
+}
+
+.tg-footer nav {
+    pointer-events: auto;
+}
+
+.tg-footer-dock > [role="toolbar"] {
+    width: 100%;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 8px 12px;
+    background-color: color-mix(in srgb, var(--ds-surface) 94%, transparent);
+    border-color: var(--ds-border);
+}
+
+.tg-footer-dock button > span {
+    color: var(--ds-text);
+}
+
+.tg-footer-dock
+    > [role="toolbar"]
+    > div:has(> button[aria-label="Играть"])
+    > div:first-child {
+    top: -50px;
+}
+
+.tg-footer-dock > div:not([role="toolbar"]) {
+    display: none;
+}
+
+.tg-footer-dock [data-dock-active-indicator] {
+    top: calc(100% + 4px);
+    bottom: auto;
 }
 
 .tg-card {

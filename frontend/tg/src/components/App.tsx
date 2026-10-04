@@ -23,6 +23,7 @@ import {
 } from "@/api/session.ts";
 import { setAccessToken } from "@/api/client.ts";
 import { gameIdFromStartParameter } from "@/navigation/startParameter.ts";
+import { Footer } from "@/components/Footer.tsx";
 
 function StartParameterRoute({ startParameter }: { startParameter: unknown }) {
     const location = useLocation();
@@ -122,6 +123,7 @@ export function App() {
                                         element={<Navigate to="/" />}
                                     />
                                 </Routes>
+                                <Footer />
                             </HashRouter>
                         ) : (
                             <main

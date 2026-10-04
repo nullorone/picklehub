@@ -1202,3 +1202,120 @@ src/notification.stories.tsx` подтвердил необходимость к
 
 DS03 выполнена локально. Публикация и проверка с реальным Telegram/API не выполнялись;
 статусы S19 и визуальной приёмки DS02 не менялись.
+
+## 2026-10-04 — закреплённый компактный футер Telegram UI
+
+- По прямому запросу владельца добавлен Basic Dock (GlassDock) в закреплённом нижнем футере.
+  Кнопки «Главная», «Играть», «Профиль» с иконками дома, мяча и человека имеют размер 40 × 40 px;
+  увеличение при наведении отключено. Главная открывает список игр, Играть — существующую форму создания,
+  Профиль — новый минимальный экран с displayName текущей сессии, без новых API и редактирования данных.
+- Нижний отступ контента 104 px плюс safe area учитывает футер, отступы и запас;
+  используются CSS env и Telegram safe-area переменные. Подложка и иконки адаптированы к обеим темам.
+- `npm run format:check && npm run lint && npm run typecheck && npm run contracts:check && npm run build
+&& node --import tsx --test frontend/tg/test/*.spec.ts` — успешно, 1 тест;
+  контракты воспроизводимы и не изменены. Сборка сообщает существующее предупреждение Node DEP0205.
+- `npm start -- --host 127.0.0.1` — успешно.
+- Первоначальный запуск Playwright в песочнице получил Chromium bootstrap_check_in Permission denied.
+  `node /private/tmp/picklehub-footer-check.mjs` с разрешением вне песочницы — успешно:
+  обе темы на 320 px, все три перехода, размер кнопок при наведении, фиксированная позиция,
+  отсутствие горизонтальной прокрутки, конец формы выше футера и имитация safe area 34 px.
+- Публикация не выполнялась.
+
+### Уточнение ширины футера
+
+- Плашка Dock растянута до ширины карточек: общий контейнер max-w-lg и px-4 / sm:px-6.
+  Иконки распределены через justify-content: space-between; размер кнопок и безопасный отступ сохранены.
+- `npm run format:check && npm run lint && npm run typecheck && npm run contracts:check && npm run build
+&& node --import tsx --test frontend/tg/test/*.spec.ts` — успешно, 1 тест.
+- `node /private/tmp/picklehub-footer-check.mjs` вне песочницы — успешно:
+  совпадение краёв и ширины плашки с карточками на 320 и 768 px, равные промежутки между кнопками;
+  повторно проверены навигация, обе темы, размер 40 px, фиксация и безопасный отступ при прокрутке.
+
+### Центрирование всплывающих подписей Dock
+
+- В горизонтальном GlassDock подписи привязаны к середине кнопки через left-1/2 и -translate-x-1/2.
+  Исправление применяется и к компактному футеру; вертикальное расположение не затронуто.
+- `npm run ds:format:check && npm run ds:lint && npm run ds:typecheck && npm run contracts:check
+&& npm run build` — успешно.
+- `node /private/tmp/picklehub-footer-check.mjs` вне песочницы — успешно:
+  добавлена проверка совпадения центров всех трёх подписей и кнопок с погрешностью менее 1 px.
+  Повторены проверки навигации, ширины, размеров и безопасного отступа.
+  Первый запуск Chromium в песочнице получил Permission denied; разрешённый повтор успешен.
+- `npm test --workspace @picklehub/storybook -- src/dock.stories.tsx` вне песочницы — успешно,
+  1 браузерный тест Dock, включая проверку доступности.
+
+### Увеличенные кнопки футера
+
+- По запросу владельца боковые кнопки стали 52 × 52 px, масштаб иконок 1.5.
+  «Играть» — 64 × 64 px, круглая, overflow hidden, translateY(-10px) по последнему уточнению;
+  масштаб мяча 2. Свечение оставлено только у центральной кнопки, общий glow Dock и светящиеся
+  индикаторы футера скрыты. GlassDock поддерживает buttonStyle, iconScale и независимый glow,
+  стандартное поведение других Dock сохранено. Нижний запас контента увеличен до 124 px плюс safe area.
+- `npx prettier --write ds/web/src/innovative/glass-dock.tsx frontend/tg/src/components/Footer.tsx
+frontend/tg/src/index.css` — успешно.
+- `npm run format:check && npm run lint && npm run ds:format:check && npm run ds:lint
+&& npm run ds:typecheck && npm run typecheck && npm run contracts:check && npm run build` — успешно.
+- `npm test --workspace @picklehub/storybook -- src/dock.stories.tsx` вне песочницы — успешно, 1 тест.
+- `node /private/tmp/picklehub-footer-check.mjs` вне песочницы — успешно: размеры 52/64,
+  масштаб 1.5/2, свечение только у Играть, подъём 10 px, подписи по центру, обе темы,
+  совпадение с карточками на 320/768 px, space-between и безопасная прокрутка.
+  Первая проверка ошибочно ожидала разницу верхних границ 22 px; браузер подтвердил 10 px,
+  ожидание исправлено без изменения реализации.
+- `npx prettier --check frontend/tg/src/index.css && node --import tsx --test frontend/tg/test/*.spec.ts
+&& git diff --check` — успешно, 1 тест.
+
+### Независимый индикатор активного пункта
+
+- Убрано скрытие активного огонька футера. Индикатор зависит от active, свечение кнопки — от glow;
+  постоянное свечение «Играть» сохраняется при выборе Главной или Профиля.
+  Исправлено центрирование огонька по горизонтали; активная кнопка получает aria-current=page.
+  Использован существующий GlassDock, новый тип компонента не требуется.
+- `npm run format:check && npm run lint && npm run ds:format:check && npm run ds:lint
+&& npm run ds:typecheck && npm run typecheck && npm run contracts:check && npm run build
+&& node --import tsx --test frontend/tg/test/*.spec.ts` — успешно, 1 тест.
+- `npm test --workspace @picklehub/storybook -- src/dock.stories.tsx` вне песочницы — успешно, 1 тест.
+- `node /private/tmp/picklehub-footer-check.mjs` вне песочницы — успешно: на всех трёх маршрутах
+  ровно один видимый огонёк под активной кнопкой, совпадение центров, aria-current, постоянное свечение
+  только Играть; повторены размеры, масштаб, навигация, обе темы и безопасные отступы.
+  Первая проверка выявила смещение огонька; после исправления позиционирования повтор успешен.
+- По уточнению владельца индикатор футера расположен строго снизу по центру. bottom=-8px
+  выводит его ниже кнопки, включая увеличенную Играть. Браузерная проверка дополнена сравнением
+  нижней границы кнопки и верхней границы индикатора; после корректировки успешна.
+  Центрирование задаётся классами GlassDock без дублирования CSS transform.
+- Уточнение зазора индикатора: ровно 4 px от нижнего края активной кнопки до огонька.
+  bottom=-10px для боковых, -12px для Играть с учётом размера 64 px и translateY(-10px).
+  Центральная кнопка выбирается через :has(button[aria-label="Играть"]), поскольку toolbar содержит
+  декоративные слои перед пунктами; прежний nth-child не выбирал нужный пункт. Исправлена также
+  привязка поднятой подписи Играть. Первый замер показал 2 px у Играть, исправленный — 4 px.
+- `node /private/tmp/picklehub-footer-check.mjs` вне песочницы — успешно: измеренный зазор
+  Главная/Играть/Профиль равен 4 px в обеих темах; остальные проверки футера прошли.
+- `npm run format:check && npm run lint && npm run typecheck && npm run contracts:check
+&& npm run build && node --import tsx --test frontend/tg/test/*.spec.ts` — успешно.
+  Первоначальная проверка формата потребовала Prettier для длинного селектора; повтор успешен.
+
+### Привязка индикатора к геометрии кнопки Играть
+
+- По запросу владельца translateY кнопки Играть заменён на position:absolute и top:0
+  внутри контейнера 64 × 64 px, поднятого через position:relative/top:-10px.
+  GlassDock принимает containerStyle; футер выравнивает контейнеры по верхнему краю.
+  Индикаторы всех пунктов используют top:calc(100% + 4px) относительно контейнера,
+  совпадающего с границами кнопки. Отдельные поправки bottom для Играть удалены.
+- `npx prettier --write ds/web/src/innovative/glass-dock.tsx frontend/tg/src/components/Footer.tsx
+frontend/tg/src/index.css` — успешно.
+- `npm run format:check && npm run lint && npm run ds:format:check && npm run ds:lint
+&& npm run ds:typecheck && npm run typecheck && npm run contracts:check && npm run build
+&& node --import tsx --test frontend/tg/test/*.spec.ts` — успешно.
+- `npm test --workspace @picklehub/storybook -- src/dock.stories.tsx` вне песочницы — успешно, 1 тест.
+- `node /private/tmp/picklehub-footer-check.mjs` вне песочницы — успешно: зазор 4 px под всеми
+  тремя кнопками в обеих темах, центрирование, подъём Играть на 10 px, размеры/масштаб,
+  независимое свечение и активный пункт, ширина 320/768, space-between и безопасная прокрутка.
+
+### Компактные боковые кнопки футера
+
+- По запросу владельца Главная и Профиль уменьшены до 40 × 40 px, iconScale=1.
+  Играть сохраняет 64 × 64 px, iconScale=2, абсолютное позиционирование и свечение.
+- `npm run format:check && npm run lint && npm run typecheck && npm run contracts:check
+&& npm run build && node --import tsx --test frontend/tg/test/*.spec.ts` — успешно, 1 тест.
+- `node /private/tmp/picklehub-footer-check.mjs` вне песочницы — успешно:
+  размеры 40/64 px и масштаб 1/2, зазор огонька 4 px на всех пунктах, поднятая Играть,
+  обе темы, навигация, ширина карточек 320/768 px, space-between и безопасная прокрутка.
