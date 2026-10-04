@@ -1346,3 +1346,21 @@ frontend/tg/src/index.css` — успешно.
 - `npm run format:check && npm run lint && npm run typecheck && npm run contracts:check
 && npm run build && node --import tsx --test frontend/tg/test/*.spec.ts` — повторно успешно, 1 тест.
 - `npx prettier --check llm/_docs/ai-development-log.md && git diff --check` — успешно.
+
+### Отскок кнопки «Играть» и остановка на форме
+
+- Добавлена плавная CSS-анимация контейнера: цикл 1.8 секунды, ход 33 px,
+  ускорение при падении и замедление на подъёме. Нижняя точка совпадает с низом футера.
+  Подпись и индикатор двигаются вместе с кнопкой; горизонтальное центрирование сохранено.
+- По уточнению владельца анимация отключена на `/games/new` через aria-current активной кнопки,
+  после ухода с формы возобновляется. Системная настройка reduced motion отключает движение.
+- `npx prettier --write frontend/tg/src/index.css && npm run format:check && npm run lint
+&& npm run typecheck && npm run contracts:check && npm run build
+&& node --import tsx --test frontend/tg/test/*.spec.ts` — успешно, 1 тест; повторено после уточнения.
+- `npx prettier --check frontend/tg/src/index.css && npm run build` — успешно после коррекции нижней точки.
+- Проверки через `node --input-type=module -e` с Playwright вне песочницы — успешно:
+  вертикальное движение, центрирование, касание низа футера в обеих темах на 320 px (зазор 0 px),
+  переход к форме, остановка на форме, возобновление на главной и reduced motion.
+- Первоначальная проверка через locator.click ожидала стабильной позиции движущейся кнопки
+  и завершилась по таймауту; повтор использует обычный клик мыши по центру кнопки.
+- `npx prettier --write llm/_docs/ai-development-log.md && git diff --check` — успешно.

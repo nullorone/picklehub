@@ -115,6 +115,28 @@ html {
     color: var(--ds-text);
 }
 
+.tg-footer-dock > [role="toolbar"] > div:has(> button[aria-label="Играть"]) {
+    animation: tg-play-bounce 1.8s infinite;
+}
+
+.tg-footer-dock
+    > [role="toolbar"]
+    > div:has(> button[aria-label="Играть"][aria-current="page"]) {
+    animation: none;
+}
+
+@keyframes tg-play-bounce {
+    0%,
+    100% {
+        translate: 0 -12px;
+        animation-timing-function: cubic-bezier(0.55, 0, 1, 1);
+    }
+    50% {
+        translate: 0 21px;
+        animation-timing-function: cubic-bezier(0, 0, 0.45, 1);
+    }
+}
+
 .tg-footer-dock
     > [role="toolbar"]
     > div:has(> button[aria-label="Играть"])
