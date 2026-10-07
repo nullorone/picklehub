@@ -42,3 +42,4 @@ export { default as SignupPage } from './blocks/SignupPage';
 export { default as ForgotPasswordPage } from './blocks/ForgotPasswordPage';
 export { default as PricingPage } from './blocks/PricingPage';
 export { default as AdminPanel } from './blocks/AdminPanel';
+export { Header, type HeaderProps } from './blocks/Header';

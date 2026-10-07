@@ -1376,3 +1376,64 @@ frontend/tg/src/index.css` — успешно.
 && node --import tsx --test frontend/tg/test/*.spec.ts` — успешно, 1 тест.
 - После уточнения цветов повторены форматирование, lint, типы, сборка и тест — успешно.
   Сборка сообщает существующее предупреждение Node DEP0205. Браузерная проверка не выполнялась.
+
+### Header: Storybook и Telegram UI — 2026-10-06
+
+- По прямому запросу владельца сначала создан Header в @picklehub/ui-web и stories
+  Components/Header (Default, WithPhoto, Narrow), затем подключён в авторизованной оболочке Mini App.
+  PICKLEHUB строго по центру, font-weight 300 и letter-spacing 2px; справа GlassAvatar.
+  По уточнению владельца fallback показывает только первую букву имени. Кнопка открывает /profile.
+  Header учитывает верхние safe area; API и контракты не изменены.
+- `npm test --workspace @picklehub/storybook -- src/Header.stories.tsx` — успешно вне песочницы,
+  3 браузерных теста. Первый запуск в песочнице получил listen EPERM; разрешённый повтор успешен.
+  Проверены центрирование, начертание, интервал, первая буква и вызов обработчика профиля.
+- `npx prettier --write ds/web/src/blocks/Header.tsx ds/web/src/index.ts
+ds/storybook/src/Header.stories.tsx frontend/tg/src/components/Header.tsx
+frontend/tg/src/components/App.tsx` — успешно.
+- `npm run ds:format:check && npm run ds:lint && npm run ds:typecheck && npm run ds:build` — успешно.
+  Существующие предупреждения сборки: DEP0205, use client в зависимостях и размер чанков.
+- `npm run format:check && npm run lint && npm run typecheck && npm run contracts:check
+&& npm run build && node --import tsx --test frontend/tg/test/*.spec.ts` — успешно, 1 тест.
+- Публикация и отдельная браузерная проверка Mini App не выполнялись.
+
+### Liquid glass фон Header — 2026-10-06
+
+- Для уведомлений добавлен hasNotifications (по умолчанию false): при true справа
+  сверху кнопки появляется красная точка 8 px с контрастным ободком. Доступное имя
+  сообщает о новых уведомлениях. Storybook содержит WithNotifications; подключение
+  к данным пользователя остаётся за будущим экраном уведомлений.
+- `npx prettier --write ds/web/src/blocks/Header.tsx ds/storybook/src/Header.stories.tsx`,
+  `npm run ds:format:check && npm run ds:lint && npm run ds:typecheck && npm run ds:build
+&& npm run contracts:check && npm run build` — успешно; прежние предупреждения сборки.
+- `npm test --workspace @picklehub/storybook -- src/Header.stories.tsx` — успешно
+  вне песочницы, 4 теста, включая состояние новых уведомлений.
+
+- По следующему запросу добавлена слева кнопка «Уведомления» с Bell (20 px),
+  размером 40 px, рамкой, бликами, тенью и hover как у кнопок GlassDock.
+  Добавлен onNotificationsClick; экран уведомлений в Mini App не задан, обработчик
+  там пока не подключён. Центрирование названия сохранено.
+- `npx prettier --write ds/web/src/blocks/Header.tsx ds/storybook/src/Header.stories.tsx`,
+  `npm run ds:format:check && npm run ds:lint && npm run ds:typecheck && npm run ds:build
+&& npm run contracts:check && npm run build` — успешно.
+- `npm test --workspace @picklehub/storybook -- src/Header.stories.tsx` — успешно
+  вне песочницы, 3 теста; проверен вызов обработчика уведомлений.
+
+- По следующему уточнению владельца все углы Header скруглены на 16 px (rounded-2xl),
+  стеклянный блик наследует радиус, рамка проходит по всему контуру.
+- После скругления `npx prettier --write ds/web/src/blocks/Header.tsx ds/web/src/styles.css`,
+  `npm run ds:format:check && npm run ds:lint && npm run ds:typecheck && npm run ds:build
+&& npm run contracts:check && npm run build` — успешно.
+  `npm test --workspace @picklehub/storybook -- src/Header.stories.tsx` — успешно вне песочницы,
+  3 теста. Существующие предупреждения сборки сохранены.
+
+- По запросу владельца Header использует ds-glass с токенами обеих тем, размытие,
+  насыщенность 180%, градиентный блик и внутренние световые края. Без backdrop-filter
+  остаётся непрозрачная поверхность. Общий компонент обновляет Storybook и Telegram UI.
+- `npx prettier --write ds/web/src/blocks/Header.tsx ds/web/src/styles.css` — успешно.
+- `npm run ds:format:check && npm run ds:lint && npm run ds:typecheck && npm run ds:build
+&& npm run contracts:check && npm run build && node --import tsx --test frontend/tg/test/*.spec.ts`
+  — успешно, 1 тест; существующие предупреждения DEP0205, use client и размера чанков.
+- `npm test --workspace @picklehub/storybook -- src/Header.stories.tsx` — успешно
+  вне песочницы, 3 браузерных теста.
+- `npm run format:check && npm run lint && npm run typecheck` — успешно.
+- `git diff --check` — успешно. Публикация не выполнялась.

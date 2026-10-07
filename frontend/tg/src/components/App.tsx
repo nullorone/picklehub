@@ -24,6 +24,7 @@ import {
 import { setAccessToken } from "@/api/client.ts";
 import { gameIdFromStartParameter } from "@/navigation/startParameter.ts";
 import { Footer } from "@/components/Footer.tsx";
+import { Header } from "@/components/Header.tsx";
 
 function StartParameterRoute({ startParameter }: { startParameter: unknown }) {
     const location = useLocation();
@@ -111,6 +112,7 @@ export function App() {
                     <div className="tg-shell min-h-dvh text-text">
                         {user ? (
                             <HashRouter>
+                                <Header />
                                 <StartParameterRoute
                                     startParameter={lp.tgWebAppStartParam}
                                 />
