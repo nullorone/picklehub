@@ -1,4 +1,4 @@
-import { ComponentPreview } from './ein-preview';
+import { ComponentPreview } from './EinPreview';
 import { GlassOrb } from '@picklehub/ui-web';
 const basicCode = `import { GlassOrb } from "@/registry/innovative/glass-orb"
 

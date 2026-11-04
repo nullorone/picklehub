@@ -1,4 +1,4 @@
-import { ComponentPreview } from './ein-preview';
+import { ComponentPreview } from './EinPreview';
 import { GlassButton } from '@picklehub/ui-web';
 import { GlassNotification } from '@picklehub/ui-web';
 const basicCode = `import { GlassNotification } from "@/components/glass-notification"

@@ -1,0 +1,4 @@
+@import '@picklehub/ui-web/styles.css';
+@source '../../../frontend/tg/src/components/EventDetails';
+@source '../../../frontend/tg/src/components/Card';
+@source '../../../frontend/tg/src/pages/EventDetails';

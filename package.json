@@ -60,6 +60,7 @@
         "@typespec/http": "1.16.0",
         "@typespec/openapi3": "1.16.0",
         "eslint": "^9.34.0",
+        "eslint-plugin-unused-imports": "^4.4.1",
         "gh-pages": "^6.3.0",
         "globals": "^15.15.0",
         "openapi-fetch": "0.17.0",

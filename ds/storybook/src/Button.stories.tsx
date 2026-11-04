@@ -11,7 +11,7 @@ const meta = {
     argTypes: {
         glowEffect: { control: 'boolean' },
         asChild: { control: 'boolean' },
-        variant: { control: 'select', options: ['default', 'primary', 'outline', 'ghost', 'destructive'] },
+        variant: { control: 'select', options: ['default', 'primary', 'accent', 'outline', 'ghost', 'destructive'] },
         size: { control: 'select', options: ['sm', 'default', 'lg', 'icon'] },
     },
     parameters: {
@@ -29,7 +29,7 @@ type Story = StoryObj<typeof meta>;
 export const Variants: Story = {
     render: (args) => (
         <div className="flex flex-wrap justify-center gap-4">
-            {(['default', 'primary', 'outline', 'ghost', 'destructive'] as const).map((variant) => (
+            {(['default', 'primary', 'accent', 'outline', 'ghost', 'destructive'] as const).map((variant) => (
                 <Button {...args} key={variant} variant={variant}>
                     {variant[0].toUpperCase() + variant.slice(1)}
                 </Button>
@@ -39,6 +39,7 @@ export const Variants: Story = {
 };
 export const Default: Story = {};
 export const Primary: Story = { args: { variant: 'primary', children: 'Primary' } };
+export const Accent: Story = { args: { variant: 'accent', children: 'Accent' } };
 export const Outline: Story = { args: { variant: 'outline', children: 'Outline' } };
 export const Ghost: Story = { args: { variant: 'ghost', children: 'Ghost' } };
 export const Destructive: Story = { args: { variant: 'destructive', children: 'Destructive' } };
@@ -50,6 +51,9 @@ export const GlowEffect: Story = {
             </Button>
             <Button {...args} glowEffect>
                 Default Glow
+            </Button>
+            <Button {...args} variant="accent" glowEffect>
+                Accent Glow
             </Button>
         </div>
     ),
@@ -138,7 +142,7 @@ export const DarkVariants: Story = {
     globals: { theme: 'dark' },
     render: (args) => (
         <div className="flex flex-wrap gap-4">
-            {(['default', 'primary', 'outline', 'ghost', 'destructive'] as const).map((variant) => (
+            {(['default', 'primary', 'accent', 'outline', 'ghost', 'destructive'] as const).map((variant) => (
                 <Button {...args} key={variant} variant={variant}>
                     {variant}
                 </Button>

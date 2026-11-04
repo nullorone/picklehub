@@ -1,5 +1,6 @@
 import { Star } from 'lucide-react';
 import {
+    GlassProfileCard,
     GlassButton,
     GlassCard,
     GlassCardHeader,
@@ -75,5 +76,28 @@ export const Example3 = {
                 </GlassButton>
             </GlassCardFooter>
         </GlassCard>
+    ),
+};
+
+export const HorizontalProfile = {
+    name: 'Horizontal Profile Card',
+    render: () => (
+        <div className="w-full max-w-md">
+            <GlassProfileCard
+                name="Alex Johnson"
+                dupr="3.0"
+                duprLogoSrc={new URL('./assets/dupr.jpg', import.meta.url).href}
+                ranking={1847}
+            />
+        </div>
+    ),
+};
+
+export const HorizontalProfileWithoutRating = {
+    name: 'Horizontal Profile Card Without DUPR',
+    render: () => (
+        <div className="w-full max-w-md">
+            <GlassProfileCard name="Alex Johnson" ranking={1847} />
+        </div>
     ),
 };

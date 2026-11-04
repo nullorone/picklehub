@@ -56,9 +56,9 @@ const GlassDialogContent = React.forwardRef<
             {...props}
         >
             <div className="relative z-10">{children}</div>
-            <DialogPrimitive.Close className="absolute right-4 top-4 rounded-lg p-1 text-white/60 transition-all hover:text-white hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/50">
+            <DialogPrimitive.Close className="absolute right-4 top-4 z-20 rounded-lg p-1 text-white/60 transition-all hover:text-white hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/50">
                 <X className="h-4 w-4" />
-                <span className="sr-only">Close</span>
+                <span className="sr-only">Закрыть диалог</span>
             </DialogPrimitive.Close>
         </DialogPrimitive.Content>
     </GlassDialogPortal>

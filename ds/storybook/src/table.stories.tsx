@@ -9,7 +9,7 @@ import {
     GlassTableCaption,
     GlassTableFooter,
 } from '@picklehub/ui-web';
-import { mockUsers } from './ein-mock-data';
+import { mockUsers } from './EinMockData';
 export default { title: 'Data display/Table' };
 export const Example1 = {
     name: 'Basic Table',

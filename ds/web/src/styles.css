@@ -14,8 +14,8 @@
     --color-ds-error: var(--ds-error);
     --color-ds-error-text: var(--ds-errorText);
     --color-ds-border: var(--ds-border);
-    --radius-ds-control: var(--token-radius-md);
-    --radius-ds-card: var(--token-radius-lg);
+    --radius-ds-control: var(--token-radius-m);
+    --radius-ds-card: var(--token-radius-l);
     --color-cyan-500: var(--token-ein-color-cyan-500);
     --color-blue-500: var(--token-ein-color-blue-500);
     --color-purple-500: var(--token-ein-color-purple-500);
@@ -29,10 +29,17 @@
     --shadow-ein-default: var(--token-ein-button-shadowDefault);
     --shadow-ein-primary: var(--token-ein-button-shadowPrimary);
     --shadow-ein-primary-hover: var(--token-ein-button-shadowPrimaryHover);
+    --shadow-ein-accent: var(--token-ein-button-shadowAccent);
+    --shadow-ein-accent-hover: var(--token-ein-button-shadowAccentHover);
     --shadow-ein-destructive: var(--token-ein-button-shadowDestructive);
-    --text-sm: var(--token-fontSize-sm);
+    --text-xs: var(--token-fontSize-xs);
+    --text-2xs: var(--token-fontSize-2xs);
+    --text-s: var(--token-fontSize-s);
+    --text-m: var(--token-fontSize-m);
     --text-base: var(--token-fontSize-base);
-    --text-lg: var(--token-fontSize-lg);
+    --text-l: var(--token-fontSize-l);
+    --text-xl: var(--token-fontSize-xl);
+    --text-2xl: var(--token-fontSize-2xl);
 }
 
 .ds-glass {

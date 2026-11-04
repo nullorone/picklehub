@@ -1,6 +1,7 @@
-import { createContext, useContext } from "react";
 import { retrieveRawInitData } from "@telegram-apps/sdk-react";
-import { createApiClient, type components } from "@picklehub/api";
+import { createApiClient } from "@picklehub/api";
+import { useAppSelector } from "@/store/hooks.ts";
+import type { SessionUser } from "@/store/sessionSlice.ts";
 import {
     apiBaseUrl,
     mockUser,
@@ -9,9 +10,9 @@ import {
     setAccessToken,
 } from "@/api/client.ts";
 
-export type SessionUser = components["schemas"]["SessionUser"];
-export const SessionContext = createContext<SessionUser | null>(null);
-export const useSessionUser = () => useContext(SessionContext);
+export type { SessionUser } from "@/store/sessionSlice.ts";
+export const useSessionUser = () =>
+    useAppSelector((state) => state.session.user);
 
 export async function createTelegramSession(): Promise<SessionUser> {
     if (mocksEnabled) {

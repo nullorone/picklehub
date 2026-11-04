@@ -195,7 +195,7 @@ export const handlers = [
             input.durationMinutes < 30 ||
             input.durationMinutes > 480 ||
             input.participantLimit < 2 ||
-            input.participantLimit > 32 ||
+            input.participantLimit > 96 ||
             (desiredLevel !== undefined &&
                 (desiredLevel.length < 1 || desiredLevel.length > 80)) ||
             (description !== undefined && description.length > 2000)

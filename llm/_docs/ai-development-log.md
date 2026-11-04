@@ -1,1439 +1,610 @@
-# Журнал учебной AI-разработки
+# Журнал AI-разработки
 
-## 2026-09-18 — подготовка ветки пересборки
+## 2026-10-27 — раскрываемая карточка события
 
-### Контекст
+Активная задача: прямой запрос пользователя объединить PlankEvent и Card.
+Добавлен EventCard с независимым состоянием раскрытия, кнопкой с aria-expanded
+и aria-controls. Подключён на главной и в обеих вкладках списка событий.
+PlankEvent показывает количество участников через разделитель, поддерживает
+кнопку раскрытия и прежний режим ссылки. Контракты не изменены.
 
-- Активная ветка: `learning/fullstack-rebuild`, исходная точка — `adcec3a`.
-- Полная современная реализация сохранена в `reference/current-2026-09-18` на коммите `05385ab`.
-- Исходный UI сохранён в `reference/legacy-ui-adcec3a` и используется только как визуальный ориентир.
-- Активный промпт: `llm/01-platform-foundation/01-requirements.md`.
+Проверки:
 
-### Выполнено
-
-- Добавлены локальные исключения для секретов, кэшей, coverage и результатов браузерных тестов.
-- Перенесены правила репозитория, обзор проекта, шаблоны и промпты `01`–`16`.
-- Готовые документы, контракты, backend, миграции, тесты и сгенерированные клиенты из эталонной ветки не
-  переносились.
-
-### Проверки
-
-- `npm ci` — успешно, установлено 411 пакетов по legacy lock-файлу.
-- `npm run build` — успешно; Vite предупредил об `eval` в legacy-зависимости `eruda` и чанках больше 500 kB.
-- `npm run lint` — ошибка исходной конфигурации: preset `recommendedTypeChecked` включён без TypeScript project
-  service. Исправление относится к активному промпту основы платформы.
-- `git diff --check` — успешно.
-- Markdown lint — не выполнен: после `npm ci` пакет отсутствует в legacy workspace, а временная установка
-  недоступна в текущем сетевом окружении.
-
-### Следующий шаг
-
-Выполнить `llm/01-platform-foundation/01-requirements.md`: самостоятельно описать архитектуру и ADR до создания
-нового продуктового кода.
-
-## 2026-09-24 — интервью и задачи Telegram MVP
-
-### Контекст и решения
-
-- По итогам интервью активный релиз сужен до Telegram bot + Mini App, пилот в Москве.
-- Бюджет владельца — три дня по восемь часов, работа шагами по 30–60 минут.
-- Встреча на время с лимитом участников; запись автоматическая. Организатор может не участвовать,
-  удалять участников и отменять игру; ротация выполняется вручную на площадке.
-- Бот уведомляет об изменениях и отмене, напоминает за два часа до начала.
-- Текущий интерфейс — визуальная основа, Tailwind — способ стилизации; полная дизайн-система после MVP.
-- Порядок реализации: frontend-first с TypeSpec, затем NestJS/Prisma; web/PWA и native отложены.
-
-### Выполнено
-
-- Обновлены `llm/00-project-overview.md`, `llm/README.md` и `_docs/legacy-prototype.md`.
-- Созданы `_docs/adr-001-telegram-first-mvp.md` и `_docs/telegram-mvp-plan.md`.
-- По просьбе владельца созданы `llm/tasks/README.md` и 20 отдельных файлов задач S01–S20
-  с зависимостями, границами, критериями готовности и проверками.
-- Согласованные ответы отделены от рабочих допущений. Старые каталоги `01`–`16` сохранены
-  как отложенный контекст. Старый архитектурный промпт не отмечен как выполненный.
-- Продуктовый код, зависимости и конфигурация запуска не менялись; публикация не выполнялась.
-
-### Наблюдения и ограничения
-
-- `start:https` по `package.json`/`vite.config.ts` запускает Vite с mkcert; туннель не настроен этой командой.
-- `deploy` публикует статический frontend в GitHub Pages; backend/БД/worker требуют отдельного размещения.
-- Первый аналог заблокирован прокси; у PIKLB доступен только экран входа и ссылка на бота;
-  у PICKLEBALL Events изучены публичные страницы. Полный обзор закрытых Telegram-сценариев не заявляется.
-- Хостинг не выбран. 20 часовых задач и четыре часа резерва — предварительный бюджет, не гарантия срока.
-- Фактическое время этой сессии инструментально не измерялось.
-
-### Проверки документов
-
-- После добавления команд в журнал повторная проверка Prettier выявила форматирование самого журнала;
-  исправлено командой `./node_modules/.bin/prettier --write llm/_docs/ai-development-log.md`,
-  затем полный `prettier --check` и `git diff --check` повторены успешно.
-- `./node_modules/.bin/prettier --write 'llm/tasks/*.md' llm/00-project-overview.md llm/README.md llm/_docs/legacy-prototype.md llm/_docs/adr-001-telegram-first-mvp.md llm/_docs/telegram-mvp-plan.md llm/_docs/ai-development-log.md` — успешно.
-- `./node_modules/.bin/prettier --check 'llm/tasks/*.md' llm/00-project-overview.md llm/README.md llm/_docs/legacy-prototype.md llm/_docs/adr-001-telegram-first-mvp.md llm/_docs/telegram-mvp-plan.md llm/_docs/ai-development-log.md` — успешно.
-- `git diff --check` — успешно.
-- Проверка порядка задач и относительных ссылок командой ниже — успешно:
-  27 документов, 20 задач по порядку, 213 локальных ссылок.
-- Отдельный Markdown lint не запускался: исполняемый файл отсутствует в локальных зависимостях.
-  Проверены форматирование и ссылки. Продуктовые тесты, сборка и генерация контрактов не запускались:
-  изменения ограничены документацией.
-
-````sh
-python3 - <<'PY'
-from pathlib import Path
-import re
-
-root = Path('llm')
-files = sorted((root / 'tasks').glob('*.md')) + [
-    root / '00-project-overview.md', root / 'README.md',
-    root / '_docs/legacy-prototype.md', root / '_docs/adr-001-telegram-first-mvp.md',
-    root / '_docs/telegram-mvp-plan.md', root / '_docs/ai-development-log.md',
-]
-tasks = sorted((root / 'tasks').glob('[0-9][0-9]-*.md'))
-assert [p.name[:2] for p in tasks] == [f'{n:02d}' for n in range(1, 21)]
-missing = []
-links = 0
-for file in files:
-    content = re.sub(r'```.*?```', '', file.read_text(), flags=re.S)
-    for target in re.findall(r'\]\(([^)]+)\)', content):
-        if '://' in target or target.startswith('#'):
-            continue
-        links += 1
-        if not (file.parent / target.split('#', 1)[0]).exists():
-            missing.append((str(file), target))
-assert not missing, missing
-print(f'OK: {len(files)} documents, {len(tasks)} ordered tasks, {links} local links')
-PY
-````
-
-### Следующий шаг
-
-[S01 — основа frontend](../tasks/01-frontend-foundation.md). Реализация не начата;
-выполнять одну задачу за рабочий шаг и останавливаться при невыполненной приёмке.
-
-## 2026-09-24 — S01: основа frontend (в работе)
-
-### Выполнено
-
-- Создан npm workspace `@picklehub/tg`; React/Vite-каркас и lock-файл находятся в `frontend/tg/` и корне соответственно.
-- Корневые команды `start`, `start:https`, `build` и `deploy` делегируют TMA. GitHub Pages загружает
-  `frontend/tg/dist/`; публикация не выполнялась.
-- Добавлены границы модулей, направления зависимостей и правила TypeSpec/генерируемого клиента в
-  [`architecture.md`](architecture.md).
-- В рабочем приложении оставлен пустой foundation-экран; старые бизнес-демо и TON Connect удалены из TMA.
-  Mock Telegram environment, SDK debug mode и Eruda включаются только в development.
-- Исправлена typed ESLint конфигурация через `projectService`; правила ESLint не отключены.
-- Фактическое время инструментально не измерялось.
-
-### Проверки
-
-- `npm install --package-lock-only --ignore-scripts --offline` — успешно; обновлён корневой lock-файл для workspace,
-  аудит npm сообщил 0 уязвимостей.
-- `npm ci --ignore-scripts --offline` — успешно; clean install из одного корневого lock-файла, 396 пакетов,
-  аудит npm сообщил 0 уязвимостей.
-- `npm run format` — успешно.
-- `npm run lint && npm run typecheck && npm run build` — успешно после clean install; Vite собрал приложение в
-  `frontend/tg/dist/`.
-- `npm run format:check` — успешно после форматирования корневого `package.json`.
-- `git diff --check` — успешно.
-- `npm run start -- --host 127.0.0.1 --port 4173 --strictPort` — HTTP Vite сервер запущен после исправления
-  передачи аргументов корневой командой; `curl --silent --show-error --fail http://127.0.0.1:4173/` получил HTML
-  TMA entry point. Сервер остановлен, публикация не выполнялась.
-- `npm run start:https -- --host 127.0.0.1 --port 4174 --strictPort` — не стартовал: `vite-plugin-mkcert` получил
-  HTTP 403 при запросе `https://api.github.com/repos/FiloSottile/mkcert/releases/latest`. Запуск выполнялся вне
-  sandbox; проверку блокирует источник бинарного файла mkcert. Скрипт и mkcert-конфигурация сохранены.
-
-### Остаток и следующий шаг
-
-S01 остаётся незавершённой до успешной проверки `start:https` и HTTPS-маршрутизации. При повторе проверить запуск
-mkcert, затем повторить форматирование, lint, typecheck, build, `git diff --check` и обновить этот журнал.
-S02 не начинать до выполнения критериев S01.
-
-## 2026-09-24 — S01: приёмка HTTPS
-
-Владелец подтвердил, что запустил локально и HTTPS через mkcert работает. С учётом этого подтверждения критерии
-S01 приняты; повторная загрузка mkcert из моей среды не потребовалась. Локальный публичный туннель не заявлен.
-
-## 2026-09-24 — S02: Tailwind и минимальные дизайн-токены
-
-### Выполнено
-
-- Добавлен `frontend/packages/tokens/` с машиночитаемыми цветами, ролями обеих тем, отступами, размерами текста и
-  скруглениями. TMA подключает пакет как npm workspace; при запуске токены становятся CSS custom properties,
-  Tailwind v4 использует их в теме. Значения хранятся без привязки к браузерным компонентам.
-- Реализованы семантические цвета фона, поверхности, текста, вторичного текста, акцента, ошибки и границы.
-  Telegram theme parameters имеют приоритет, локальные значения тем служат безопасным fallback.
-- Mock Telegram theme можно просмотреть через `?theme=light` и `?theme=dark`; в prod mock не включается.
-- Каркас оформлен Tailwind. Добавлены `Button`, `TextField` с подписью/ошибкой и `Card`; размеры учитывают узкий
-  экран, длинные строки переносятся, `:focus-visible` имеет контрастную обводку. Полная дизайн-система не создавалась.
-- Текущий экран сохранён как нейтральный foundation, добавлены состояния/примеры базовых контролов.
-- npm не поддержал протокол `workspace:*`; зависимость пакета задана версией `*`, разрешаемой в локальный workspace.
-- Фактическое время инструментально не измерялось.
-
-### Проверки
-
-- `npm install --package-lock-only --ignore-scripts --offline` — успешно, обновлён корневой lock-файл, 0 уязвимостей.
-- `npm install --ignore-scripts --offline` — успешно, установлен локальный workspace-пакет токенов, 0 уязвимостей.
-- `npm run format` — успешно.
+- `npx prettier --check frontend/tg/src/components/PlankEvent/PlankEvent.tsx frontend/tg/src/components/EventCard/EventCard.tsx frontend/tg/src/pages/EventList/ui/TabContentAll/TabContentAll.tsx frontend/tg/src/pages/EventList/ui/TabContentMySelf/TabContentMySelf.tsx frontend/tg/src/pages/Main/ui/Main.tsx` — успешно.
 - `npm run lint` — успешно.
-- `npm run typecheck` — успешно.
-- `npm run build` — успешно; Vite собрал production frontend.
-- `npm run format:check` — успешно.
-- Визуально проверены `http://127.0.0.1:4173/?theme=light` и `?theme=dark` на ширине 360 px: темы передают заданные роли, прокрутки по горизонтали нет; длинный текст переносится, клавиатурный фокус имеет видимую обводку.
-- Снимки локального предпросмотра: `.playwright-mcp/s02-light.png` и `.playwright-mcp/s02-dark.png`.
-- Playwright на итоговых загрузках не зафиксировал ошибок приложения; видны два штатных предупреждения React Router о будущих флагах v7.
+- `npm run contracts:check` — успешно.
+- `npm run typecheck` и `npm run build` — остановлены существующими ошибками:
+  неиспользуемые widgetVariants/glowVariants в ds/web/src/widgets/base-widget.tsx;
+  неполный объект UseQueryResult в EventListPage.tsx.
 - `git diff --check` — успешно.
+- Браузерная проверка не выполнена; Playwright в корневом node_modules отсутствует.
 
-### Остаток и следующий шаг
+Предыдущий журнал и каталог llm были удалены в рабочем дереве до этой задачи.
+Этот файл содержит только новую запись; прежние документы не восстановлены.
 
-S02 принята. Следующий шаг — [S03: контракт встреч в TypeSpec](../tasks/03-typespec-contract.md). Токены минимальны;
-React Native-компоненты и полная дизайн-система остаются за границами этой задачи.
+## 2026-10-27 — компонент EventDetails
 
-## 2026-09-24 — S03: контракт встреч в TypeSpec (в работе)
+Активная задача: согласованный план отдельного компонента деталей события и Storybook,
+с уточнением пользователя показывать имя под каждым аватаром.
+Добавлен frontend/tg/src/components/EventDetails: обложка с градиентом и fallback,
+sticky-блок стоимости/записи с настраиваемым top, три вкладки, состав и очередь
+с именами, инициалами и DUPR (при отсутствии — -/-), заглушки результатов.
+Запись управляется родителем через callback join/waitlist и состояния joined/waitlisted/pending.
+Маршруты, Card, API и контракты не менялись. Добавлены 9 Storybook-сценариев
+и локальная SVG-иллюстрация корта с вымышленными данными.
+Storybook подключает CSS-источник нового компонента; allowImportingTsExtensions
+в его tsconfig позволяет использовать существующие helpers Mini App с импортами .ts.
+Общие документы llm/00-project-overview.md и llm/README.md отсутствуют в рабочем дереве;
+прочитан доступный журнал предыдущей задачи. Удалённые документы не восстановлены.
 
-### Выполнено
+Проверки:
 
-- Подготовлен `contracts/main.tsp` с моделями игр, участия, Telegram-сессии и ошибок; описаны список, детали,
-  создание, частичное изменение, запись, выход, удаление участника и отмена. Запись организатора представлена
-  отдельно от владения игрой.
-- Добавлены npm-команды генерации OpenAPI и типов TypeScript, API workspace и точка импорта клиента в TMA.
-  Добавлена проверка повторного байтового результата генерации.
-- Записаны ограничения полей, пагинация, UTC, поведение полной/отменённой игры, идемпотентность и транзакционная
-  семантика конкурентной записи в [`game-api-contract.md`](game-api-contract.md).
-- Фактическое время — около 5 минут по времени инструментальных отметок.
-
-### Проверки и блокировка
-
-- `npm install --save-dev @typespec/compiler @typespec/http @typespec/openapi3 openapi-typescript && npm install openapi-fetch --workspace @picklehub/api`
-  — registry `registry.npmjs.org` вернул HTTP 403 до установки пакетов, включая повтор с запросом расширенного
-  сетевого доступа.
-- `npm install --registry=https://artifactory.raiffeisen.ru/artifactory/api/npm/npm/ --save-dev @typespec/compiler @typespec/http @typespec/openapi3 openapi-typescript`
-  — HTTP 404 для `@typespec/compiler`; `npm install --offline --save-dev @typespec/compiler @typespec/http @typespec/openapi3 openapi-typescript`
-  — `ENOTCACHED`.
-  Зависимости и lock-файл пока не обновлены, поскольку npm не разрешил получить пакеты.
-- `./node_modules/.bin/prettier --write package.json frontend/tg/package.json frontend/tg/src/components/App.tsx frontend/packages/api/package.json frontend/packages/api/src/index.ts llm/_docs/game-api-contract.md contracts/check-generated.mjs`
-  — успешно для изменённых JSON, TS/JS и Markdown файлов.
-- `npm run format:check` — успешно.
-- `node --check contracts/check-generated.mjs` — успешно.
-- Prettier check изменённых файлов и `git diff --check` — успешно.
-- `npm run lint` — неуспешно: API workspace и сгенерированные типы ещё недоступны; импорт клиента получает
-  error type и нарушает `no-unsafe-*`.
-- `npm run typecheck` и `npm run build` — неуспешно по той же причине: TypeScript не находит `@picklehub/api`.
-- TypeSpec compilation, OpenAPI generation, повторная генерация, client import verification и проверка контрактных
-  схем не запускались из-за недоступных зависимостей; их успешность не заявляется.
-
-### Остаток
-
-Добавить зависимости TypeSpec/OpenAPI/client и обновить корневой lock-файл, сгенерировать и закоммитить OpenAPI и
-клиент, затем выполнить компиляцию, проверку схем/повторной генерации, lint, typecheck и build. Приёмка S03 не
-пройдена; S04 не начинать.
-
-## 2026-09-24 — S03: продолжение, проверка доступности генераторов
-
-### Выполнено
-
-- Повторно сверены требования S03, решения MVP и рабочее состояние файлов контракта. Незавершённые критерии
-  прежние: нет зависимостей генерации, OpenAPI и клиент не созданы, проверка импортируемости не пройдена.
-- Попытки установки зависимостей повторены в текущей сессии; изменений `package.json` и lock-файла не произошло.
-- Фактическое время этой короткой сессии — около 2 минут по инструментальным отметкам.
-
-### Проверки и блокировка
-
-- `npm install --save-dev @typespec/compiler @typespec/http @typespec/openapi3 openapi-typescript` — HTTP 403
-  от `registry.npmjs.org`, повторено вне sandbox с тем же результатом.
-- `npm install --offline --save-dev @typespec/compiler @typespec/http @typespec/openapi3 openapi-typescript` —
-  `ENOTCACHED`; npm-кэш не содержит метаданных TypeSpec compiler.
-- Установка из корпоративного Artifactory ранее в этой задаче завершилась HTTP 404 для `@typespec/compiler`;
-  повторный запрос метаданных в этой сессии не вернул версию.
-- Компиляция TypeSpec, генерация OpenAPI/client, проверка схем и импортируемости, а также lint, typecheck и build
-  остаются невыполненными: обязательные пакеты отсутствуют. Их успешность не заявляется.
-
-### Остаток
-
-S03 остаётся в работе; S04 не начинать. Возобновить установку зависимостей, когда один из npm-реестров будет
-доступен; затем сгенерировать артефакты и выполнить полный набор проверок из задачи S03.
-
-## 2026-09-24 — S03: контракт и клиент сгенерированы (выполнено)
-
-### Выполнено
-
-- Владелец установил TypeSpec/OpenAPI/client-зависимости. При первой компиляции исправлены UUID scalar и модели
-  ошибок: HTTP статус теперь задаётся через `@statusCode` на поле ответа.
-- Контракт ограничивает UUID, число участников (0–32), значения кодов ошибок, поля игры и ключ идемпотентности.
-  Правила организатора без места, конкурентного последнего места, переходов `SCHEDULED`/`FULL`, курсоров и
-  повторов команд зафиксированы в [`game-api-contract.md`](game-api-contract.md).
-- OpenAPI и TypeScript API schema генерируются из TypeSpec и хранятся как производные файлы. Генератор клиента
-  форматирует схему Prettier; TMA импортирует типизированный клиент. Добавлена декларация `VITE_API_URL` для
-  строгой проверки переменных среды.
-- Статус S03 обновлён на «выполнена». Фактическое время этой сессии — около 7 минут по инструментальным
-  отметкам.
-
-### Проверки
-
-- `npm run contracts:generate` — успешно: TypeSpec 1.16.0 создал OpenAPI 3.0 и openapi-typescript 7.13.0 создал
-  клиентскую схему.
-- `npm run contracts:check` — успешно: два последовательных прогона идентичны по байтам; отслеживаемые
-  артефакты не содержат diff.
-- `npm run format:check` — успешно.
-- `npx prettier --check package.json frontend/packages/api/package.json frontend/packages/api/src/index.ts frontend/packages/api/src/generated/schema.ts frontend/tg/src/vite-env.d.ts contracts/check-generated.mjs llm/_docs/game-api-contract.md llm/_docs/ai-development-log.md` — успешно.
-- `npm run lint` — успешно после добавления типа `VITE_API_URL`.
-- `npm run typecheck` — успешно.
-- `npm run build` — успешно; Vite собрал production TMA.
-- `git diff --check` — успешно.
-
-### Ограничения
-
-- Проверка конкурентной записи описана как контрактная транзакционная гарантия; работа настоящей базы и гонки
-  будет проверена в backend шагах S12–S14.
-- Визуальные тесты и backend-тесты не относятся к S03 и не запускались.
-
-### Следующий шаг
-
-S03 принята. Следующая отдельная задача — S04, подключение TanStack Query и HTTP-моков; автоматически не начиналась.
-
-## 2026-09-24 — S04: TanStack Query и моки HTTP API (выполнена)
-
-### Выполнено
-
-- Подключены `@tanstack/react-query` и `msw`; владелец установил версии 5.103.2 и 2.15.0 после первоначальной
-  блокировки registry. Корневой lock-файл обновлён.
-- Созданы единый QueryClient/provider, типизированные запросы и ключи списка/деталей. TanStack Query обслуживает
-  серверное состояние; второй store не добавлялся.
-- Добавлен единый OpenAPI-клиент с `VITE_API_URL`. MSW intercept-ит HTTP на тех же путях `/games`, отдельного
-  DTO слоя нет. `VITE_API_MOCKS=false` отключает моки в dev, а production build всегда использует настоящий API.
-- Настроены dev-токены вида `dev:player-1`/`dev:player-2`, принимаемые только локальным MSW. Это не Telegram
-  авторизация; в production mock bootstrap и dev-токен отключены.
-- Добавлены варианты `?mockScenario=empty|error|delay`, список/detail, полная и отменённая игра, organizer без
-  участия, две личности и изменение состава через запись/выход. Заполнение возвращает контрактный `GAME_FULL`.
-- Мутации записи/выхода сохраняют предыдущий detail cache при ошибке, устанавливают успешный ответ в detail
-  cache и в обоих исходах инвалидируют список и детали для повторного чтения.
-- Фактическое время — около 10 минут по временным отметкам инструментов.
-
-### Проверки и блокировка
-
-- `npm run lint` — успешно после исправления двух замечаний unused-vars.
-- `npm run typecheck` — успешно.
-- `npm run build` — успешно; production bundle собран без включения dev mock bootstrap.
-- `npm run contracts:check` — успешно: TypeSpec/OpenAPI и сгенерированный клиент воспроизводимы.
-- `npm run format:check` — успешно; `git diff --check` — успешно.
-- Локальный dev smoke через Playwright: GET списка и деталей вернул 200; проверены поля GamePage и UTC `startsAt`;
-  запись и выход вторым dev-пользователем изменили число участников 2→3→2; GET отменённой игры вернул статус
-  `CANCELLED`. В консоли приложения ошибок не было (2 штатных предупреждения React Router).
-- Проверка заполненного сценария: попытка вступить при полном составе возвращает 409 `GAME_FULL`; ошибка не
-  меняет состав. Query cache поведение проверено по конфигурации mutation lifecycle; отдельный автоматизированный
-  React hook test runner в проекте пока не настроен, поэтому успешный/неуспешный lifecycle проверен не отдельным
-  unit-тестом.
-
-### Остаток
-
-S04 принята. Следующий отдельный шаг — [S05: список и страница игры](../tasks/05-game-list-details.md).
-
-## 2026-09-25 — S05: список и страница игры (выполнена)
-
-### Выполнено
-
-- Вместо foundation-заглушки на главном маршруте показан список будущих игр из TanStack Query. Карточки показывают
-  локальные дату и время с пояснением часового пояса, адрес, уровень, число участников и статус; ведут на
-  `#/games/:gameId`.
-- Добавлена страница деталей с прямой загрузкой по ID: адрес, продолжительность, уровень, описание, организатор
-  и актуальный состав. Имя организатора ищется среди записавшихся; если организатор управляет без места, отображается
-  нейтральная подпись и он не добавляется в состав или счётчик.
-- Добавлены состояния загрузки, пустого списка, ошибки с повтором, недоступности сети на основе `navigator.onLine`,
-  неизвестной и отменённой игры. Отменённая игра остаётся доступна по прямой ссылке, общий список следует контракту
-  и её не включает.
-- Фактическое время — около 15 минут по временным отметкам инструментов.
-
-### Проверки
-
-- `npm run format` — успешно.
+- `npx prettier --check frontend/tg/src/components/EventDetails ds/storybook/src/EventDetails.stories.tsx ds/storybook/.storybook/event-details.css ds/storybook/.storybook/preview.tsx ds/storybook/tsconfig.json` — успешно.
+- `npx eslint frontend/tg/src/components/EventDetails ds/storybook/src/EventDetails.stories.tsx ds/storybook/.storybook/preview.tsx --max-warnings 0` — успешно.
 - `npm run lint` — успешно.
-- `npm run typecheck` — успешно.
-- `npm run contracts:check` — успешно; повторная генерация TypeSpec/OpenAPI и типов воспроизводима.
-- `npm run build` — успешно; Vite собрал production TMA.
-- `npm run format:check` — успешно.
-- `npx prettier --check llm/tasks/05-game-list-details.md llm/tasks/README.md llm/_docs/ai-development-log.md` — успешно.
+- `npm run contracts:check` — успешно, генерация воспроизводима.
+- `npm test --workspace @picklehub/storybook -- src/EventDetails.stories.tsx` — 9/9 успешно в Chromium; проверены callbacks, блокировка действий, имена, отсутствие рейтинга, очередь, результаты, клавиатурные вкладки и sticky/отсутствие переполнения на ширинах 320/430 px. Первый запуск заблокирован EPERM локального порта; повтор выполнен с разрешением вне sandbox. В тестах добавлено ожидание анимации вкладок после начальных преждевременных проверок видимости.
+- `npm run ds:build` — успешно (предупреждения Vite о use client и крупных chunks).
+- `npm run typecheck` и `npm run build` — существующие ошибки неиспользуемых widgetVariants/glowVariants в base-widget.tsx и неполного UseQueryResult в EventListPage.tsx.
+- `npm run ds:lint` — существующие неиспользуемые параметры/переменные в Header.tsx и base-widget.tsx.
+- `npm run ds:typecheck` — остановлен существующими ошибками base-widget.tsx.
+- `npm run typecheck --workspace @picklehub/storybook` — после настройки импортов остаются только существующие ошибки Header.stories.tsx и base-widget.tsx; ошибок EventDetails нет.
+- `git diff --check` — успешно перед записью журнала; повторная проверка выполнена после записи.
+
+## 2026-10-27 — закрепление вкладок EventDetails
+
+По уточнению пользователя вкладки объединены с блоком стоимости и записи в один
+sticky-контейнер внутри GlassTabs. Высота блоков определяется естественной раскладкой,
+без фиксированных смещений и ResizeObserver; stickyTop применяется ко всей группе.
+Тест прокрутки дополнен проверкой расположения вкладок сразу под блоком записи
+на ширинах 320 и 430 px.
+
+Проверки:
+
+- `npx prettier --check frontend/tg/src/components/EventDetails/EventDetails.tsx ds/storybook/src/EventDetails.stories.tsx` — успешно.
+- `npx eslint frontend/tg/src/components/EventDetails/EventDetails.tsx ds/storybook/src/EventDetails.stories.tsx --max-warnings 0` — успешно.
+- `npm test --workspace @picklehub/storybook -- src/EventDetails.stories.tsx` — 9/9 успешно; после EPERM локального порта повторено вне sandbox.
+- `npm run ds:build > /private/tmp/picklehub-eventdetails-build.log 2>&1` — успешно.
+- `npm run contracts:check > /private/tmp/picklehub-eventdetails-contracts.log 2>&1` — успешно.
+- `npm run typecheck` — прежние ошибки base-widget.tsx и EventListPage.tsx; новых ошибок нет.
 - `git diff --check` — успешно.
-- Ручной dev smoke через браузер: список → ссылка на игру и прямое открытие URL показывают одну игру; проверены
-  полная и отменённая игра, отсутствующий ID/404, пустой сценарий и ошибка API с повтором. На ширине 360 px
-  детали и длинные поля не создают горизонтальной прокрутки. Светлая и тёмная темы открыты через dev query.
-  Консоль приложения без ошибок на успешных сценариях; остаются два штатных предупреждения React Router.
-- Изоляция браузера без сети отдельно не включалась. UI показывает сетевую ошибку по `navigator.onLine`, но эту
-  ветку не подтверждали выключением сети. В репозитории нет настроенного автоматизированного UI test runner;
-  сценарии проверены вручную, отдельные тесты не добавлялись.
 
-### Корректировка маршрута
+## 2026-10-27 — переход Card → EventDetails
 
-- Маршрут страницы игры и ссылки из списка изменены с `/games/:gameId` на `/matches/:matchId`.
-- Проверки для этой корректировки не запускались.
+Кнопка действия Card стала ссылкой на /event/:eventId/details с передачей полного
+GameEvent через router state (подписи Подробнее/Присоединиться/Результаты сохранены).
+Новая EventDetailsPage показывает именно переданные сведения; прямой URL использует
+существующий mock-список tournaments, неизвестный id показывает «Событие не найдено».
+Есть возврат к списку и сброс прокрутки; stickyTop=88 соответствует отступу шапки Mini App.
+Маршрут /event/:eventId с API игр сохранён. Непредоставленные составы не выдумываются:
+при ненулевом количестве и пустом массиве отображается сообщение о недоступности списка.
+onJoin стал необязательным; без обработчика запись отключена и страница объясняет это.
 
-### Следующий шаг
+Добавлены три браузерные истории перехода: данные изменённой Card, прямая ссылка,
+неизвестный id. Storybook получил vite/client для изображений и CSS-источники Card/страницы.
+В оптимизации Storybook/Vitest исключён lucide-react: Mini App и Storybook используют
+разные версии, иначе тест получал версию без Podium. react-router-dom предварительно
+оптимизируется в Vitest для предотвращения перезагрузки во время теста.
 
-S05 принята. Следующая отдельная задача — [S06: форма создания игры](../tasks/06-create-game.md); автоматически
-не начиналась.
+Проверки:
 
-## 2026-09-25 — S06: форма создания игры (выполнена)
-
-### Выполнено
-
-- Добавлена страница создания игры и переход к ней из списка. Форма включает площадку, адрес, московские дату и
-  время, длительность, число мест, желаемый уровень, описание и включённое по умолчанию участие организатора.
-- Добавлена клиентская проверка ограничений контракта и времени в будущем. Значение `datetime-local` трактуется
-  как `Europe/Moscow`, преобразуется в UTC; рядом с полем указан пояс. Ошибки API не сбрасывают введённые значения.
-- Добавлен типизированный `POST /games` с новым `Idempotency-Key` на команду, блокировкой повторного submit,
-  обновлением списка и detail cache и переходом на подтверждённую сервером игру.
-- MSW создаёт игру в обоих режимах участия организатора, назначает организатора владельцем, а участником добавляет
-  только при включённом флаге.
-
-### Проверки
-
-- `npm run format` — успешно.
-- `npm run lint` — сначала выявил async submit callback; обработчик исправлен, повторный полный запуск lint успешен.
-- `npm run typecheck` — успешно.
-- `npm run contracts:check` — успешно, два прогона генерации TypeSpec/OpenAPI/client идентичны.
-- `npm run build` — успешно; Vite собрал production TMA.
-- `npm run format:check` и `git diff --check` — успешно.
-- Ручной браузерный smoke на локальном MSW: игра создана и открыта по detail URL с участием организатора; второй
-  сценарий создан без участия и показал `0 из 8` мест. В запросе присутствовали `Idempotency-Key` и UTC
-  `2026-09-25T21:24:00.000Z` для введённого московского `2026-09-26T00:24`.
-- При mock HTTP 503 UI показал ошибку, сохранил заполненные площадку и адрес и не перешёл к деталям. Пустая форма
-  оставалась на странице и показывала ошибки обязательных полей. В успешных браузерных сценариях ошибок консоли
-  не было; наблюдались два штатных предупреждения React Router.
-- Автоматизированного UI test runner в проекте нет; S06 сценарии формы и времени проверены вручную.
-
-### Следующий шаг
-
-S06 принята. Следующая отдельная задача — [S07: запись, выход и состав](../tasks/07-join-leave-roster.md);
-автоматически не начиналась.
-
-## 2026-09-25 — S07: запись, выход и состав (выполнена)
-
-### Выполнено
-
-- На странице деталей игры действие зависит от выбранного локального mock-пользователя и состава: запись, выход
-  либо выключенное «Мест нет». Для отменённой и уже начавшейся игры действие закрыто с пояснением; переход игры
-  к времени начала также закрывает действие без перезагрузки страницы.
-- Подключены готовые TanStack Query мутации. Состав и счётчик меняются только по успешному ответу, после команды
-  обновляются детали и список; пока запрос выполняется, кнопка заблокирована. При конфликте последнее место
-  перечитывается, и пользователю показывается актуальный состав.
-- Моки дают отдельные личности организатора, участника и нового игрока. Добавлены тестовые игры для отменённого,
-  начавшегося, полного состава и конфликта последнего места; сценарий `join-error` возвращает HTTP 503.
-- Ошибки мутаций не создают оптимистического участия. Обработчик использует `mutate`, чтобы не оставлять
-  отклонённый Promise необработанным в консоли.
-- Фактическое время — около 20 минут по временным отметкам инструментов.
-
-### Проверки
-
-- `npm run format` — успешно.
 - `npm run lint` — успешно.
-- `npm run typecheck` — успешно.
-- `npm run contracts:check` — успешно; генерация TypeSpec/OpenAPI и клиентских типов воспроизводима, контракт
-  не менялся.
-- `npm run build` — успешно; production TMA собран.
-- `npm run format:check` — успешно.
+- `npx prettier --check frontend/tg/src/components/Card/Card.tsx frontend/tg/src/components/EventDetails/EventDetails.tsx frontend/tg/src/pages/EventDetails frontend/tg/src/navigation/routes.tsx ds/storybook/src/EventDetailsNavigation.stories.tsx ds/storybook/src/vite-env.d.ts ds/storybook/.storybook/event-details.css ds/storybook/.storybook/main.ts ds/storybook/vitest.config.ts` — успешно.
+- `npx eslint frontend/tg/src/components/Card/Card.tsx frontend/tg/src/components/EventDetails frontend/tg/src/pages/EventDetails frontend/tg/src/navigation/routes.tsx ds/storybook/src/EventDetailsNavigation.stories.tsx ds/storybook/src/vite-env.d.ts ds/storybook/.storybook/main.ts ds/storybook/vitest.config.ts --max-warnings 0` — успешно.
+- `npm test --workspace @picklehub/storybook -- src/EventDetails.stories.tsx src/EventDetailsNavigation.stories.tsx` — 12/12 успешно вне sandbox. Первые запуски выявили конфликт версий иконок, преждевременную проверку видимости при анимации и отсутствие блокировки кнопки без callback; исправлено.
+- `npm run contracts:check > /private/tmp/picklehub-eventdetails-navigation-contracts.log 2>&1` — успешно.
+- `npm run ds:build > /private/tmp/picklehub-eventdetails-navigation-build.log 2>&1` — успешно, включая повторную сборку после финальных правок.
+- `npm run typecheck` — прежние ошибки base-widget.tsx и EventListPage.tsx.
+- `npm run typecheck --workspace @picklehub/storybook` — после добавления vite/client только прежние ошибки Header.stories.tsx и base-widget.tsx.
+- `npm run build > /private/tmp/picklehub-eventdetails-navigation-tg-build.log 2>&1` — прежние ошибки типов блокируют сборку Mini App.
 - `git diff --check` — успешно.
-- Ручной Playwright smoke с локальным MSW: пользователь записался и вышел, счётчик менялся 2→3→2; двойной клик
-  записал аккаунт один раз и показал 3 места. Для уже состоящего в игре пользователя видна кнопка выхода.
-- Полный состав показывал выключенное действие; отменённая и начавшаяся игры не давали изменить состав.
-- `join-conflict` занял последнее место между чтением и командой: UI показал понятный отказ, перечитал состав
-  и показал 2 из 2. `join-error` вернул HTTP 503: пользователь не появился в составе; после возврата к обычному
-  сценарию повторная запись прошла успешно.
-- В успешных браузерных сценариях ошибок консоли нет; остаются два штатных предупреждения React Router.
-  Ответы HTTP 409/503 отражаются Playwright как ошибки загрузки ресурса, UI-ошибок нет.
-- Автоматизированного test runner для frontend в проекте нет; состояния и мутации проверены вручную в браузере.
-  Проверен ответ API 503 и восстановление, но отдельное выключение сетевого соединения браузера не выполнялось.
-  Моки не доказывают транзакционную защиту настоящего backend.
 
-### Следующий шаг
+## 2026-10-27 — нижнее положение футера EventDetailsPage
 
-S07 принята. Следующая отдельная задача — [S08: управление игрой и ссылка приглашения](../tasks/08-organizer-ui-links.md);
-автоматически не начиналась.
+Общий Footer уже подключён в App с position: fixed. В frontend/tg/src/index.css
+нижний отступ .tg-footer теперь вычисляет safe area самостоятельно, без зависимости
+от --footer-safe-bottom родительской .tg-shell. Это сохраняет bottom при использовании
+футера вне оболочки. EventDetailsPage сохраняет существующий pb-32.
 
-## 2026-09-25 — S08: управление игрой и ссылка приглашения (выполнена)
+Проверки:
 
-### Выполнено
-
-- Переиспользована форма создания для редактирования игры; данные загружаются по ID, а лимит нельзя уменьшить ниже
-  текущего состава. Изменение участия организатора обновляет его место отдельно от права управления.
-- Добавлены доступные только организатору действия редактирования, удаления участника и отмены. Удаление и отмена
-  требуют подтверждения с конкретным описанием; ошибки 403 API показываются в интерфейсе. После успешных мутаций
-  обновляются detail и списки через TanStack Query.
-- Ссылка ведёт прямо к `#/matches/:matchId`; mock query-параметры не включаются в приглашение. Добавлен интерфейс
-  адаптера для Telegram deep link; реальный Telegram формат остаётся для S16.
-- Mock API реализует все уже существовавшие в S03 операции управления, включая запрет чужого управления, лимит
-  состава, переключение участия и повторную отмену.
-- При ручной проверке обнаружена ошибка преобразования московского времени из S06, из-за которой редактируемое
-  время ошибочно проходило как прошедшее/невалидное. Исправлено итеративное преобразование с проверкой обратного
-  форматирования в `Europe/Moscow`.
-- Фактическое время — около 25 минут по отметкам инструментов.
-
-### Проверки
-
-- `npm run format` — успешно.
-- `npm run format:check` — успешно.
+- `npx prettier --check frontend/tg/src/index.css` — успешно.
 - `npm run lint` — успешно.
-- `npm run typecheck` — успешно.
-- `npm run contracts:check` — успешно; TypeSpec/OpenAPI/client сгенерированы повторно, diff артефактов отсутствует.
-- `npm run build` — успешно; production bundle TMA собран.
-- `npx prettier --check llm/tasks/08-organizer-ui-links.md llm/tasks/README.md llm/_docs/ai-development-log.md` — успешно.
+- `npm run contracts:check` — успешно.
+- `npm run typecheck` и `npm run build` — блокируются прежними ошибками
+  widgetVariants/glowVariants в base-widget.tsx и UseQueryResult в EventListPage.tsx.
+- `node --input-type=module` (inline Playwright/Chromium, CSS .tg-footer из index.css,
+  setContent без .tg-shell) — успешно: ширины 320/430, safe area 0/34px,
+  scrollY 0/1400; нижняя граница равна высоте viewport минус 12px и safe area.
+  После запрета запуска Chromium sandbox повторено с разрешением вне sandbox.
+  Проверена изолированная CSS-раскладка, не полный Telegram runtime.
 - `git diff --check` — успешно.
-- Ручной Playwright smoke: организатор без участия видит управление полной игрой; обычный игрок видит запись, но не
-  видит управление; прямая ссылка открывает нужный detail. Удаление участника показывает подтверждение, после
-  подтверждения состав обновился с 2 до 1. Лимит ниже 2 участников заблокирован клиентской проверкой.
-- Прямой mock API отказал в чужом управлении HTTP 403 `FORBIDDEN`. Повторный POST отмены вернул 200 оба раза и
-  сохранил единственное состояние `CANCELLED`. Переключение организатора без места после освобождения слота
-  добавило его в состав, сохранив роль владельца.
-- Автоматизированного frontend UI test runner в проекте нет; проверка сценариев выполнена вручную через браузер.
-  Telegram deep link в приложении Telegram не проверялся и остаётся для S16.
 
-### Следующий шаг
+## 2026-10-27 — смещение sticky-блока при переключении вкладок
 
-S08 принята. Следующая отдельная задача — [S09: NestJS и локальная база](../tasks/09-backend-foundation.md);
-выполнена ниже.
+В EventDetails панели остаются смонтированными в одной ячейке CSS Grid. Неактивные
+панели скрыты через visibility: hidden и не принимают клики. Высота области равна
+самой высокой панели: переключение на короткие результаты больше не сокращает
+страницу и не сдвигает прокрутку/закреплённую кнопку. На коротких вкладках остаётся
+свободное место. Общий GlassTabs не менялся.
 
-## 2026-09-25 — S09: NestJS и локальная база (выполнена)
+Проверки:
 
-### Выполнено
-
-- Добавлен npm workspace `backend/` на NestJS 11, строгом TypeScript и PostgreSQL-клиенте `pg`. В корне добавлен
-  `backend:check` и отдельные команды форматирования, линтинга, типов, тестов, проверки контракта и сборки.
-- Добавлен Compose-сервис PostgreSQL 17 с healthcheck и именованным volume; добавлен `.env.example` без секретов.
-  `.env` загружается через dotenv, значения переданные процессу имеют приоритет.
-- Конфигурация проверяет режим, порт, PostgreSQL URL, лог-уровень и точный allowlist HTTP(S) frontend-origin.
-  Ошибки перечисляют требования и имена полей, не выводя значения.
-- Добавлены `/health/live` и `/health/ready`; readiness выполняет `SELECT 1` и возвращает 503 при недоступной БД.
-  Потеря соединения пула не завершает процесс. Nest shutdown hooks закрывают пул при остановке.
-- Запрос получает проверяемый или сгенерированный `X-Request-Id`. JSON-логи включают только ID, метод, путь без
-  query string, HTTP status и duration; заголовки, тело, Telegram init data и прочие значения пользователя не пишутся.
-- Граница будущего публичного API документирована: продуктовые маршруты принадлежат TypeSpec; operational health
-  остаётся вне контракта. Скрипт сверяет девять путей TypeSpec с OpenAPI.
-- Фактическое время — около 2 часов с учётом загрузки зависимостей, настройки изоляции запуска и smoke-проверок;
-  плановая оценка в 60 минут превышена.
-
-### Проверки
-
-- `npm install` изолированно завершился HTTP 403 через настроенный прокси. Успешно установлено командой
-  `env -u HTTPS_PROXY -u HTTP_PROXY -u ALL_PROXY -u https_proxy -u http_proxy -u all_proxy -u NODE_TLS_REJECT_UNAUTHORIZED npm install`.
-  npm сообщил о 23 уязвимостях в полном дереве зависимостей; аудит и автоматическое обновление зависимостей не выполнялись.
-- `npm run backend:format` — успешно.
-- `npm run backend:check` — успешно: форматирование, ESLint без предупреждений, TypeScript, 5 тестов конфигурации и
-  health, 9 путей TypeSpec согласованы с OpenAPI, NestJS собран в `backend/dist`.
-- `docker compose -f backend/docker-compose.yml up -d --wait` — PostgreSQL healthy.
-- `NODE_ENV=development HOST=127.0.0.1 PORT=3000 DATABASE_URL=postgresql://picklehub:picklehub@127.0.0.1:5432/picklehub FRONTEND_ORIGINS=http://localhost:5173 node dist/main.js` — API запущен локально.
-- `curl --silent --show-error -i http://127.0.0.1:3000/health/live` — HTTP 200 и `X-Request-Id`.
-- `curl --silent --show-error -i http://127.0.0.1:3000/health/ready` — HTTP 200 с БД; после
-  `docker compose -f backend/docker-compose.yml stop postgres` вернулся HTTP 503 `{"status":"unavailable"}` и
-  Node-процесс продолжил работать. Затем Compose-сервис снова запущен и стал healthy.
-- Ctrl+C остановил локальный процесс; обработчики Nest shutdown hooks включены. Удаление данных PostgreSQL не выполнялось.
-- `NODE_ENV=invalid DATABASE_URL=postgresql://sample-secret-should-not-print node dist/main.js` — exit code 1,
-  показано только требование к `NODE_ENV`, переданное значение не попало в stderr.
-- `git diff --check` и форматирование изменённых Markdown — успешно.
-
-### Следующий шаг
-
-S09 принята. Следующая отдельная задача — [S10: Prisma-модели и устойчивые задания](../tasks/10-prisma-jobs.md);
-автоматически не начиналась.
-
-## 2026-09-25 — S10: Prisma-модели, миграции и устойчивые задания (выполнена)
-
-### Выполнено
-
-- Добавлены Prisma 6.16.2, Prisma Client, схема и первая PostgreSQL-миграция. В модели разделены внутренний
-  пользователь и уникальная Telegram identity; сессия хранит только хеш токена. Встреча ссылается на организатора
-  отдельно от состава, поэтому создание встречи организатором без участия поддерживается схемой.
-- База обеспечивает уникальность пары `game_id/user_id`, внешние ключи, диапазоны длительности и лимита,
-  положительную версию события, уникальный ключ дедупликации задания, допустимые попытки и согласованное состояние
-  lease. Синтетические fixtures не добавлялись.
-- При конкуренции за последнее место все операции, влияющие на вместимость, должны брать `SELECT ... FOR UPDATE`
-  для строки встречи до проверки состава и записи. Уникальный индекс отдельно защищает повторное участие.
-- Устойчивая очередь — таблица PostgreSQL `jobs`. Изменение встречи и enqueue обязаны выполняться в одной Prisma
-  транзакции; ключ `game:<id>:<version>:<event-type>` дедуплицирует события. Захват проектируется одним запросом
-  с `FOR UPDATE SKIP LOCKED`; lease — 5 минут, повторы — до 8 с задержкой `min(2^attempts * 5s, 1h)`, затем
-  `DEAD`. Восстановление возвращает просроченные захваты в очередь. Отправщик и доставка остаются для S17/S18.
-- Фактическое время активной работы инструментально не измерялось; сессия заняла около 2 часов с ожиданием
-  сетевых/средовых операций, план в 60 минут превышен.
-
-### Проверки
-
-- `env -u HTTPS_PROXY -u HTTP_PROXY -u ALL_PROXY -u https_proxy -u http_proxy -u all_proxy -u NODE_TLS_REJECT_UNAUTHORIZED npm install --workspace @picklehub/backend @prisma/client@6.16.2 prisma@6.16.2` — успешно; npm добавил 33 пакета и сообщил о 9 уязвимостях в полном дереве. Без очистки proxy установка получила HTTP 403; аудит и автоисправления не запускались.
-- `DATABASE_URL=postgresql://picklehub:picklehub@127.0.0.1:5432/picklehub npm run prisma:generate --workspace @picklehub/backend` — успешно после разрешения доступа Prisma к `~/.cache/prisma`.
-- `DATABASE_URL=postgresql://picklehub:picklehub@127.0.0.1:5432/picklehub_s10_verify npm run prisma:migrate:deploy --workspace @picklehub/backend` — успешно применена миграция `20260925110000_initial_jobs` к новой чистой изолированной БД.
-- `DATABASE_URL=postgresql://picklehub:picklehub@127.0.0.1:5432/picklehub_s10_verify npx prisma migrate status --schema backend/prisma/schema.prisma` — БД актуальна, найдена одна применённая миграция.
-- `DATABASE_URL=postgresql://picklehub:picklehub@127.0.0.1:5432/picklehub_s10_verify npx prisma validate --schema backend/prisma/schema.prisma` — схема валидна.
-- Синтетические SQL-проверки через `docker exec backend-postgres-1 psql -v ON_ERROR_STOP=1 -U picklehub -d picklehub_s10_verify`: organizer-only встреча вставляется без участника; синтетическое участие записывается; повтор той же пары отклонён уникальным индексом; `DO` проверил отказ ограничений для длительности 10 минут и лимита 1; транзакция с совместной вставкой встречи и задания завершена `ROLLBACK`, после чего обе строки отсутствуют.
-- `npm run backend:check` — успешно: Prisma Client generation, форматирование, ESLint, TypeScript, 5 тестов backend, проверка 9 TypeSpec/OpenAPI маршрутов и сборка.
-- `npx prisma format --check --schema backend/prisma/schema.prisma` — успешно.
-- `npx prettier --check package.json backend/package.json backend/README.md llm/tasks/10-prisma-jobs.md llm/tasks/README.md llm/_docs/ai-development-log.md` — успешно.
+- `npx prettier --check frontend/tg/src/components/EventDetails/EventDetails.tsx ds/storybook/src/EventDetails.stories.tsx` — успешно.
+- `npx eslint frontend/tg/src/components/EventDetails/EventDetails.tsx ds/storybook/src/EventDetails.stories.tsx --max-warnings 0` — успешно.
+- `npm test --workspace @picklehub/storybook -- src/EventDetails.stories.tsx` — 9/9 успешно;
+  после EPERM локального порта повторено вне sandbox. StickyHeader проверяет
+  переключение всех вкладок после прокрутки: scrollTop, scrollHeight и положение
+  блока неизменны, в дереве доступности видна одна tabpanel.
+- `npm run typecheck` — прежние ошибки base-widget.tsx и EventListPage.tsx.
+- `npm run contracts:check > /private/tmp/picklehub-tabs-contracts.log 2>&1` — успешно.
+- `npm run build > /private/tmp/picklehub-tabs-build.log 2>&1` — прежние ошибки типов блокируют сборку.
 - `git diff --check` — успешно.
-- Изолированная БД проверки удалена командой `docker exec backend-postgres-1 dropdb -U picklehub picklehub_s10_verify`; основная локальная БД не изменялась.
 
-### Следующий шаг
+## 2026-10-28 — EventDetailsPage без общей шапки и боковых отступов
 
-S10 принята. Следующая отдельная задача — [S11: Telegram-вход и сессия](../tasks/11-telegram-auth.md);
-автоматически не начиналась.
+По прямому запросу пользователя App использует точное совпадение маршрута
+/event/:eventId/details: скрывает Header, убирает px-3 оболочки и pt-22 main.
+HashRouter перенесён над AppContent для useMatch. На EventDetailsPage stickyTop=0.
 
-## 2026-09-25 — S11: Telegram-вход и сессия (выполнена)
+Проверки:
 
-### Выполнено
-
-- Добавлена проверка Telegram Mini App initData по официальной схеме HMAC-SHA-256: проверяются уникальность
-  полей, подпись постоянным временем сравнения, формат user, `auth_date` не старше 24 часов и не более чем
-  на 30 секунд в будущем. Ошибка возвращается без отражения initData.
-- `POST /sessions/telegram` создаёт или находит аккаунт по Telegram ID из подписанного payload, выдаёт случайный
-  256-битный Bearer токен на 30 дней и сохраняет в `sessions` только SHA-256 токена. Клиентский userId не принимается.
-  В `SessionAuthGuard` токен проверяется по хешу и сроку; аутентифицированный `userId` добавляется из БД.
-- Добавлен лимит входа 10 попыток в минуту на IP. Его состояние локально процессу, что соответствует текущему
-  одиночному процессу пилота. Для нескольких инстансов понадобится общее хранилище лимита.
-- Токен бота обязателен в runtime-конфигурации, добавлен только placeholder в `.env.example`. Логи S09 не пишут
-  тела/заголовки; документация запрещает хранить Bearer token в URL/browser storage и объясняет передачу через
-  `Authorization` при раздельных frontend/API-origin. Vite MSW mocks включаются только в режиме разработки.
-- Изменения публичного контракта не потребовались: маршрут и DTO сессии уже объявлены в S03.
-- Фактическое время не измерялось инструментально; активная работа заняла около 35 минут.
-
-### Проверки
-
-- `npm run backend:format` — успешно после форматирования трёх новых TypeScript-файлов.
-- Первые проверки выявили форматирование, а тест контроллера — лишнюю runtime-валидацию общей конфигурации при
-  обработке запроса. После исправлений `npm run backend:check` — успешно: Prisma Client generation, Prettier,
-  ESLint без предупреждений, TypeScript, 10 тестов, сверка 9 путей
-  TypeSpec/OpenAPI и сборка NestJS.
-- Новые синтетические тесты подтверждают корректную подпись, подделку, истёкший/future `auth_date` и хеширование
-  credential; реальный Telegram аккаунт и production bot token не использовались.
+- `npx prettier --check frontend/tg/src/components/App.tsx frontend/tg/src/pages/EventDetails/EventDetailsPage.tsx` — успешно.
+- `npm run lint` — успешно.
+- `npm run contracts:check` — успешно.
+- `npm test --workspace @picklehub/storybook -- src/EventDetailsNavigation.stories.tsx` — 3/3 успешно после повторного запуска вне sandbox (первый запуск: EPERM локального порта). Проверяют страницу и навигацию, не полную оболочку Telegram.
+- `npm run typecheck` и `npm run build` — блокируются ранее известными ошибками неиспользуемых widgetVariants/glowVariants в base-widget.tsx и UseQueryResult в EventListPage.tsx.
 - `git diff --check` — успешно.
-- `npx prettier --check backend/README.md llm/tasks/11-telegram-auth.md llm/tasks/README.md llm/_docs/ai-development-log.md`
-  — успешно.
-- Внешняя БД и реальный Telegram API в этой задаче не задействовались; развертывание пилота остаётся S19.
-
-### Следующий шаг
-
-S11 принята. Следующая отдельная задача — [S12: API создания и чтения игр](../tasks/12-game-api.md);
-автоматически не начиналась.
-
-## 2026-09-25 — S12: API создания и чтения игр (выполнена)
-
-### Выполнено
-
-- Реализованы защищённые `POST /games`, `GET /games` и `GET /games/{gameId}`. Создание проверяет форму и длины
-  строк, целые диапазоны контракта, ISO date-time с явной зоной и будущее время. Организатор всегда берётся
-  из сессии; участие по умолчанию включено. UTC сохраняется PostgreSQL `timestamptz`, в ответе отдаётся ISO UTC.
-- Создание встречи, опционального места организатора и записи идемпотентности с сериализованным ответом выполняется
-  атомарно. Ключ уникален в области пользователя; повтор с тем же телом возвращает сохранённый ответ, повтор ключа
-  с другим телом даёт `409 IDEMPOTENCY_KEY_REUSED`.
-- Список возвращает только будущие открытые игры с курсором по `(startsAt, id)`. Статус вычисляется как `SCHEDULED`
-  или `FULL`; детали включают состав, имена участников и роли. Неизвестная UUID возвращает `404 GAME_NOT_FOUND`.
-- Добавлена миграция для ключей идемпотентности и имени пользователя; уровень сделан nullable согласно необязательному
-  полю контракта, ограничение длительности БД согласовано с контрактом (30–480 минут).
-- Фактическое активное время инструментально не измерялось; работа заняла около 2 часов с миграцией и ручной
-  проверкой процессов.
-
-### Проверки
-
-- `npm run backend:check` — успешно после устранения выявленного форматирования: генерация Prisma Client, Prettier,
-  ESLint, TypeScript, 15 unit-тестов backend, проверка 9 путей TypeSpec/OpenAPI и сборка.
-- `docker exec backend-postgres-1 createdb -U picklehub picklehub_s12_verify` — создана изолированная БД.
-- `DATABASE_URL=postgresql://picklehub:picklehub@127.0.0.1:5432/picklehub_s12_verify npm run prisma:migrate:deploy --workspace @picklehub/backend`
-  — обе миграции применены успешно.
-- Ручной HTTP smoke с синтетической учётной записью: POST вернул 201; список и detail — 200; повтор POST с тем же
-  ключом вернул ту же игру и состав. API остановлен и запущен заново; detail и список сохранились, а `organizerParticipates`
-  и количество участника остались корректными. Реальные аккаунты и Telegram API не использовались.
-- Из `backend/`: `S12_INTEGRATION=1 DATABASE_URL=postgresql://picklehub:picklehub@127.0.0.1:5432/picklehub_s12_verify node --import tsx --test test/games.integration.spec.ts`
-  и тот же запуск без `--test` завершились с кодом 1 без диагностики Nest test worker. Этот нерабочий runner удалён;
-  persistence подтверждена ручным HTTP smoke с реальным PostgreSQL и перезапуском процесса.
-- Синтетические тесты контроллера покрывают участие/неучастие организатора, повтор и конфликт ключа, валидацию
-  прошлого времени и лимита, неизвестную игру.
-- Для первой попытки ручного smoke неверно использовался собранный до последнего изменения dist; после повторной
-  сборки результат списка перепроверен и корректен.
-
-### Следующий шаг
-
-S12 принята. Следующая отдельная задача — [S13: транзакционная запись и выход](../tasks/13-join-leave-transactions.md);
-автоматически не начиналась.
-
-## 2026-09-25 — S13: транзакционная запись и выход (выполнена)
-
-### Выполнено
-
-- Добавлены защищённые `PUT` и `DELETE /games/{gameId}/participation`. Обе операции в Prisma-транзакции сначала
-  блокируют строку игры через `SELECT ... FOR UPDATE`, затем читают состояние и состав. Тот же порядок блокировки
-  требуется будущим действиям организатора в S14.
-- Запись проверяет отмену, начало и свободное место под блокировкой. Заполненная игра возвращает `409 GAME_FULL`,
-  отменённая — `410 GAME_CANCELLED`, начавшаяся — `409 GAME_CONFLICT`. Уникальный индекс `(game_id, user_id)`
-  остаётся дополнительной защитой от дублей; ожидаемый конфликт уникальности обрабатывается.
-- Выход до начала удаляет только запись игрока. Организатор после выхода сохраняет владение. Повторная запись
-  и повторный выход по целевому состоянию возвращают текущую игру без второй мутации.
-- Успешный ответ сохраняется вместе с ключом идемпотентности в той же транзакции. Повтор ключа возвращает исходный
-  ответ; применение ключа к другому методу или пути даёт `409 IDEMPOTENCY_KEY_REUSED`. Поправлен существующий
-  unit-тест S12: повтор запроса теперь использует одно и то же время начала, без случайной разницы миллисекунд.
-- Фактическое активное время инструментально не измерялось; работа заняла менее одного часа. Блокировок по
-  реализации не осталось.
-
-### Проверки
-
-- `docker compose -f backend/docker-compose.yml ps` — PostgreSQL healthy.
-- `docker exec backend-postgres-1 createdb -U picklehub picklehub_s13_verify` — создана изолированная БД.
-- `DATABASE_URL=postgresql://picklehub:picklehub@127.0.0.1:5432/picklehub_s13_verify npm run prisma:migrate:deploy --workspace @picklehub/backend`
-  — обе миграции успешно применены. Первый запуск в песочнице получил `P1001`; повтор с разрешённым доступом
-  к локальному PostgreSQL прошёл.
-- Из `backend/`: `S13_INTEGRATION=1 DATABASE_URL=postgresql://picklehub:picklehub@127.0.0.1:5432/picklehub_s13_verify node --import tsx --test test/games.integration.spec.ts`
-  — успешно. Тест на настоящем PostgreSQL одновременно отправил заявки двух разных пользователей на последнее
-  место: одна успешна, другая получила `409 GAME_FULL`, число участников равно лимиту. Также проверены две
-  одновременные записи одного пользователя, повтор ключа, повтор выхода, освобождение места, сохранение прав
-  организатора, отменённая и начавшаяся игры. Одновременное применение одного ключа к разным играм даёт один
-  успешный ответ и один `409 IDEMPOTENCY_KEY_REUSED`.
-- `npm run backend:check` — успешно после исправления нестабильного S12 unit-теста: форматирование, ESLint,
-  TypeScript, 15 unit-тестов (интеграционный тест пропущен без явной переменной), проверка 9 путей TypeSpec
-  и сборка. Первый запуск выявил упомянутую нестабильность теста.
-- `git diff --check` и проверка форматирования и ссылок изменённых документов — успешно.
-- `docker exec backend-postgres-1 dropdb -U picklehub picklehub_s13_verify` — изолированная тестовая БД удалена;
-  основная локальная БД не изменялась.
-
-### Следующий шаг
-
-S13 принята. Следующая отдельная задача — [S14: API управления встречей](../tasks/14-organizer-api.md);
-автоматически не начиналась.
-
-## 2026-09-25 — S14: API управления встречей (выполнена)
-
-### Выполнено
-
-- Добавлены защищённые `PATCH /games/{gameId}`, `DELETE /games/{gameId}/participants/{userId}` и
-  `POST /games/{gameId}/cancellation`. Владелец проверяется сервером после блокировки строки игры; изменение
-  лимита, состава и статуса использует тот же порядок блокировки, что запись S13.
-- Изменение проверяет актуальный состав, будущую дату и поля контракта. Организатор может выключить своё участие,
-  сохранив владение; включение при полном составе отклоняется. Удаление освобождает место. Отмена сохраняет состав
-  и закрывает запись.
-- Изменения, удаление и отмена атомарно создают задания с версией события и уникальным ключом. Повторы по ключу
-  идемпотентности возвращают сохранённый ответ; повторная отмена с новым ключом не создаёт событие. Создание игры
-  планирует напоминание, если до срока отправки больше двух часов; перенос времени удаляет старое ожидающее задание
-  и создаёт новое, отмена удаляет ожидающее напоминание. Задания в обработке должны повторно проверять состояние
-  игры при доставке в S17–S18.
-- Добавлен интеграционный сценарий на настоящем PostgreSQL: права, лимит, переключатель участия, удаление,
-  повторная отмена, гонки записи с уменьшением лимита и отменой, а также откат всех трёх действий при ошибке
-  записи задания. Изменены `backend/src/games.controller.ts`, `backend/test/games.spec.ts`, добавлен
-  `backend/test/organizer.integration.spec.ts`; обновлены статус задачи и индекс.
-- Фактическое активное время инструментально не измерялось; работа заняла более планового часа. Блокировок для
-  приёмки S14 не осталось.
-
-### Проверки
-
-- `docker compose -f backend/docker-compose.yml ps` — PostgreSQL healthy после разрешённого доступа к Docker.
-- `docker exec backend-postgres-1 createdb -U picklehub picklehub_s14_verify` — создана изолированная БД.
-- `DATABASE_URL=postgresql://picklehub:picklehub@127.0.0.1:5432/picklehub_s14_verify npm run prisma:migrate:deploy --workspace @picklehub/backend`
-  — две миграции применены. Первый запуск в песочнице получил `P1001`; повтор с разрешённым доступом прошёл.
-- `npm run backend:format && npm run backend:check` — успешно после добавления заглушки заданий в S12 unit fixture:
-  Prettier, ESLint, TypeScript, 15 unit-тестов (2 интеграционных пропущены без флагов), сверка 9 путей TypeSpec и
-  сборка. Первый запуск обнаружил отсутствие заглушки в fixture; исправлено.
-- Из `backend/`: `S14_INTEGRATION=1 DATABASE_URL=postgresql://picklehub:picklehub@127.0.0.1:5432/picklehub_s14_verify node --import tsx --test test/organizer.integration.spec.ts`
-  — успешно, один интеграционный тест. Первый запуск выявил ошибку сценария: проверялся лимит 1 при минимуме 2;
-  сценарий исправлен на состав из трёх человек.
-- `npx prettier --check llm/tasks/14-organizer-api.md llm/tasks/README.md llm/_docs/ai-development-log.md`
-  и `git diff --check` — успешно. Относительные ссылки изменённых документов проверены командой:
-
-    ```sh
-    node -e 'const f=require("fs"),p=require("path");for(const file of ["llm/tasks/14-organizer-api.md","llm/tasks/README.md","llm/_docs/ai-development-log.md"]){const s=f.readFileSync(file,"utf8");for(const m of s.matchAll(/\]\(([^)]+)\)/g)){const link=m[1].split("#")[0];if(link&&!/^[a-z]+:/i.test(link)&&!f.existsSync(p.resolve(p.dirname(file),link)))throw Error(file+": "+link)}}'
-    ```
-
-    Результат: код 0, отсутствующих ссылок нет.
-
-- `docker exec backend-postgres-1 dropdb -U picklehub picklehub_s14_verify` — изолированная тестовая БД удалена;
-  основная локальная БД не изменялась.
-
-### Следующий шаг
-
-S14 принята. Следующая отдельная задача — [S15: подключение TMA к настоящему API](../tasks/15-real-api-integration.md);
-автоматически не начиналась. Доставка заданий и повторная проверка актуальности напоминаний остаются S17–S18.
-
-## 2026-09-25 — S15: подключение TMA к настоящему API (в работе)
-
-### Изменения и решения
-
-- TMA получает сессию через `POST /sessions/telegram` с исходными Telegram initData, держит Bearer-токен только
-  в памяти и передаёт его сгенерированному клиенту. Текущий пользователь берётся из ответа сессии; права и кнопки
-  записи, выхода и управления больше не зависят от mock ID. После `401` приложение очищает Query-кэш и повторяет
-  вход; есть экран ошибки с ручным повтором. Перезагрузка страницы создаёт новую сессию.
-- `npm run start:api` запускает Vite без MSW; `/api` проксируется на локальный NestJS. Искусственная Telegram-среда
-  отключена вместе с HTTP-моками. Обычный `npm start` остаётся отдельным mock-режимом. Production требует
-  `VITE_API_URL` при сборке; без адреса API экран входа показывает ошибку конфигурации.
-- Списки и детали обновляются при входе на экран, возвращении фокуса/видимости, после мутаций и периодически
-  (30/15 секунд). Ошибки управления обновляют detail, чтобы показать изменения другого пользователя. Мутации
-  подтверждаются только ответом сервера. Сетевой отказ не создаёт локального успешного состояния.
-- Добавлен сквозной интеграционный тест через сгенерированный OpenAPI-клиент, настоящий Nest HTTP API и PostgreSQL:
-  два синтетических Telegram-аккаунта проходят вход, создание, список, детали, запись, выход, удаление участника,
-  изменение и отмену; после перезапуска backend данные и сессия сохраняются; после остановки API запрос отвергается.
-  Тест использует собранный `backend/dist`, потому что `tsx` не сохраняет Nest decorator metadata при прямом
-  импорте исходного модуля. Изменены frontend API/session, App, игровые страницы, Query-хуки, Vite, npm-скрипты,
-  `backend/test/real-api.integration.spec.ts`, `backend/README.md`, статус задачи и индекс. Форматирование
-  существующего `eslint.config.js` приведено к Prettier для прохождения общей проверки.
-- Фактическое активное время инструментально не измерялось; работа заняла больше планового часа.
-
-### Проверки
-
-- `docker compose -f backend/docker-compose.yml ps` — PostgreSQL healthy.
-- `docker exec backend-postgres-1 createdb -U picklehub picklehub_s15_verify` — создана отдельная тестовая БД.
-- `DATABASE_URL=postgresql://picklehub:picklehub@127.0.0.1:5432/picklehub_s15_verify npm run prisma:migrate:deploy --workspace @picklehub/backend`
-  — две миграции применены. Первый запуск внутри песочницы получил `P1001`; повтор с разрешённым доступом прошёл.
-- Из `backend/`: `NODE_ENV=test S15_INTEGRATION=1 DATABASE_URL=postgresql://picklehub:picklehub@127.0.0.1:5432/picklehub_s15_verify node --import tsx --test test/real-api.integration.spec.ts`
-  — 1 интеграционный тест прошёл. Первые диагностические прогоны выявили неверный `NODE_ENV=local` из локального
-  `.env`, отсутствие Nest metadata при импорте исходников и двойное закрытие тестового приложения; тест исправлен.
-- `npm run format:check`, `npm run lint`, `npm run typecheck`, `npm run build`, `npm run contracts:check`,
-  `npm run backend:check` — успешно. Первоначальный `format:check` обнаружил ранее существовавшее отличие
-  `eslint.config.js` от Prettier; формат исправлен, повтор прошёл. Backend check: 15 unit-тестов прошли,
-  3 интеграционных пропущены без явных флагов; отдельный S15 интеграционный тест запущен выше.
-- `docker exec backend-postgres-1 dropdb -U picklehub picklehub_s15_verify` — изолированная БД удалена.
-- `npx prettier --single-quote --trailing-comma es5 --print-width 120 --check backend/test/real-api.integration.spec.ts`,
-  `npx prettier --check backend/README.md llm/tasks/15-real-api-integration.md llm/tasks/README.md llm/_docs/ai-development-log.md`,
-  `git diff --check` и проверка относительных Markdown-ссылок через `node -e` — успешно.
-
-### Остаток для приёмки
-
-- Сквозной сценарий на двух **реальных** Telegram-аккаунтах в TMA, включая перезагрузку страницы, изменение
-  состава другим пользователем и отключение сети в браузере, не выполнен: в среде нет двух доступных аккаунтов
-  и запущенной через Telegram Mini App. Синтетический тест не выдаётся за эту проверку. S15 остаётся в работе;
-  S16 не начиналась. После реальной проверки дополнить этот журнал, отметить критерии и сменить статус задачи.
-
-## 2026-09-29 — S15: продолжение локальной UI-проверки (в работе)
-
-### Изменения и результаты
-
-- Через `npm run start:api` и локальный NestJS открыты две браузерные вкладки с разными подписанными
-  синтетическими Telegram initData. MSW был отключён; в сетевых запросах видны `POST /api/sessions/telegram`,
-  `POST/GET/PATCH /api/games`, запись, выход, удаление участника и отмена с реальными HTTP-ответами backend.
-  Для браузерной имитации Telegram bridge использован тестовый `TelegramWebviewProxy`; это не проверка в клиенте
-  Telegram. Создание, детали, запись второго игрока, обновление состава и названия при возвращении на вкладку,
-  выход, повторная запись, удаление организатором и отмена отображались корректно.
-- Перезагрузка страницы создала новую сессию и сохранила игру и состав. После остановки и перезапуска backend
-  игра, изменённое название и состав сохранились. Принудительное истечение сессий только в изолированной БД
-  вызвало повторный `POST /sessions/telegram`; интерфейс восстановился. Полноценный клиент Telegram остаётся
-  непроверенным.
-- Проверка отключения сети выявила, что мутация оставалась в состоянии «Обновляем состав…»: TanStack Query
-  ставил её на паузу до восстановления соединения. В `frontend/tg/src/components/App.tsx` для мутаций добавлен
-  `networkMode: 'always'` при `retry: false`. Повторная браузерная проверка: `PUT /participation` завершился
-  `net::ERR_INTERNET_DISCONNECTED`, показана ошибка о сети, состав остался `1 из 8`; после восстановления сети
-  повторный клик дал `2 из 8`. Ложного успеха и автоматической отложенной записи больше нет.
-- Фактическое активное время инструментально не измерялось; эта сессия заняла больше планового часа.
-
-### Команды и проверки
-
-- `docker compose -f backend/docker-compose.yml ps` — сначала Docker daemon не работал; запущен Docker Desktop.
-  `docker compose -f backend/docker-compose.yml up -d --wait` — PostgreSQL healthy.
-- `docker exec backend-postgres-1 createdb -U picklehub picklehub_s15_ui_verify` — отдельная БД создана.
-  `DATABASE_URL=postgresql://picklehub:picklehub@127.0.0.1:5432/picklehub_s15_ui_verify npm run prisma:migrate:deploy --workspace @picklehub/backend`
-  — обе миграции применены; после `P1001` в песочнице повтор с разрешённым локальным доступом прошёл.
-- Из `backend/`: `NODE_ENV=test HOST=127.0.0.1 PORT=3000 DATABASE_URL=postgresql://picklehub:picklehub@127.0.0.1:5432/picklehub_s15_ui_verify TELEGRAM_BOT_TOKEN=<synthetic-test-token> FRONTEND_ORIGINS=http://localhost:5173 node dist/main.js`
-  — API запущен локально и один раз перезапущен. `npm run start:api` — Vite без моков запущен. Первые запуски
-  внутри песочницы получили `P1001` и `EPERM` на прослушивание порта; повтор с разрешённым доступом прошёл.
-- `docker exec backend-postgres-1 psql -U picklehub -d picklehub_s15_ui_verify -c "UPDATE sessions SET expires_at = now() - interval '1 minute'"`
-  — только тестовые сессии помечены истёкшими; затем браузер заново вошёл через Telegram endpoint.
-- `npm run format:check`, `npm run lint`, `npm run typecheck`, `npm run contracts:check`, `npm run build`,
-  `git diff --check` — успешно после исправления офлайн-мутации. Контракты сгенерированы воспроизводимо.
-- `docker exec backend-postgres-1 dropdb -U picklehub picklehub_s15_ui_verify` — отдельная тестовая БД удалена.
-  `docker compose -f backend/docker-compose.yml down` — запущенный для проверки PostgreSQL остановлен;
-  постоянный Docker volume сохранён.
-
-### Остаток
-
-- Проверка двух настоящих Telegram-аккаунтов в Mini App по-прежнему нужна для первого критерия S15.
-  В доступном браузере Telegram-сессий нет. S16 не начиналась.
-
-## 2026-09-29 — S15: приёмка завершена
-
-- Владелец сообщил: «я проверил. Можно закрыть этот этап». На основании его проверки первый критерий S15
-  отмечен выполненным. Детальный протокол проверки реальных аккаунтов владельцем не предоставлен; локальный
-  синтетический прогон и выполненные команды перечислены выше и не подменяют его подтверждение.
-- Статусы S15 и индекса задач обновлены. Следующий отдельный шаг — [S16: бот, ссылки и подготовка размещения](../tasks/16-bot-links-hosting.md);
-  в этой сессии не начинался.
-- `npx prettier --check llm/tasks/15-real-api-integration.md llm/tasks/README.md llm/_docs/ai-development-log.md`,
-  `git diff --check` и проверка относительных Markdown-ссылок через `node -e` — успешно.
-
-## 2026-09-29 — S16: бот, ссылки и план размещения (в работе)
-
-- Добавлены защищённый секретным заголовком webhook `POST /telegram/webhook` и ответ на приватный `/start` с
-  кнопкой Mini App. Ссылка приглашения ведёт в `/start g_<uuid>`; прямой `startapp` и маршрут кнопки открывают
-  игру после авторизации. Неверный/неизвестный ID обрабатывается без отражения пользовательского ввода.
-  Telegram identity хранит приватный chat ID, время запуска бота и `can_message`; ответ отправки `403` снимает
-  доступность. Миграция добавляет уникальность chat ID. Вход TMA и bot update сопоставляются по Telegram user ID.
-- В [плане](s16-bot-hosting-plan.md) описаны VM и PostgreSQL в `ru-central1`, HTTPS, переменные окружения,
-  миграции, резервное восстановление, rollback и действия владельца. GitHub Pages build получает публичные
-  `VITE_API_URL` и `VITE_TELEGRAM_BOT_USERNAME` из repository variables и отказывает в выпуске при их отсутствии.
-  Внешние ресурсы и webhook не создавались. Фактическое активное время инструментально не измерялось;
-  работа заняла более планового часа.
-
-### Проверки
-
-- `npm run backend:check` — после исправления ожидаемого объекта config-теста успешно: формат, линт, типы,
-  17 unit-тестов (3 прежних интеграционных пропущены без флагов), контракт 9 TypeSpec routes, сборка.
-  Первый прогон выявил новый поля в ожидаемом объекте теста; исправлено.
-- `npm run backend:test; npm run backend:format:check; npm run backend:lint; npm run backend:typecheck;
-npm run backend:contracts:check; npm run backend:build` — успешно после добавления проверки неизвестной игры:
-  18 тестов прошли, 3 прежних интеграционных пропущены. Тесты покрывают неверный webhook secret, private `/start`,
-  неверный/неизвестный UUID, связывание чата и ответ Telegram `403`.
-- `npm run format:check; npm run lint; npm run typecheck; npm run contracts:check; npm run build;
-node --import tsx --test frontend/tg/test/startParameter.spec.ts` — успешно; генерация контрактов воспроизводима,
-  тест параметра прошёл. Первый прогон frontend проверок выявил test-файл внутри `src` без Node types и
-  отсутствующий Vite env type; тест вынесен в `test`, тип добавлен, формат исправлен.
-- `docker compose -f backend/docker-compose.yml up -d --wait`, `docker exec backend-postgres-1 createdb -U picklehub
-picklehub_s16_verify`, `DATABASE_URL=postgresql://picklehub:picklehub@127.0.0.1:5432/picklehub_s16_verify
-npm run prisma:migrate:deploy --workspace @picklehub/backend` — успешно вне сетевой песочницы, 3 миграции
-  применены. Первый запуск миграции в песочнице получил `P1001`; после разрешённого локального доступа прошёл.
-  Затем `docker exec backend-postgres-1 dropdb -U picklehub picklehub_s16_verify` и
-  `docker compose -f backend/docker-compose.yml down` — успешно, тестовая БД удалена, volume сохранён.
-- Официальные страницы Telegram и Yandex Cloud не удалось получить: `curl` получил ошибку сертификата,
-  прямой запрос без proxy — DNS error, браузер — timeout. Актуальные правила и цены не выдаются за проверенные.
-
-### Остаток для приёмки
-
-- Проверить настоящий переход `/start` → кнопка → конкретная игра и `startapp`, неверный и неизвестный ID,
-  а также блокировку бота в согласованном Telegram-стенде с тестовыми участниками. Сейчас нет настроенного
-  публичного HTTPS API, webhook и доступного тестового аккаунта; синтетические тесты не заменяют этот сценарий.
-- Перед выбором провайдера проверить официальные условия Telegram Bot API/Mini Apps и Yandex Cloud,
-  договор, размещение данных/резервных копий и цену выбранной конфигурации. После этого дополнить план
-  подтверждёнными ссылками и расчётом. S16 остаётся в работе; S17 не начата.
-
-## 2026-09-29 — S16: приёмка завершена
-
-- Владелец сообщил: «я проверил. Можно закрывать». На основании его проверки реального перехода через
-  Telegram первый критерий S16 отмечен выполненным. Детальный протокол проверки владельцем не предоставлен;
-  локальные синтетические тесты и команды перечислены выше и не подменяют его подтверждение.
-- Второй и третий критерии закрыты реализованным учётом `can_message` и [планом размещения](s16-bot-hosting-plan.md).
-  Локальные проверки четвёртого критерия перечислены выше. Статусы S16 и индекса задач обновлены.
-- Проверка актуальных условий и цены Yandex Cloud, договора и размещения резервных копий остаётся обязательным
-  действием **до выбора и оплаты инфраструктуры**; подтверждения этих внешних условий в текущей среде нет.
-  Следующая отдельная задача — [S17: уведомления об изменениях](../tasks/17-change-notifications.md);
-  автоматически не начиналась.
-- `npx prettier --check llm/tasks/16-bot-links-hosting.md llm/tasks/README.md llm/_docs/ai-development-log.md`,
-  `git diff --check` и проверка относительных Markdown-ссылок через `node -e` — успешно после смены статусов.
-
-## 2026-09-29 — S17: уведомления об изменениях и отмене (в работе)
-
-- Добавлен отдельный процесс `backend/src/worker.ts`, который атомарно захватывает задания из PostgreSQL,
-  восстанавливает захваты старше 60 секунд и ограничивает число попыток. Событие раскрывается транзакционно
-  в уникальные задания на каждого адресата. Состав адресатов фиксируется в момент изменения игры; снимок
-  времени и площадки сохраняется также при отмене и удалении участника. Сообщение содержит московское время
-  с явной подписью и ссылку на игру. `GAME_REMINDER` не обрабатывается до S18.
-- Ответы Telegram классифицируются: `429` с `retry_after`, временные ошибки и неопределённый сетевой результат
-  повторяются с задержкой; `400`/`403` завершают адресное задание, `403` также снимает `can_message`.
-  Безопасная диагностика содержит только ID задания и ограниченный код ошибки. После неопределённого ответа
-  повтор может дать дубль сообщения: внешнее API не подтверждает exactly-once доставку.
-- `npm run backend:typecheck`, `npm run backend:test` — успешно после первоначального исправления типа
-  `retryAfterMs`; модульные тесты проверили адресатов, содержание сообщений и классификацию ответов.
-- `docker compose -f backend/docker-compose.yml up -d --wait`,
-  `docker exec backend-postgres-1 createdb -U picklehub picklehub_s17_verify` — успешно. Команда
-  `DATABASE_URL=postgresql://picklehub:picklehub@127.0.0.1:5432/picklehub_s17_verify npm run prisma:migrate:deploy --workspace @picklehub/backend`
-  сначала получила `P1001` в сетевой песочнице, затем с разрешённым локальным доступом успешно применила
-  три существующие миграции. `S17_INTEGRATION=1 DATABASE_URL=postgresql://picklehub:picklehub@127.0.0.1:5432/picklehub_s17_verify node --import tsx --test backend/test/notification-worker.integration.spec.ts`
-  также сначала получила `P1001` в песочнице, затем с локальным доступом прошла: конкурентный захват,
-  транзакционная раскладка адресатов, временный и постоянный отказ, восстановление после сбоя.
-- `npm run backend:check` сначала остановилась на формате `notification-worker.ts` после последней правки;
-  после `npx prettier --single-quote --trailing-comma es5 --print-width 120 --write backend/src/notification-worker.ts`
-  повторный запуск прошёл: формат, ESLint, типы, 20 unit-тестов (4 интеграционных без флагов пропущены),
-  контракт (9 REST-маршрутов) и сборка. Финальные проверки после следующей правки записаны ниже.
-- Фактическое активное время инструментально не измерялось; работа заняла больше планового часа.
-  Реальную доставку ограниченному набору тестовых Telegram-аккаунтов здесь проверить нельзя: нет доступного
-  стенда с публичным API/webhook и тестовыми чатами. Первый и последний критерии остаются открытыми;
-  S18 не начата.
-- После усиления теста повторный запуск на прежней БД обнаружил конфликт синтетических Telegram ID, затем
-  накопившиеся записи мешали общему подсчёту. Тест исправлен: уникальные ID, подсчёт по ID игры и очистка
-  своих строк. `docker exec backend-postgres-1 createdb -U picklehub picklehub_s17_final` и
-  `DATABASE_URL=postgresql://picklehub:picklehub@127.0.0.1:5432/picklehub_s17_final npm run prisma:migrate:deploy --workspace @picklehub/backend`
-  — успешно; `S17_INTEGRATION=1 DATABASE_URL=postgresql://picklehub:picklehub@127.0.0.1:5432/picklehub_s17_final node --import tsx --test backend/test/notification-worker.integration.spec.ts`
-  — два последовательных успешных прогона (1 тест в каждом).
-- Финальный `npm run backend:check` — успешно: Prisma generation, формат, линт, типы, 20 unit-тестов,
-  контракт (9 маршрутов) и сборка; 4 интеграционных теста без флагов пропущены. Предыдущий прогон после
-  изменения теста сначала нашёл неотформатированные два файла; они приведены к формату.
-  `npx prettier --check backend/README.md llm/tasks/17-change-notifications.md llm/tasks/README.md llm/_docs/ai-development-log.md`,
-  `git diff --check` и проверка относительных Markdown-ссылок через `node -e` — успешно.
-  `docker exec backend-postgres-1 dropdb -U picklehub picklehub_s17_verify`,
-  `docker exec backend-postgres-1 dropdb -U picklehub picklehub_s17_final`,
-  `docker compose -f backend/docker-compose.yml down` — успешно; изолированные БД удалены, volume сохранён.
-
-## 2026-09-29 — S17: приёмка завершена
-
-- Владелец сообщил: «я проверил, работает». На основании его проверки реальной доставки отмечен первый
-  критерий S17. Детальный протокол проверки тестовых аккаунтов владелец не предоставил; локальные
-  синтетические и интеграционные проверки перечислены выше и не подменяют это подтверждение.
-- Остальные критерии подтверждены ранее записанными проверками. Статусы S17 и индекса задач обновлены.
-  Следующая отдельная задача — [S18: напоминания за два часа](../tasks/18-two-hour-reminders.md);
-  в этой сессии не начиналась.
-- `npx prettier --check llm/tasks/17-change-notifications.md llm/tasks/README.md llm/_docs/ai-development-log.md`,
-  `git diff --check` и проверка относительных Markdown-ссылок через `node -e` — успешно после смены статусов.
-
-## 2026-09-29 — S18: напоминания за два часа (в работе)
-
-- Worker обрабатывает устойчивые `GAME_REMINDER` из S10/S14. Перед раскладкой и перед адресной доставкой проверяет
-  актуальные статус, время начала и состав. Участник должен занимать место и иметь время последней записи не позже
-  срока задания; организатор без места не включается. Перенос и отмена помечают ожидающие и захваченные старые
-  задания `DEAD` в транзакции изменения игры. Адресные задания имеют уникальный ключ исходного задания и участника.
-- Допустимое опоздание worker — 15 минут после срока «минус два часа»; в момент начала и после него отправка
-  запрещена. Позже окно закрывается без массовой догоняющей рассылки. Повтор после неизвестного ответа Telegram
-  всё ещё может доставить дубль; изменение игры между последней проверкой и сетевым запросом нельзя отозвать.
-- Изменены `backend/src/notification-worker.ts`, `backend/src/games.controller.ts`, тесты worker/контроллера,
-  `backend/README.md`, этот журнал, статус S18 и индекс задач. Контракт REST и схема БД не изменялись.
-- `npm run backend:test` сначала завершился с тремя ошибками: старому unit-моку не хватало `job.updateMany`;
-  мок исправлен. `npx prettier --single-quote --trailing-comma es5 --print-width 120 --write
-backend/src/notification-worker.ts backend/src/games.controller.ts backend/test/notification-worker.spec.ts
-backend/test/notification-worker.integration.spec.ts backend/test/organizer.integration.spec.ts
-backend/test/games.spec.ts` — успешно. `npm run backend:check` — успешно: генерация Prisma, формат, линт,
-  типы, 21 unit-тест, контракт (9 REST-маршрутов), сборка; 5 интеграционных тестов без флагов пропущены.
-- `docker compose -f backend/docker-compose.yml up -d --wait` и
-  `docker exec backend-postgres-1 createdb -U picklehub picklehub_s18_verify` — успешно. Команда
-  `DATABASE_URL=postgresql://picklehub:picklehub@127.0.0.1:5432/picklehub_s18_verify npm run prisma:migrate:deploy
---workspace @picklehub/backend` сначала получила `P1001` в сетевой песочнице, затем с разрешённым локальным
-  доступом успешно применила три миграции.
-- Первый запуск интеграционного теста из корня без локального доступа получил `P1001` и ошибку трансформации
-  декораторов из-за неверного рабочего каталога. Запуск из `backend/` с локальным доступом затем выявил
-  зависимость теста от порядка адресных заданий; тест исправлен. Команда из `backend/`:
-  `S18_INTEGRATION=1 S14_INTEGRATION=1 DATABASE_URL=postgresql://picklehub:picklehub@127.0.0.1:5432/picklehub_s18_verify
-node --import tsx --test test/notification-worker.integration.spec.ts test/organizer.integration.spec.ts` —
-  успешно, 2 пройдено и 1 пропущен. Управляемые часы покрывают порог, позднюю запись, выход, перенос вперёд
-  и назад, отмену, перезапуск и начало игры без двухчасового ожидания.
-- Фактическое активное время инструментально не измерялось; работа заняла больше планового часа. Ограниченную
-  реальную доставку тестовому Telegram-аккаунту подтвердить здесь нельзя: доступного тестового чата и стенда
-  с запущенным worker нет. Для приёмки нужно на тестовом стенде создать игру с началом через чуть более двух
-  часов, записать и связать с ботом тестовый аккаунт, затем сверить время получения сообщения и UTC-время
-  `available_at` задания; не менять системные часы или боевую БД. До этого S18 остаётся в работе, S19 не начата.
-- После добавления проверки повторного захвата совместный параллельный запуск двух интеграционных файлов дал
-  нестабильный результат: worker обработал чужое задание из той же БД. Раздельные команды из `backend/`
-  `S18_INTEGRATION=1 DATABASE_URL=postgresql://picklehub:picklehub@127.0.0.1:5432/picklehub_s18_verify
-node --import tsx --test test/notification-worker.integration.spec.ts` (1 пройден, 1 пропущен) и
-  `S14_INTEGRATION=1 DATABASE_URL=postgresql://picklehub:picklehub@127.0.0.1:5432/picklehub_s18_verify
-node --import tsx --test test/organizer.integration.spec.ts` (1 пройден) — успешно. Проверка повторного
-  захвата подтвердила неизменный адресный набор.
-- Повторный `npm run backend:check` — успешно: формат, линт, типы, 21 unit-тест (5 интеграционных пропущены),
-  контракт и сборка. `npx prettier --check backend/README.md llm/tasks/18-two-hour-reminders.md
-llm/tasks/README.md llm/_docs/ai-development-log.md` сначала нашёл два неформатированных документа;
-  `npx prettier --single-quote --trailing-comma es5 --print-width 120 --write
-backend/test/notification-worker.integration.spec.ts llm/tasks/18-two-hour-reminders.md
-llm/_docs/ai-development-log.md` исправил формат. Финальные проверки документов записаны ниже.
-- `npx prettier --check backend/README.md llm/tasks/18-two-hour-reminders.md llm/tasks/README.md
-llm/_docs/ai-development-log.md` после обновления журнала повторно потребовал форматировать журнал;
-  `npx prettier --write llm/_docs/ai-development-log.md` — успешно. `git diff --check` и проверка
-  существования относительных Markdown-ссылок в четырёх изменённых документах через `node -e` — успешно.
-  `docker exec backend-postgres-1 dropdb -U picklehub picklehub_s18_verify` и
-  `docker compose -f backend/docker-compose.yml down` — успешно; тестовая БД удалена, volume сохранён.
-
-## 2026-09-29 — S18: приёмка завершена
-
-- Владелец сообщил: «все работает, можно закрывать». Его подтверждение реальной работы принято для оставшегося
-  критерия доставки. Подробный протокол проверки времени и тестового аккаунта владелец не предоставил;
-  синтетические и интеграционные проверки перечислены выше и не подменяют это подтверждение.
-- Статусы S18 и индекса задач обновлены. Следующая отдельная задача —
-  [S19: размещение пилота](../tasks/19-pilot-deployment.md); в этой сессии не начиналась.
-- `npx prettier --write llm/tasks/18-two-hour-reminders.md llm/tasks/README.md llm/_docs/ai-development-log.md`,
-  `npx prettier --check llm/tasks/18-two-hour-reminders.md llm/tasks/README.md llm/_docs/ai-development-log.md`,
-  `git diff --check` и проверка относительных Markdown-ссылок трёх документов через `node -e` — успешно.
-
-## 2026-09-29 — S19: временный локальный стенд (в работе)
-
-- По решению владельца до появления хостинга подготовлен стенд только для тестовых Telegram-аккаунтов:
-  GitHub Pages для Mini App, локальные API/PostgreSQL/worker и Cloudflare Quick Tunnel для HTTPS API.
-  Это не выполняет требование доступности при выключенном ноутбуке; S19 не закрыта. Версия кода при
-  локальной проверке: `c7508a7`. Публичный URL туннеля не получен, webhook не регистрировался,
-  GitHub Pages не перепубликовывался, реальный Telegram-сценарий не проверялся.
-- Добавлены команды `pilot:api`, `pilot:worker`, `pilot:tunnel`, `pilot:webhook`; скрипт webhook читает
-  секреты из игнорируемого `backend/.env`, не печатает их и ограничивает updates типом `message`.
-  PostgreSQL в compose слушает только `127.0.0.1`. Исправлены пример CORS-origin и URL Mini App
-  на текущий GitHub Pages репозитория; Pages workflow требует HTTPS API. Порядок запуска, смены адреса,
-  резервного копирования, восстановления и отката описан в [инструкции](s19-local-pilot-runbook.md).
-- `npm run backend:check` — успешно: формат, линт, типы, 21 unit-тест (5 интеграционных пропущены),
-  9 контрактных REST-маршрутов и сборка API/worker.
-- `npm run format:check && npm run lint && npm run typecheck && npm run contracts:check &&
-VITE_API_URL=https://example.trycloudflare.com VITE_TELEGRAM_BOT_USERNAME=picklehub_test_bot npm run build`
-  — успешно: frontend и TypeSpec-клиент проверены, production-сборка создана. Поиск
-  `rg -l 'synthetic-token|replace-with-bot-token|TELEGRAM_BOT_TOKEN|dev:player|mockServiceWorker|http://127\\.0\\.0\\.1:3000' frontend/tg/dist/assets`
-  совпадений не нашёл. Сборка использовала только синтетические публичные значения.
-- `docker compose -p picklehub-s19-verify -f backend/docker-compose.yml up -d --wait` — успешно.
-  `DATABASE_URL=postgresql://picklehub:picklehub@127.0.0.1:5432/picklehub npm run prisma:migrate:deploy
---workspace @picklehub/backend` сначала получила `P1001` в песочнице, затем с разрешённым локальным
-  доступом успешно применила `20260925110000_initial_jobs`, `20260925130000_game_api` и
-  `20260929120000_bot_chat`.
-- В изолированной БД создана синтетическая таблица с одной записью. `docker compose -p
-picklehub-s19-verify -f backend/docker-compose.yml exec -T postgres pg_dump -U picklehub -Fc picklehub >
-/private/tmp/picklehub-s19-verify.dump`, затем `createdb -U picklehub picklehub_restore` и `pg_restore
--U picklehub -d picklehub_restore --exit-on-error` из этого dump — успешно; проверка показала одну
-  восстановленную запись и три применённые миграции. Команды с перенаправлением сначала упирались в
-  ограничение доступа к Docker socket, затем прошли с разрешением. Тестовый контейнер, volume и dump удалены.
-- Production API запущен с синтетическими переменными на локальном порту 3000: первая попытка получила
-  `P1001` в песочнице, повтор с разрешённым доступом запустился. `curl --silent --show-error --fail
-http://127.0.0.1:3000/health/live` и аналогично `/health/ready` вернули `{"status":"ok"}`;
-  OPTIONS `/games` с origin `https://nullorone.github.io` вернул `204` и соответствующий
-  `Access-Control-Allow-Origin`. API остановлен после проверки.
-- `node backend/scripts/pilot-webhook.mjs` ожидаемо вернул usage с кодом 2;
-  `TELEGRAM_BOT_TOKEN=synthetic TELEGRAM_WEBHOOK_SECRET=synthetic node backend/scripts/pilot-webhook.mjs
-set http://example.test` ожидаемо отверг HTTP без обращения к Telegram. `npx prettier --write` для
-  выбранных файлов применился, но сообщил, что не знает формат `.env.example`; остальные файлы
-  проверены отдельно. Фактическая подготовка заняла около 30 минут.
-- Дополнительная проверка всей сборки выявила `frontend/tg/dist/mockServiceWorker.js`: Vite копировал dev
-  worker из `public/` даже при выключенных в коде моках. Сборка изменена так, чтобы при `vite build`
-  публичный каталог не копировался, а нужный `tonconnect-manifest.json` добавлялся отдельно.
-  `npm run format:check && npm run lint && npm run typecheck &&
-VITE_API_URL=https://example.trycloudflare.com VITE_TELEGRAM_BOT_USERNAME=picklehub_test_bot npm run build`
-  повторно успешно. `test ! -e frontend/tg/dist/mockServiceWorker.js && test -e
-frontend/tg/dist/tonconnect-manifest.json && ! rg -l
-'synthetic-token|replace-with-bot-token|TELEGRAM_BOT_TOKEN|dev:player|mockServiceWorker|http://127\\.0\\.0\\.1:3000'
-frontend/tg/dist/assets` — успешно. Изменённый build-артефакт `.tsbuildinfo` возвращён к исходному
-  состоянию; продуктовый код от проверки не изменялся.
-- `brew install cloudflared` сначала не смог писать в Homebrew Cellar в песочнице; повтор с разрешением
-  не скачал пакет из-за ошибки проверки TLS-сертификата (`curl: 60`). Отключать проверку сертификата
-  не стали. `docker pull cloudflare/cloudflared:2026.9.1` сначала получил отказ доступа к Docker socket,
-  затем с разрешением успешно скачал официальный образ, но туннель и его подключение к локальному API
-  не проверялись. Для команды `pilot:tunnel` по-прежнему нужен локальный исполняемый `cloudflared`.
-- `npx prettier --single-quote --trailing-comma es5 --print-width 120 --check` для изменённых скрипта,
-  README, compose, задачи, индекса и документов; `node --check backend/scripts/pilot-webhook.mjs`,
-  `git diff --check` и проверка относительных Markdown-ссылок шести документов через `node -e` — успешно.
-- Остаётся установить `cloudflared`, указать настоящие секреты вне Git, поднять туннель,
-  обновить GitHub Actions variables и опубликовать Pages, зарегистрировать webhook, проверить
-  вход/игры/worker на тестовых аккаунтах. Для полной приёмки S19 позже требуется независимый от ноутбука
-  хостинг API, БД и worker с проверенными условиями хранения данных.
-
-## 2026-10-02 — DS01: отдельная основа дизайн-системы
-
-### Выполнено
-
-- По прямому запросу владельца создана отдельная DS01 и ADR-002; S19 остаётся в работе.
-- ds/tokens, ds/web и ds/storybook добавлены в npm workspaces. Источник токенов перенесён в ds;
-  @picklehub/tokens переэкспортирует тот же объект, включая default export подпути tokens.json.
-  Все прежние значения сохранены; добавлены стеклянные поверхности и контрастный текст опасного действия.
-- CSS токенов генерируется в игнорируемый dist. Компоненты экспортируют исходники для локальных Vite-потребителей.
-  Добавлен самостоятельный Button на React 18/Tailwind 4, без Telegram SDK и без копирования исходников Ein UI.
-- Storybook 10.6.1 показывает токены, Button, Controls, документацию, обе темы и узкий viewport.
-  Настроены Vitest 4.1.11, Chromium, проверки доступности и поведения. Телеметрия Storybook выключена.
-- Корневые команды ds:dev/ds:build/ds:check и дополнительные команды проверки готовы.
-  В Pages workflow Node 18 заменён на Node 22 для совместимости новых workspace-инструментов.
-- Card/TextField остаются для совместного кодинга с владельцем; порядок описан в ds/README.md.
-  UI Mini App не заменялся. Публикация не выполнялась. Исходные пользовательские изменения lock-файла сохранены;
-  npm дополнительно обновил пять совместимых транзитивных пакетов. Посторонние изменения не затрагивались.
-
-### Проверки
-
-- npm view storybook version и npm view @storybook/react-vite/@storybook/addon-vitest peerDependencies
-  — получена версия 10.6.1, подтверждена поддержка React 18 и Vite 6.
-  Первая попытка в песочнице получила ENOTFOUND; повтор вне неё успешен.
-- `npm install --ignore-scripts --fetch-retries=0 --fetch-timeout=20000` — успешно вне песочницы после ENOTFOUND:
-  добавлено 163 пакета, изменено 5. npm сообщил 27 уязвимостей (4 moderate, 23 high) во всём дереве;
-  отдельный аудит и исправление существующего дерева в эту задачу не входили, audit fix не выполнялся.
-- `npm exec --workspace @picklehub/storybook -- playwright install chromium` — успешно вне песочницы
-  после EPERM на запись браузерного кэша.
-- Первый ds:lint выявил, что TypeScript не включал скрытую .storybook: исправлены явные include-globs,
-  без отключения правил. Повторные lint и typecheck успешны.
-- Первый `npm run ds:test` в песочнице получил EPERM на локальный порт. Повтор вне песочницы выявил
-  перезагрузку React jsx-runtime оптимизатором Vite; добавлен optimizeDeps.include. Устаревший ручной
-  setProjectAnnotations удалён: Storybook 10.6 применяет preview и addon annotations автоматически.
-- Итоговый `npm run ds:check` вне песочницы — успешно: форматирование, typed ESLint, строгий TypeScript
-  трёх пакетов, 11 браузерных сценариев в двух файлах и статическая сборка Storybook.
-  Проверены click/Enter/Space, видимый фокус, disabled, ref и type=button/type=submit внутри формы;
-  a11y настроен как ошибка проверки. Сборка предупреждает о крупных чанках документации и axe;
-  лимиты и правила не ослаблялись. Node 26 локально также сообщает DEP0205 в зависимостях.
-- `npm run format:check && npm run lint && npm run typecheck && npm run contracts:check && npm run build`
-  — успешно. Первоначальная проверка формата eslint.config.js потребовала Prettier; после форматирования
-  вся цепочка прошла. TypeSpec-контракты и клиент воспроизводимы, изменения контрактов отсутствуют.
-- `node --import tsx --test frontend/tg/test/*.spec.ts` — успешно, один тест.
-- `node --import tsx --input-type=module` с assert: сравнение всех старых значений из
-  `git show HEAD:frontend/packages/tokens/src/tokens.json` с новым источником — успешно;
-  @picklehub/tokens и default export @picklehub/tokens/tokens.json равны новому объекту по ссылке.
-- `npm run ds:dev` — успешно вне песочницы после запрета локального порта; адрес http://localhost:6006.
-- `node /private/tmp/picklehub-ds-preview.mjs` вне песочницы — успешно: обе темы при ширине 320 px,
-  отсутствие горизонтальной прокрутки, фокус, reduced motion и имитация плотного fallback без размытия.
-  Первоначальная проверка reduced motion ошибочно ожидала duration=0; проверка исправлена на
-  transition-property=none, код компонента не менялся. Скрипт временный; постоянные проверки — stories.
-  Снимки .playwright-mcp/ds01-light-320.png, ds01-dark-320.png, ds01-tokens-light-320.png,
-  ds01-tokens-dark-320.png и ds01-fallback-320.png сохранены локально. Снимок тёмной темы осмотрен.
-- Build-артефакт frontend/tg/tsconfig.node.tsbuildinfo возвращён к исходному состоянию.
-  Фактическое время разработки из-за пауз между сообщениями не оценивалось.
-
-### Приёмка
-
-DS01 выполнена. Следующий совместный шаг — Card по образцу Button; он не начат.
-Проверки оформления документов и ссылок, а также git diff --check перечислены ниже.
-
-- `npx prettier --single-quote --trailing-comma es5 --print-width 120 --check frontend/packages/tokens
-llm/00-project-overview.md llm/README.md llm/_docs/adr-002-design-system.md llm/_docs/ai-development-log.md
-llm/tasks/ds01-design-system-foundation.md llm/tasks/README.md` — успешно.
-- `npm run ds:format:check` и `git diff --check` — успешно.
-- Проверка относительных Markdown-ссылок через Python: 7 документов, 80 локальных ссылок — успешно.
-- Генератор CSS также включён в recommended ESLint для ds/**/*.mjs; итоговые `npm run ds:lint`
-  и проверка формата eslint.config.js — успешно.
-
-## 2026-10-02 — продолжение проверки каталога EIN
-
-- Продолжены существующие незавершённые изменения компонентов и stories EIN в `ds/`.
-  Новые продуктовые маршруты и интеграции не добавлялись; S19 и визуальная приёмка DS02 остаются в работе.
-- Удалён неиспользуемый импорт в Card story. Первый `npm run ds:test` выявил 17 ошибок доступности
-  в 12 файлах: подписи controls, порядок заголовков, пустой заголовок таблицы и доступ к прокрутке.
-  Исправлены stories и демонстрационные блоки, именование Slider передаётся его Thumb,
-  ScrollArea viewport получает клавиатурный фокус. Progress теперь передаёт value в Radix Root,
-  поэтому доступное числовое значение соответствует визуальному.
-- Уточнено распространение MIT notice на дополнительные компоненты и демонстрации EIN.
-- `npm run ds:format` — успешно. После последнего изменения PricingPage проверка формата потребовала
-  `npx prettier --write ds/web/src/blocks/PricingPage.tsx`; повтор успешен.
-- `npm run ds:test` вне песочницы — успешно: 43 файла, 105 браузерных тестов, включая a11y.
-  Повторные запуски внутри песочницы получили `listen EPERM ::1:63315`; запуск с разрешением прошёл.
-  Отдельный `npm test --workspace @picklehub/storybook -- src/scrollArea.stories.tsx
-src/notification.stories.tsx` подтвердил необходимость клавиатурного доступа к ScrollArea;
-  эти ошибки устранены перед полным успешным прогоном.
-- `npm run ds:format:check && npm run ds:lint && npm run ds:typecheck && npm run ds:build` — успешно.
-  Сборка сообщает о директивах `use client` в Framer Motion, крупных чанках и Node DEP0205;
-  проверки не ослаблялись.
-- `npm run contracts:check` — успешно: два генерируемых файла воспроизводимы и не изменились.
-- `npm run format:check && npm run lint && npm run typecheck && npm run build` — успешно для Mini App.
-- `git diff --check` — успешно. Сравнение реальных страниц EIN со Storybook в этой сессии не выполнялось;
-  DS02 не объявляется принятой только на основании автоматических проверок.
-
-## 2026-10-03 — DS03: существующий Telegram UI на DS
-
-- По прямому запросу владельца подключён @picklehub/ui-web. Локальные Button/Card/TextField
-  стали адаптерами DS; форма использует GlassTextarea и GlassSwitch, действия-ссылки — asChild.
-  Обновлены список, детали, создание/редактирование и повтор авторизации. Маршруты и API сохранены.
-- DS CSS и токены генерируются автоматически перед dev/dev:api/dev:https/build. Telegram выбирает
-  data-theme и data-ds-theme; приложение использует EIN-палитру, фон со свечением, стеклянные карточки,
-  контрастные поля и непрозрачный градиент кнопки. Сохранены 48 px controls, ошибки, reduced motion
-  и плотная поверхность без backdrop-filter. Добавлены связи ошибок textarea через aria-describedby.
-- Импорт DS выявил NodeJS.Timeout в браузерном ClockWidget: заменён на ReturnType<typeof setInterval>.
-  Первая проверка типов не прошла; после исправления успешна, Node-типы в Mini App не добавлялись.
-- `npm install --package-lock-only --ignore-scripts --offline` — успешно; lock обновлён для локального DS.
-- `npm run format:check && npm run lint && npm run typecheck && npm run contracts:check && npm run build`
-  — успешно. После финальных изменений повторены format:check, lint, typecheck и build — успешно.
-  Контракты воспроизводимы, сгенерированные файлы не изменены. Сборка сообщает Node DEP0205.
-- `node --import tsx --test frontend/tg/test/*.spec.ts` — успешно, 1 тест.
-- `npm run ds:format:check && npm run ds:lint && npm run ds:typecheck` — успешно.
-- `npm run ds:test` вне песочницы — успешно: 43 файла, 105 браузерных тестов.
-- `npm start -- --host 127.0.0.1` получил listen EPERM в песочнице; повтор с разрешением успешен.
-- `node /private/tmp/picklehub-tg-ds-preview.mjs` с разрешением — успешно: обе темы на 320 px,
-  отсутствие горизонтальной прокрутки списка/формы/деталей, переключение участия, создание игры
-  через моковый API, переход в детали, отсутствие pageerror. Снимки сохранены в .playwright-mcp/tg-ds-*.
-  Список и форма осмотрены. Проверка переключения темы учитывает завершение CSS-перехода 400 ms.
-- Документы отформатированы через Prettier; `git diff --check` — успешно.
-
-DS03 выполнена локально. Публикация и проверка с реальным Telegram/API не выполнялись;
-статусы S19 и визуальной приёмки DS02 не менялись.
-
-## 2026-10-04 — закреплённый компактный футер Telegram UI
-
-- По прямому запросу владельца добавлен Basic Dock (GlassDock) в закреплённом нижнем футере.
-  Кнопки «Главная», «Играть», «Профиль» с иконками дома, мяча и человека имеют размер 40 × 40 px;
-  увеличение при наведении отключено. Главная открывает список игр, Играть — существующую форму создания,
-  Профиль — новый минимальный экран с displayName текущей сессии, без новых API и редактирования данных.
-- Нижний отступ контента 104 px плюс safe area учитывает футер, отступы и запас;
-  используются CSS env и Telegram safe-area переменные. Подложка и иконки адаптированы к обеим темам.
-- `npm run format:check && npm run lint && npm run typecheck && npm run contracts:check && npm run build
-&& node --import tsx --test frontend/tg/test/*.spec.ts` — успешно, 1 тест;
-  контракты воспроизводимы и не изменены. Сборка сообщает существующее предупреждение Node DEP0205.
-- `npm start -- --host 127.0.0.1` — успешно.
-- Первоначальный запуск Playwright в песочнице получил Chromium bootstrap_check_in Permission denied.
-  `node /private/tmp/picklehub-footer-check.mjs` с разрешением вне песочницы — успешно:
-  обе темы на 320 px, все три перехода, размер кнопок при наведении, фиксированная позиция,
-  отсутствие горизонтальной прокрутки, конец формы выше футера и имитация safe area 34 px.
-- Публикация не выполнялась.
-
-### Уточнение ширины футера
-
-- Плашка Dock растянута до ширины карточек: общий контейнер max-w-lg и px-4 / sm:px-6.
-  Иконки распределены через justify-content: space-between; размер кнопок и безопасный отступ сохранены.
-- `npm run format:check && npm run lint && npm run typecheck && npm run contracts:check && npm run build
-&& node --import tsx --test frontend/tg/test/*.spec.ts` — успешно, 1 тест.
-- `node /private/tmp/picklehub-footer-check.mjs` вне песочницы — успешно:
-  совпадение краёв и ширины плашки с карточками на 320 и 768 px, равные промежутки между кнопками;
-  повторно проверены навигация, обе темы, размер 40 px, фиксация и безопасный отступ при прокрутке.
-
-### Центрирование всплывающих подписей Dock
-
-- В горизонтальном GlassDock подписи привязаны к середине кнопки через left-1/2 и -translate-x-1/2.
-  Исправление применяется и к компактному футеру; вертикальное расположение не затронуто.
-- `npm run ds:format:check && npm run ds:lint && npm run ds:typecheck && npm run contracts:check
-&& npm run build` — успешно.
-- `node /private/tmp/picklehub-footer-check.mjs` вне песочницы — успешно:
-  добавлена проверка совпадения центров всех трёх подписей и кнопок с погрешностью менее 1 px.
-  Повторены проверки навигации, ширины, размеров и безопасного отступа.
-  Первый запуск Chromium в песочнице получил Permission denied; разрешённый повтор успешен.
-- `npm test --workspace @picklehub/storybook -- src/dock.stories.tsx` вне песочницы — успешно,
-  1 браузерный тест Dock, включая проверку доступности.
-
-### Увеличенные кнопки футера
-
-- По запросу владельца боковые кнопки стали 52 × 52 px, масштаб иконок 1.5.
-  «Играть» — 64 × 64 px, круглая, overflow hidden, translateY(-10px) по последнему уточнению;
-  масштаб мяча 2. Свечение оставлено только у центральной кнопки, общий glow Dock и светящиеся
-  индикаторы футера скрыты. GlassDock поддерживает buttonStyle, iconScale и независимый glow,
-  стандартное поведение других Dock сохранено. Нижний запас контента увеличен до 124 px плюс safe area.
-- `npx prettier --write ds/web/src/innovative/glass-dock.tsx frontend/tg/src/components/Footer.tsx
-frontend/tg/src/index.css` — успешно.
-- `npm run format:check && npm run lint && npm run ds:format:check && npm run ds:lint
-&& npm run ds:typecheck && npm run typecheck && npm run contracts:check && npm run build` — успешно.
-- `npm test --workspace @picklehub/storybook -- src/dock.stories.tsx` вне песочницы — успешно, 1 тест.
-- `node /private/tmp/picklehub-footer-check.mjs` вне песочницы — успешно: размеры 52/64,
-  масштаб 1.5/2, свечение только у Играть, подъём 10 px, подписи по центру, обе темы,
-  совпадение с карточками на 320/768 px, space-between и безопасная прокрутка.
-  Первая проверка ошибочно ожидала разницу верхних границ 22 px; браузер подтвердил 10 px,
-  ожидание исправлено без изменения реализации.
-- `npx prettier --check frontend/tg/src/index.css && node --import tsx --test frontend/tg/test/*.spec.ts
-&& git diff --check` — успешно, 1 тест.
-
-### Независимый индикатор активного пункта
-
-- Убрано скрытие активного огонька футера. Индикатор зависит от active, свечение кнопки — от glow;
-  постоянное свечение «Играть» сохраняется при выборе Главной или Профиля.
-  Исправлено центрирование огонька по горизонтали; активная кнопка получает aria-current=page.
-  Использован существующий GlassDock, новый тип компонента не требуется.
-- `npm run format:check && npm run lint && npm run ds:format:check && npm run ds:lint
-&& npm run ds:typecheck && npm run typecheck && npm run contracts:check && npm run build
-&& node --import tsx --test frontend/tg/test/*.spec.ts` — успешно, 1 тест.
-- `npm test --workspace @picklehub/storybook -- src/dock.stories.tsx` вне песочницы — успешно, 1 тест.
-- `node /private/tmp/picklehub-footer-check.mjs` вне песочницы — успешно: на всех трёх маршрутах
-  ровно один видимый огонёк под активной кнопкой, совпадение центров, aria-current, постоянное свечение
-  только Играть; повторены размеры, масштаб, навигация, обе темы и безопасные отступы.
-  Первая проверка выявила смещение огонька; после исправления позиционирования повтор успешен.
-- По уточнению владельца индикатор футера расположен строго снизу по центру. bottom=-8px
-  выводит его ниже кнопки, включая увеличенную Играть. Браузерная проверка дополнена сравнением
-  нижней границы кнопки и верхней границы индикатора; после корректировки успешна.
-  Центрирование задаётся классами GlassDock без дублирования CSS transform.
-- Уточнение зазора индикатора: ровно 4 px от нижнего края активной кнопки до огонька.
-  bottom=-10px для боковых, -12px для Играть с учётом размера 64 px и translateY(-10px).
-  Центральная кнопка выбирается через :has(button[aria-label="Играть"]), поскольку toolbar содержит
-  декоративные слои перед пунктами; прежний nth-child не выбирал нужный пункт. Исправлена также
-  привязка поднятой подписи Играть. Первый замер показал 2 px у Играть, исправленный — 4 px.
-- `node /private/tmp/picklehub-footer-check.mjs` вне песочницы — успешно: измеренный зазор
-  Главная/Играть/Профиль равен 4 px в обеих темах; остальные проверки футера прошли.
-- `npm run format:check && npm run lint && npm run typecheck && npm run contracts:check
-&& npm run build && node --import tsx --test frontend/tg/test/*.spec.ts` — успешно.
-  Первоначальная проверка формата потребовала Prettier для длинного селектора; повтор успешен.
-
-### Привязка индикатора к геометрии кнопки Играть
-
-- По запросу владельца translateY кнопки Играть заменён на position:absolute и top:0
-  внутри контейнера 64 × 64 px, поднятого через position:relative/top:-10px.
-  GlassDock принимает containerStyle; футер выравнивает контейнеры по верхнему краю.
-  Индикаторы всех пунктов используют top:calc(100% + 4px) относительно контейнера,
-  совпадающего с границами кнопки. Отдельные поправки bottom для Играть удалены.
-- `npx prettier --write ds/web/src/innovative/glass-dock.tsx frontend/tg/src/components/Footer.tsx
-frontend/tg/src/index.css` — успешно.
-- `npm run format:check && npm run lint && npm run ds:format:check && npm run ds:lint
-&& npm run ds:typecheck && npm run typecheck && npm run contracts:check && npm run build
-&& node --import tsx --test frontend/tg/test/*.spec.ts` — успешно.
-- `npm test --workspace @picklehub/storybook -- src/dock.stories.tsx` вне песочницы — успешно, 1 тест.
-- `node /private/tmp/picklehub-footer-check.mjs` вне песочницы — успешно: зазор 4 px под всеми
-  тремя кнопками в обеих темах, центрирование, подъём Играть на 10 px, размеры/масштаб,
-  независимое свечение и активный пункт, ширина 320/768, space-between и безопасная прокрутка.
-
-### Компактные боковые кнопки футера
-
-- По запросу владельца Главная и Профиль уменьшены до 40 × 40 px, iconScale=1.
-  Играть сохраняет 64 × 64 px, iconScale=2, абсолютное позиционирование и свечение.
-- `npm run format:check && npm run lint && npm run typecheck && npm run contracts:check
-&& npm run build && node --import tsx --test frontend/tg/test/*.spec.ts` — успешно, 1 тест.
-- `node /private/tmp/picklehub-footer-check.mjs` вне песочницы — успешно:
-  размеры 40/64 px и масштаб 1/2, зазор огонька 4 px на всех пунктах, поднятая Играть,
-  обе темы, навигация, ширина карточек 320/768 px, space-between и безопасная прокрутка.
-
-### SVG-мяч для кнопки «Играть» — 2026-10-04
-
-- По запросу владельца контурная иконка заменена собственной SVG-иллюстрацией зелёного
-  мяча для пиклбола: девять тёмных отверстий, овалы по краям и боковая тень.
-  Референс: https://www.vectorstock.com/royalty-free-vector/pickleball-icon-green-ball-vector-55257485.
-  Страница и превью недоступны через web; curl получил DNS-ошибку в песочнице, повтор
-  вне песочницы — ошибку TLS. Точное визуальное совпадение не проверено; исходный SVG не скачивался.
-- `npx prettier --write frontend/tg/src/components/Footer.tsx` — успешно.
-- `npm run format:check && npm run lint && npm run typecheck && npm run contracts:check
-&& npm run build && node --import tsx --test frontend/tg/test/*.spec.ts` — успешно, 1 тест.
-  Сборка сообщает существующее предупреждение Node DEP0205.
-- Браузерная проверка через `node --input-type=module -e` с Playwright — успешно:
-  обе темы при ширине 320 px, кнопка открывает форму создания игры. Первый запуск Chromium
-  в песочнице получил Permission denied; повтор с разрешением вне песочницы успешен.
-  Снимки: `/private/tmp/pickleball-icon-light.png`, `/private/tmp/pickleball-icon-dark.png`.
-  Тёмная тема осмотрена визуально. Публикация не выполнялась.
-- `npx prettier --check llm/_docs/ai-development-log.md && git diff --check` — успешно.
-
-### Масштаб и отдельный файл SVG
-
-- По уточнению владельца мяч вынесен в `frontend/tg/src/assets/pickleball.svg`,
-  Footer импортирует его как изображение; `iconScale` кнопки «Играть» увеличен до 3.5.
-- `npx prettier --write frontend/tg/src/components/Footer.tsx llm/_docs/ai-development-log.md` — успешно.
-- `npm run format:check && npm run lint && npm run typecheck && npm run contracts:check
-&& npm run build && node --import tsx --test frontend/tg/test/*.spec.ts` — повторно успешно, 1 тест.
-- `npx prettier --check llm/_docs/ai-development-log.md && git diff --check` — успешно.
-
-### Отскок кнопки «Играть» и остановка на форме
-
-- Добавлена плавная CSS-анимация контейнера: цикл 1.8 секунды, ход 33 px,
-  ускорение при падении и замедление на подъёме. Нижняя точка совпадает с низом футера.
-  Подпись и индикатор двигаются вместе с кнопкой; горизонтальное центрирование сохранено.
-- По уточнению владельца анимация отключена на `/games/new` через aria-current активной кнопки,
-  после ухода с формы возобновляется. Системная настройка reduced motion отключает движение.
-- `npx prettier --write frontend/tg/src/index.css && npm run format:check && npm run lint
-&& npm run typecheck && npm run contracts:check && npm run build
-&& node --import tsx --test frontend/tg/test/*.spec.ts` — успешно, 1 тест; повторено после уточнения.
-- `npx prettier --check frontend/tg/src/index.css && npm run build` — успешно после коррекции нижней точки.
-- Проверки через `node --input-type=module -e` с Playwright вне песочницы — успешно:
-  вертикальное движение, центрирование, касание низа футера в обеих темах на 320 px (зазор 0 px),
-  переход к форме, остановка на форме, возобновление на главной и reduced motion.
-- Первоначальная проверка через locator.click ожидала стабильной позиции движущейся кнопки
-  и завершилась по таймауту; повтор использует обычный клик мыши по центру кнопки.
-- `npx prettier --write llm/_docs/ai-development-log.md && git diff --check` — успешно.
-
-### Avatar вместо иконки профиля — 2026-10-04
-
-- По запросу владельца пункт профиля в футере использует GlassAvatar и GlassAvatarFallback
-  из @picklehub/ui-web. Отображаются до двух инициалов displayName текущей сессии;
-  фото в SessionUser отсутствует. Цвета используют токены обеих тем, размер — 40 px.
-  Сохранены доступное имя «Профиль», переход /profile и активный индикатор.
-- `npx prettier --write frontend/tg/src/components/Footer.tsx && npm run format:check
-&& npm run lint && npm run typecheck && npm run contracts:check && npm run build
-&& node --import tsx --test frontend/tg/test/*.spec.ts` — успешно, 1 тест.
-- После уточнения цветов повторены форматирование, lint, типы, сборка и тест — успешно.
-  Сборка сообщает существующее предупреждение Node DEP0205. Браузерная проверка не выполнялась.
-
-### Header: Storybook и Telegram UI — 2026-10-06
-
-- По прямому запросу владельца сначала создан Header в @picklehub/ui-web и stories
-  Components/Header (Default, WithPhoto, Narrow), затем подключён в авторизованной оболочке Mini App.
-  PICKLEHUB строго по центру, font-weight 300 и letter-spacing 2px; справа GlassAvatar.
-  По уточнению владельца fallback показывает только первую букву имени. Кнопка открывает /profile.
-  Header учитывает верхние safe area; API и контракты не изменены.
-- `npm test --workspace @picklehub/storybook -- src/Header.stories.tsx` — успешно вне песочницы,
-  3 браузерных теста. Первый запуск в песочнице получил listen EPERM; разрешённый повтор успешен.
-  Проверены центрирование, начертание, интервал, первая буква и вызов обработчика профиля.
-- `npx prettier --write ds/web/src/blocks/Header.tsx ds/web/src/index.ts
-ds/storybook/src/Header.stories.tsx frontend/tg/src/components/Header.tsx
-frontend/tg/src/components/App.tsx` — успешно.
-- `npm run ds:format:check && npm run ds:lint && npm run ds:typecheck && npm run ds:build` — успешно.
-  Существующие предупреждения сборки: DEP0205, use client в зависимостях и размер чанков.
-- `npm run format:check && npm run lint && npm run typecheck && npm run contracts:check
-&& npm run build && node --import tsx --test frontend/tg/test/*.spec.ts` — успешно, 1 тест.
-- Публикация и отдельная браузерная проверка Mini App не выполнялись.
-
-### Liquid glass фон Header — 2026-10-06
-
-- Для уведомлений добавлен hasNotifications (по умолчанию false): при true справа
-  сверху кнопки появляется красная точка 8 px с контрастным ободком. Доступное имя
-  сообщает о новых уведомлениях. Storybook содержит WithNotifications; подключение
-  к данным пользователя остаётся за будущим экраном уведомлений.
-- `npx prettier --write ds/web/src/blocks/Header.tsx ds/storybook/src/Header.stories.tsx`,
-  `npm run ds:format:check && npm run ds:lint && npm run ds:typecheck && npm run ds:build
-&& npm run contracts:check && npm run build` — успешно; прежние предупреждения сборки.
-- `npm test --workspace @picklehub/storybook -- src/Header.stories.tsx` — успешно
-  вне песочницы, 4 теста, включая состояние новых уведомлений.
-
-- По следующему запросу добавлена слева кнопка «Уведомления» с Bell (20 px),
-  размером 40 px, рамкой, бликами, тенью и hover как у кнопок GlassDock.
-  Добавлен onNotificationsClick; экран уведомлений в Mini App не задан, обработчик
-  там пока не подключён. Центрирование названия сохранено.
-- `npx prettier --write ds/web/src/blocks/Header.tsx ds/storybook/src/Header.stories.tsx`,
-  `npm run ds:format:check && npm run ds:lint && npm run ds:typecheck && npm run ds:build
-&& npm run contracts:check && npm run build` — успешно.
-- `npm test --workspace @picklehub/storybook -- src/Header.stories.tsx` — успешно
-  вне песочницы, 3 теста; проверен вызов обработчика уведомлений.
-
-- По следующему уточнению владельца все углы Header скруглены на 16 px (rounded-2xl),
-  стеклянный блик наследует радиус, рамка проходит по всему контуру.
-- После скругления `npx prettier --write ds/web/src/blocks/Header.tsx ds/web/src/styles.css`,
-  `npm run ds:format:check && npm run ds:lint && npm run ds:typecheck && npm run ds:build
-&& npm run contracts:check && npm run build` — успешно.
-  `npm test --workspace @picklehub/storybook -- src/Header.stories.tsx` — успешно вне песочницы,
-  3 теста. Существующие предупреждения сборки сохранены.
-
-- По запросу владельца Header использует ds-glass с токенами обеих тем, размытие,
-  насыщенность 180%, градиентный блик и внутренние световые края. Без backdrop-filter
-  остаётся непрозрачная поверхность. Общий компонент обновляет Storybook и Telegram UI.
-- `npx prettier --write ds/web/src/blocks/Header.tsx ds/web/src/styles.css` — успешно.
-- `npm run ds:format:check && npm run ds:lint && npm run ds:typecheck && npm run ds:build
-&& npm run contracts:check && npm run build && node --import tsx --test frontend/tg/test/*.spec.ts`
-  — успешно, 1 тест; существующие предупреждения DEP0205, use client и размера чанков.
-- `npm test --workspace @picklehub/storybook -- src/Header.stories.tsx` — успешно
-  вне песочницы, 3 браузерных теста.
-- `npm run format:check && npm run lint && npm run typecheck` — успешно.
-- `git diff --check` — успешно. Публикация не выполнялась.
+
+## 2026-10-28 — общий градиентный фон страниц
+
+По запросу пользователя body и .tg-shell используют единый --ph-page-background:
+мягкие бирюзовое и фиолетовое свечения поверх синего диагонального градиента.
+Цвета взяты из токенов EIN компонентов, основа — тематический --ds-background.
+Фон закреплён относительно viewport для длинных страниц.
+
+Проверки:
+
+- `npx prettier --write frontend/tg/src/index.css` и `npx prettier --check frontend/tg/src/index.css` — успешно.
+- `npm run lint` — успешно.
+- `npm run contracts:check` — успешно.
+- `npm run typecheck` и `npm run build` — прежние ошибки widgetVariants/glowVariants в base-widget.tsx и UseQueryResult в EventListPage.tsx.
+- `git diff --check` — успешно.
+- Визуальная проверка в Telegram не выполнялась; изменение только CSS фона, новые тесты не добавлены.
+
+## 2026-10-28 — прозрачный фон контента вкладок EventDetails
+
+Удалён bg-ds-background у article EventDetails: панели вкладок теперь показывают
+общий градиент страницы. Сами GlassTabsContent уже прозрачны.
+
+Проверки:
+
+- `npx prettier --check frontend/tg/src/components/EventDetails/EventDetails.tsx` — успешно.
+- `npm run lint` — успешно.
+- `npm test --workspace @picklehub/storybook -- src/EventDetails.stories.tsx` — 9/9 успешно.
+- `npm run contracts:check` — успешно.
+- `npm run typecheck` и `npm run build` — прежние ошибки widgetVariants/glowVariants в base-widget.tsx и UseQueryResult в EventListPage.tsx.
+- `git diff --check` — успешно.
+
+## 2026-10-28 — Icon Tabs и вкладка «Игра» в EventDetails
+
+Вкладки оформлены по примеру Components/Tabs → Icon Tabs: иконки и подпись
+активного пункта на узких экранах, все подписи от sm. Явные aria-label сохраняют
+доступные имена скрытых подписей. Добавлена вкладка «Игра» с pickleball-icon.svg
+и сообщением о недоступности информации. Фон списка вкладок прозрачный;
+непрозрачная подложка sticky-группы перенесена только на блок записи.
+Тест клавиатуры учитывает новую вкладку, проверка стабильной прокрутки включает «Игру».
+
+Проверки:
+
+- `npx prettier --write frontend/tg/src/components/EventDetails/EventDetails.tsx ds/storybook/src/EventDetails.stories.tsx` — успешно.
+- `npx prettier --check frontend/tg/src/components/EventDetails/EventDetails.tsx ds/storybook/src/EventDetails.stories.tsx` — успешно после финальных изменений.
+- `npm run lint` — успешно, включая повтор после финальных изменений.
+- `npm test --workspace @picklehub/storybook -- src/EventDetails.stories.tsx` — 9/9 успешно. Первый запуск выявил ожидаемое изменение клавиатурного порядка; тест дополнен проверкой «Игры». После финальных изменений повтор вне sandbox из-за запрета локального сервера — 9/9.
+- `npm run contracts:check` — успешно.
+- `npm run typecheck` и `npm run build` — прежние ошибки widgetVariants/glowVariants в base-widget.tsx и UseQueryResult в EventListPage.tsx.
+- `git diff --check` — успешно.
+
+## 2026-10-28 — действия организатора и оформление EventDetails
+
+По уточнению пользователя добавлен только интерфейс: под жёлтой кнопкой один ряд
+«Редактировать» и × с красной обводкой, без обработчиков операций. Видимость:
+непустой currentUserId совпадает с optional organizerId в GameEvent. Страница
+получает текущего пользователя из Redux. Демоданным организатор не назначается:
+при отсутствии organizerId кнопок нет. Истории навигации обёрнуты в Redux Provider.
+
+Обложка скруглена снизу; маска изображения и его подложки плавно раскрывает их
+от прозрачного верха. У блока стоимости удалён непрозрачный фон.
+
+Проверки:
+
+- `npx prettier --check frontend/tg/src/components/EventDetails/EventDetails.tsx frontend/tg/src/pages/EventDetails/EventDetailsPage.tsx frontend/tg/src/pages/EventList/types.ts ds/storybook/src/EventDetails.stories.tsx ds/storybook/src/EventDetailsNavigation.stories.tsx` — успешно.
+- `npm run lint` — успешно.
+- `npx eslint ds/storybook/src/EventDetails.stories.tsx ds/storybook/src/EventDetailsNavigation.stories.tsx --max-warnings 0` — успешно.
+- `npm test --workspace @picklehub/storybook -- src/EventDetails.stories.tsx src/EventDetailsNavigation.stories.tsx > /private/tmp/picklehub-organizer-tests.log 2>&1` — 15/15 успешно вне sandbox после EPERM. Проверены организатор, другой пользователь, анонимный пользователь и расположение кнопок. Первоначально импорт session подтягивал неподдержанный Storybook alias; заменён прямым Redux selector.
+- `npm run contracts:check` — успешно.
+- `npm run typecheck` и `npm run build` — прежние ошибки widgetVariants/glowVariants в base-widget.tsx и UseQueryResult в EventListPage.tsx.
+- `git diff --check` — успешно.
+
+## 2026-10-28 — типографика вкладки «Основное»
+
+Значения сведений и описание увеличены до text-base (16px), подписи dt и пояснение
+формата — text-sm (14px), заголовок описания — text-lg (18px) semibold.
+Для читаемости основного текста используется leading-relaxed.
+
+Проверки:
+
+- `npx prettier --write frontend/tg/src/components/EventDetails/EventDetails.tsx` — успешно.
+- `npx prettier --check frontend/tg/src/components/EventDetails/EventDetails.tsx` — успешно.
+- `npm run lint` — успешно.
+- `npm test --workspace @picklehub/storybook -- src/EventDetails.stories.tsx` — 12/12 успешно.
+- `npm run contracts:check` — успешно.
+- `npm run typecheck` и `npm run build` — прежние ошибки widgetVariants/glowVariants в base-widget.tsx и UseQueryResult в EventListPage.tsx.
+- `git diff --check` — успешно.
+
+## 2026-10-28 — общая обложка событий 03-mobile-equipment
+
+Изображение output/imagegen/event-details-mobile/03-mobile-equipment.png скопировано
+без изменений в frontend/tg/src/assets и назначено обложкой EventDetails по умолчанию.
+Все события на странице деталей и примеры Storybook теперь используют эту обложку.
+
+Проверки:
+
+- `npx prettier --check frontend/tg/src/components/EventDetails/EventDetails.tsx ds/storybook/src/EventDetails.stories.tsx` — успешно.
+- `npm run lint` — успешно.
+- `npm test --workspace @picklehub/storybook -- src/EventDetails.stories.tsx` — 12/12 успешно.
+- `npm run contracts:check` — успешно.
+- `npm run typecheck` и `npm run build` — прежние ошибки widgetVariants/glowVariants в base-widget.tsx и UseQueryResult в EventListPage.tsx.
+- `git diff --check` — успешно.
+
+## 2026-10-28 — смещение обложки вверх
+
+EventDetails: objectPosition изображения = center calc(50% - 80px).
+Рамка обложки, маска и положение текста сохранены.
+
+Проверки:
+
+- `npx prettier --check frontend/tg/src/components/EventDetails/EventDetails.tsx` — успешно.
+- `npm run lint` — успешно.
+- `npm test --workspace @picklehub/storybook -- src/EventDetails.stories.tsx` — 12/12 успешно.
+- `npm run contracts:check` — успешно.
+- `npm run typecheck` и `npm run build` — прежние ошибки widgetVariants/glowVariants в base-widget.tsx и UseQueryResult в EventListPage.tsx.
+- `git diff --check` — успешно.
+
+## 2026-10-28 — верхний padding обложки 100px
+
+В header EventDetails pt-40 заменён на pt-[100px].
+
+Проверки:
+
+- `npx prettier --check frontend/tg/src/components/EventDetails/EventDetails.tsx` — успешно.
+- `npm run lint` — успешно.
+- `npm test --workspace @picklehub/storybook -- src/EventDetails.stories.tsx` — 12/12 успешно.
+- `npm run contracts:check` — успешно.
+- `npm run typecheck` и `npm run build` — прежние ошибки widgetVariants/glowVariants в base-widget.tsx и UseQueryResult в EventListPage.tsx.
+- `git diff --check` — успешно.
+
+## 2026-10-28 — сброс смещения обложки
+
+EventDetails: objectPosition возвращён в center, смещение -80px убрано.
+
+Проверки:
+
+- `npx prettier --check frontend/tg/src/components/EventDetails/EventDetails.tsx` — успешно.
+- `npm run lint` — успешно.
+- `npm test --workspace @picklehub/storybook -- src/EventDetails.stories.tsx` — 12/12 успешно.
+- `npm run contracts:check` — успешно.
+- `npm run typecheck` и `npm run build` — прежние ошибки widgetVariants/glowVariants в base-widget.tsx и UseQueryResult в EventListPage.tsx.
+- `git diff --check` — успешно.
+
+## 2026-10-28 — убрать вертикальный скролл вкладок EventDetails
+
+У GlassTabsList задан overflow-y-hidden: overflow-x-auto больше не включает
+автоматическую вертикальную прокрутку. Горизонтальная прокрутка сохранена.
+
+Проверки:
+
+- `npx prettier --check frontend/tg/src/components/EventDetails/EventDetails.tsx` — успешно.
+- `npm run lint` — успешно.
+- `npm test --workspace @picklehub/storybook -- src/EventDetails.stories.tsx` — 12/12 успешно.
+- `npm run contracts:check` — успешно.
+- `npm run typecheck` и `npm run build` — прежние ошибки widgetVariants/glowVariants в base-widget.tsx и UseQueryResult в EventListPage.tsx.
+- `git diff --check` — успешно.
+
+## 2026-10-28 — ссылки Яндекс Карт и Google Maps у места проведения
+
+В EventDetails рядом с названием площадки добавлены две иконки-ссылки 44×44px
+с доступными названиями. Новый VenueMapLinks формирует HTTPS-ссылки поиска
+https://yandex.ru/maps/?text= и https://www.google.com/maps/search/?api=1&query=.
+Используется optional location.address (также отображается под названием), иначе
+location.name. Адрес кодируется encodeURIComponent, реальные адреса в демоданные
+не добавлялись. Ключи API, геокодирование и определение геолокации не используются.
+
+По документации HTTPS-ссылки поддерживают открытие установленного приложения
+системой, иначе веб-карту; на Яндексе ОС может предложить выбор приложения.
+Принудительное обнаружение установки из браузера не реализуется. Поведение зависит
+от настроек ОС/Telegram; физические Android/iOS не проверены.
+Источники: https://developers.google.com/maps/documentation/urls/get-started
+и https://yandex.ru/dev/yandex-apps-launch-maps/doc/ru/ (раздел веб-версии).
+
+Проверки:
+
+- `npx prettier --check frontend/tg/src/components/EventDetails frontend/tg/src/pages/EventList/types.ts ds/storybook/src/EventDetails.stories.tsx` — успешно.
+- `npm run lint` — успешно.
+- `npx eslint ds/storybook/src/EventDetails.stories.tsx --max-warnings 0` — успешно.
+- `npm test --workspace @picklehub/storybook -- src/EventDetails.stories.tsx src/EventDetailsNavigation.stories.tsx > /private/tmp/picklehub-organizer-tests.log 2>&1` — 16/16 успешно. Проверены ссылки по названию и адресу со спецсимволами; проверка видимости адреса ожидает завершения анимации вкладки.
+- `npm run contracts:check` — успешно.
+- `npm run typecheck` и `npm run build` — прежние ошибки widgetVariants/glowVariants в base-widget.tsx и UseQueryResult в EventListPage.tsx.
+- `git diff --check` — успешно.
+
+## 2026-10-28 — дата и время рядом со стоимостью EventDetails
+
+Дата перенесена из вкладки «Основное» в блок стоимости через вертикальный
+GlassSeparator; время отображается под датой. Существующая строка date разделяется
+перед временем после запятой. Если время отсутствует, отображается «Время не указано».
+Данные и контракты не менялись.
+
+Проверки:
+
+- `npx prettier --check frontend/tg/src/components/EventDetails/EventDetails.tsx` — успешно.
+- `npm run lint` — успешно.
+- `npm test --workspace @picklehub/storybook -- src/EventDetails.stories.tsx` — 13/13 успешно.
+- `npm run contracts:check` — успешно.
+- `npm run typecheck` и `npm run build` — прежние ошибки widgetVariants/glowVariants в base-widget.tsx и UseQueryResult в EventListPage.tsx.
+- `git diff --check` — успешно.
+
+## 2026-10-28 — бейджи EventDetails из DS
+
+У бейджей статуса и DUPR удалены локальные переопределения фона и текста.
+Оба используют стандартное оформление GlassBadge из @picklehub/ui-web.
+
+Проверки:
+
+- `npx prettier --check frontend/tg/src/components/EventDetails/EventDetails.tsx` — успешно.
+- `npm run lint` — успешно.
+- `npm test --workspace @picklehub/storybook -- src/EventDetails.stories.tsx` — 13/13 успешно.
+- `npm run contracts:check` — успешно.
+- `npm run typecheck` и `npm run build` — прежние ошибки widgetVariants/glowVariants в base-widget.tsx и UseQueryResult в EventListPage.tsx.
+- `git diff --check` — успешно.
+
+## 2026-10-28 — вертикальные метрики Seenonim через @font-face
+
+По запросу пользователя во всех пяти начертаниях frontend/tg/src/index.css заданы
+ascent-override: 80.5%, descent-override: 14.5%, line-gap-override: 10%.
+Разность ascent/descent соответствует cap-height 660/1000 em; сумма метрик
+сохранена 1.05em. Файлы шрифта не изменены. Дескрипторы описаны в
+https://www.w3.org/TR/css-fonts-4/#font-metrics-override-desc.
+Удалённые пользователем обзор проекта, README и DS03 прочитаны через git show HEAD,
+в рабочее дерево не восстановлены.
+
+Проверки:
+
+- `npx prettier --check frontend/tg/src/index.css` — успешно.
+- `npm run lint` — успешно.
+- `npm run contracts:check` — успешно.
+- `npm run typecheck` и `npm run build` — прежние ошибки widgetVariants/glowVariants
+  в base-widget.tsx и UseQueryResult в EventListPage.tsx.
+- `node /private/tmp/picklehub-font-metrics-check.mjs` — успешно вне sandbox после
+  запрета запуска Chromium: 15 сочетаний (веса 100/300/400/600/700, размеры 12/16/24px).
+  На изолированном образце с line-height: 1.5 базовая линия опущена на 2/2/3px
+  с учётом округления браузера, высоты двухстрочных блоков не изменились.
+  Просмотрен скриншот /private/tmp/picklehub-font-metrics.png с кириллицей,
+  диакритикой, нижними выносными элементами, латиницей и цифрами.
+  Проверка полного приложения и Telegram на устройствах не выполнялась.
+- `git diff --check` — успешно.
+
+## 2026-10-28 — фон активного Tabs
+
+В общем GlassTabsTrigger белёсая заливка и тяжёлая тень заменены полупрозрачным
+градиентом cyan/blue/purple (25%) из текущей EIN-палитры. Добавлены мягкий внутренний
+контур и компактная тень; убран белый градиентный блик. Изменение действует для
+Storybook и всех потребителей GlassTabs. Удалённые обзор и README прочитаны через HEAD.
+
+Проверки:
+
+- `npx prettier --check ds/web/src/liquid-glass/glass-tabs.tsx` — успешно.
+- `npx eslint ds/web/src/liquid-glass/glass-tabs.tsx --max-warnings 0` — успешно.
+- `npm run ds:lint` — существующие unused-vars в Header.tsx и base-widget.tsx.
+- `npm run ds:typecheck > /private/tmp/picklehub-tabs-typecheck.log 2>&1` — существующие TS6133 для widgetVariants/glowVariants в base-widget.tsx.
+- `npm run ds:build > /private/tmp/picklehub-tabs-ds-build.log 2>&1` — успешно.
+- `npm test --workspace @picklehub/storybook -- src/Tabs.stories.tsx src/EventDetails.stories.tsx` — 16/16 успешно вне sandbox; первоначальный запуск остановлен запретом локального порта (EPERM).
+- `npm run contracts:check` — успешно.
+- `git diff --check` — успешно.
+
+## 2026-10-28 — переход на главную из Footer
+
+LiquidNavbar теперь вызывает onChange и при повторном выборе текущего пункта:
+после перехода в событие из контента домик сохранял внутренний индекс 0 и его
+нажатие игнорировалось. Footer передаёт active на основе pathname, чтобы профиль,
+создание события и возврат по истории синхронизировали выделение.
+Добавлены два интеграционных сценария MemoryRouter с настоящим Footer.
+В существующих тестах LiquidNavbar ожидаемое название Home приведено к текущему
+названию кнопки «Главная» (ссылки Home в отдельном примере не менялись).
+
+Проверки:
+
+- `npx prettier --check frontend/tg/src/components/Footer.tsx ds/web/src/components/ui/liquid-glass-navbar.tsx ds/storybook/src/FooterNavigation.stories.tsx` — успешно.
+- `npx eslint frontend/tg/src/components/Footer.tsx ds/web/src/components/ui/liquid-glass-navbar.tsx ds/storybook/src/FooterNavigation.stories.tsx --max-warnings 0` — успешно.
+- `npx prettier --check ds/storybook/src/LiquidNavbar.stories.tsx` — успешно.
+- `npx eslint ds/storybook/src/LiquidNavbar.stories.tsx --max-warnings 0` — успешно.
+- `npm test --workspace @picklehub/storybook -- src/FooterNavigation.stories.tsx` — 2/2 успешно вне sandbox.
+- `npm test --workspace @picklehub/storybook -- src/LiquidNavbar.stories.tsx` — 11/11 успешно вне sandbox.
+- `npm run contracts:check > /private/tmp/picklehub-footer-contracts.log 2>&1` — успешно.
+- `npm run ds:build > /private/tmp/picklehub-footer-build.log 2>&1` — успешно.
+- `npm run typecheck > /private/tmp/picklehub-footer-types.log 2>&1` — прежние ошибки base-widget.tsx (widgetVariants/glowVariants) и EventListPage.tsx (UseQueryResult).
+- `git diff --check` — успешно.
+
+## 2026-10-28 — закреплённые действия формы события
+
+По запросу владельца в EventForm оставлены три основных действия: «Назад»,
+«Вперед», «Начать сначала». Кликабельные breadcrumbs убраны. Заголовок и текущий
+шаг вынесены над карточкой, под Header. Действия через portal размещены в слоте
+Footer, над основной навигацией; submit связан с формой через form/id.
+Контейнер действий прозрачный. Добавлен нижний отступ контента для доступа
+к последним полям. Общая форма сохраняет это поведение и при редактировании.
+Подтверждение сброса и проверки полей сохранены. Удалённые обзор, README и S06
+прочитаны через git show HEAD без восстановления файлов.
+
+Проверки:
+
+- `npx prettier --check frontend/tg/src/components/EventForm/EventForm.tsx frontend/tg/src/components/Footer.tsx frontend/tg/src/pages/EventCreate/ui/EventCreate/EventCreate.tsx frontend/tg/src/pages/EventEdit/ui/EventEditPage/EventEditPage.tsx frontend/tg/src/index.css` — успешно.
+- `npm run lint` — успешно.
+- `npm run contracts:check` — успешно.
+- `npm run typecheck` и `npm run build` — прежние ошибки неиспользуемых widgetVariants/glowVariants в base-widget.tsx и UseQueryResult в EventListPage.tsx.
+- `node /private/tmp/picklehub-event-form-check.mjs` — успешно вне sandbox: переходы вперёд/назад, валидация, сохранение ввода, подтверждённый сброс, очистка действий при уходе со страницы; положение над Footer и доступность последнего поля при прокрутке на ширинах 320/375/768px. Первый запуск заблокирован sandbox; первый браузерный прогон потребовал уточнения селектора адреса, включавшего текст ошибки.
+- `git diff --check` — успешно.
+
+## 2026-10-28 — карточки выбора типа события
+
+Первый шаг EventForm вынесен из общей GlassCard в две отдельные квадратные
+карточки Play on / Тренировка. Используется GlassWidgetBase из показателей
+профиля: зелёное и синее свечение. Внутри вертикально отцентрированы иконка,
+белое название и серое пояснение. Выбор остаётся нативной радиогруппой,
+выбранный вариант выделяется рамкой, клавиатурный фокус — контуром.
+
+Проверки:
+
+- `npx prettier --check frontend/tg/src/components/EventForm/EventForm.tsx` — успешно.
+- `npm run lint` и `npm run contracts:check` — успешно.
+- `npm run typecheck` и `npm run build` — прежние ошибки base-widget.tsx (widgetVariants/glowVariants) и EventListPage.tsx (UseQueryResult).
+- `node /private/tmp/picklehub-event-form-check.mjs` — успешно вне sandbox: квадратные карточки на 320/375/768px, выбор обоих типов через карточку, переходы, валидация, сброс, закреплённые действия. Просмотрен скриншот 320px после завершения стартовой загрузки. Первоначальный force-click скрытого radio заменён пользовательским нажатием на карточку.
+- `git diff --check` — успешно.
+
+### Уточнение: максимальная ширина карточек типа события
+
+Группа из двух карточек отцентрирована через mx-auto и ограничена 412px
+(две карточки по 200px + промежуток 12px). На узких экранах карточки сжимаются.
+`npx prettier --check frontend/tg/src/components/EventForm/EventForm.tsx` и
+`npx eslint frontend/tg/src/components/EventForm/EventForm.tsx --max-warnings 0` — успешно.
+`node /private/tmp/picklehub-event-form-check.mjs` — успешно: дополнительно проверена
+ширина каждой карточки ≤200px на экранах 320/375/768px. `git diff --check` — успешно.
+
+## 2026-10-28 — вертикальный центр первого шага и недоступный сброс
+
+Высота области карточек рассчитывается по фактическому положению текста и
+закреплённых кнопок, обновляется при resize и изменении размеров через
+ResizeObserver. Карточки выровнены по центру этой области. На первом шаге
+«Начать сначала» отключена аналогично «Назад».
+
+Проверки:
+
+- `npx prettier --write frontend/tg/src/components/EventForm/EventForm.tsx` — успешно.
+- `npm run lint`, `npx eslint frontend/tg/src/components/EventForm/EventForm.tsx --max-warnings 0` и `npm run contracts:check` — успешно.
+- `npm run typecheck` и `npm run build` — прежние ошибки base-widget.tsx (widgetVariants/glowVariants) и EventListPage.tsx (UseQueryResult).
+- `node /private/tmp/picklehub-event-form-check.mjs` — успешно вне sandbox: центр карточек совпадает с серединой между нижней границей текста и верхом кнопок (допуск 2px) на 320/375/768px; максимальная ширина 200px, сброс отключён на первом шаге, переходы, валидация и сброс на последующих шагах работают. Первый прогон обнаружил особенности min-height у fieldset; центрирование перенесено на внешний div и проверено повторно.
+- `git diff --check` — успешно.
+
+## 2026-10-28 — карточки форматов игры и толстая рамка выбора
+
+Второй шаг Play on использует те же квадратные карточки, что первый: Американо,
+Мексикано и Round Robin с иконками и краткими пояснениями. Общий локальный
+ChoiceCards сохраняет нативные radio, центрирование и ограничение 200px;
+третья карточка центрируется во втором ряду. При нехватке высоты доступна
+прокрутка. По уточнениям владельца рамка выбранной карточки увеличена до 4px
+на обоих шагах.
+
+Проверки:
+
+- `npx prettier --check frontend/tg/src/components/EventForm/EventForm.tsx` — успешно.
+- `npm run lint` и `npm run contracts:check` — успешно.
+- `npm run typecheck` и `npm run build` — прежние ошибки base-widget.tsx (widgetVariants/glowVariants) и EventListPage.tsx (UseQueryResult).
+- `node /private/tmp/picklehub-event-form-check.mjs` — успешно вне sandbox: выбор всех трёх форматов, квадратная форма и ширина ≤200px, переходы, валидация, сброс, проверки первого шага и закреплённых действий. Последующее изменение толщины рамки проверено форматтером и линтером.
+
+Уточнение владельца: итоговая толщина выбранной рамки — 3px вместо 4px.
+
+## 2026-10-28 — углы выбранной карточки
+
+В ChoiceCards радиусы внутреннего блика и внутренней тени согласованы с рамкой
+3px: 13px и 12px соответственно при внешнем радиусе 16px. Убран просвет между
+рамкой и цветным бликом без изменения общего GlassWidgetBase.
+
+Проверки: `npx prettier --check frontend/tg/src/components/EventForm/EventForm.tsx`,
+`npx eslint frontend/tg/src/components/EventForm/EventForm.tsx --max-warnings 0`
+и `node /private/tmp/picklehub-event-form-check.mjs` — успешно. Браузерная проверка
+выполнена вне sandbox; просмотрен скриншот карточек 375px. `git diff --check` — успешно.
+
+## 2026-10-28 — обводка карточек без изменения переносов
+
+По уточнению владельца border заменён внутренним box-shadow: 3px у выбранной
+карточки и 1px у остальных. Внешняя тень сохранена, border равен нулю в обоих
+состояниях, поэтому выбор не меняет размеры содержимого. Промежуточное решение
+с постоянной толщиной border заменено этим вариантом.
+
+Проверки: `npx prettier --check frontend/tg/src/components/EventForm/EventForm.tsx`
+и `npx eslint frontend/tg/src/components/EventForm/EventForm.tsx --max-warnings 0`
+— успешно. `node /private/tmp/picklehub-event-form-check.mjs` — успешно вне sandbox:
+ширина и высота каждого текста неизменны при выборе/снятии выбора на 320/375/768px,
+остальные сценарии формы также проходят. В проверке центрирования после клика
+восстановлен scrollTop=0, поскольку браузер прокручивал фокусируемый элемент.
+`git diff --check` — успешно.
+
+## 2026-10-28 — отмена ограничения высоты формы
+
+По запросу владельца отменена последняя попытка ограничить высоту всей формы
+до нижних кнопок и добавить внутреннюю прокрутку. Восстановлены прежняя прокрутка
+страницы, нижний отступ и центрирование карточек. Карточки и обводка box-shadow
+сохранены; дополнительный padding для компенсации border не применяется.
+`npx prettier --write frontend/tg/src/components/EventForm/EventForm.tsx frontend/tg/src/index.css`
+и `npx eslint frontend/tg/src/components/EventForm/EventForm.tsx --max-warnings 0` — успешно.
+
+
+## 2026-10-29 — интервал GameEvent
+
+По запросу владельца date/time заменены обязательными startAt/endAt (строки RFC 3339 UTC). Обновлены моки, Card, EventDetails и stories. Общий форматтер показывает локальную дату и диапазон времени, включая даты при переходе через полночь. В моках назначен демонстрационный интервал 09:00–13:00 UTC. Контракт API не изменён. Удалённые обзорные документы прочитаны из HEAD.
+
+Проверки:
+
+- `npx prettier --write frontend/tg/src/pages/EventList/types.ts frontend/tg/src/pages/EventList/mock.ts frontend/tg/src/pages/EventList/helpers/formatEventSchedule.ts frontend/tg/src/components/Card/Card.tsx frontend/tg/src/components/EventDetails/EventDetails.tsx ds/storybook/src/EventDetails.stories.tsx ds/storybook/src/EventDetailsNavigation.stories.tsx` — успешно.
+- `npx prettier --check frontend/tg/src/pages/EventList/types.ts frontend/tg/src/pages/EventList/mock.ts frontend/tg/src/pages/EventList/helpers/formatEventSchedule.ts frontend/tg/src/components/Card/Card.tsx frontend/tg/src/components/EventDetails/EventDetails.tsx ds/storybook/src/EventDetails.stories.tsx ds/storybook/src/EventDetailsNavigation.stories.tsx` — успешно.
+- `npx eslint frontend/tg/src/pages/EventList/types.ts frontend/tg/src/pages/EventList/mock.ts frontend/tg/src/pages/EventList/helpers/formatEventSchedule.ts frontend/tg/src/components/Card/Card.tsx frontend/tg/src/components/EventDetails/EventDetails.tsx ds/storybook/src/EventDetails.stories.tsx ds/storybook/src/EventDetailsNavigation.stories.tsx --max-warnings 0` — успешно.
+- `npm test --workspace @picklehub/storybook -- src/EventDetails.stories.tsx src/EventDetailsNavigation.stories.tsx` — 2 файла, 16 тестов успешно.
+- `npm run contracts:check` — успешно.
+- `npm run typecheck` — не пройдено: существующие TS6133 в ds/web/src/widgets/base-widget.tsx:37,59 и TS2322 в frontend/tg/src/pages/EventList/ui/EventListPage/EventListPage.tsx:14.
+- `npm run build` — не пройдено по тем же ошибкам TypeScript.
+- `git diff --check` — успешно.
+
+## 2026-10-29 — непрозрачный закреплённый блок EventDetails
+
+По запросу владельца общий sticky-контейнер регистрации и табов получил bg-ds-background: прокручиваемое содержимое закрыто непрозрачным фоном, включая промежутки между кнопками и табами.
+
+Проверки:
+- `npx prettier --check frontend/tg/src/components/EventDetails/EventDetails.tsx` — успешно.
+- `npx eslint frontend/tg/src/components/EventDetails/EventDetails.tsx --max-warnings 0` — успешно.
+- `npm test --workspace @picklehub/storybook -- src/EventDetails.stories.tsx src/EventDetailsNavigation.stories.tsx` — 16 тестов успешно, включая StickyHeader.
+- `npm run contracts:check` — успешно.
+- `npm run typecheck` и `npm run build` — блокируются посторонними ошибками: неиспользуемые переменные base-widget.tsx, неполный QueryResult в EventListPage.tsx, отсутствующее обязательное timeSlots в моках GameEvent.
+- `git diff --check` — успешно.
+
+## 2026-10-29 — прозрачное закрепление EventDetails и исправление Storybook
+
+Непрозрачный фон отменён по уточнению владельца. Контент EventDetails обрезается clip-path по нижней границе sticky-блока; граница обновляется при прокрутке окна/вложенного контейнера и изменении размеров. StickyHeader проверяет прозрачность и геометрию отсечения.
+
+В Storybook устранены ошибки типов: добавлены timeSlots в демонстрационные GameEvent, stories Header приведены к текущей шапке без профиля/уведомлений. Из base-widget удалены неиспользуемые определения отключённых анимаций; прежние параметры не передаются в DOM. Визуальное поведение виджета сохранено.
+
+Проверки:
+- `npm run typecheck --workspace @picklehub/storybook` — успешно.
+- `npm run ds:build` — успешно.
+- `npm test --workspace @picklehub/storybook -- src/Header.stories.tsx src/EventDetails.stories.tsx src/EventDetailsNavigation.stories.tsx` — 18 тестов успешно.
+- `npm run ds:test > /private/tmp/picklehub-storybook-tests.log 2>&1` — 189/191 успешно; остаются независимые расхождения calendar stories с текущей реализацией: AgendaCalendar сравнивает три маркера с ограниченным двумя событиями списком; Calendar ожидает линейный масштаб при текущих зависимых от size CSS-классах. Проверки не ослаблялись.
+- `npx eslint frontend/tg/src/pages/EventList/mock.ts frontend/tg/src/components/EventDetails/EventDetails.tsx ds/storybook/src/EventDetails.stories.tsx ds/storybook/src/Header.stories.tsx ds/web/src/widgets/base-widget.tsx --max-warnings 0` — успешно.
+- `npx prettier --check frontend/tg/src/pages/EventList/mock.ts frontend/tg/src/components/EventDetails/EventDetails.tsx ds/storybook/src/EventDetails.stories.tsx ds/storybook/src/Header.stories.tsx ds/web/src/widgets/base-widget.tsx` — успешно.
+- `node /private/tmp/picklehub-storybook-check.mjs` — живая story StickyHeader открывается без ошибок console/pageerror; localhost:6006 возвращает HTTP 200.
+- `git diff --check` — успешно.
+
+Первый браузерный тест был заблокирован sandbox (listen EPERM); повтор выполнен вне sandbox успешно. Общий typecheck Mini App по-прежнему блокируется неполным QueryResult в EventListPage.tsx.
+
+## 2026-10-29 — ошибка динамического импорта Lucide fingerprint
+
+После сообщения владельца о fingerprint.js ошибка AlertDialog воспроизведена в Playwright блокировкой запросов **/*fingerprint*.js*: story показывает Failed to fetch dynamically imported module. Исключение lucide-react из optimizeDeps приводило к загрузке отдельных файлов иконок и делало всю story зависимой от такого запроса.
+
+Версии lucide-react в @picklehub/ui-web и @picklehub/storybook выровнены с Mini App (1.60.0); обновлён корневой lock-файл. В main.ts и vitest.config.ts включена предварительная сборка lucide-react. Попытка оптимизировать две версии отдельно не прошла проверку Podium, поэтому итоговое решение использует одну версию.
+
+Проверки:
+- `npm install lucide-react@1.60.0 --workspace @picklehub/storybook --workspace @picklehub/ui-web --save-exact` — успешно.
+- `npm test --workspace @picklehub/storybook -- src/AlertDialog.stories.tsx src/EventDetails.stories.tsx src/EventDetailsNavigation.stories.tsx` — 18 тестов успешно.
+- `npm run typecheck --workspace @picklehub/storybook` — успешно.
+- `npx eslint ds/storybook/.storybook/main.ts ds/storybook/vitest.config.ts --max-warnings 0` — успешно.
+- `npx prettier --check ds/storybook/.storybook/main.ts ds/storybook/vitest.config.ts ds/storybook/package.json ds/web/package.json` — успешно.
+- `npm run ds:build > /private/tmp/picklehub-lucide-build.log 2>&1` — успешно.
+- `node /private/tmp/picklehub-storybook-check.mjs` — живая story AlertDialog открывается, диалог открывается/закрывается; правило блокировки fingerprint включено, запросов к fingerprint нет, ошибок страницы/сети нет. Браузер загружает предсобранный lucide-react.js.
+- Dev-сервер перезапущен через `npm run ds:dev` на порту 6006.

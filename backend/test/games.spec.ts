@@ -114,6 +114,16 @@ test('rejects invalid fields and a past start time', async () => {
     );
 });
 
+test('accepts 96 players and rejects a larger participant limit', async () => {
+    const { controller } = fixture();
+    const created = await controller.create({ ...validBody(), participantLimit: 96 } as never, request() as never);
+    assert.equal(created.participantLimit, 96);
+    await assert.rejects(
+        controller.create({ ...validBody(), participantLimit: 97 } as never, request() as never),
+        (error: any) => error.getStatus() === 400
+    );
+});
+
 test('returns a stable not found error for an unknown game', async () => {
     const { controller } = fixture();
     await assert.rejects(

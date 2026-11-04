@@ -1,4 +1,5 @@
 {
     "extends": "../tsconfig.base.json",
+    "compilerOptions": { "allowImportingTsExtensions": true },
     "include": ["src", ".storybook/**/*.ts", ".storybook/**/*.tsx", "vitest.config.ts"]
 }

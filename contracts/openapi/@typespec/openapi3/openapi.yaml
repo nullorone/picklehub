@@ -605,12 +605,12 @@ components:
       type: integer
       format: int32
       minimum: 0
-      maximum: 32
+      maximum: 96
     ParticipantLimit:
       type: integer
       format: int32
       minimum: 2
-      maximum: 32
+      maximum: 96
     SessionUser:
       type: object
       required:

@@ -1,6 +1,6 @@
 import { MotionConfig } from 'framer-motion';
 import type { Preview } from '@storybook/react-vite';
-import '@picklehub/ui-web/styles.css';
+import './event-details.css';
 import '@fontsource/geist/400.css';
 import '@fontsource/geist/500.css';
 import '@fontsource/geist/600.css';

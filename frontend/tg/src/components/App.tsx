@@ -5,32 +5,34 @@ import {
     Routes,
     HashRouter,
     useLocation,
+    useMatch,
 } from "react-router-dom";
 import {
     retrieveLaunchParams,
     useSignal,
     isMiniAppDark,
+    initDataUser,
 } from "@telegram-apps/sdk-react";
 import { AppRoot } from "@telegram-apps/telegram-ui";
-import { Button } from "@/components/ui/Button/Button.tsx";
+import { Button } from "@/components/Button/Button.tsx";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { routes } from "@/navigation/routes.tsx";
-import {
-    createTelegramSession,
-    SessionContext,
-    type SessionUser,
-} from "@/api/session.ts";
+import { createTelegramSession, useSessionUser } from "@/api/session.ts";
+import { useAppDispatch } from "@/store/hooks.ts";
+import { sessionStarted, sessionCleared } from "@/store/sessionSlice.ts";
 import { setAccessToken } from "@/api/client.ts";
 import { gameIdFromStartParameter } from "@/navigation/startParameter.ts";
 import { Footer } from "@/components/Footer.tsx";
-import { Header } from "@/components/Header.tsx";
+import { Provider } from "react-redux";
+import { store } from "../store/store.ts";
+import { LoadingScreen } from "@picklehub/ui-web";
 
 function StartParameterRoute({ startParameter }: { startParameter: unknown }) {
     const location = useLocation();
     const gameId = gameIdFromStartParameter(startParameter);
     return location.pathname === "/" && gameId ? (
-        <Navigate to={`/matches/${gameId}`} replace />
+        <Navigate to={`/event/${gameId}`} replace />
     ) : null;
 }
 
@@ -47,20 +49,41 @@ export const queryClient = new QueryClient({
 });
 
 export function App() {
+    return (
+        <Provider store={store}>
+            <HashRouter>
+                <AppContent />
+            </HashRouter>
+        </Provider>
+    );
+}
+
+function AppContent() {
+    const isEventDetailsPage = Boolean(useMatch("/event/:eventId/details"));
     const lp = useMemo(() => retrieveLaunchParams(), []);
     const isDark = useSignal(isMiniAppDark);
-    const [user, setUser] = useState<SessionUser | null>(null);
+    const user = useSessionUser();
+    const dispatch = useAppDispatch();
     const [authError, setAuthError] = useState("");
     const loginPromise = useRef<Promise<void> | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const isShowLoading = useRef(false);
 
     const login = useCallback(() => {
         if (loginPromise.current) return loginPromise.current;
-        setUser(null);
+        dispatch(sessionCleared());
         setAccessToken("");
         queryClient.clear();
         setAuthError("");
         const pending = createTelegramSession()
-            .then(setUser)
+            .then((sessionUser) => {
+                dispatch(
+                    sessionStarted({
+                        user: sessionUser,
+                        avatarUrl: initDataUser()?.photo_url || null,
+                    }),
+                );
+            })
             .catch((error: unknown) => {
                 setAuthError(
                     error instanceof Error
@@ -73,7 +96,7 @@ export function App() {
             });
         loginPromise.current = pending;
         return pending;
-    }, []);
+    }, [dispatch]);
 
     useEffect(() => {
         void login();
@@ -84,19 +107,21 @@ export function App() {
     }, [login]);
 
     useEffect(() => {
-        const refresh = () => {
-            if (document.visibilityState === "visible") {
-                void queryClient.invalidateQueries({ queryKey: ["games"] });
-            }
-        };
-        document.addEventListener("visibilitychange", refresh);
-        return () => document.removeEventListener("visibilitychange", refresh);
-    }, []);
-
-    useEffect(() => {
         document.documentElement.dataset.theme = isDark ? "dark" : "light";
         document.documentElement.dataset.dsTheme = isDark ? "dark" : "light";
     }, [isDark]);
+
+    useEffect(() => {
+        if (isShowLoading.current) return;
+        setIsLoading(true);
+
+        const timerId = setTimeout(() => {
+            isShowLoading.current = true;
+            setIsLoading(false);
+        }, 3000);
+
+        return () => clearTimeout(timerId);
+    }, [isShowLoading]);
 
     return (
         <QueryClientProvider client={queryClient}>
@@ -108,14 +133,24 @@ export function App() {
                         : "base"
                 }
             >
-                <SessionContext.Provider value={user}>
-                    <div className="tg-shell min-h-dvh text-text">
-                        {user ? (
-                            <HashRouter>
-                                <Header />
-                                <StartParameterRoute
-                                    startParameter={lp.tgWebAppStartParam}
-                                />
+                <div
+                    className={`relative tg-shell min-h-dvh text-text${isEventDetailsPage ? "" : " px-3"}`}
+                >
+                    {isLoading && (
+                        <LoadingScreen
+                            text={"Загружаем события..."}
+                            fullScreen
+                            backgroundOpacity={0.96}
+                            backgroundColor={"#101827"}
+                        />
+                    )}
+                    {user ? (
+                        <>
+                            {/*{!isEventDetailsPage && <Header />}*/}
+                            <StartParameterRoute
+                                startParameter={lp.tgWebAppStartParam}
+                            />
+                            <main className={isEventDetailsPage ? "" : "pt-4"}>
                                 <Routes>
                                     {routes.map((route) => (
                                         <Route key={route.path} {...route} />
@@ -125,33 +160,33 @@ export function App() {
                                         element={<Navigate to="/" />}
                                     />
                                 </Routes>
-                                <Footer />
-                            </HashRouter>
-                        ) : (
-                            <main
-                                className="mx-auto grid max-w-lg gap-4 p-6"
-                                role={authError ? "alert" : "status"}
-                            >
-                                <h1 className="text-xl font-semibold">
-                                    {authError
-                                        ? "Не удалось войти"
-                                        : "Входим через Telegram…"}
-                                </h1>
-                                {authError && (
-                                    <>
-                                        <p>{authError}</p>
-                                        <Button
-                                            onClick={() => void login()}
-                                            type="button"
-                                        >
-                                            Повторить вход
-                                        </Button>
-                                    </>
-                                )}
                             </main>
-                        )}
-                    </div>
-                </SessionContext.Provider>
+                            <Footer />
+                        </>
+                    ) : (
+                        <main
+                            className="mx-auto grid max-w-lg gap-4 p-6"
+                            role={authError ? "alert" : "status"}
+                        >
+                            <h1 className="text-xl font-semibold">
+                                {authError
+                                    ? "Не удалось войти"
+                                    : "Входим через Telegram…"}
+                            </h1>
+                            {authError && (
+                                <>
+                                    <p>{authError}</p>
+                                    <Button
+                                        onClick={() => void login()}
+                                        type="button"
+                                    >
+                                        Повторить вход
+                                    </Button>
+                                </>
+                            )}
+                        </main>
+                    )}
+                </div>
             </AppRoot>
         </QueryClientProvider>
     );

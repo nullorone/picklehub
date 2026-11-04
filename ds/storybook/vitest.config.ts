@@ -5,7 +5,9 @@ import { playwright } from '@vitest/browser-playwright';
 
 export default defineConfig({
     plugins: [storybookTest({ configDir: fileURLToPath(new URL('./.storybook', import.meta.url)) })],
-    optimizeDeps: { include: ['react/jsx-dev-runtime', 'react/jsx-runtime'] },
+    optimizeDeps: {
+        include: ['react/jsx-dev-runtime', 'react/jsx-runtime', 'react-router-dom', 'lucide-react'],
+    },
     test: {
         browser: { enabled: true, headless: true, provider: playwright(), instances: [{ browser: 'chromium' }] },
     },

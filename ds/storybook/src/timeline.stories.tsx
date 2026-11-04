@@ -1,4 +1,4 @@
-import { ComponentPreview } from './ein-preview';
+import { ComponentPreview } from './EinPreview';
 import { Package, Truck, CheckCircle, Clock } from 'lucide-react';
 import { GlassTimeline, TimelineItem } from '@picklehub/ui-web';
 const basicCode = `import { GlassTimeline } from "@/components/glass-timeline"

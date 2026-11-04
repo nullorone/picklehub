@@ -209,7 +209,7 @@ model CancelledError extends ErrorResponse {
 scalar uuid extends string;
 
 @minValue(0)
-@maxValue(32)
+@maxValue(96)
 scalar ParticipantCount extends int32;
 
 union ErrorCode {
@@ -238,7 +238,7 @@ scalar VenueAddress extends string;
 scalar DurationMinutes extends int32;
 
 @minValue(2)
-@maxValue(32)
+@maxValue(96)
 scalar ParticipantLimit extends int32;
 
 @maxLength(80)

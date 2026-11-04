@@ -1,4 +1,4 @@
-import { ComponentPreview } from './ein-preview';
+import { ComponentPreview } from './EinPreview';
 import { GlassRipple, GlassRippleButton } from '@picklehub/ui-web';
 const basicCode = `import { GlassRippleButton } from "@/components/glass-ripple"
 

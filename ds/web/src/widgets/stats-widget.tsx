@@ -6,19 +6,57 @@ import { cn } from '../utils';
 import { TrendingUp, TrendingDown, ArrowUp, ArrowDown, Minus } from 'lucide-react';
 import { GlassWidgetBase } from './base-widget';
 
+type StatCardVariant = 'default' | 'centered';
+
 interface StatCardProps {
+    variant?: StatCardVariant;
     title: string;
     value: string | number;
     change?: {
         value: number;
         type: 'increase' | 'decrease' | 'neutral';
+        describe?: string;
     };
     icon?: React.ReactNode;
     glowColor?: 'cyan' | 'purple' | 'blue' | 'pink' | 'green' | 'amber' | 'red';
+    shadowMode?: boolean;
     className?: string;
 }
 
-function StatCard({ title, value, change, icon, glowColor = 'cyan', className }: StatCardProps) {
+function StatCard({
+    title,
+    value,
+    change,
+    icon,
+    glowColor = 'cyan',
+    shadowMode,
+    variant = 'default',
+    className,
+}: StatCardProps) {
+    const valueColors = {
+        cyan: 'text-cyan-400',
+        purple: 'text-purple-400',
+        blue: 'text-blue-400',
+        pink: 'text-pink-400',
+        green: 'text-green-400',
+        amber: 'text-orange-400',
+        red: 'text-red-400',
+    };
+
+    if (variant === 'centered') {
+        return (
+            <GlassWidgetBase
+                className={cn('flex items-center justify-center text-center', className)}
+                size="md"
+                glowColor={glowColor}
+                shadowEffect={shadowMode}
+            >
+                <div className={cn('text-2xl font-bold break-words', valueColors[glowColor])}>{value}</div>
+                <div className="text-sm text-white/60">{title}</div>
+            </GlassWidgetBase>
+        );
+    }
+
     const changeColors = {
         increase: 'text-emerald-400',
         decrease: 'text-red-400',
@@ -28,7 +66,12 @@ function StatCard({ title, value, change, icon, glowColor = 'cyan', className }:
     const ChangeIcon = change?.type === 'increase' ? ArrowUp : change?.type === 'decrease' ? ArrowDown : Minus;
 
     return (
-        <GlassWidgetBase className={cn('min-w-48', className)} size="md" glowColor={glowColor}>
+        <GlassWidgetBase
+            className={cn('min-w-48', className)}
+            size="md"
+            glowColor={glowColor}
+            shadowEffect={shadowMode}
+        >
             <div className="flex items-start justify-between mb-3">
                 <div className="text-white/60 text-sm">{title}</div>
                 {icon && <div className="text-white/40">{icon}</div>}
@@ -38,7 +81,7 @@ function StatCard({ title, value, change, icon, glowColor = 'cyan', className }:
                 <div className={cn('flex items-center gap-1 text-xs', changeColors[change.type])}>
                     <ChangeIcon className="w-3 h-3" />
                     <span>{Math.abs(change.value)}%</span>
-                    <span className="text-white/50">vs last period</span>
+                    <span className="text-white/50">{change.describe ?? 'в сравнении с предыдущим'}</span>
                 </div>
             )}
         </GlassWidgetBase>
@@ -177,6 +220,7 @@ function ComparisonStat({
 }
 
 interface StatsGridProps {
+    variant?: StatCardVariant;
     stats: Array<{
         title: string;
         value: string | number;
@@ -190,11 +234,17 @@ interface StatsGridProps {
     className?: string;
 }
 
-function StatsGrid({ stats, className }: StatsGridProps) {
+function StatsGrid({ stats, variant = 'default', className }: StatsGridProps) {
     return (
-        <div className={cn('grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4', className)}>
+        <div
+            className={cn(
+                'grid',
+                variant === 'centered' ? 'grid-cols-2 gap-3' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4',
+                className
+            )}
+        >
             {stats.map((stat, i) => (
-                <StatCard key={i} {...stat} />
+                <StatCard key={i} {...stat} variant={variant} />
             ))}
         </div>
     );

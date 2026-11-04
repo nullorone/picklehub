@@ -5,6 +5,7 @@ import tseslint from "typescript-eslint";
 import react from "eslint-plugin-react";
 import reactHooks from "eslint-plugin-react-hooks";
 import globals from "globals";
+import unusedImports from "eslint-plugin-unused-imports";
 
 export default tseslint.config(
     {
@@ -26,6 +27,14 @@ export default tseslint.config(
         plugins: {
             react,
             "react-hooks": reactHooks,
+            "unused-imports": unusedImports,
+        },
+        rules: {
+            "@typescript-eslint/no-unused-vars": "off",
+            "unused-imports/no-unused-imports": "error",
+            "unused-imports/no-unused-vars": "error",
+            "react/jsx-uses-react": "error",
+            "react/jsx-uses-vars": "error",
         },
         languageOptions: {
             parserOptions: {
@@ -45,6 +54,12 @@ export default tseslint.config(
     {
         files: ["ds/**/*.mjs"],
         extends: [eslint.configs.recommended],
+        plugins: { "unused-imports": unusedImports },
+        rules: {
+            "no-unused-vars": "off",
+            "unused-imports/no-unused-imports": "error",
+            "unused-imports/no-unused-vars": "error",
+        },
         languageOptions: { globals: globals.node },
     },
 );

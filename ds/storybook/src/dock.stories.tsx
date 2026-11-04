@@ -1,4 +1,4 @@
-import { ComponentPreview } from './ein-preview';
+import { ComponentPreview } from './EinPreview';
 import { Home, Search, Mail, Calendar, Settings, User, Bell, Folder, ImageIcon, Music } from 'lucide-react';
 import { DockItem, GlassDock } from '@picklehub/ui-web';
 const basicCode = `import { GlassDock } from "@/components/glass-dock"

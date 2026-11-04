@@ -1,0 +1,140 @@
+.root {
+    position: fixed;
+    inset: 0;
+    z-index: 110;
+    pointer-events: none;
+}
+
+.mask {
+    position: absolute;
+    inset: 0;
+}
+
+.tooltip {
+    --arrow-position: 50%;
+    position: absolute;
+    box-sizing: border-box;
+    width: max-content;
+    max-width: min(320px, calc(100vw - 24px));
+    border: 1px solid rgb(255 255 255 / 15%);
+    border-radius: 16px;
+    background: var(--ds-surface, #1e293b);
+    color: var(--ds-text, #fff);
+    box-shadow: 0 12px 40px rgb(0 0 0 / 30%);
+    font-size: 14px;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+    pointer-events: auto;
+}
+
+.body {
+    max-height: calc(100dvh - 26px);
+    overflow: auto;
+    padding: 20px;
+    border-radius: inherit;
+}
+
+.tooltip[data-arrow-position='left'] {
+    --arrow-position: 15px;
+}
+
+.tooltip[data-arrow-position='right'] {
+    --arrow-position: calc(100% - 15px);
+}
+
+.tooltip::before {
+    content: '';
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    background: inherit;
+    border: inherit;
+    border-width: 1px 0 0 1px;
+    pointer-events: none;
+}
+
+.tooltip[data-placement='bottom']::before {
+    top: -7px;
+    left: var(--arrow-position);
+    transform: translateX(-50%) rotate(45deg);
+}
+
+.tooltip[data-placement='top']::before {
+    bottom: -7px;
+    left: var(--arrow-position);
+    transform: translateX(-50%) rotate(225deg);
+}
+
+.tooltip[data-placement='right']::before {
+    left: -7px;
+    top: var(--arrow-position);
+    transform: translateY(-50%) rotate(-45deg);
+}
+
+.tooltip[data-placement='left']::before {
+    right: -7px;
+    top: var(--arrow-position);
+    transform: translateY(-50%) rotate(135deg);
+}
+
+.close {
+    float: right;
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    margin: -8px -8px 4px 8px;
+    padding: 0;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: inherit;
+    font-size: 24px;
+    cursor: pointer;
+}
+
+.close:hover {
+    background: rgb(128 128 128 / 15%);
+}
+
+.close:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
+}
+
+.navigation {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 20px;
+}
+
+.counter {
+    margin-right: auto;
+    white-space: nowrap;
+    opacity: 0.6;
+}
+
+.navigationButton {
+    padding: 8px 12px;
+    border: 1px solid rgb(128 128 128 / 35%);
+    border-radius: 8px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+}
+
+.navigationButton:disabled {
+    opacity: 0.35;
+    cursor: default;
+}
+
+.navigationButton:enabled:hover {
+    background: rgb(128 128 128 / 15%);
+}
+
+.navigationButton:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
+}

@@ -8,7 +8,11 @@ const config: StorybookConfig = {
     core: { disableTelemetry: true },
     async viteFinal(config) {
         const { mergeConfig } = await import('vite');
-        return mergeConfig(config, { plugins: [tailwindcss()] });
+        return mergeConfig(config, {
+            plugins: [tailwindcss()],
+            // Avoid individual icon requests that privacy filters can block (e.g. fingerprint.js).
+            optimizeDeps: { include: ['lucide-react'] },
+        });
     },
 };
 export default config;

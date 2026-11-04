@@ -25,7 +25,7 @@ export const Example2 = {
                     <GlassSkeleton className="h-4 w-2/3" />
                 </GlassCardContent>
                 <GlassCardFooter>
-                    <GlassSkeleton className="h-10 w-24" />
+                    <GlassSkeleton className="h-10 w-full" />
                 </GlassCardFooter>
             </GlassCard>
         </div>

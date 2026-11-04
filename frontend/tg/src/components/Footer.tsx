@@ -1,124 +1,148 @@
-import pickleballIcon from "../assets/pickleball.svg";
-import { GlassAvatar, GlassAvatarFallback, GlassDock } from "@picklehub/ui-web";
+import pickleballIcon from "../assets/pickleball-icon.svg";
+import { Droplet, Globe, House, Send, UserRound } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useSessionUser } from "@/api/session.ts";
+import { LiquidNavbar, LiquidNavbarProps } from "@picklehub/ui-web";
+import { useCallback } from "react";
+
+// const buttonClassName =
+//     "relative flex h-10 w-10 items-center justify-center rounded-xl border border-white/20 " +
+//     "bg-white/15 backdrop-blur-xl transition-all duration-200 ease-out hover:bg-white/25 " +
+//     "shadow-[0_2px_8px_rgba(0,0,0,0.15),inset_0_1px_1px_rgba(255,255,255,0.15)] " +
+//     "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ds-accent";
+
+// function ButtonHighlights() {
+//     return (
+//         <>
+//             <span
+//                 aria-hidden="true"
+//                 className="pointer-events-none absolute inset-0 rounded-[inherit] bg-linear-to-b from-white/20 to-transparent"
+//             />
+//             <span
+//                 aria-hidden="true"
+//                 className="pointer-events-none absolute inset-0 rounded-[inherit] bg-linear-to-tr from-transparent to-white/10"
+//             />
+//         </>
+//     );
+// }
 
 export function Footer() {
-    const { pathname } = useLocation();
     const navigate = useNavigate();
-    const user = useSessionUser();
-    const initials =
-        user?.displayName
-            .trim()
-            .split(/\s+/)
-            .slice(0, 2)
-            .map((part) => Array.from(part)[0])
-            .join("")
-            .toLocaleUpperCase("ru") || "?";
+    const { pathname } = useLocation();
+    const activeItem =
+        pathname === "/profile" ? 2 : pathname === "/event/new" ? 1 : 0;
+
     const iconProps = {
-        width: 20,
-        height: 20,
-        viewBox: "0 0 24 24",
-        fill: "none",
-        stroke: "currentColor",
+        size: 18,
         strokeWidth: 1.8,
-        strokeLinecap: "round" as const,
-        strokeLinejoin: "round" as const,
-        "aria-hidden": true as const,
+        "aria-hidden": true,
+    } as const;
+    const NimbusIcons = {
+        home: <House {...iconProps} />,
+        globe: <Globe {...iconProps} />,
+        plane: <Send {...iconProps} />,
+        drop: <Droplet {...iconProps} />,
+        user: <UserRound {...iconProps} />,
+        ball: <img src={pickleballIcon} alt={""} />,
     };
+    const navItems: LiquidNavbarProps["items"] = [
+        { label: "Главная", icon: NimbusIcons.home, fx: "wave" },
+        { label: "Создать", icon: NimbusIcons.ball, fx: "glow" },
+        { label: "Профиль", icon: NimbusIcons.user, fx: "wave" },
+    ];
+
+    const handleNavItemChange = useCallback<
+        NonNullable<LiquidNavbarProps["onChange"]>
+    >(
+        (_, { label }) => {
+            switch (label) {
+                case "Профиль":
+                    navigate("/profile");
+                    break;
+                case "Создать":
+                    navigate("/event/new");
+                    break;
+                default:
+                    navigate("/");
+            }
+        },
+        [navigate],
+    );
 
     return (
+        // <footer className="tg-footer ds-glass ds-header-glass rounded-2xl border text-ds-text">
         <footer className="tg-footer">
-            <nav
-                aria-label="Основная навигация"
-                className="mx-auto w-full max-w-lg px-4 sm:px-6"
-            >
-                <GlassDock
-                    className="tg-footer-dock"
-                    baseSize={40}
-                    maxSize={40}
-                    magnification={1}
-                    items={[
-                        {
-                            id: "home",
-                            label: "Главная",
-                            iconScale: 1,
-                            glow: false,
-                            icon: (
-                                <svg {...iconProps}>
-                                    <path d="m3 10 9-7 9 7v10H3Z" />
-                                    <path d="M9 20v-7h6v7" />
-                                </svg>
-                            ),
-                            active:
-                                pathname === "/" ||
-                                pathname.startsWith("/matches/"),
-                            onClick: () => navigate("/"),
-                        },
-                        {
-                            id: "play",
-                            label: "Играть",
-                            iconScale: 3.5,
-                            glow: true,
-                            containerStyle: {
-                                width: 64,
-                                height: 64,
-                                top: "-50%",
-                                position: "absolute",
-                                left: "50%",
-                                transform: "translateX(-50%)",
-                            },
-                            buttonStyle: {
-                                width: 64,
-                                height: 64,
-                                position: "absolute",
-                                top: 0,
-                                transform: "none",
-                                overflow: "hidden",
-                                borderRadius: "50%",
-                                flexShrink: 0,
-                                boxShadow: "0 8px 24px rgb(6 182 212 / 40%)",
-                            },
-                            icon: (
-                                <img
-                                    src={pickleballIcon}
-                                    width={20}
-                                    height={20}
-                                    alt=""
-                                    aria-hidden="true"
-                                />
-                            ),
-                            active: pathname === "/games/new",
-                            onClick: () => navigate("/games/new"),
-                        },
-                        {
-                            id: "profile",
-                            label: "Профиль",
-                            iconScale: 1,
-                            glow: false,
-                            buttonStyle: { borderRadius: "50%" },
-                            icon: (
-                                <GlassAvatar
-                                    glowEffect={false}
-                                    aria-hidden="true"
-                                >
-                                    <GlassAvatarFallback
-                                        style={{
-                                            color: "var(--ds-text)",
-                                            backgroundColor:
-                                                "color-mix(in srgb, var(--ds-accent) 15%, var(--ds-surface))",
-                                        }}
-                                    >
-                                        {initials}
-                                    </GlassAvatarFallback>
-                                </GlassAvatar>
-                            ),
-                            active: pathname === "/profile",
-                            onClick: () => navigate("/profile"),
-                        },
-                    ]}
-                />
-            </nav>
+            <div id="event-form-actions" />
+            <LiquidNavbar
+                className={"w-full flex justify-around items-center"}
+                active={activeItem}
+                onChange={handleNavItemChange}
+                items={navItems}
+                tone={"dark"}
+            />
+            {/*<nav*/}
+            {/*    aria-label="Основная навигация"*/}
+            {/*    className="relative mx-auto grid min-h-16 w-full max-w-lg grid-cols-[44px_minmax(0,1fr)_44px] items-center px-2 sm:px-2"*/}
+            {/*>*/}
+            {/*    <button*/}
+            {/*        type="button"*/}
+            {/*        aria-label="Главная"*/}
+            {/*        aria-current={isHome ? "page" : undefined}*/}
+            {/*        onClick={() => navigate("/")}*/}
+            {/*        className={buttonClassName}*/}
+            {/*    >*/}
+            {/*        <ButtonHighlights />*/}
+            {/*        <House*/}
+            {/*            className="relative"*/}
+            {/*            size={20}*/}
+            {/*            strokeWidth={1.8}*/}
+            {/*            aria-hidden="true"*/}
+            {/*        />*/}
+            {/*    </button>*/}
+            {/*    <button*/}
+            {/*        type="button"*/}
+            {/*        aria-label="Список событий"*/}
+            {/*        onClick={() => navigate("/event/list")}*/}
+            {/*        className={`${buttonClassName} tg-footer-play justify-self-center -translate-y-2`}*/}
+            {/*    >*/}
+            {/*        <ButtonHighlights />*/}
+            {/*        <img*/}
+            {/*            className="relative h-full w-full rounded-full scale-125"*/}
+            {/*            src={pickleballIcon}*/}
+            {/*            alt=""*/}
+            {/*            aria-hidden="true"*/}
+            {/*        />*/}
+            {/*    </button>*/}
+            {/*    <button*/}
+            {/*        type="button"*/}
+            {/*        aria-label="Профиль"*/}
+            {/*        onClick={() => navigate("/profile")}*/}
+            {/*        className="flex h-11 w-11 items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ds-accent"*/}
+            {/*    >*/}
+            {/*        <GlassAvatar aria-hidden="true">*/}
+            {/*            {avatarSrc && (*/}
+            {/*                <GlassAvatarImage src={avatarSrc} alt="" />*/}
+            {/*            )}*/}
+            {/*            <GlassAvatarFallback>*/}
+            {/*                {firstLetterUserName}*/}
+            {/*            </GlassAvatarFallback>*/}
+            {/*        </GlassAvatar>*/}
+            {/*    </button>*/}
+            {/*    /!*<button*!/*/}
+            {/*    /!*    type="button"*!/*/}
+            {/*    /!*    aria-label="Календарь"*!/*/}
+            {/*    /!*    aria-current={pathname === "/profile" ? "page" : undefined}*!/*/}
+            {/*    /!*    onClick={() => navigate("/profile")}*!/*/}
+            {/*    /!*    className={buttonClassName}*!/*/}
+            {/*    /!*>*!/*/}
+            {/*    /!*    <ButtonHighlights />*!/*/}
+            {/*    /!*    <Calendar*!/*/}
+            {/*    /!*        className="relative"*!/*/}
+            {/*    /!*        size={20}*!/*/}
+            {/*    /!*        strokeWidth={1.8}*!/*/}
+            {/*    /!*        aria-hidden="true"*!/*/}
+            {/*    /!*    />*!/*/}
+            {/*    /!*</button>*!/*/}
+            {/*</nav>*/}
         </footer>
     );
 }

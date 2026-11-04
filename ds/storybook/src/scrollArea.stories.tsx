@@ -1,5 +1,5 @@
 import { GlassSeparator, GlassScrollArea, GlassScrollBar } from '@picklehub/ui-web';
-import { artists } from './ein-mock-data';
+import { artists } from './EinMockData';
 export default { title: 'Data display/ScrollArea' };
 export const Example1 = {
     name: 'Vertical Scroll',

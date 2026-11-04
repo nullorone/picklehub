@@ -1,0 +1,14 @@
+{
+  "runs": [
+    {
+      "date": "2026-10-27T21:36:58.469876+00:00",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "files": 384,
+      "usage_available": false
+    }
+  ],
+  "total_input_tokens": 0,
+  "total_output_tokens": 0,
+  "note": "Numeric zeros are compatibility placeholders, NOT measured usage. Host-agent token usage unavailable; AST has no LLM cost."
+}

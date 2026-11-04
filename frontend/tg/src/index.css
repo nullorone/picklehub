@@ -1,6 +1,64 @@
 @import "@picklehub/ui-web/styles.css";
 
+/* Center cap-height (660/1000 em); preserve the original 1.05em normal line height. */
+@font-face {
+    font-family: "Seenonim";
+    src: url("./assets/fonts/seenonim-thin-experimental.woff2") format("woff2");
+    font-style: normal;
+    font-weight: 100;
+    font-display: swap;
+    ascent-override: 80.5%;
+    descent-override: 14.5%;
+    line-gap-override: 10%;
+}
+
+@font-face {
+    font-family: "Seenonim";
+    src: url("./assets/fonts/seenonim-light-experimental.woff2") format("woff2");
+    font-style: normal;
+    font-weight: 300;
+    font-display: swap;
+    ascent-override: 80.5%;
+    descent-override: 14.5%;
+    line-gap-override: 10%;
+}
+
+@font-face {
+    font-family: "Seenonim";
+    src: url("./assets/fonts/seenonim-regular.woff2") format("woff2");
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    ascent-override: 80.5%;
+    descent-override: 14.5%;
+    line-gap-override: 10%;
+}
+
+@font-face {
+    font-family: "Seenonim";
+    src: url("./assets/fonts/seenonim-semibold-experimental.woff2")
+        format("woff2");
+    font-style: normal;
+    font-weight: 600;
+    font-display: swap;
+    ascent-override: 80.5%;
+    descent-override: 14.5%;
+    line-gap-override: 10%;
+}
+
+@font-face {
+    font-family: "Seenonim";
+    src: url("./assets/fonts/seenonim-bold-experimental.woff2") format("woff2");
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    ascent-override: 80.5%;
+    descent-override: 14.5%;
+    line-gap-override: 10%;
+}
+
 @theme inline {
+    --font-sans: "Seenonim", Arial, sans-serif;
     --spacing: var(--token-space-1, 4px);
     --text-sm: var(--token-font-size-sm, 14px);
     --text-base: var(--token-font-size-base, 16px);
@@ -31,6 +89,36 @@
     --ph-error: var(--ds-error);
     --ph-border: var(--ds-border);
     --ph-button-text: var(--ds-buttonText);
+    --ph-page-background:
+        radial-gradient(
+            ellipse at 0% 0%,
+            color-mix(
+                in srgb,
+                var(--token-ein-color-cyan-500) 20%,
+                transparent
+            ),
+            transparent 65%
+        ),
+        radial-gradient(
+            ellipse at 100% 100%,
+            color-mix(
+                in srgb,
+                var(--token-ein-color-purple-500) 18%,
+                transparent
+            ),
+            transparent 65%
+        ),
+        linear-gradient(
+            135deg,
+            var(--ds-background),
+            color-mix(
+                    in srgb,
+                    var(--token-ein-color-blue-500) 12%,
+                    var(--ds-background)
+                )
+                50%,
+            var(--ds-background)
+        );
 }
 
 * {
@@ -41,15 +129,24 @@ body {
     min-width: 320px;
     min-height: 100vh;
     margin: 0;
-    background: var(--ph-background);
+    background: var(--ph-page-background);
+    background-attachment: fixed;
     color: var(--ph-text);
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: "Seenonim", Arial, sans-serif;
+    font-weight: 400;
+    font-synthesis: none;
     font-size: 16px;
     -webkit-font-smoothing: antialiased;
 }
 
+body .nimbus-nav {
+    font-family: inherit;
+}
+
 button,
-input {
+input,
+textarea,
+select {
     font: inherit;
 }
 
@@ -59,22 +156,8 @@ input {
 }
 
 .tg-shell {
-    background:
-        radial-gradient(
-            ellipse at top left,
-            color-mix(in srgb, var(--ds-accent) 12%, transparent),
-            transparent 55%
-        ),
-        radial-gradient(
-            ellipse at top right,
-            color-mix(
-                in srgb,
-                var(--token-ein-color-purple-500) 10%,
-                transparent
-            ),
-            transparent 50%
-        ),
-        var(--ds-background);
+    background: var(--ph-page-background);
+    background-attachment: fixed;
     --footer-safe-bottom: max(
         env(safe-area-inset-bottom, 0px),
         var(--tg-safe-area-inset-bottom, 0px),
@@ -90,67 +173,73 @@ html {
 .tg-footer {
     position: fixed;
     z-index: 40;
+    inset: auto 12px
+        calc(
+            12px +
+                max(
+                    env(safe-area-inset-bottom, 0px),
+                    var(--tg-safe-area-inset-bottom, 0px),
+                    var(--tg-content-safe-area-inset-bottom, 0px)
+                )
+        )
+        12px;
+}
+
+.tg-footer:has(#event-form-actions:not(:empty)) {
     inset: auto 0 0;
-    display: flex;
-    justify-content: center;
-    padding: 12px 0 calc(12px + var(--footer-safe-bottom));
-    pointer-events: none;
+    display: grid;
+    gap: 0;
+    padding: 0 12px calc(12px + var(--footer-safe-bottom));
 }
 
-.tg-footer nav {
-    pointer-events: auto;
+.tg-shell:has(#event-form-actions:not(:empty)) {
+    padding-bottom: calc(268px + var(--footer-safe-bottom));
 }
 
-.tg-footer-dock > [role="toolbar"] {
-    width: 100%;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 12px;
-    padding: 8px 12px;
-    background-color: color-mix(in srgb, var(--ds-surface) 94%, transparent);
-    border-color: var(--ds-border);
+html:has(#event-form-actions:not(:empty)) {
+    scroll-padding-bottom: calc(268px + env(safe-area-inset-bottom, 0px));
 }
 
-.tg-footer-dock button > span {
-    color: var(--ds-text);
+/*.tg-footer button[aria-current="page"]::after {*/
+/*    position: absolute;*/
+/*    top: calc(100% + 4px);*/
+/*    left: 50%;*/
+/*    width: 6px;*/
+/*    height: 6px;*/
+/*    border-radius: 50%;*/
+/*    content: "";*/
+/*    pointer-events: none;*/
+/*    transform: translateX(-50%);*/
+/*    background: linear-gradient(to right, #22d3ee, #60a5fa);*/
+/*    box-shadow:*/
+/*        0 0 8px rgb(6 182 212 / 80%),*/
+/*        0 0 16px rgb(6 182 212 / 40%);*/
+/*}*/
+
+.tg-footer-play {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    box-shadow: 0 8px 24px rgb(6 182 212 / 40%);
+    animation: tg-play-blink 1.8s ease-in-out infinite;
 }
 
-.tg-footer-dock > [role="toolbar"] > div:has(> button[aria-label="Играть"]) {
-    animation: tg-play-bounce 1.8s infinite;
-}
-
-.tg-footer-dock
-    > [role="toolbar"]
-    > div:has(> button[aria-label="Играть"][aria-current="page"]) {
+.tg-footer-play[aria-current="page"] {
     animation: none;
 }
 
-@keyframes tg-play-bounce {
+@keyframes tg-play-blink {
     0%,
     100% {
-        translate: 0 -12px;
-        animation-timing-function: cubic-bezier(0.55, 0, 1, 1);
+        background-color: rgb(255 255 255 / 15%);
+        box-shadow: 0 8px 24px rgb(6 182 212 / 40%);
     }
     50% {
-        translate: 0 21px;
-        animation-timing-function: cubic-bezier(0, 0, 0.45, 1);
+        background-color: rgb(6 182 212 / 35%);
+        box-shadow:
+            0 0 16px rgb(6 182 212 / 65%),
+            0 8px 32px rgb(6 182 212 / 55%);
     }
-}
-
-.tg-footer-dock
-    > [role="toolbar"]
-    > div:has(> button[aria-label="Играть"])
-    > div:first-child {
-    top: -50px;
-}
-
-.tg-footer-dock > div:not([role="toolbar"]) {
-    display: none;
-}
-
-.tg-footer-dock [data-dock-active-indicator] {
-    top: calc(100% + 4px);
-    bottom: auto;
 }
 
 .tg-card {

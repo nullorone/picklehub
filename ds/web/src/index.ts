@@ -24,6 +24,8 @@ export * from './liquid-glass/glass-textarea';
 export * from './liquid-glass/glass-tooltip';
 export * from './widgets/base-widget';
 export * from './widgets/calendar-widget';
+export * from './widgets/agenda-calendar-widget';
+export * from './widgets/horizontal-calendar-widget';
 export * from './widgets/clock-widget';
 export * from './widgets/stats-widget';
 export * from './widgets/stock-widget';
@@ -43,3 +45,18 @@ export { default as ForgotPasswordPage } from './blocks/ForgotPasswordPage';
 export { default as PricingPage } from './blocks/PricingPage';
 export { default as AdminPanel } from './blocks/AdminPanel';
 export { Header, type HeaderProps } from './blocks/Header';
+
+export * from './liquid-glass/glass-profile-card';
+export { Space, type SpaceProps } from './Space/Space';
+
+export { LoadingScreen, type LoadingScreenProps } from './LoadingScreen';
+export {
+    Onboarding,
+    type OnboardingProps,
+    type OnboardingStep,
+    type OnboardingPlacement,
+    type OnboardingArrowPosition,
+} from './Onboarding';
+
+export { LiquidNavbar, NimbusIcons } from './components/ui/liquid-glass-navbar';
+export type { LiquidNavbarProps, LiquidNavItem, NimbusFx } from './components/ui/liquid-glass-navbar';

@@ -10,26 +10,26 @@
         "test": "vitest run"
     },
     "dependencies": {
+        "@fontsource/geist": "^5.2.0",
         "@picklehub/design-tokens": "*",
         "@picklehub/ui-web": "*",
+        "lucide-react": "1.60.0",
         "react": "^18.3.1",
-        "react-dom": "^18.3.1",
-        "@fontsource/geist": "^5.2.0",
-        "lucide-react": "^0.468.0"
+        "react-dom": "^18.3.1"
     },
     "devDependencies": {
-        "storybook": "10.6.1",
-        "@storybook/react-vite": "10.6.1",
-        "@storybook/addon-docs": "10.6.1",
         "@storybook/addon-a11y": "10.6.1",
+        "@storybook/addon-docs": "10.6.1",
         "@storybook/addon-vitest": "10.6.1",
+        "@storybook/react-vite": "10.6.1",
         "@tailwindcss/vite": "^4.1.13",
-        "tailwindcss": "^4.1.13",
-        "vite": "^6.3.5",
-        "vitest": "^4.0.0",
+        "@types/react": "^18.3.24",
+        "@types/react-dom": "^18.3.7",
         "@vitest/browser-playwright": "^4.0.0",
         "playwright": "^1.56.0",
-        "@types/react": "^18.3.24",
-        "@types/react-dom": "^18.3.7"
+        "storybook": "10.6.1",
+        "tailwindcss": "^4.1.13",
+        "vite": "^6.3.5",
+        "vitest": "^4.0.0"
     }
 }

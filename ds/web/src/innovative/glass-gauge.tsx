@@ -7,14 +7,18 @@ import { cn } from '../utils';
 interface GlassGaugeProps extends React.HTMLAttributes<HTMLDivElement> {
     value: number;
     max?: number;
-    size?: 'sm' | 'md' | 'lg';
+    size?: 'xxs' | 'xs' | 's' | 'sm' | 'md' | 'lg';
     showValue?: boolean;
     label?: string;
-    colorScheme?: 'cyan' | 'purple' | 'green' | 'orange' | 'gradient';
+    colorScheme?: 'cyan' | 'purple' | 'green' | 'orange' | 'gradient' | 'gradient-progress';
     animated?: boolean;
+    text?: string;
 }
 
 const sizes = {
+    xxs: { size: 20, strokeWidth: 2, fontSize: 'text-2xs' },
+    xs: { size: 35, strokeWidth: 4, fontSize: 'text-xs' },
+    s: { size: 60, strokeWidth: 6, fontSize: 'text-s' },
     sm: { size: 100, strokeWidth: 8, fontSize: 'text-lg' },
     md: { size: 150, strokeWidth: 10, fontSize: 'text-2xl' },
     lg: { size: 200, strokeWidth: 12, fontSize: 'text-4xl' },
@@ -28,6 +32,12 @@ const colorSchemes = {
     gradient: { stroke: '', glow: 'from-cyan-500/40 via-blue-500/40 to-purple-500/40' },
 };
 
+const progressGradients = {
+    red: { stops: ['#d9a0a0', '#c98282', '#b96b6b'], glow: 'from-red-300/20 to-rose-400/20' },
+    yellow: { stops: ['#e2d5a1', '#d4be7c', '#c6aa60'], glow: 'from-yellow-200/20 to-amber-300/20' },
+    green: { stops: ['#a8cfb5', '#87b99a', '#6aa381'], glow: 'from-green-200/20 to-emerald-300/20' },
+};
+
 const GlassGauge = React.forwardRef<HTMLDivElement, GlassGaugeProps>(
     (
         {
@@ -39,13 +49,21 @@ const GlassGauge = React.forwardRef<HTMLDivElement, GlassGaugeProps>(
             label,
             colorScheme = 'cyan',
             animated = true,
+            text,
             ...props
         },
         ref
     ) => {
         const [displayValue, setDisplayValue] = React.useState(0);
         const config = sizes[size];
-        const colors = colorSchemes[colorScheme];
+        const progressGradient = progressGradients[value < 40 ? 'red' : value < 80 ? 'yellow' : 'green'];
+        const colors =
+            colorScheme === 'gradient-progress'
+                ? { stroke: '', glow: progressGradient.glow }
+                : colorSchemes[colorScheme];
+        const isGradient = colorScheme === 'gradient' || colorScheme === 'gradient-progress';
+        const gradientStops =
+            colorScheme === 'gradient-progress' ? progressGradient.stops : ['#06b6d4', '#3b82f6', '#a855f7'];
         const percentage = Math.min(Math.max((value / max) * 100, 0), 100);
 
         const radius = (config.size - config.strokeWidth) / 2;
@@ -97,12 +115,12 @@ const GlassGauge = React.forwardRef<HTMLDivElement, GlassGaugeProps>(
                 <div className="relative" style={{ width: config.size, height: config.size }}>
                     <svg width={config.size} height={config.size} className="transform -rotate-90">
                         {/* Gradient definition */}
-                        {colorScheme === 'gradient' && (
+                        {isGradient && (
                             <defs>
                                 <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="0%">
-                                    <stop offset="0%" stopColor="#06b6d4" />
-                                    <stop offset="50%" stopColor="#3b82f6" />
-                                    <stop offset="100%" stopColor="#a855f7" />
+                                    <stop offset="0%" stopColor={gradientStops[0]} />
+                                    <stop offset="50%" stopColor={gradientStops[1]} />
+                                    <stop offset="100%" stopColor={gradientStops[2]} />
                                 </linearGradient>
                             </defs>
                         )}
@@ -135,27 +153,30 @@ const GlassGauge = React.forwardRef<HTMLDivElement, GlassGaugeProps>(
                             cy={config.size / 2}
                             r={radius}
                             fill="none"
-                            stroke={colorScheme === 'gradient' ? `url(#${gradientId})` : undefined}
+                            stroke={isGradient ? `url(#${gradientId})` : undefined}
                             strokeWidth={config.strokeWidth}
                             strokeLinecap="round"
                             strokeDasharray={circumference}
                             strokeDashoffset={strokeDashoffset}
-                            className={cn(
-                                'transition-all duration-1000 ease-out',
-                                colorScheme !== 'gradient' && colors.stroke
-                            )}
+                            className={cn('transition-all duration-1000 ease-out', !isGradient && colors.stroke)}
                         />
                     </svg>
 
                     {/* Center content */}
                     <div className="absolute inset-0 flex flex-col items-center justify-center">
                         {showValue && (
-                            <span className={cn('font-bold text-white', config.fontSize)}>
-                                {displayValue}
-                                <span className="text-white/40 text-sm">%</span>
-                            </span>
+                            <>
+                                {text ? (
+                                    <span className={cn('font-bold text-white', config.fontSize)}>{text}</span>
+                                ) : (
+                                    <span className={cn('font-bold text-white', config.fontSize)}>
+                                        {displayValue}
+                                        <span className="text-white/40 text-sm">%</span>
+                                    </span>
+                                )}
+                            </>
                         )}
-                        {label && <span className="text-white/60 text-sm mt-1">{label}</span>}
+                        {label && <span className="text-white/60 text-sm">{label}</span>}
                     </div>
                 </div>
             </div>

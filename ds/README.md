@@ -71,3 +71,53 @@ Button адаптирован из [EIN Glass Button](https://ui.eindev.ir/docs/
 
 TextField — следующий шаг после Card: подпись, поле, сообщение об ошибке и состояния.
 Не добавляй пустые папки helpers/hooks/tests. Создавай их, когда появится соответствующий код.
+
+## LiquidNavbar (Nimbus Waterline)
+
+Компоненты DS находятся в `ds/web/src`, общие стили — `ds/web/src/styles.css`;
+стили приложения Telegram — `frontend/tg/src/index.css`. Для этого компонента создан
+`ds/web/src/components/ui/liquid-glass-navbar.tsx`: это папка `components/ui` внутри
+исходников workspace. Она даёт предсказуемое место для shadcn-совместимых компонентов;
+папка `/components/ui` в корне монорепозитория не попадала бы в существующую сборку.
+Специфичные стили Nimbus включены в компонент и ограничены префиксами nimbus/nv.
+
+```tsx
+import { LiquidNavbar, NimbusIcons } from '@picklehub/ui-web';
+
+<LiquidNavbar
+    items={[
+        { label: 'Игры', icon: NimbusIcons.home, fx: 'glow' },
+        { label: 'Профиль', icon: NimbusIcons.user, fx: 'wave' },
+    ]}
+    defaultActive={0}
+    onChange={(index, item) => console.info(index, item.label)}
+/>;
+```
+
+В приложении передавайте `active` из маршрута и выполняйте переход в `onChange`;
+для обычных ссылок предусмотрен `href`. Без `active` используется локальный state,
+`defaultActive` применяется при первом рендере. Невалидный индекс ограничивается
+диапазоном; пустой список поддерживается. Provider/store не требуется. `sound`
+выключен по умолчанию, `tone` выбирает светлую/тёмную воду. `compact=true` скрывает
+подписи пунктов с иконками, `false` всегда показывает; без значения подписи скрываются
+при ширине viewport до 520px. Текстовые пункты сохраняют подписи. Для большого числа
+пунктов родитель должен предоставить достаточно места или прокрутку.
+
+Исходный `demo.tsx` находится рядом с компонентом (относительный импорт вместо `@/`).
+`npm run ds:dev` → `Components/LiquidNavbar`: демо Waterline, темы, компактный вариант,
+управляемое состояние, ссылки и CSS fallback. Это каталог для выбора места использования;
+маршруты и навигация Mini App не заменялись. Иконки используют установленный lucide-react;
+изображений в исходном дизайне нет, Unsplash и дополнительные зависимости не нужны.
+
+React 18, strict TypeScript и Tailwind 4 уже настроены. Полная конфигурация CLI shadcn
+(`components.json` и его тема) в репозитории отсутствует и для этого самостоятельного
+компонента не нужна. Если нужна генерация других shadcn-компонентов, выполните
+`npx shadcn@latest init --cwd frontend/tg` для существующего Vite-приложения.
+CLI добавляет конфигурацию, зависимости и CSS-переменные — проверьте их совместимость
+с существующими DS-токенами. Настройте `@/*` → `./src/*` в TypeScript и такой же alias
+в Vite; в `components.json` задайте `aliases.ui` как `@/components/ui`,
+`aliases.components` как `@/components`, а `tailwind.css` как `src/index.css`.
+Для Tailwind 4 поле `tailwind.config` оставьте пустым. Общие компоненты этого монорепозитория
+продолжайте импортировать через `@picklehub/ui-web`.
+См. [официальный CLI](https://ui.shadcn.com/docs/cli) и
+[ручную настройку](https://ui.shadcn.com/docs/installation/manual).

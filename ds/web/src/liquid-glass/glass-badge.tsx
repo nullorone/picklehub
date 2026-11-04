@@ -6,10 +6,7 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '../utils';
 
 const glassBadgeVariants = cva(
-    cn(
-        'inline-flex items-center rounded-full px-3 py-1 text-xs font-medium',
-        'backdrop-blur-xl border transition-all duration-300'
-    ),
+    cn('inline-flex items-center rounded-full font-medium', 'backdrop-blur-xl border transition-all duration-300'),
     {
         variants: {
             variant: {
@@ -21,6 +18,7 @@ const glassBadgeVariants = cva(
                 outline: 'bg-transparent border-white/30 text-white/80',
             },
             size: {
+                s: 'px-2 pb-[2px] pt-[4px] text-s',
                 sm: 'px-2 py-0.5 text-xs',
                 md: 'px-3 py-1 text-sm',
                 lg: 'px-4 py-2 text-base',
@@ -28,7 +26,7 @@ const glassBadgeVariants = cva(
         },
         defaultVariants: {
             variant: 'default',
-            size: 'md',
+            size: 's',
         },
     }
 );
@@ -37,7 +35,7 @@ export interface GlassBadgeProps
     extends React.HTMLAttributes<HTMLDivElement>, VariantProps<typeof glassBadgeVariants> {}
 
 function GlassBadge({ className, variant, ...props }: GlassBadgeProps) {
-    return <div className={cn(glassBadgeVariants({ variant }), className)} {...props} />;
+    return <div className={cn(glassBadgeVariants({ variant }), 'text-nowrap', className)} {...props} />;
 }
 
 export { GlassBadge, glassBadgeVariants };

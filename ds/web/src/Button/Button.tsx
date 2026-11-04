@@ -34,6 +34,14 @@ const glassButtonVariants = cva(
                     'before:absolute before:inset-0 before:rounded-xl',
                     'before:bg-linear-to-b before:from-white/30 before:to-transparent before:pointer-events-none'
                 ),
+                accent: cn(
+                    'bg-linear-to-r from-amber-300/90 via-yellow-300/90 to-amber-400/90',
+                    'backdrop-blur-xl border border-white/30 text-amber-950 font-medium',
+                    'shadow-ein-accent',
+                    'hover:shadow-ein-accent-hover',
+                    'before:absolute before:inset-0 before:rounded-xl',
+                    'before:bg-linear-to-b before:from-white/30 before:to-transparent before:pointer-events-none'
+                ),
                 outline: cn(
                     'bg-transparent backdrop-blur-sm border-2 border-white/40 text-white',
                     'hover:bg-white/10 hover:border-white/60'
@@ -71,15 +79,20 @@ const GlassButton = React.forwardRef<HTMLButtonElement, GlassButtonProps>(
     ({ className, variant, asChild = false, size, glowEffect = false, type = 'button', children, ...props }, ref) => {
         const Comp = asChild ? Slot : 'button';
         return (
-            <div className="relative inline-block max-w-full">
+            <div className="relative inline-block w-full">
                 {glowEffect && (
                     <div
                         aria-hidden="true"
-                        className="pointer-events-none absolute -inset-1 rounded-xl bg-linear-to-r from-cyan-500/40 via-blue-500/40 to-purple-500/40 blur-lg opacity-70 transition-opacity group-hover:opacity-100"
+                        className={cn(
+                            'pointer-events-none absolute -inset-1 rounded-xl bg-linear-to-r blur-lg opacity-70 transition-opacity group-hover:opacity-100',
+                            variant === 'accent'
+                                ? 'from-amber-300/25 via-yellow-300/25 to-amber-400/25'
+                                : 'from-cyan-500/40 via-blue-500/40 to-purple-500/40'
+                        )}
                     />
                 )}
                 <Comp
-                    className={cn(glassButtonVariants({ variant, size }), className)}
+                    className={cn(glassButtonVariants({ variant, size }), 'w-full', className)}
                     ref={ref}
                     type={asChild ? undefined : type}
                     {...props}

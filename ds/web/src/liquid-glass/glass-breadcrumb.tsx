@@ -107,3 +107,83 @@ export {
     GlassBreadcrumbSeparator,
     GlassBreadcrumbEllipsis,
 };
+
+export type GlassBreadcrumbStep = {
+    label: React.ReactNode;
+    href?: string;
+    onSelect?: () => void;
+};
+
+export type GlassBreadcrumbStepsProps = React.ComponentPropsWithoutRef<'nav'> & {
+    items: GlassBreadcrumbStep[];
+    currentStep: number;
+    maxVisibleItems?: number;
+    disabled?: boolean;
+    expandLabel?: string;
+};
+
+export function GlassBreadcrumbSteps({
+    items,
+    currentStep,
+    maxVisibleItems = 3,
+    disabled = false,
+    expandLabel = 'Show intermediate steps',
+    ...props
+}: GlassBreadcrumbStepsProps) {
+    const [expanded, setExpanded] = React.useState(false);
+    const visibleCount = Math.max(2, Math.floor(maxVisibleItems));
+    const path = items.slice(0, currentStep + 1);
+    const collapse = !expanded && path.length > visibleCount;
+    const tailStart = path.length - (visibleCount - 1);
+    return (
+        <GlassBreadcrumb {...props}>
+            <GlassBreadcrumbList>
+                {path.map((item, index) => {
+                    if (collapse && index > 0 && index < tailStart) {
+                        if (index !== 1) return null;
+                        return (
+                            <React.Fragment key={index}>
+                                <GlassBreadcrumbSeparator />
+                                <GlassBreadcrumbItem>
+                                    <button
+                                        type="button"
+                                        aria-label={expandLabel}
+                                        aria-expanded={false}
+                                        disabled={disabled}
+                                        onClick={() => setExpanded(true)}
+                                        className="rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50"
+                                    >
+                                        <GlassBreadcrumbEllipsis />
+                                    </button>
+                                </GlassBreadcrumbItem>
+                            </React.Fragment>
+                        );
+                    }
+                    return (
+                        <React.Fragment key={index}>
+                            {index > 0 && <GlassBreadcrumbSeparator />}
+                            <GlassBreadcrumbItem>
+                                {index === currentStep ? (
+                                    <GlassBreadcrumbPage>{item.label}</GlassBreadcrumbPage>
+                                ) : item.onSelect ? (
+                                    <button
+                                        type="button"
+                                        disabled={disabled}
+                                        onClick={item.onSelect}
+                                        className="text-white/60 transition-colors hover:text-white hover:underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50"
+                                    >
+                                        {item.label}
+                                    </button>
+                                ) : item.href ? (
+                                    <GlassBreadcrumbLink href={item.href}>{item.label}</GlassBreadcrumbLink>
+                                ) : (
+                                    <span className="text-white/60">{item.label}</span>
+                                )}
+                            </GlassBreadcrumbItem>
+                        </React.Fragment>
+                    );
+                })}
+            </GlassBreadcrumbList>
+        </GlassBreadcrumb>
+    );
+}

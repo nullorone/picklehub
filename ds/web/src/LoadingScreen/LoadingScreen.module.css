@@ -1,0 +1,109 @@
+.root {
+    position: relative;
+    isolation: isolate;
+    display: grid;
+    place-items: center;
+    width: 100%;
+    height: 100%;
+    min-height: 240px;
+    overflow: hidden;
+    border-radius: inherit;
+    color: var(--ds-text, #fff);
+}
+
+.fullScreen {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    min-height: 0;
+    border-radius: 0;
+}
+
+.background,
+.media {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.background {
+    z-index: -1;
+}
+
+.media {
+    object-fit: cover;
+}
+
+.content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    max-width: 100%;
+    padding: 32px 24px;
+}
+
+.animation {
+    position: relative;
+    width: 104px;
+    height: 112px;
+}
+
+.ball {
+    position: absolute;
+    bottom: 0;
+    left: 20px;
+    width: 64px;
+    height: 64px;
+    animation: bounce 2.4s ease-in-out infinite;
+}
+
+.shadow {
+    position: absolute;
+    bottom: 0;
+    left: 28px;
+    width: 48px;
+    height: 10px;
+    border-radius: 50%;
+    background: rgb(0 0 0 / 45%);
+    filter: blur(3px);
+    animation: shadow 2.4s ease-in-out infinite;
+}
+
+.text {
+    text-align: center;
+    overflow-wrap: anywhere;
+    font-size: 16px;
+    line-height: 1.5;
+}
+
+@keyframes bounce {
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-44px);
+    }
+}
+
+@keyframes shadow {
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 0.7;
+    }
+    50% {
+        transform: scale(0.55);
+        opacity: 0.25;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ball,
+    .shadow {
+        animation: none;
+    }
+}

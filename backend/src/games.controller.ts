@@ -476,7 +476,7 @@ export class GamesController {
                 result[key] = new Date(value);
             } else if (key === 'durationMinutes' || key === 'participantLimit') {
                 const min = key === 'durationMinutes' ? 30 : 2;
-                const max = key === 'durationMinutes' ? 480 : 32;
+                const max = key === 'durationMinutes' ? 480 : 96;
                 if (!Number.isInteger(value) || Number(value) < min || Number(value) > max)
                     this.fail(HttpStatus.BAD_REQUEST, 'VALIDATION_ERROR', `${key} is invalid`, requestId);
                 result[key] = value;
@@ -615,9 +615,9 @@ export class GamesController {
         if (
             !Number.isInteger(body.participantLimit) ||
             Number(body.participantLimit) < 2 ||
-            Number(body.participantLimit) > 32
+            Number(body.participantLimit) > 96
         ) {
-            errors.push('participantLimit must be an integer between 2 and 32');
+            errors.push('participantLimit must be an integer between 2 and 96');
         }
         if (body.organizerParticipates !== undefined && typeof body.organizerParticipates !== 'boolean') {
             errors.push('organizerParticipates must be a boolean');

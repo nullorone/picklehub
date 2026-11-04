@@ -1,5 +1,8 @@
+import { useState } from 'react';
+import { expect, userEvent, within } from 'storybook/test';
 import { Home } from 'lucide-react';
 import {
+    GlassBreadcrumbSteps,
     GlassBreadcrumb,
     GlassBreadcrumbList,
     GlassBreadcrumbItem,
@@ -56,4 +59,32 @@ export const Example2 = {
             </GlassBreadcrumbList>
         </GlassBreadcrumb>
     ),
+};
+
+function StepsExample() {
+    const [currentStep, setCurrentStep] = useState(4);
+    return (
+        <GlassBreadcrumbSteps
+            currentStep={currentStep}
+            items={['Home', 'Event type', 'Game format', 'Venue', 'Date and time'].map((label, index) => ({
+                label,
+                onSelect: () => setCurrentStep(index),
+            }))}
+        />
+    );
+}
+
+export const StepsWithEllipsis = {
+    name: 'Steps With Ellipsis',
+    render: () => <StepsExample />,
+    play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+        const canvas = within(canvasElement);
+        await expect(canvas.getByText('Date and time')).toHaveAttribute('aria-current', 'page');
+        await expect(canvas.queryByRole('button', { name: 'Event type' })).not.toBeInTheDocument();
+        await userEvent.click(canvas.getByRole('button', { name: 'Show intermediate steps' }));
+        await expect(canvas.getByRole('button', { name: 'Event type' })).toBeVisible();
+        await userEvent.click(canvas.getByRole('button', { name: 'Game format' }));
+        await expect(canvas.getByText('Game format')).toHaveAttribute('aria-current', 'page');
+        await expect(canvas.queryByText('Date and time')).not.toBeInTheDocument();
+    },
 };

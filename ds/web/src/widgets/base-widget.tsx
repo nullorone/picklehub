@@ -2,19 +2,22 @@
 'use client';
 
 import * as React from 'react';
-import { motion, type HTMLMotionProps, type Variants } from 'framer-motion';
+import { motion, type HTMLMotionProps } from 'framer-motion';
 import { cn } from '../utils';
 
 interface GlassWidgetBaseProps extends Omit<HTMLMotionProps<'div'>, 'children'> {
     children: React.ReactNode;
-    size?: 'sm' | 'md' | 'lg' | 'xl';
+    size?: 's' | 'sm' | 'md' | 'lg' | 'xl';
     glowEffect?: boolean;
+    shadowEffect?: boolean;
     glowColor?: 'cyan' | 'purple' | 'blue' | 'pink' | 'green' | 'amber' | 'red';
     hoverScale?: boolean;
     interactive?: boolean;
 }
 
 const sizeClasses = {
+    xs: 'p-1',
+    s: 'p-2',
     sm: 'p-3',
     md: 'p-4',
     lg: 'p-5',
@@ -31,50 +34,6 @@ const glowColors = {
     red: 'from-red-500/30 via-rose-500/30 to-red-500/30',
 };
 
-const widgetVariants = {
-    hidden: { opacity: 0, y: 20, scale: 0.95 },
-    visible: {
-        opacity: 1,
-        y: 0,
-        scale: 1,
-        transition: {
-            type: 'spring',
-            visualDuration: 0.4,
-            bounce: 0.2,
-        },
-    },
-    hover: {
-        y: -2,
-        transition: {
-            type: 'spring',
-            visualDuration: 0.3,
-            bounce: 0.4,
-        },
-    },
-} as const;
-
-const glowVariants: Variants = {
-    initial: { opacity: 0.4, scale: 0.98 },
-    animate: {
-        opacity: [0.4, 0.6, 0.4] as number[],
-        scale: [0.98, 1, 0.98] as number[],
-        transition: {
-            duration: 4,
-            repeat: Number.POSITIVE_INFINITY,
-            ease: 'easeInOut',
-        },
-    },
-    hover: {
-        opacity: 0.8,
-        scale: 1.02,
-        transition: {
-            type: 'spring',
-            visualDuration: 0.3,
-            bounce: 0.3,
-        },
-    },
-};
-
 const GlassWidgetBase = React.forwardRef<HTMLDivElement, GlassWidgetBaseProps>(
     (
         {
@@ -83,28 +42,30 @@ const GlassWidgetBase = React.forwardRef<HTMLDivElement, GlassWidgetBaseProps>(
             size = 'md',
             glowEffect = true,
             glowColor = 'cyan',
+            shadowEffect,
             hoverScale = true,
             interactive = true,
             ...props
         },
         ref
     ) => {
+        // Keep legacy animation options out of DOM props while animations are disabled.
+        void hoverScale;
+        void interactive;
         return (
             <motion.div
                 className="relative h-full"
-                initial="hidden"
-                animate="visible"
-                whileHover={interactive && hoverScale ? 'hover' : undefined}
-                variants={widgetVariants}
+                initial="false"
+                // animate="false"
+                // whileHover={interactive && hoverScale ? 'hover' : undefined}
             >
                 {/* Glow effect */}
                 {glowEffect && (
                     <motion.div
                         className={cn('absolute -inset-0.5 rounded-2xl bg-linear-to-r blur-xl', glowColors[glowColor])}
-                        variants={glowVariants}
-                        initial="initial"
-                        animate="animate"
-                        whileHover={interactive ? 'hover' : undefined}
+                        initial="false"
+                        // animate="false"
+                        // whileHover={interactive ? 'hover' : undefined}
                         aria-hidden="true"
                     />
                 )}
@@ -114,14 +75,17 @@ const GlassWidgetBase = React.forwardRef<HTMLDivElement, GlassWidgetBaseProps>(
                     ref={ref}
                     className={cn(
                         'relative h-full rounded-2xl border border-white/20',
-                        'bg-white/10 backdrop-blur-xl',
-                        'shadow-[0_8px_32px_rgba(0,0,0,0.37)]',
-                        // Inner highlight linear
-                        'before:absolute before:inset-0 before:rounded-2xl',
-                        'before:bg-linear-to-b before:from-white/20 before:to-transparent before:pointer-events-none',
-                        // Inner shadow for depth
-                        'after:absolute after:inset-px after:rounded-[calc(1rem-1px)]',
-                        'after:shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)] after:pointer-events-none',
+                        'flex items-center justify-center',
+                        !shadowEffect && [
+                            'bg-white/10 backdrop-blur-xl',
+                            'shadow-[0_8px_32px_rgba(0,0,0,0.37)]',
+                            // Inner highlight linear
+                            'before:absolute before:inset-0 before:rounded-2xl',
+                            'before:bg-linear-to-b before:from-white/20 before:to-transparent before:pointer-events-none',
+                            // Inner shadow for depth
+                            'after:absolute after:inset-px after:rounded-[calc(1rem-1px)]',
+                            'after:shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)] after:pointer-events-none',
+                        ],
                         sizeClasses[size],
                         className
                     )}

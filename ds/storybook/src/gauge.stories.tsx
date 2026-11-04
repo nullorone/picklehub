@@ -1,9 +1,10 @@
-import { ComponentPreview } from './ein-preview';
+import { ComponentPreview } from './EinPreview';
 import { GlassGauge } from '@picklehub/ui-web';
 const basicCode = `import { GlassGauge } from "@/components/glass-gauge"
 
 <GlassGauge value={75} label="Progress" />`;
-const sizesCode = `<GlassGauge value={60} size="sm" />
+const sizesCode = `<GlassGauge value={60} size="xxs" /> <GlassGauge value={60} size="xs" /> <GlassGauge value={60} size="s" />
+<GlassGauge value={60} size="sm" />
 <GlassGauge value={75} size="md" />
 <GlassGauge value={90} size="lg" />`;
 const colorsCode = `<GlassGauge value={85} colorScheme="cyan" />
@@ -24,7 +25,10 @@ function GaugePage() {
                 description="Available in small, medium, and large sizes."
                 preview={
                     <div className="flex flex-col sm:flex-row items-center sm:items-end justify-center gap-6 sm:gap-8 py-4 sm:py-0">
-                        <GlassGauge value={60} size="sm" label="Small" />
+                        <GlassGauge value={60} size="xxs" />
+                        <GlassGauge value={60} size="xs" label="Extra Small" />
+                        <GlassGauge value={60} size="s" label="Small" />
+                        <GlassGauge value={60} text={'64/64'} size="sm" label="игроков" />
                         <GlassGauge value={75} size="md" label="Medium" />
                         <GlassGauge value={90} size="lg" label="Large" />
                     </div>
@@ -44,6 +48,18 @@ function GaugePage() {
                     </div>
                 }
                 code={colorsCode}
+            />
+            <ComponentPreview
+                title="Progress Gradient"
+                description="Muted red below 20, yellow from 20 to below 70, and green from 70. Colors follow value."
+                preview={
+                    <div className="flex flex-wrap items-center justify-center gap-8">
+                        {[10, 20, 69, 70, 100].map((value) => (
+                            <GlassGauge key={value} value={value} colorScheme="gradient-progress" />
+                        ))}
+                    </div>
+                }
+                code={'<GlassGauge value={70} colorScheme="gradient-progress" />'}
             />
         </div>
     );

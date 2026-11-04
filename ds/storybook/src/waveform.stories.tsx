@@ -1,4 +1,4 @@
-import { ComponentPreview } from './ein-preview';
+import { ComponentPreview } from './EinPreview';
 import { GlassWaveform } from '@picklehub/ui-web';
 const basicCode = `import { GlassWaveform } from "@/registry/innovative/glass-waveform"
 

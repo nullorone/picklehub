@@ -1,9 +1,11 @@
 import type { ComponentType } from "react";
-import { FoundationPage } from "@/pages/FoundationPage.tsx";
-import { GameListPage } from "@/pages/GameListPage.tsx";
-import { GameDetailPage } from "@/pages/GameDetailPage.tsx";
-import { GameCreatePage } from "@/pages/GameCreatePage.tsx";
-import { ProfilePage } from "@/pages/ProfilePage.tsx";
+import { EventListPage } from "../pages/EventList";
+import { EventDetailPage } from "../pages/EventDetail";
+import { EventCreate } from "../pages/EventCreate";
+import { EventEditPage } from "../pages/EventEdit";
+import { ProfilePage } from "../pages/Profile";
+import { Main } from "../pages/Main";
+import { EventDetailsPage } from "../pages/EventDetails/EventDetailsPage";
 
 interface Route {
     path: string;
@@ -11,10 +13,11 @@ interface Route {
 }
 
 export const routes: Route[] = [
-    { path: "/", Component: GameListPage },
-    { path: "/matches/:matchId", Component: GameDetailPage },
-    { path: "/games/new", Component: GameCreatePage },
-    { path: "/matches/:matchId/edit", Component: GameCreatePage },
-    { path: "/foundation", Component: FoundationPage },
+    { path: "/", Component: Main },
+    { path: "/event/list", Component: EventListPage },
+    { path: "/event/:eventId", Component: EventDetailPage },
+    { path: "/event/:eventId/details", Component: EventDetailsPage },
+    { path: "/event/new", Component: EventCreate },
+    { path: "/event/:eventId/edit", Component: EventEditPage },
     { path: "/profile", Component: ProfilePage },
 ];

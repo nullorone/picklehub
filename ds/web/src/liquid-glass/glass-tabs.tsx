@@ -47,17 +47,13 @@ const GlassTabsTrigger = React.forwardRef<
     <TabsPrimitive.Trigger
         ref={ref}
         className={cn(
-            'relative inline-flex items-center justify-center whitespace-nowrap rounded-lg px-4 py-2',
+            'relative inline-flex items-center justify-center whitespace-nowrap rounded-[12px] px-2 py-2',
             'text-sm font-medium text-white/60 transition-colors duration-200',
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent',
             'disabled:pointer-events-none disabled:opacity-50',
             'hover:text-white/80 hover:bg-white/5',
-            'data-[state=active]:bg-white/20 data-[state=active]:text-white',
-            'data-[state=active]:shadow-[0_2px_8px_rgba(0,0,0,0.2)]',
-            'data-[state=active]:before:absolute data-[state=active]:before:inset-0',
-            'data-[state=active]:before:rounded-lg data-[state=active]:before:bg-linear-to-b',
-            'data-[state=active]:before:from-white/20 data-[state=active]:before:to-transparent',
-            'data-[state=active]:before:pointer-events-none',
+            'data-[state=active]:bg-linear-to-r data-[state=active]:from-cyan-500/25 data-[state=active]:via-blue-500/25 data-[state=active]:to-purple-500/25 data-[state=active]:text-white',
+            'data-[state=active]:backdrop-blur-xl data-[state=active]:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.15),0_2px_8px_rgba(0,0,0,0.12)]',
             className
         )}
         {...props}

@@ -4,7 +4,7 @@
 import * as React from 'react';
 import { cn } from '../utils';
 import { ChevronLeft, ChevronRight, Plus, Clock } from 'lucide-react';
-import { GlassWidgetBase } from './base-widget';
+import { GlassWidgetBase, GlassWidgetBaseProps } from './base-widget';
 
 // Helper: returns the start-of-month Date for a given date
 function getMonthStart(date: Date) {
@@ -140,45 +140,50 @@ function CalendarWidget({ date, selectedDate, onDateSelect, className }: Calenda
     );
 }
 
-interface CompactCalendarWidgetProps {
+export interface CompactCalendarWidgetProps {
     date?: Date;
+    /** Positive multiplier for all dimensions, typography, spacing and glass effects. */
+    size?: number;
+    paddingSize?: GlassWidgetBaseProps['size'];
     className?: string;
 }
 
-function CompactCalendarWidget({ date, className }: CompactCalendarWidgetProps) {
+function CompactCalendarWidget({ date, size = 1, paddingSize, className }: CompactCalendarWidgetProps) {
     const [internalDate, setInternalDate] = React.useState<Date | null>(date ?? null);
     React.useLayoutEffect(() => {
         if (!date) setInternalDate(new Date());
     }, [date]);
-
-    if (!internalDate) {
-        // Render a lightweight client-side loading state to avoid using `new Date()` during prerender
-        return (
-            <GlassWidgetBase
-                className={cn('flex flex-col items-center justify-center min-w-30', className)}
-                glowColor="purple"
-            >
-                <div className="h-4 w-20 bg-white/8 rounded animate-pulse" />
-                <div className="h-12 w-16 mt-2 bg-white/8 rounded animate-pulse" />
-            </GlassWidgetBase>
-        );
-    }
-
-    const dayName = internalDate.toLocaleDateString('en-US', { weekday: 'short' });
-    const monthName = internalDate.toLocaleDateString('en-US', { month: 'short' });
-    const dayNumber = internalDate.getDate();
+    const scale = Number.isFinite(size) && size > 0 ? size : 1;
 
     return (
-        <GlassWidgetBase
-            className={cn('flex flex-col items-center justify-center min-w-30', className)}
-            glowColor="purple"
-        >
-            <div className="flex items-center gap-1.5 text-base">
-                <span className="text-white/60">{dayName}</span>
-                <span className="text-cyan-400 font-medium">{monthName}</span>
-            </div>
-            <div className="text-6xl font-light text-white tracking-tight">{dayNumber}</div>
-        </GlassWidgetBase>
+        <div className="inline-block align-top" style={{ zoom: scale }}>
+            <GlassWidgetBase
+                className={cn('flex flex-col items-center justify-center min-w-3', `max-w-${scale * 6}`, className)}
+                glowColor="purple"
+                size={paddingSize}
+            >
+                {internalDate ? (
+                    <>
+                        <div className="flex flex-col items-center text-base">
+                            {/*<span className="text-white/60 font-medium">*/}
+                            {/*    {internalDate.toLocaleDateString('ru-RU', { month: 'short' })}*/}
+                            {/*</span>*/}
+                            <span className="text-[clamp(12px,3.1cqw,20px)] font-semibold uppercase leading-tight tracking-wide text-cyan-400">
+                                {internalDate.toLocaleDateString('ru-RU', { weekday: 'short' })}
+                            </span>
+                        </div>
+                        <div className={cn('font-light text-white tracking-tight, text-center', `text-${scale * 2}xl`)}>
+                            {internalDate.getDate()}
+                        </div>
+                    </>
+                ) : (
+                    <>
+                        <div className="h-4 w-20 bg-white/8 rounded animate-pulse" />
+                        <div className="h-12 w-16 mt-2 bg-white/8 rounded animate-pulse" />
+                    </>
+                )}
+            </GlassWidgetBase>
+        </div>
     );
 }
 
