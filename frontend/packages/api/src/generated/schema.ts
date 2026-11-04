@@ -100,6 +100,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/venues": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["Venues_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -173,6 +189,11 @@ export interface components {
         /** @enum {string} */
         GameStatus: "SCHEDULED" | "FULL" | "CANCELLED";
         IdempotencyKey: string;
+        KnownVenue: {
+            id: string;
+            name: components["schemas"]["VenueName"];
+            address: components["schemas"]["VenueAddress"];
+        };
         NotFoundError: components["schemas"]["ErrorResponse"];
         /** Format: int32 */
         PageSize: number;
@@ -218,6 +239,9 @@ export interface components {
         };
         ValidationError: components["schemas"]["ErrorResponse"];
         VenueAddress: string;
+        VenueCatalog: {
+            items: components["schemas"]["KnownVenue"][];
+        };
         VenueName: string;
         uuid: string;
     };
@@ -742,6 +766,35 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ValidationError"];
+                };
+            };
+        };
+    };
+    Venues_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VenueCatalog"];
+                };
+            };
+            /** @description Access is unauthorized. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UnauthorizedError"];
                 };
             };
         };

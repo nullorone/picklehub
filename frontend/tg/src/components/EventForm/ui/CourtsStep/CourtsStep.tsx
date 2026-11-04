@@ -1,4 +1,4 @@
-import type { EventFormStepProps } from "../../types";
+import type { CourtsStepProps } from "./types";
 import { maxCourtCount, maxParticipantCount } from "../../const";
 import {
     GlassCheckbox,
@@ -7,19 +7,6 @@ import {
     GlassSwitch,
 } from "@picklehub/ui-web";
 import { Label } from "@picklehub/ui-web/label";
-
-type CourtsStepProps = EventFormStepProps<
-    | "courtCount"
-    | "participantLimit"
-    | "availableSpots"
-    | "availableSpotsMatchPlayers"
-    | "waitlistEnabled"
-    | "waitlistAutoRotation"
-    | "playerModeration"
-    | "organizerParticipates"
-> & {
-    formId: string;
-};
 
 export function CourtsStep({
     values,
@@ -36,48 +23,6 @@ export function CourtsStep({
             disabled={busy}
         >
             <div className="grid gap-4">
-                <div className="grid w-full max-w-sm grid-cols-[auto_auto] items-center justify-between gap-x-4 gap-y-2">
-                    <Label
-                        htmlFor={`${formId}-courtCount`}
-                        className="text-white/80"
-                    >
-                        Число кортов
-                    </Label>
-                    <GlassInput
-                        id={`${formId}-courtCount`}
-                        name="courtCount"
-                        type="number"
-                        className="w-[calc(2ch+2rem+2px)] text-center [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                        min={1}
-                        max={maxCourtCount}
-                        step={1}
-                        value={values.courtCount}
-                        aria-invalid={Boolean(errors.courtCount)}
-                        aria-describedby={
-                            errors.courtCount
-                                ? `${formId}-courtCount-error`
-                                : undefined
-                        }
-                        onChange={(event) => {
-                            const value = event.target.value;
-                            if (
-                                /^\d{0,2}$/.test(value) &&
-                                Number(value) <= maxCourtCount
-                            ) {
-                                update("courtCount", value);
-                            }
-                        }}
-                    />
-                    {errors.courtCount && (
-                        <span
-                            id={`${formId}-courtCount-error`}
-                            className="col-span-2 text-sm text-error"
-                            role="alert"
-                        >
-                            {errors.courtCount}
-                        </span>
-                    )}
-                </div>
                 <div className="grid w-full max-w-sm grid-cols-[auto_auto] items-center justify-between gap-x-4 gap-y-2">
                     <Label
                         htmlFor={`${formId}-participantLimit`}
@@ -127,6 +72,66 @@ export function CourtsStep({
                             {errors.participantLimit}
                         </span>
                     )}
+                </div>
+                <div className="grid w-full max-w-sm grid-cols-[auto_auto] items-center justify-between gap-x-4 gap-y-2">
+                    <Label
+                        htmlFor={`${formId}-courtCount`}
+                        className="text-white/80"
+                    >
+                        Число кортов
+                    </Label>
+                    <GlassInput
+                        id={`${formId}-courtCount`}
+                        name="courtCount"
+                        type="number"
+                        className="w-[calc(2ch+2rem+2px)] text-center [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                        min={1}
+                        max={maxCourtCount}
+                        step={1}
+                        value={values.courtCount}
+                        disabled={busy || values.courtCountMatchPlayers}
+                        aria-invalid={Boolean(errors.courtCount)}
+                        aria-describedby={
+                            errors.courtCount
+                                ? `${formId}-courtCount-error`
+                                : undefined
+                        }
+                        onChange={(event) => {
+                            const value = event.target.value;
+                            if (
+                                /^\d{0,2}$/.test(value) &&
+                                Number(value) <= maxCourtCount
+                            ) {
+                                update("courtCount", value);
+                            }
+                        }}
+                    />
+                    {errors.courtCount && (
+                        <span
+                            id={`${formId}-courtCount-error`}
+                            className="col-span-2 text-sm text-error"
+                            role="alert"
+                        >
+                            {errors.courtCount}
+                        </span>
+                    )}
+                </div>
+                <div className="w-full max-w-sm space-y-2">
+                    {values.courtCountMatchPlayers && (
+                        <p className="text-sm text-text-secondary">
+                            По умолчанию 1 корт на каждые 4 игрока
+                        </p>
+                    )}
+                    <GlassCheckbox
+                        id={`${formId}-customCourtCount`}
+                        name="customCourtCount"
+                        label="Изменить количество кортов"
+                        checked={!values.courtCountMatchPlayers}
+                        disabled={busy}
+                        onCheckedChange={(checked) => {
+                            update("courtCountMatchPlayers", checked !== true);
+                        }}
+                    />
                 </div>
             </div>
             <GlassSeparator />

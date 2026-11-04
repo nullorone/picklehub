@@ -1,5 +1,6 @@
 import { delay, http, HttpResponse } from "msw";
 import type { components } from "@picklehub/api";
+import { mockVenues } from "./venues";
 
 type GameDetail = components["schemas"]["GameDetail"];
 type Game = components["schemas"]["Game"];
@@ -173,6 +174,14 @@ function updateCounts(game: GameDetail) {
 }
 
 export const handlers = [
+    http.get(route("/venues"), async ({ request }) => {
+        await delay(mode() === "delay" ? 1800 : 350);
+        if (!currentUser(request))
+            return error(401, "UNAUTHENTICATED", "Use the local dev identity");
+        if (mode() === "error")
+            return error(503, "UNAVAILABLE", "Temporary mock API error");
+        return HttpResponse.json({ items: mockVenues });
+    }),
     http.post(route("/games"), async ({ request }) => {
         if (mode() === "error")
             return error(503, "GAME_CONFLICT", "Temporary mock API error");

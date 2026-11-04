@@ -10,6 +10,23 @@ namespace PickleHub;
 model BearerAuth is Http.BearerAuth;
 
 @useAuth(BearerAuth)
+interface Venues {
+  @get
+  @route("/venues")
+  list(): VenueCatalog | UnauthorizedError;
+}
+
+model VenueCatalog {
+  items: KnownVenue[];
+}
+
+model KnownVenue {
+  id: string;
+  name: VenueName;
+  address: VenueAddress;
+}
+
+@useAuth(BearerAuth)
 interface Games {
   @get
   @route("/games")

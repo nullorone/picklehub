@@ -20,6 +20,8 @@ import {
     participantGenderValues,
 } from "./ui/RestrictionsStep/const";
 
+import { getDefaultCourtCount } from "./ui/CourtsStep/getDefaultCourtCount";
+
 export const maxCourtCount = 24;
 export const maxParticipantCount = 96;
 
@@ -45,11 +47,7 @@ export const eventFormSchema = z
             "ladder",
             "king-of-the-court",
         ]),
-        venueName: z
-            .string()
-            .trim()
-            .min(1, "Укажите название площадки.")
-            .max(120, "Название — до 120 символов."),
+        venueName: z.string().trim().max(120, "Название — до 120 символов."),
         venueAddress: z
             .string()
             .trim()
@@ -68,6 +66,7 @@ export const eventFormSchema = z
                     Number(value) <= 480,
                 "Длительность должна быть от 30 до 480 минут.",
             ),
+        courtCountMatchPlayers: z.boolean(),
         courtCount: z
             .string()
             .refine(
@@ -189,7 +188,8 @@ export const initialValues: InitialValues = {
     venueAddress: "",
     startsAt: moscowDateTimeInput(new Date(Date.now() + 24 * 60 * 60 * 1000)),
     durationMinutes: "120",
-    courtCount: "1",
+    courtCount: getDefaultCourtCount("8"),
+    courtCountMatchPlayers: true,
     participantLimit: "8",
     availableSpots: "8",
     availableSpotsMatchPlayers: true,

@@ -4,6 +4,7 @@ import { ScheduleStep } from "./ui/ScheduleStep/ScheduleStep";
 import { VenueStep } from "./ui/VenueStep/VenueStep";
 import { RestrictionsStep } from "./ui/RestrictionsStep/RestrictionsStep";
 import { CourtsStep } from "./ui/CourtsStep/CourtsStep";
+import { getDefaultCourtCount } from "./ui/CourtsStep/getDefaultCourtCount";
 import { TrainingTypeStep } from "./ui/TrainingTypeStep/TrainingTypeStep";
 import { FormatDescription } from "./ui/FormatDescription/FormatDescription";
 import { FormatStep } from "./ui/FormatStep/FormatStep";
@@ -40,6 +41,7 @@ import {
     stepTitlesByEventType,
 } from "./const";
 import type { FormValues } from "./types";
+import { useVenues } from "@/api/venues";
 
 type EventFormProps = {
     game?: GameDetail;
@@ -57,6 +59,8 @@ export function EventForm({
     onReset,
 }: EventFormProps) {
     const formId = useId();
+    const venues = useVenues();
+    const [venueResetKey, setVenueResetKey] = useState(0);
     const [actionsContainer, setActionsContainer] =
         useState<HTMLElement | null>(null);
     useEffect(() => {
@@ -119,6 +123,9 @@ export function EventForm({
                   startsAt: moscowDateTimeInput(new Date(game.startsAt)),
                   durationMinutes: String(game.durationMinutes),
                   participantLimit: String(game.participantLimit),
+                  courtCount: getDefaultCourtCount(
+                      String(game.participantLimit),
+                  ),
                   availableSpots: String(game.participantLimit),
                   organizerParticipates: game.organizerParticipates,
                   desiredLevel: game.desiredLevel ?? "",
@@ -188,7 +195,9 @@ export function EventForm({
         if (!startsAt) return;
         try {
             await onSubmit({
-                venueName: inputValues.venueName.trim(),
+                venueName:
+                    inputValues.venueName.trim() ||
+                    inputValues.venueAddress.trim().slice(0, 120),
                 venueAddress: inputValues.venueAddress.trim(),
                 startsAt,
                 durationMinutes: Number(inputValues.durationMinutes),
@@ -219,6 +228,23 @@ export function EventForm({
             shouldDirty: true,
             shouldValidate: Boolean(formState.errors[key]),
         });
+        if (
+            (key === "participantLimit" && values.courtCountMatchPlayers) ||
+            (key === "courtCountMatchPlayers" && value === true)
+        ) {
+            setValue(
+                "courtCount",
+                getDefaultCourtCount(
+                    key === "participantLimit"
+                        ? String(value)
+                        : values.participantLimit,
+                ),
+                {
+                    shouldDirty: true,
+                    shouldValidate: Boolean(formState.errors.courtCount),
+                },
+            );
+        }
         clearErrors("root");
     };
 
@@ -302,32 +328,41 @@ export function EventForm({
                     void trigger(["duprMin", "duprMax"]);
                 }}
             />
+            <VenueStep
+                key={venueResetKey}
+                venues={venues.data ?? []}
+                loading={venues.isPending}
+                loadError={venues.isError}
+                onRetry={() => {
+                    void venues.refetch();
+                }}
+                values={values}
+                hidden={step !== 5}
+                busy={busy}
+                update={update}
+                errors={errors}
+            />
+            <ScheduleStep
+                values={values}
+                hidden={step !== 6}
+                busy={busy}
+                update={update}
+                errors={errors}
+            />
             <GlassCard
                 className="grid gap-4"
                 hidden={
                     step === firstStep ||
                     showChoiceCards ||
                     step === 3 ||
-                    step === 4
+                    step === 4 ||
+                    step === 5 ||
+                    step === 6
                 }
             >
                 <TrainingTypeStep
                     values={values}
                     hidden={step !== 2 || values.eventType !== "training"}
-                    busy={busy}
-                    update={update}
-                    errors={errors}
-                />
-                <VenueStep
-                    values={values}
-                    hidden={step !== 5}
-                    busy={busy}
-                    update={update}
-                    errors={errors}
-                />
-                <ScheduleStep
-                    values={values}
-                    hidden={step !== 6}
                     busy={busy}
                     update={update}
                     errors={errors}
@@ -435,6 +470,9 @@ export function EventForm({
                                                         ),
                                                 });
                                                 setStep(0);
+                                                setVenueResetKey(
+                                                    (current) => current + 1,
+                                                );
                                                 onReset();
                                             }}
                                         >

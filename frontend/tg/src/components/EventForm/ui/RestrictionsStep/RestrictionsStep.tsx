@@ -63,7 +63,7 @@ export function RestrictionsStep({
                     htmlFor={`${formId}-participantGender`}
                     className="text-white/80"
                 >
-                    Пол участников
+                    Гендер
                 </Label>
                 <GlassSelect
                     value={values.participantGender}

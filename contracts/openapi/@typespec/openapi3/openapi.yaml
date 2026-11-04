@@ -409,6 +409,25 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/TelegramSessionRequest'
+  /venues:
+    get:
+      operationId: Venues_list
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VenueCatalog'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+      security:
+        - BearerAuth: []
 components:
   schemas:
     CancelledError:
@@ -575,6 +594,19 @@ components:
       type: string
       minLength: 16
       maxLength: 128
+    KnownVenue:
+      type: object
+      required:
+        - id
+        - name
+        - address
+      properties:
+        id:
+          type: string
+        name:
+          $ref: '#/components/schemas/VenueName'
+        address:
+          $ref: '#/components/schemas/VenueAddress'
     NotFoundError:
       type: object
       allOf:
@@ -685,6 +717,15 @@ components:
       type: string
       minLength: 1
       maxLength: 300
+    VenueCatalog:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/KnownVenue'
     VenueName:
       type: string
       minLength: 1
