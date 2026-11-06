@@ -1,4 +1,5 @@
 import type { GameDetail, CreateGameRequest } from "@/api/games.ts";
+import { PreviewStep } from "./ui/PreviewStep/PreviewStep";
 import { PaymentStep } from "./ui/PaymentStep/PaymentStep";
 import { ScheduleStep } from "./ui/ScheduleStep/ScheduleStep";
 import { VenueStep } from "./ui/VenueStep/VenueStep";
@@ -378,6 +379,9 @@ export function EventForm({
                 update={update}
                 errors={errors}
             />
+            {step === lastStep && values.eventType === "play-on" && (
+                <PreviewStep values={values} busy={busy} onEdit={setStep} />
+            )}
             <GlassCard
                 className="grid gap-4"
                 hidden={
@@ -387,7 +391,8 @@ export function EventForm({
                     step === 4 ||
                     step === 5 ||
                     step === 6 ||
-                    step === 7
+                    step === 7 ||
+                    step === 8
                 }
             >
                 <TrainingTypeStep
@@ -403,14 +408,8 @@ export function EventForm({
                             "Не удалось сохранить игру. Проверьте подключение и попробуйте снова. Введённые данные сохранены."}
                     </p>
                 )}
-                {step === lastStep && values.eventType === "play-on" && (
-                    <p className="text-sm text-text-secondary">
-                        Нажмите «Вперед», чтобы{" "}
-                        {game ? "сохранить изменения" : "создать игру"}.
-                    </p>
-                )}
             </GlassCard>
-            {step === 7 && (errors.root || isError) && (
+            {(step === 7 || step === 8) && (errors.root || isError) && (
                 <p className="text-sm text-error" role="alert">
                     {errors.root ||
                         "Не удалось сохранить игру. Проверьте подключение и попробуйте снова."}
@@ -456,7 +455,13 @@ export function EventForm({
                                     step === lastStep)
                             }
                         >
-                            {busy ? "Сохраняем…" : "Вперед"}
+                            {busy
+                                ? "Сохраняем…"
+                                : step === lastStep
+                                  ? game
+                                      ? "Сохранить"
+                                      : "Создать"
+                                  : "Вперед"}
                         </Button>
                         <GlassAlertDialog>
                             <div className="col-span-2">

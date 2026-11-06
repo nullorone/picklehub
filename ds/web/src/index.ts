@@ -40,6 +40,8 @@ export * from './innovative/glass-ripple';
 export * from './innovative/glass-timeline';
 export * from './innovative/glass-waveform';
 export { default as LoginPage } from './blocks/LoginPage';
+export { EventCreatedDialog } from './EventCreatedDialog/EventCreatedDialog';
+export type { EventCreatedDialogProps } from './EventCreatedDialog/types';
 export { default as SignupPage } from './blocks/SignupPage';
 export { default as ForgotPasswordPage } from './blocks/ForgotPasswordPage';
 export { default as PricingPage } from './blocks/PricingPage';

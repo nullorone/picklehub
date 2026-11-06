@@ -381,6 +381,7 @@ export const stepFieldsByEventType: Record<
             "otherExpenses",
             "description",
         ],
+        [],
     ],
     training: [
         ["title", "isPrivate"],
@@ -419,6 +420,7 @@ export const stepTitlesByEventType: Record<FormValues["eventType"], string[]> =
             "Площадка",
             "Дата и время",
             "Оплата",
+            "Предпросмотр",
         ],
         training: ["Название и доступ", "Тип события", "Тип тренировки"],
     };

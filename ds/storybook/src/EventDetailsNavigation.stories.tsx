@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { Card } from '../../../frontend/tg/src/components/Card/Card';
-import { EventDetailsPage } from '../../../frontend/tg/src/pages/EventDetails/EventDetailsPage';
+import { EventDetailsPage, EventDetailsRedirect } from '../../../frontend/tg/src/pages/EventDetails/EventDetailsPage';
 import { tournaments } from '../../../frontend/tg/src/pages/EventList/mock';
 import { Provider } from 'react-redux';
 import { store } from '../../../frontend/tg/src/store/store';
@@ -14,6 +14,7 @@ function NavigationExample({ initialPath = '/' }: { initialPath?: string }) {
             <MemoryRouter initialEntries={[initialPath]}>
                 <Routes>
                     <Route path="/" element={<Card {...event} />} />
+                    <Route path="/event/:eventId" element={<EventDetailsRedirect />} />
                     <Route path="/event/:eventId/details" element={<EventDetailsPage />} />
                     <Route path="/event/list" element={<p>Список событий</p>} />
                 </Routes>
@@ -46,7 +47,7 @@ export const FromCard: Story = {
         await userEvent.click(canvas.getByRole('tab', { name: 'Участники' }));
         await waitFor(() => expect(canvas.getByText('Список участников пока недоступен.')).toBeVisible());
         await userEvent.click(canvas.getByRole('link', { name: '← Все события' }));
-        await expect(canvas.getByText('Список событий')).toBeVisible();
+        await expect(canvas.getByRole('link', { name: 'Подробнее' })).toBeVisible();
     },
 };
 export const DirectLink: Story = {
@@ -55,6 +56,14 @@ export const DirectLink: Story = {
         const canvas = within(canvasElement);
         await expect(canvas.getByRole('heading', { name: tournaments[0].name })).toBeVisible();
         await expect(canvas.getByRole('button', { name: 'Присоединиться' })).toBeDisabled();
+    },
+};
+export const LegacyLink: Story = {
+    args: { initialPath: `/event/${tournaments[0].id}` },
+    play: async ({ canvasElement }) => {
+        const canvas = within(canvasElement);
+        await expect(canvas.getByRole('heading', { name: tournaments[0].name })).toBeVisible();
+        await expect(canvas.getByRole('tab', { name: 'Участники' })).toBeVisible();
     },
 };
 export const MissingEvent: Story = {

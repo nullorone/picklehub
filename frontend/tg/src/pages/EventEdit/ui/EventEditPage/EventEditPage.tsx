@@ -38,7 +38,7 @@ export function EventEditPage() {
                                 gameId: game.id,
                                 input,
                             });
-                            navigate(`/event/${updated.id}`);
+                            navigate(`/event/${updated.id}/details`);
                         }}
                     />
                 )}

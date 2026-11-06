@@ -11,7 +11,7 @@ export const telegramGameLinkAdapter: TelegramGameLinkAdapter = {
         const link = new URL(window.location.href);
         link.searchParams.delete("mockUser");
         link.searchParams.delete("mockScenario");
-        link.hash = `/event/${gameId}`;
+        link.hash = `/event/${gameId}/details`;
         return link.toString();
     },
 };

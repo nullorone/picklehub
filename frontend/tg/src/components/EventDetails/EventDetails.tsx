@@ -394,32 +394,34 @@ export function EventDetails({
                                     </span>
                                 </dd>
                                 <dd className="mt-3 flex items-center gap-3">
-                                    <a
-                                        href={`https://t.me/${encodeURIComponent(organizerUsername)}`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        aria-label={`Написать организатору ${organizerName} в Telegram`}
-                                        title="Написать в Telegram"
-                                        className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-ds-border bg-white/5 transition-colors hover:bg-white/10"
-                                    >
-                                        <svg
-                                            width="24"
-                                            height="24"
-                                            viewBox="0 0 24 24"
-                                            aria-hidden="true"
+                                    {organizerUsername && (
+                                        <a
+                                            href={`https://t.me/${encodeURIComponent(organizerUsername)}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            aria-label={`Написать организатору ${organizerName} в Telegram`}
+                                            title="Написать в Telegram"
+                                            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-ds-border bg-white/5 transition-colors hover:bg-white/10"
                                         >
-                                            <circle
-                                                cx="12"
-                                                cy="12"
-                                                r="12"
-                                                fill="#229ED9"
-                                            />
-                                            <path
-                                                fill="white"
-                                                d="m5.1 11.6 13.1-5.1c.6-.2 1 .1.8.9l-2.2 10.4c-.2.7-.6.9-1.2.6l-3.4-2.5-1.6 1.5c-.2.2-.3.3-.6.3l.2-3.5 6.4-5.8c.3-.3-.1-.4-.4-.2l-7.9 5-3.4-1.1c-.7-.2-.7-.7.2-1Z"
-                                            />
-                                        </svg>
-                                    </a>
+                                            <svg
+                                                width="24"
+                                                height="24"
+                                                viewBox="0 0 24 24"
+                                                aria-hidden="true"
+                                            >
+                                                <circle
+                                                    cx="12"
+                                                    cy="12"
+                                                    r="12"
+                                                    fill="#229ED9"
+                                                />
+                                                <path
+                                                    fill="white"
+                                                    d="m5.1 11.6 13.1-5.1c.6-.2 1 .1.8.9l-2.2 10.4c-.2.7-.6.9-1.2.6l-3.4-2.5-1.6 1.5c-.2.2-.3.3-.6.3l.2-3.5 6.4-5.8c.3-.3-.1-.4-.4-.2l-7.9 5-3.4-1.1c-.7-.2-.7-.7.2-1Z"
+                                                />
+                                            </svg>
+                                        </a>
+                                    )}
                                     {event.organizer.phone?.trim() && (
                                         <a
                                             href={`tel:${event.organizer.phone.trim()}`}

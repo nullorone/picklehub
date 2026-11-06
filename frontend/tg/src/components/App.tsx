@@ -32,7 +32,7 @@ function StartParameterRoute({ startParameter }: { startParameter: unknown }) {
     const location = useLocation();
     const gameId = gameIdFromStartParameter(startParameter);
     return location.pathname === "/" && gameId ? (
-        <Navigate to={`/event/${gameId}`} replace />
+        <Navigate to={`/event/${gameId}/details`} replace />
     ) : null;
 }
 

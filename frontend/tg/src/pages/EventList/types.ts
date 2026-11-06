@@ -17,7 +17,7 @@ export interface GameEventOrganizer {
 }
 
 export interface GameEvent {
-    id: number;
+    id: number | string;
     type: "match" | "tournament" | "trainee";
     organizer: GameEventOrganizer;
     delegateIds?: string[];
@@ -42,5 +42,6 @@ export interface GameEvent {
         | "Pool Play"
         | "Swiss System"
         | "Ladder"
-        | "King of the Court";
+        | "King of the Court"
+        | "Без формата";
 }
