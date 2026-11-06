@@ -1,5 +1,5 @@
 import type { GameDetail, CreateGameRequest } from "@/api/games.ts";
-import { DescriptionStep } from "./ui/DescriptionStep/DescriptionStep";
+import { PaymentStep } from "./ui/PaymentStep/PaymentStep";
 import { ScheduleStep } from "./ui/ScheduleStep/ScheduleStep";
 import { VenueStep } from "./ui/VenueStep/VenueStep";
 import { RestrictionsStep } from "./ui/RestrictionsStep/RestrictionsStep";
@@ -9,7 +9,6 @@ import { TrainingTypeStep } from "./ui/TrainingTypeStep/TrainingTypeStep";
 import { FormatDescription } from "./ui/FormatDescription/FormatDescription";
 import { FormatStep } from "./ui/FormatStep/FormatStep";
 import { BasicsStep } from "./ui/BasicsStep/BasicsStep";
-import { EventTypeStep } from "./ui/EventTypeStep/EventTypeStep";
 import {
     Button,
     GlassAlertDialog,
@@ -37,6 +36,7 @@ import {
     eventFormSchema,
     initialValues,
     firstStep,
+    hiddenEventTypeStep,
     stepFieldsByEventType,
     stepTitlesByEventType,
 } from "./const";
@@ -122,11 +122,13 @@ export function EventForm({
                   venueAddress: game.venueAddress,
                   startsAt: moscowDateTimeInput(new Date(game.startsAt)),
                   durationMinutes: String(game.durationMinutes),
-                  participantLimit: String(game.participantLimit),
-                  courtCount: getDefaultCourtCount(
-                      String(game.participantLimit),
+                  participantLimit: game.participantLimit,
+                  courtCount: getDefaultCourtCount(game.participantLimit),
+                  availableSpots: Math.max(
+                      0,
+                      game.participantLimit -
+                          Number(game.organizerParticipates),
                   ),
-                  availableSpots: String(game.participantLimit),
                   organizerParticipates: game.organizerParticipates,
                   desiredLevel: game.desiredLevel ?? "",
                   description: game.description ?? "",
@@ -139,8 +141,7 @@ export function EventForm({
               },
     });
     const values = watch();
-    const showChoiceCards =
-        step === 1 || (step === 2 && values.eventType === "play-on");
+    const showChoiceCards = step === 2 && values.eventType === "play-on";
     useLayoutEffect(() => {
         const fieldset = eventTypesRef.current;
         const stepLabel = stepLabelRef.current;
@@ -186,7 +187,10 @@ export function EventForm({
 
     async function next() {
         if (busy || step === lastStep) return;
-        if (await trigger(stepFields[step])) setStep((current) => current + 1);
+        if (await trigger(stepFields[step]))
+            setStep((current) =>
+                current + 1 === hiddenEventTypeStep ? current + 2 : current + 1,
+            );
     }
 
     async function submit(inputValues: FormValues) {
@@ -236,12 +240,35 @@ export function EventForm({
                 "courtCount",
                 getDefaultCourtCount(
                     key === "participantLimit"
-                        ? String(value)
+                        ? Number(value)
                         : values.participantLimit,
                 ),
                 {
                     shouldDirty: true,
                     shouldValidate: Boolean(formState.errors.courtCount),
+                },
+            );
+        }
+        if (
+            (key === "participantLimit" && values.availableSpotsMatchPlayers) ||
+            (key === "organizerParticipates" &&
+                values.availableSpotsMatchPlayers) ||
+            (key === "availableSpotsMatchPlayers" && value === true)
+        ) {
+            const participantLimit =
+                key === "participantLimit"
+                    ? Number(value)
+                    : values.participantLimit;
+            const organizerParticipates =
+                key === "organizerParticipates"
+                    ? Boolean(value)
+                    : values.organizerParticipates;
+            setValue(
+                "availableSpots",
+                Math.max(0, participantLimit - Number(organizerParticipates)),
+                {
+                    shouldDirty: true,
+                    shouldValidate: Boolean(formState.errors.availableSpots),
                 },
             );
         }
@@ -274,8 +301,9 @@ export function EventForm({
                     role="status"
                     className="text-[var(--ph-text-secondary)]"
                 >
-                    Шаг {step - firstStep + 1} из {titles.length - firstStep}:{" "}
-                    {titles[step]}
+                    Шаг{" "}
+                    {step - firstStep + 1 - Number(step > hiddenEventTypeStep)}{" "}
+                    из {titles.length - firstStep - 1}: {titles[step]}
                 </p>
             </div>
             {step === 2 && values.eventType === "play-on" && (
@@ -292,12 +320,6 @@ export function EventForm({
                     busy={busy}
                     update={update}
                     errors={errors}
-                />
-                <EventTypeStep
-                    values={values}
-                    hidden={step !== 1}
-                    busy={busy}
-                    update={update}
                 />
                 <FormatStep
                     values={values}
@@ -349,6 +371,13 @@ export function EventForm({
                 update={update}
                 errors={errors}
             />
+            <PaymentStep
+                values={values}
+                hidden={step !== 7}
+                busy={busy}
+                update={update}
+                errors={errors}
+            />
             <GlassCard
                 className="grid gap-4"
                 hidden={
@@ -357,19 +386,13 @@ export function EventForm({
                     step === 3 ||
                     step === 4 ||
                     step === 5 ||
-                    step === 6
+                    step === 6 ||
+                    step === 7
                 }
             >
                 <TrainingTypeStep
                     values={values}
                     hidden={step !== 2 || values.eventType !== "training"}
-                    busy={busy}
-                    update={update}
-                    errors={errors}
-                />
-                <DescriptionStep
-                    values={values}
-                    hidden={step !== 7}
                     busy={busy}
                     update={update}
                     errors={errors}
@@ -387,6 +410,12 @@ export function EventForm({
                     </p>
                 )}
             </GlassCard>
+            {step === 7 && (errors.root || isError) && (
+                <p className="text-sm text-error" role="alert">
+                    {errors.root ||
+                        "Не удалось сохранить игру. Проверьте подключение и попробуйте снова."}
+                </p>
+            )}
             {actionsContainer &&
                 createPortal(
                     <div
@@ -399,7 +428,13 @@ export function EventForm({
                             variant="outline"
                             className="w-full min-h-12 whitespace-normal text-text border-border hover:scale-100 active:scale-100"
                             disabled={busy || step === firstStep}
-                            onClick={() => setStep((current) => current - 1)}
+                            onClick={() =>
+                                setStep((current) =>
+                                    current - 1 === hiddenEventTypeStep
+                                        ? current - 2
+                                        : current - 1,
+                                )
+                            }
                         >
                             Назад
                         </Button>

@@ -20,6 +20,11 @@ import {
     participantGenderValues,
 } from "./ui/RestrictionsStep/const";
 
+import {
+    paymentAmountSchema,
+    costPerPersonSchema,
+} from "./ui/PaymentStep/const";
+
 import { getDefaultCourtCount } from "./ui/CourtsStep/getDefaultCourtCount";
 
 export const maxCourtCount = 24;
@@ -66,9 +71,12 @@ export const eventFormSchema = z
                     Number(value) <= 480,
                 "Длительность должна быть от 30 до 480 минут.",
             ),
+        manualEndTimeEnabled: z.boolean(),
+        timeSlotsEnabled: z.boolean(),
+        timeSlots: z.array(z.object({ start: z.number(), end: z.number() })),
         courtCountMatchPlayers: z.boolean(),
         courtCount: z
-            .string()
+            .number()
             .refine(
                 (value) =>
                     Number.isSafeInteger(Number(value)) &&
@@ -77,7 +85,7 @@ export const eventFormSchema = z
                 "Укажите целое число кортов от 1 до 24.",
             ),
         participantLimit: z
-            .string()
+            .number()
             .refine(
                 (value) =>
                     Number.isInteger(Number(value)) &&
@@ -87,10 +95,9 @@ export const eventFormSchema = z
             ),
         availableSpotsMatchPlayers: z.boolean(),
         availableSpots: z
-            .string()
+            .number()
             .refine(
                 (value) =>
-                    value.trim() !== "" &&
                     Number.isInteger(Number(value)) &&
                     Number(value) >= 0 &&
                     Number(value) <= maxParticipantCount,
@@ -121,9 +128,39 @@ export const eventFormSchema = z
                     ),
             "Укажите Telegram-логины через запятую, пробел или с новой строки.",
         ),
-        description: z.string().max(2000, "Описание — до 2000 символов."),
+        totalCost: paymentAmountSchema,
+        costPerPerson: costPerPersonSchema,
+        costBreakdownEnabled: z.boolean(),
+        organizerFee: paymentAmountSchema,
+        courtHourlyRate: paymentAmountSchema,
+        otherExpenses: paymentAmountSchema,
+        description: z.string().max(2000, "Комментарий — до 2000 символов."),
     })
     .superRefine((values, context) => {
+        if (values.timeSlotsEnabled) {
+            const slots = [...values.timeSlots].sort(
+                (a, b) => a.start - b.start,
+            );
+            if (
+                slots.length === 0 ||
+                slots.some(
+                    (slot, index) =>
+                        !Number.isInteger(slot.start) ||
+                        !Number.isInteger(slot.end) ||
+                        slot.start < 0 ||
+                        slot.end > Number(values.durationMinutes) ||
+                        slot.end <= slot.start ||
+                        (index > 0 && slot.start < slots[index - 1].end),
+                )
+            ) {
+                context.addIssue({
+                    code: "custom",
+                    path: ["timeSlots"],
+                    message:
+                        "Укажите слоты внутри времени события, без пересечений. Окончание должно быть позже начала.",
+                });
+            }
+        }
         if (values.participantGender === "mixed") {
             const counts = ["maleCount", "femaleCount"] as const;
             const validCounts = counts.every(
@@ -177,21 +214,26 @@ export const eventFormSchema = z
         }
     });
 
+const DEFAULT_PARTICIPANT = 4;
+
 export const initialValues: InitialValues = {
     title: "",
     isPrivate: false,
     invitedUsernames: "",
-    eventType: undefined,
+    eventType: "play-on",
     trainingType: undefined,
     format: undefined,
     venueName: "",
     venueAddress: "",
     startsAt: moscowDateTimeInput(new Date(Date.now() + 24 * 60 * 60 * 1000)),
     durationMinutes: "120",
-    courtCount: getDefaultCourtCount("8"),
+    manualEndTimeEnabled: false,
+    timeSlotsEnabled: false,
+    timeSlots: [],
+    courtCount: getDefaultCourtCount(DEFAULT_PARTICIPANT),
     courtCountMatchPlayers: true,
-    participantLimit: "8",
-    availableSpots: "8",
+    participantLimit: DEFAULT_PARTICIPANT,
+    availableSpots: DEFAULT_PARTICIPANT - 1,
     availableSpotsMatchPlayers: true,
     participantGender: "any",
     maleCount: "",
@@ -204,6 +246,12 @@ export const initialValues: InitialValues = {
     playerModeration: false,
     organizerParticipates: true,
     desiredLevel: "",
+    totalCost: "",
+    costPerPerson: "",
+    costBreakdownEnabled: false,
+    organizerFee: "",
+    courtHourlyRate: "",
+    otherExpenses: "",
     description: "",
 };
 
@@ -303,6 +351,8 @@ export const trainingTypeOptions = [
 ] as const;
 
 export const firstStep = 0;
+// В MVP тип события всегда Play On, поэтому шаг выбора временно пропускается.
+export const hiddenEventTypeStep = 1;
 export const stepFieldsByEventType: Record<
     FormValues["eventType"],
     (keyof FormValues)[][]
@@ -321,8 +371,16 @@ export const stepFieldsByEventType: Record<
             "duprMax",
         ],
         ["venueName", "venueAddress"],
-        ["startsAt", "durationMinutes"],
-        ["desiredLevel", "description"],
+        ["startsAt", "durationMinutes", "timeSlotsEnabled", "timeSlots"],
+        [
+            "totalCost",
+            "costPerPerson",
+            "costBreakdownEnabled",
+            "organizerFee",
+            "courtHourlyRate",
+            "otherExpenses",
+            "description",
+        ],
     ],
     training: [
         ["title", "isPrivate"],
@@ -338,8 +396,16 @@ export const stepFieldsByEventType: Record<
             "duprMax",
         ],
         ["venueName", "venueAddress"],
-        ["startsAt", "durationMinutes"],
-        ["desiredLevel", "description"],
+        ["startsAt", "durationMinutes", "timeSlotsEnabled", "timeSlots"],
+        [
+            "totalCost",
+            "costPerPerson",
+            "costBreakdownEnabled",
+            "organizerFee",
+            "courtHourlyRate",
+            "otherExpenses",
+            "description",
+        ],
     ],
 };
 export const stepTitlesByEventType: Record<FormValues["eventType"], string[]> =
@@ -352,7 +418,7 @@ export const stepTitlesByEventType: Record<FormValues["eventType"], string[]> =
             "Ограничения",
             "Площадка",
             "Дата и время",
-            "Описание",
+            "Оплата",
         ],
         training: ["Название и доступ", "Тип события", "Тип тренировки"],
     };

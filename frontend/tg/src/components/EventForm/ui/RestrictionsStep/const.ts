@@ -15,8 +15,8 @@ export const participantGenderOptions = [
 ] as const;
 
 export const mixedParticipantFields = [
-    { key: "maleCount", label: "Количество мужчин" },
-    { key: "femaleCount", label: "Количество женщин" },
+    { key: "maleCount", label: "Мужчин" },
+    { key: "femaleCount", label: "Женщин" },
 ] as const;
 
 export const minDuprRating = 2;

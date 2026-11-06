@@ -39,14 +39,6 @@ export function CourtsStep({
                         max={maxParticipantCount}
                         step={1}
                         value={values.participantLimit}
-                        onBlur={() => {
-                            if (values.availableSpotsMatchPlayers) {
-                                update(
-                                    "availableSpots",
-                                    values.participantLimit,
-                                );
-                            }
-                        }}
                         aria-invalid={Boolean(errors.participantLimit)}
                         aria-describedby={
                             errors.participantLimit
@@ -59,7 +51,7 @@ export function CourtsStep({
                                 /^\d{0,2}$/.test(value) &&
                                 Number(value) <= maxParticipantCount
                             ) {
-                                update("participantLimit", value);
+                                update("participantLimit", Number(value));
                             }
                         }}
                     />
@@ -102,7 +94,7 @@ export function CourtsStep({
                                 /^\d{0,2}$/.test(value) &&
                                 Number(value) <= maxCourtCount
                             ) {
-                                update("courtCount", value);
+                                update("courtCount", Number(value));
                             }
                         }}
                     />
@@ -136,6 +128,32 @@ export function CourtsStep({
             </div>
             <GlassSeparator />
             <div className="grid gap-4">
+                <div className="w-full max-w-sm space-y-2">
+                    <div className="flex w-full max-w-sm items-center justify-between gap-4">
+                        <Label
+                            htmlFor={`${formId}-organizerParticipates`}
+                            className="text-white/80"
+                        >
+                            Участвовать в событии
+                        </Label>
+                        <GlassSwitch
+                            id={`${formId}-organizerParticipates`}
+                            name="organizerParticipates"
+                            aria-describedby={`${formId}-organizerParticipates-hint`}
+                            checked={values.organizerParticipates}
+                            disabled={busy}
+                            onCheckedChange={(checked) =>
+                                update("organizerParticipates", checked)
+                            }
+                        />
+                    </div>
+                    <p
+                        id={`${formId}-organizerParticipates-hint`}
+                        className="text-sm text-text-secondary"
+                    >
+                        При включении вы займёте одно место в списке участников.
+                    </p>
+                </div>
                 <div className="grid w-full max-w-sm grid-cols-[auto_auto] items-center justify-between gap-x-4 gap-y-2">
                     <Label
                         htmlFor={`${formId}-availableSpots`}
@@ -165,7 +183,7 @@ export function CourtsStep({
                                 /^\d{0,2}$/.test(value) &&
                                 Number(value) <= maxParticipantCount
                             ) {
-                                update("availableSpots", value);
+                                update("availableSpots", Number(value));
                             }
                         }}
                     />
@@ -182,7 +200,9 @@ export function CourtsStep({
                 <div className="w-full max-w-sm space-y-2">
                     {values.availableSpotsMatchPlayers && (
                         <p className="text-sm text-text-secondary">
-                            По умолчанию доступны все места
+                            {values.organizerParticipates
+                                ? "Одно место занято вами, остальные доступны для записи"
+                                : "По умолчанию доступны все места"}
                         </p>
                     )}
                     <GlassCheckbox
@@ -196,12 +216,6 @@ export function CourtsStep({
                                 "availableSpotsMatchPlayers",
                                 checked !== true,
                             );
-                            if (checked !== true) {
-                                update(
-                                    "availableSpots",
-                                    values.participantLimit,
-                                );
-                            }
                         }}
                     />
                 </div>
@@ -255,32 +269,6 @@ export function CourtsStep({
                             update("playerModeration", checked)
                         }
                     />
-                </div>
-                <div className="w-full max-w-sm space-y-2">
-                    <div className="flex w-full max-w-sm items-center justify-between gap-4">
-                        <Label
-                            htmlFor={`${formId}-organizerParticipates`}
-                            className="text-white/80"
-                        >
-                            Участвовать в событии
-                        </Label>
-                        <GlassSwitch
-                            id={`${formId}-organizerParticipates`}
-                            name="organizerParticipates"
-                            aria-describedby={`${formId}-organizerParticipates-hint`}
-                            checked={values.organizerParticipates}
-                            disabled={busy}
-                            onCheckedChange={(checked) =>
-                                update("organizerParticipates", checked)
-                            }
-                        />
-                    </div>
-                    <p
-                        id={`${formId}-organizerParticipates-hint`}
-                        className="text-sm text-text-secondary"
-                    >
-                        При включении вы займёте одно место в списке участников.
-                    </p>
                 </div>
             </div>
         </fieldset>

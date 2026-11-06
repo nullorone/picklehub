@@ -93,7 +93,7 @@ export function VenueStep({
                                 role="combobox"
                                 className="h-12 pl-10 pr-11"
                                 value={query}
-                                placeholder="Название, город, улица"
+                                placeholder="Название, адрес"
                                 maxLength={300}
                                 autoComplete="off"
                                 aria-autocomplete="list"

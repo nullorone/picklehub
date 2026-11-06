@@ -19,13 +19,11 @@ async function openForm(page, scenario = "normal") {
 
 async function reachVenue(page) {
     await nextButton(page).click();
-    await page.getByText("Play on", { exact: true }).click();
-    await nextButton(page).click();
     await page.getByText("Без формата", { exact: true }).click();
     for (let index = 0; index < 3; index++) await nextButton(page).click();
     await page
         .getByRole("status")
-        .filter({ hasText: "Шаг 6 из 8: Площадка" })
+        .filter({ hasText: "Шаг 5 из 7: Площадка" })
         .waitFor();
 }
 
@@ -125,7 +123,7 @@ try {
         await nextButton(page).click();
         await page
             .getByRole("status")
-            .filter({ hasText: "Шаг 7 из 8" })
+            .filter({ hasText: "Шаг 6 из 7" })
             .waitFor();
         await backButton(page).click();
         await page.getByRole("button", { name: "Изменить площадку" }).click();
