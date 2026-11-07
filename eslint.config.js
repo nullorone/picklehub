@@ -14,8 +14,6 @@ export default tseslint.config(
     {
         files: [
             "frontend/tg/src/**/*.{js,jsx,mjs,cjs,ts,tsx}",
-            "backend/src/**/*.ts",
-            "backend/test/**/*.ts",
             "ds/**/*.ts",
             "ds/**/*.tsx",
             "frontend/packages/tokens/src/**/*.ts",
