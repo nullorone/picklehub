@@ -1,0 +1,126 @@
+openapi: 3.0.0
+info:
+  title: Picklehub API
+  version: 0.0.0
+tags: []
+paths:
+  /events:
+    post:
+      operationId: Events_create
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '201':
+          description: The request has succeeded and a new resource has been created as a result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorBody'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorBody'
+        '409':
+          description: The request conflicts with the current state of the server.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorBody'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEventRequest'
+      security:
+        - BearerAuth: []
+components:
+  schemas:
+    CreateEventRequest:
+      type: object
+      required:
+        - title
+        - startsAt
+      properties:
+        title:
+          $ref: '#/components/schemas/EventTitle'
+        description:
+          $ref: '#/components/schemas/EventDescription'
+        startsAt:
+          type: string
+          format: date-time
+    ErrorBody:
+      type: object
+      required:
+        - statusCode
+        - message
+        - error
+      properties:
+        statusCode:
+          type: integer
+          format: int32
+        message:
+          anyOf:
+            - type: string
+            - type: array
+              items:
+                type: string
+        error:
+          type: string
+    Event:
+      type: object
+      required:
+        - id
+        - organizerId
+        - title
+        - description
+        - startsAt
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        organizerId:
+          $ref: '#/components/schemas/Uuid'
+        title:
+          $ref: '#/components/schemas/EventTitle'
+        description:
+          type: string
+          allOf:
+            - $ref: '#/components/schemas/EventDescription'
+          nullable: true
+        startsAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    EventDescription:
+      type: string
+      maxLength: 2000
+    EventTitle:
+      type: string
+      minLength: 1
+      maxLength: 120
+    Uuid:
+      type: string
+      format: uuid
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: Bearer

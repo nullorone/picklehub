@@ -36,3 +36,6 @@ backups/
 
 # Storybook local state
 .storybook-cache/
+
+/backend/src/generated/prisma/
+/backend/tsconfig.build.tsbuildinfo
